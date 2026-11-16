@@ -18,10 +18,11 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { DATA_DIR_MARKERS, getDefaultPlannotatorDataDir } from "../packages/shared/data-dir";
 import { DATA_DIR_MARKERS as MOD_MARKERS, resolveDataDir } from "../apps/hook/hooks/mod/launch";
 
+const REPO = resolve(import.meta.dir, "..");
 const root = mkdtempSync(join(tmpdir(), "plannotator-data-dir-mirrors-"));
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 

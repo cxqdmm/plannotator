@@ -19,7 +19,7 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
-const plainFile = "tests/agents-md-size.test.ts";
+const plainFile = "tests/package-bunfig.test.ts";
 const domFile = "packages/ui/markdownEditorFidelity.test.tsx";
 const spec = "tests/e2e/annotate-added-folder.spec.ts";
 

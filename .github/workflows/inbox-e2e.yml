@@ -119,11 +119,6 @@ on:
       - 'scripts/inbox-large-store.ts'
       - 'scripts/ci-e2e-shard.ts'
       - 'scripts/ci-e2e-reuse.ts'
-      - 'apps/vscode-extension/src/guides/webview/**'
-      - 'apps/vscode-extension/src/guides/core/**'
-      - 'apps/vscode-extension/src/guides/webview-csp.ts'
-      - 'apps/vscode-extension/scripts/esbuild.config.ts'
-      - 'apps/vscode-extension/package.json'
       - '.github/workflows/inbox-e2e.yml'
   # Main is not run after every merge: every two hours, when its head moved
   # (the head job), and a release dispatches it on main before the tag.

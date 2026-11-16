@@ -78,7 +78,7 @@ describe("the agent CLI stubs cover", () => {
   test("uninstall's plugin removals", () => {
     const source = readFileSync(join(repoRoot, "packages/server/uninstall.ts"), "utf8");
     const names = [...source.matchAll(/\bcommand:\s*"([\w.-]+)"/g)].map((m) => m[1]!);
-    expect(names).toContain("droid");
+    expect(names).toContain("claude");
     expect(names.filter((name) => !stubbed.has(name))).toEqual([]);
   });
 
