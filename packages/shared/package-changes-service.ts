@@ -230,7 +230,6 @@ export async function waitAtMost<T>(promise: Promise<T>, ms: number): Promise<{ 
  * Where a PR review reads registry settings: the local checkout at the head
  * commit when it holds that commit (no platform calls; one `git ls-tree`, then
  * only the files that exist), else the platform API, capped by the service.
- * Shared by both servers.
  */
 export async function prSettingsSource(options: {
   git: ReviewGitRuntime;

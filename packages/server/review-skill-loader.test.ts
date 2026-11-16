@@ -26,8 +26,8 @@ import {
 } from "./review-skill-loader";
 import { checkoutIsScratch, makeOutsideScratch } from "../../tests/helpers/outside-scratch";
 
-// Launch-time resolution used by review.ts / serverReview.ts. Tested directly so
-// both runtimes' resolution stays pinned without standing up a full review server.
+// Launch-time resolution used by review.ts. Tested directly so the resolution
+// stays pinned without standing up a full review server.
 const resolveLaunchProfile = resolveRequestedReviewProfile;
 
 // ---------------------------------------------------------------------------

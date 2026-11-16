@@ -491,7 +491,7 @@ export function createAnnotateDraftSession(options: AnnotateDraftSessionOptions)
     },
 
     /**
-     * POST /api/draft, shaped for both runtimes.
+     * POST /api/draft.
      *  - After a decision every save is refused with `409 { decided: true }`,
      *    whatever its generation: a second tab must not put back comments
      *    that were just sent. The client never retries a decided refusal.

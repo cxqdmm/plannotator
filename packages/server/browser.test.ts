@@ -201,10 +201,8 @@ describe("WSL configured browser launch", () => {
 
   // The cmd.exe route itself cannot be execution-tested through Bun's `$` on
   // a non-Windows host (see the note on the bare-name test above): a bare
-  // cmd.exe shim on a mutated PATH is invisible to Bun 1.3's shell. The Pi
-  // mirror pins it end-to-end in apps/pi-extension/server/network.test.ts
-  // (node:child_process spawn honors a mutated PATH on every Bun version),
-  // and the classifier tests above pin the routing decision.
+  // cmd.exe shim on a mutated PATH is invisible to Bun 1.3's shell. The
+  // classifier tests above pin the routing decision.
 
   test("a failing configured browser warns on stderr and still falls back", async () => {
     const dir = makeTempDir();

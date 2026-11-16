@@ -8,7 +8,7 @@
  * own `gh` / `glab`: GitHub `PATCH repos/{o}/{r}/pulls/{n}` with `state`, GitLab `PUT
  * projects/{id}/merge_requests/{iid}` with `state_event`. A refusal comes back in the forge's own words.
  *
- * No Bun or Node API: a `RefRunner` runs the CLI. Inbox-only (the Pi server has no Inbox).
+ * No Bun or Node API: a `RefRunner` runs the CLI. Inbox-only.
  */
 
 import type { RefCli, RefRunner } from "./ref-cards";

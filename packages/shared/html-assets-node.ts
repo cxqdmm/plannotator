@@ -179,8 +179,8 @@ export function inlineHtmlLocalAssets(
 
 /**
  * Single source of truth for "is this file inside this root?" containment used
- * by every HTML asset / share-html sink (Bun route handler, share inliner, and
- * the Pi server via the vendored copy). Resolves symlinks on BOTH the root and
+ * by every HTML asset / share-html sink (Bun route handler, share inliner).
+ * Resolves symlinks on BOTH the root and
  * the target so an in-directory symlink pointing outside the root cannot escape.
  * Keep all sinks importing this — duplicating it is how the escape was missed in
  * one runtime before (#927/#929).
@@ -208,8 +208,8 @@ export function isWithinDirectory(filePath: string, root: string): boolean {
 /**
  * Resolve the absolute file an /api/open-in request may launch and confirm it
  * stays within an allowed root — the security boundary for the open-in
- * endpoints, shared by the Bun and Pi servers so the resolve + containment
- * can't drift between runtimes (same reason isWithinDirectory is single-sourced).
+ * endpoints, single-sourced so the resolve + containment
+ * can't drift between callers (same reason isWithinDirectory is single-sourced).
  *
  * `resolveRoot` may return one root or several: annotate scopes opens to the
  * same set of reference roots `/api/doc` serves from, so any linked doc the

@@ -3,10 +3,10 @@
  *
  * The failure this catches: the rule lives in packages/shared/data-dir.ts and
  * is copied into the Claude Code mod (a hooks module imports only its own
- * files), the one-file Amp plugin and the three install scripts. If one copy
+ * files) and the three install scripts. If one copy
  * drifts, that host reads or writes a different folder than the binary, for
  * example the mod hands the Inbox a stray ~/.plannotator while the CLI uses
- * $XDG_DATA_HOME/plannotator. The shared resolver, the mod, the Amp plugin,
+ * $XDG_DATA_HOME/plannotator. The shared resolver, the mod,
  * install.sh's block and (where pwsh is installed) install.ps1's block run
  * here against the same folders. install.cmd's block runs on Windows only
  * (windows.yml, scripts/check-data-dir-windows.ps1), so here only its marker
@@ -18,12 +18,10 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { DATA_DIR_MARKERS, getDefaultPlannotatorDataDir } from "../packages/shared/data-dir";
 import { DATA_DIR_MARKERS as MOD_MARKERS, resolveDataDir } from "../apps/hook/hooks/mod/launch";
 
-const REPO = resolve(import.meta.dir, "..");
-const AMP_PLUGIN = join(REPO, "apps", "amp-plugin", "plannotator.ts");
 const root = mkdtempSync(join(tmpdir(), "plannotator-data-dir-mirrors-"));
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
@@ -138,13 +136,6 @@ describe("every copy of the data-dir rule picks the same folder", () => {
 
       const mod = await resolveDataDir({ home, xdgDataHome }, async (path) => existsSync(path));
       expect(mod).toBe(want);
-
-      const amp = Bun.spawnSync({
-        cmd: [process.execPath, "-e", `const m = await import(${JSON.stringify(AMP_PLUGIN)}); console.log(m.getPlannotatorDataDir());`],
-        env: childEnv(home, xdgDataHome),
-      });
-      expect(amp.stderr.toString()).toBe("");
-      expect(amp.stdout.toString().trim()).toBe(want);
 
       const sh = Bun.spawnSync({
         cmd: ["/bin/sh", "-c", `${installShBlock}\nprintf '%s' "$_config_dir"`],

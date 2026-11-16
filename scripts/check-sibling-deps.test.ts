@@ -6,7 +6,7 @@ const repo = [
 	{ name: "@plannotator/core", version: "0.25.14" },
 	{ name: "@plannotator/ui", version: "0.53.1", dependencies: { "@plannotator/core": "0.25.14", react: "^19" } },
 	{ name: "@plannotator/shared", version: "0.0.1", private: true },
-	{ name: "@plannotator/pi-extension", version: "1.0.0", dependencies: { "@plannotator/shared": "workspace:*" } },
+	{ name: "@plannotator/example", version: "1.0.0", dependencies: { "@plannotator/shared": "workspace:*" } },
 	{ name: "@plannotator/editor", version: "0.0.1", dependencies: { "@plannotator/core": "workspace:^" } },
 ];
 const npm = (published: Record<string, string[]>) => (name: string) => published[name] ?? [];
@@ -22,7 +22,7 @@ describe("sibling dependencies of a release", () => {
 	});
 
 	test("a dependency on a private sibling always fails", () => {
-		const gaps = siblingDependencyGaps(repo, ["@plannotator/pi-extension", "@plannotator/shared"], npm({}));
+		const gaps = siblingDependencyGaps(repo, ["@plannotator/example", "@plannotator/shared"], npm({}));
 		expect(gaps.map((gap) => gap.dependency)).toEqual(["@plannotator/shared"]);
 	});
 

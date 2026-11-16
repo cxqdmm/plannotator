@@ -1,5 +1,5 @@
 /**
- * PR5 approve-with-notes delivery — server half, dual-runtime (Bun + Pi).
+ * PR5 approve-with-notes delivery — server half.
  * Decision-control spec §6.4.
  *
  * Guards three regressions:
@@ -21,11 +21,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startReviewServer as startBunReviewServer } from "./review";
-import { startReviewServer as startPiReviewServer } from "../../apps/pi-extension/server";
 import { getVcsContext } from "./vcs";
 import { parseFeedbackIndex } from "@plannotator/shared/feedback-archive";
 
@@ -71,19 +69,6 @@ function enableArchive() {
   process.env.PLANNOTATOR_FEEDBACK_HISTORY = "1";
 }
 
-async function reservePiPort() {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => resolve());
-  });
-  const address = server.address();
-  const port = typeof address === "object" && address ? address.port : 0;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  saveEnv("PLANNOTATOR_PORT");
-  process.env.PLANNOTATOR_PORT = String(port);
-}
-
 function git(cwd: string, args: string[]): void {
   const result = spawnSync("git", args, { cwd, encoding: "utf-8" });
   if (result.status !== 0) {
@@ -114,16 +99,14 @@ afterEach(() => {
 
 for (const [runtime, startServer] of [
   ["Bun", startBunReviewServer],
-  ["Pi", startPiReviewServer],
 ] as const) {
   describe(`review approval-notes advert (${runtime})`, () => {
     test("cross-directory approvals report the worktree active at submission", async () => {
       // A host must not prefix feedback with the opening target after a
-      // worktree switch. Exercise both transports, without changing host cwd.
+      // worktree switch, without changing host cwd.
       useTempDataDir();
       saveEnv("PLANNOTATOR_AI");
       process.env.PLANNOTATOR_AI = "disabled";
-      await reservePiPort();
       const cwd = process.cwd();
       const repo = initRepo();
       git(repo, ["remote", "add", "origin", "https://github.com/example/selected.git"]);
@@ -161,11 +144,10 @@ for (const [runtime, startServer] of [
       useTempDataDir();
 
       // Old-caller compatibility: no option = not capable.
-      if (runtime === "Pi") await reservePiPort();
       const legacy = await startServer({
         rawPatch: PATCH,
         gitRef: "HEAD",
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: MINIMAL_HTML,
       });
       try {
@@ -181,13 +163,12 @@ for (const [runtime, startServer] of [
       // advert cannot silently disappear after a diff switch.
       const repoDir = initRepo();
       const gitContext = await getVcsContext(repoDir, "git");
-      if (runtime === "Pi") await reservePiPort();
       const capable = await startServer({
         rawPatch: PATCH,
         gitRef: "Working tree",
         diffType: "uncommitted",
         gitContext,
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         approvalNotesSupported: true,
         htmlContent: MINIMAL_HTML,
       });
@@ -214,11 +195,10 @@ for (const [runtime, startServer] of [
     test("approve-time feedback reaches waitForDecision unmodified and archives as approved-with-notes", async () => {
       const dataDir = useTempDataDir();
       enableArchive();
-      if (runtime === "Pi") await reservePiPort();
       const server = await startServer({
         rawPatch: PATCH,
         gitRef: "HEAD",
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         approvalNotesSupported: true,
         htmlContent: MINIMAL_HTML,
       });
@@ -254,11 +234,10 @@ for (const [runtime, startServer] of [
     test("a bare approval (post-placeholder client shape) archives as lgtm with no sidecar", async () => {
       const dataDir = useTempDataDir();
       enableArchive();
-      if (runtime === "Pi") await reservePiPort();
       const server = await startServer({
         rawPatch: PATCH,
         gitRef: "HEAD",
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         approvalNotesSupported: true,
         htmlContent: MINIMAL_HTML,
       });

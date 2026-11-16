@@ -78,8 +78,6 @@ jobs:
       - name: Check release version consistency
         run: bun run check:release-version
 
-      - name: Generate Pi extension shared copies
-        run: bash apps/pi-extension/vendor.sh
 
       - name: Type check
         run: bun run typecheck
@@ -96,13 +94,6 @@ jobs:
       # unit lanes it skips (no asset on a fresh checkout).
       - name: Check the generated bridge asset against its source
         run: bun test packages/ui/components/html-viewer/bridgeAsset.test.ts
-
-      # The extension has its own tsconfig (Node libs, no DOM) and is not part
-      # of the root typecheck, so nothing was checking it. A type error in the
-      # panel cookie seed shipped that way; this is the step that would have
-      # caught it.
-      - name: Type check VS Code extension
-        run: bun run --cwd apps/vscode-extension lint
 
       # The file-browser watcher test is timing-sensitive (a 120ms SSE debounce
       # asserted with real timers). Run it in its own process — matching the
@@ -219,8 +210,6 @@ jobs:
           echo "$dir" >> "$GITHUB_PATH"
           "$dir/pwsh" -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
 
-      - name: Generate Pi extension shared copies
-        run: bash apps/pi-extension/vendor.sh
 
       - name: Fetch the released plugins' tags
         if: matrix.lane == 'heavy-mod'
@@ -271,8 +260,6 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Generate Pi extension shared copies
-        run: bash apps/pi-extension/vendor.sh
 
       - name: Run DOM tests
         env:

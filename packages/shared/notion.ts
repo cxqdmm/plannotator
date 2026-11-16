@@ -2,8 +2,8 @@
  * Save to Notion: a plan becomes a child page of a page the user picks.
  *
  * The server holds the token (NOTION_TOKEN in its environment); the browser
- * never sends or receives it. Bun (packages/server) and Pi (vendored into
- * apps/pi-extension/generated) both call this one copy.
+ * never sends or receives it. The server (packages/server) calls this one
+ * copy.
  */
 
 import {

@@ -20,9 +20,8 @@
  * server without the files (an older host, a source checkout that never ran
  * the review build) advertises nothing, and fences show as code.
  *
- * Shared by the Bun review server and Pi's node:http one (vendored by
- * apps/pi-extension/vendor.sh). Remote and `--tailscale` sessions get the
- * files compressed exactly as the app page (./app-html).
+ * Remote and `--tailscale` sessions get the files compressed exactly as the
+ * app page (./app-html).
  */
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";

@@ -1,8 +1,7 @@
 /**
  * PLANNOTATOR_LIVE_PORT on the Bun live proxy (#2145) and on the Bun annotate
- * server that starts it. The Node/Pi twins are
- * packages/shared/live-proxy-node-port.test.ts and
- * apps/pi-extension/server/serverAnnotate-live-port.test.ts.
+ * server that starts it. The Node twin is
+ * packages/shared/live-proxy-node-port.test.ts.
  *
  * Busy ports are real listeners this file starts and closes; free ports come
  * from the OS.

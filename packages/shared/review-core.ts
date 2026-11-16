@@ -541,8 +541,8 @@ export const REMOTE_BASE_CHECK_MAX_INTERVAL_MS = 900_000;
 
 /**
  * Next probe interval after an attempt: reset to the base interval when the
- * remote answered, otherwise double up to the cap. Pure so both runtimes share
- * one policy (and so the policy is testable without a network).
+ * remote answered, otherwise double up to the cap. Pure so the policy is
+ * testable without a network.
  */
 export function nextRemoteBaseCheckInterval(
   currentIntervalMs: number,
@@ -698,8 +698,8 @@ export async function listBranches(
 
 /**
  * Pick a safe base branch. Trusts the caller verbatim if they supplied one,
- * otherwise falls back to the detected default. Shared by Bun (`review.ts`)
- * and Pi (`serverReview.ts`) so both runtimes behave identically.
+ * otherwise falls back to the detected default. Used by the review server
+ * (`packages/server/review.ts`).
  *
  * Why trust the caller: the UI picker only ever sends refs from the known
  * list, and external/programmatic callers may pass tags, SHAs, or refs under
@@ -809,7 +809,7 @@ export async function getGitContext(
   // `vs <default>` diff from the default branch itself is always empty), but
   // the base picker now lets reviewers compare against any branch from any
   // branch, so there's no meaningless-by-construction option. Also: preserving
-  // diff mode across worktree switches and Pi's `initialBase` can land the
+  // diff mode across worktree switches and an explicit `initialBase` can land the
   // reviewer on the default branch with branch/merge-base already active — the
   // old guard hid the active mode's option, trapping them. Unconditional
   // emission keeps the active option reachable in every flow.

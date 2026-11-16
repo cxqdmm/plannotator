@@ -241,7 +241,5 @@
   "surface.spec.ts": 55,
   "theme-instant-switch.spec.ts": 16,
   "toolstrip-rtl.spec.ts": 8,
-  "toolstrip-stacking.spec.ts": 25,
-  "vscode-guides-answer.spec.ts": 2,
-  "vscode-guides-sanitize.spec.ts": 4
+  "toolstrip-stacking.spec.ts": 25
 }

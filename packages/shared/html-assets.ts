@@ -111,7 +111,7 @@ export function pathNamesEmbeddedDocument(pathname: string): boolean {
 }
 
 /**
- * The catch-all's guard, shared by both runtimes: a request the browser will
+ * The catch-all's guard: a request the browser will
  * render as a nested document AND whose path names a file gets the small 404
  * document instead of the editor app.
  */
@@ -200,7 +200,7 @@ type HtmlAssetUrlMapper = (assetPath: string) => string | null;
  * `../shots/a.png` (given as a path relative to the root, starting `../`),
  * `/Users/me/a.png` or `file:///Users/me/a.png` (given as the absolute
  * path). Null leaves it as written. Only the Inbox passes one (its pictures
- * from anywhere); annotate and the Pi server pass none and rewrite nothing
+ * from anywhere); annotate passes none and rewrites nothing
  * outside the root, as before.
  */
 export type HtmlOutsideAssetUrlMapper = (path: string) => string | null;
@@ -215,9 +215,9 @@ export function encodeHtmlAssetPath(assetPath: string): string {
 
 /**
  * The whole decision an `/api/html-assets/<token>/<path>` request needs, made
- * once for both runtimes. Everything here is pure: the caller owns the token
+ * once, in one place. Everything here is pure: the caller owns the token
  * table (`lookupRoot`), path containment against the real filesystem, and the
- * read itself. Keeping it shared is what stops the Bun route and the Pi mirror
+ * read itself. Keeping it in one place is what stops the routes
  * from drifting on which extensions are documents, which errors render as HTML,
  * and which headers a document response must carry.
  */

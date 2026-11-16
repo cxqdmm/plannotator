@@ -33,14 +33,14 @@ export interface SliceRule {
 /**
  * Paths no browser spec can see: they select nothing and raise no notice.
  * Docs and the marketing site; unit and DOM test files (they change neither
- * the binary nor the built apps); the Pi extension and the OpenCode plugin
- * (the specs drive only the compiled Bun binary; test.yml runs the Pi mirrors).
+ * the binary nor the built apps); the OpenCode plugin (the specs drive only
+ * the compiled Bun binary).
  */
 export const SLICE_NO_BROWSER: { paths: string[]; why: string }[] = [
   { paths: ['docs/**', '**/*.md', 'apps/marketing/**'], why: 'docs' },
   { paths: ['**/*.test.ts', '**/*.test.tsx', 'tests/dom-test-list.txt', 'tests/*.json'], why: 'unit and DOM tests' },
   { paths: ['tests/e2e/shard-times.json'], why: 'shard timing data' },
-  { paths: ['apps/pi-extension/**', 'apps/opencode-plugin/**'], why: 'the specs drive only the compiled Bun binary' },
+  { paths: ['apps/opencode-plugin/**'], why: 'the specs drive only the compiled Bun binary' },
 ];
 
 /**
@@ -136,11 +136,6 @@ export const SLICE_RULES: SliceRule[] = [
   { name: 'question card', paths: ['packages/ui/components/blocks/Question*', 'packages/ui/components/Question*'], specs: ['question-*.spec.ts'] },
   { name: 'chat window and Ask AI', paths: ['packages/ui/components/chat/**', 'packages/ai/**'], specs: ['chat-window.spec.ts', 'ask-ai-sanitize.spec.ts', 'annotate-ai-history.spec.ts'] },
   { name: 'phone surface', paths: ['packages/inbox/surface/**'], specs: ['surface.spec.ts'] },
-  {
-    name: 'VS Code Guides webview',
-    paths: ['apps/vscode-extension/src/guides/**', 'apps/vscode-extension/scripts/esbuild.config.ts', 'apps/vscode-extension/package.json'],
-    specs: ['vscode-guides-*.spec.ts'],
-  },
   {
     name: 'packed pages and the build',
     paths: ['build/**', 'packages/shared/packed-app.ts', 'apps/hook/vite.config.ts'],

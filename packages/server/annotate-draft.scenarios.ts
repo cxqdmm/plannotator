@@ -1,9 +1,7 @@
 /**
  * Path-keyed annotate drafts (packages/shared/annotate-draft.ts), driven over
  * HTTP against a real annotate server. Shared by the Bun suite
- * (annotate-draft.test.ts) and the Pi mirror
- * (apps/pi-extension/server/serverAnnotate-drafts.test.ts), so both runtimes
- * answer the same scenarios.
+ * (annotate-draft.test.ts).
  *
  * Every test runs under a temp PLANNOTATOR_DATA_DIR; nothing touches the
  * real ~/.plannotator.

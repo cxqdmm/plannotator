@@ -8,7 +8,7 @@
  * that is not a passed push to main of this repo, a run on a commit outside
  * the tag's history, a pull_request run, or an API or git failure that does
  * not give the full tests. The rest would make reuse never happen: a real
- * bump (all 10 files and the index) or an unchanged tree not reused, or the
+ * bump (all 6 bump files, 5 version files and the index) or an unchanged tree not reused, or the
  * bump file list drifting from scripts/check-release-version.mjs.
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
@@ -20,7 +20,6 @@ import {
   FEEDBACK_INDEX_FILE,
   FEEDBACK_INDEX_TEST,
   JSON_VERSION_FILES,
-  MARKETPLACE_FILE,
   OPENPACKAGE_FILE,
   decide,
   outputs,
@@ -68,15 +67,12 @@ const commit = (files: Record<string, string | null>, message: string) => {
 };
 
 const pkg = (version: string, extra: Record<string, unknown> = {}) => `${JSON.stringify({ name: 'p', version, ...extra }, null, 2)}\n`;
-const marketplace = (version: string, description = 'Copilot') =>
-  `${JSON.stringify({ name: 'plannotator', plugins: [{ name: 'plannotator-copilot', description, version }] }, null, 2)}\n`;
 const openpackage = (version: string, description = 'Plans') => `name: plannotator\nversion: ${version}\ndescription: ${description}\n`;
 const index = (titles: string[]) => `${JSON.stringify({ features: [], links: titles.map((title, i) => ({ title, path: `issues/${i + 1}` })) }, null, 1)}\n`;
 
 /** Every bump file at `version`. */
 const bumpFiles = (version: string, indexTitles = ['a']): Record<string, string> => ({
   ...Object.fromEntries(JSON_VERSION_FILES.map((f) => [f, pkg(version)])),
-  [MARKETPLACE_FILE]: marketplace(version),
   [OPENPACKAGE_FILE]: openpackage(version),
   [FEEDBACK_INDEX_FILE]: index(indexTitles),
 });
@@ -171,16 +167,15 @@ describe('anything else runs the full tests', () => {
     expect(withExtra({ '.github/workflows/release.yml': 'on: push\n' }).reuse).toBe(false);
   });
 
-  test('a version file with more than its version changed (scripts, dependencies, the marketplace entry, the YAML)', () => {
+  test('a version file with more than its version changed (scripts, dependencies, the YAML)', () => {
     expect(withExtra({ 'package.json': pkg('1.0.1', { scripts: { test: 'true' } }) }).why).toContain('package.json changed more than its version');
-    expect(withExtra({ 'apps/pi-extension/package.json': pkg('1.0.1', { dependencies: { x: '1' } }) }).reuse).toBe(false);
-    expect(withExtra({ [MARKETPLACE_FILE]: marketplace('1.0.1', 'Other') }).reuse).toBe(false);
+    expect(withExtra({ 'apps/opencode-plugin/package.json': pkg('1.0.1', { dependencies: { x: '1' } }) }).reuse).toBe(false);
     expect(withExtra({ [OPENPACKAGE_FILE]: openpackage('1.0.1', 'Other') }).reuse).toBe(false);
     expect(withExtra({ [OPENPACKAGE_FILE]: `${openpackage('1.0.1')}version: 2\n` }).reuse).toBe(false);
   });
 
   test('a version file deleted, or one that no longer parses', () => {
-    expect(withExtra({ 'apps/copilot/plugin.json': null }).reuse).toBe(false);
+    expect(withExtra({ 'apps/hook/.claude-plugin/plugin.json': null }).reuse).toBe(false);
     expect(withExtra({ 'packages/server/package.json': '{ "version": "1.0.1", \n' }).reuse).toBe(false);
   });
 

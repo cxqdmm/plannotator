@@ -1,7 +1,5 @@
 /**
  * Bun servers: the cross-origin and stale-tab guards on state-changing routes.
- * Scenarios are shared with the Pi mirror
- * (apps/pi-extension/server/state-route-guards.test.ts).
  */
 import { defineStateRouteScenarios } from "./state-route-guards.scenarios";
 import { startPlannotatorServer } from "./index";

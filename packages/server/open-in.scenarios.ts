@@ -1,8 +1,6 @@
 /**
  * POST /api/open-in guards, driven over HTTP against real annotate and review
- * servers. Shared by the Bun suite (open-in-guards.test.ts) and the Pi mirror
- * (apps/pi-extension/server/open-in-guards.test.ts), so both runtimes answer
- * the same scenarios.
+ * servers. Shared by the Bun suite (open-in-guards.test.ts).
  *
  * No real app ever launches. While a request is in flight PATH holds ONLY a
  * scratch folder of launcher stubs (`open`, `xdg-open`, `code`) that record

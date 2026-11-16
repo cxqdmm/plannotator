@@ -1,6 +1,5 @@
 /**
- * Bun mirror of apps/pi-extension/server/plan-revision.test.ts: revised plans
- * pushed into an open plan review.
+ * Revised plans pushed into an open plan review.
  *
  * What regresses if this fails: a host that opts into `planRevisions` pushes
  * a revision the tab never sees, a decision on the replaced text is accepted,

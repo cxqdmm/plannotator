@@ -1,6 +1,6 @@
 /**
  * Plannotator Inbox: the pictures a person uploads for their agents' icons ("Your own…" in the face picker; core
- * `inbox-types.ts`, "Agent faces"). Bun only: the Inbox runs on the Bun server; the Pi server serves no Inbox route.
+ * `inbox-types.ts`, "Agent faces"). Bun only: the Inbox runs on the Bun server.
  *
  *   inbox/agent-icons/<sha256>.<ext>          the picture as uploaded (PNG, JPEG, GIF, WebP or SVG, at most 512 KB)
  *   inbox/agent-icons/<sha256>.still.<ext>    its first frame, for one that moves (inbox-agent-icon-still.ts)

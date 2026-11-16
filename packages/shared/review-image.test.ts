@@ -1,6 +1,6 @@
 /**
- * Code-review image preview (#1598), pure half: the decisions the Bun server
- * and the Pi mirror share. Each block names the regression it guards.
+ * Code-review image preview (#1598), pure half: the shared decisions.
+ * Each block names the regression it guards.
  */
 import { describe, expect, test } from "bun:test";
 import {

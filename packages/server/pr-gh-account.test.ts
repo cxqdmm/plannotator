@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 test("checkPRAuth picks the work account, and the runtime's later gh calls run as it", async () => {
-  const run = await probeGhAccountRuntime("bun", ["tobey-work"]);
+  const run = await probeGhAccountRuntime(["tobey-work"]);
   fake = run.fake;
   expect(run.out).toEqual({
     notice: "Using gh account tobey-work for this review: your active account tobey can't see acme/widgets. Your gh setting is unchanged.",
@@ -33,7 +33,7 @@ test("checkPRAuth picks the work account, and the runtime's later gh calls run a
 });
 
 test("no account sees it: checkPRAuth refuses before any fetch", async () => {
-  const run = await probeGhAccountRuntime("bun", []);
+  const run = await probeGhAccountRuntime([]);
   fake = run.fake;
   expect(String(run.out.error)).toContain("Your active gh account tobey can't see acme/widgets (pull request #7).");
   expect(fake.calls().some((c) => c.args[0] === "pr")).toBe(false);

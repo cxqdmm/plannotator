@@ -9,8 +9,7 @@
  *
  * Each job is built by its real command builder and spawned through the real
  * POST /api/agents/jobs handler. Fake `claude`, `codex` and `opencode` on PATH
- * (never a real CLI) record the env and argv they get. The Pi mirror is
- * apps/pi-extension/server/agent-jobs-ask-ai-child.test.ts.
+ * (never a real CLI) record the env and argv they get.
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";

@@ -1,7 +1,6 @@
 /**
  * `GET /api/review-markdown-image` (the code-review Markdown preview's
- * images) against a real git repository, on BOTH review servers (Bun and the
- * Pi mirror), so the two cannot drift.
+ * images) against a real git repository.
  *
  * Regressions guarded:
  *  - an image read from the working tree instead of the side on screen (the
@@ -14,11 +13,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startReviewServer as startBunReviewServer } from "./review";
-import { startReviewServer as startPiReviewServer } from "../../apps/pi-extension/server";
 import { getVcsContext, runVcsDiff } from "./vcs";
 
 const MINIMAL_HTML = "<html><body>Plannotator</body></html>";
@@ -34,19 +31,6 @@ function makeTempDir(prefix: string): string {
   const dir = mkdtempSync(join(tmpdir(), prefix));
   tempDirs.push(dir);
   return dir;
-}
-
-async function reservePiPort() {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => resolve());
-  });
-  const address = server.address();
-  const port = typeof address === "object" && address ? address.port : 0;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  saveEnv("PLANNOTATOR_PORT");
-  process.env.PLANNOTATOR_PORT = String(port);
 }
 
 function git(cwd: string, args: string[]): string {
@@ -137,13 +121,11 @@ afterEach(() => {
 
 for (const [runtime, startServer] of [
   ["Bun", startBunReviewServer],
-  ["Pi", startPiReviewServer],
 ] as const) {
   describe(`/api/review-markdown-image (${runtime})`, () => {
     async function start(fixture: Fixture) {
       saveEnv("PLANNOTATOR_DATA_DIR");
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir("plannotator-review-md-image-data-");
-      if (runtime === "Pi") await reservePiPort();
       const gitContext = await getVcsContext(fixture.repo, "git");
       const diff = await runVcsDiff("uncommitted", "main", fixture.repo);
       const server = await startServer({
@@ -151,7 +133,7 @@ for (const [runtime, startServer] of [
         gitRef: diff.label,
         diffType: "uncommitted",
         gitContext,
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: MINIMAL_HTML,
       });
       const payload = (await fetch(`${server.url}/api/diff`).then((r) => r.json())) as {
@@ -231,12 +213,11 @@ for (const [runtime, startServer] of [
     test("a static patch session advertises no preview and reads nothing", async () => {
       saveEnv("PLANNOTATOR_DATA_DIR");
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir("plannotator-review-md-image-data-");
-      if (runtime === "Pi") await reservePiPort();
       const server = await startServer({
         rawPatch: "diff --git a/a.md b/a.md\n--- a/a.md\n+++ b/a.md\n@@ -1 +1 @@\n-![x](x.png)\n+![y](x.png)\n",
         gitRef: "reading.diff",
         diffType: "static-patch",
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: MINIMAL_HTML,
       });
       try {

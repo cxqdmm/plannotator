@@ -1,5 +1,5 @@
 /**
- * `plannotator review --patch-file` — server half, dual-runtime (Bun + Pi).
+ * `plannotator review --patch-file` — server half.
  *
  * A static patch review has no repository, no working tree and no VCS behind
  * it, so the server has to say so and act like it. Three regressions:
@@ -22,11 +22,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startReviewServer as startBunReviewServer } from "./review";
-import { startReviewServer as startPiReviewServer } from "../../apps/pi-extension/server";
 import { getVcsContext } from "./vcs";
 
 const MINIMAL_HTML = "<html><body>Plannotator</body></html>";
@@ -48,19 +46,6 @@ function makeTempDir(prefix: string): string {
 function useTempDataDir(): void {
   saveEnv("PLANNOTATOR_DATA_DIR");
   process.env.PLANNOTATOR_DATA_DIR = makeTempDir("plannotator-static-patch-");
-}
-
-async function reservePiPort() {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => resolve());
-  });
-  const address = server.address();
-  const port = typeof address === "object" && address ? address.port : 0;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  saveEnv("PLANNOTATOR_PORT");
-  process.env.PLANNOTATOR_PORT = String(port);
 }
 
 function git(cwd: string, args: string[]): void {
@@ -93,17 +78,15 @@ afterEach(() => {
 
 for (const [runtime, startServer] of [
   ["Bun", startBunReviewServer],
-  ["Pi", startPiReviewServer],
 ] as const) {
   describe(`static patch review server (${runtime})`, () => {
     test("advertises sourceKind + diffType and 400s every working-tree endpoint", async () => {
       useTempDataDir();
-      if (runtime === "Pi") await reservePiPort();
       const server = await startServer({
         rawPatch: PATCH,
         gitRef: "reading.diff",
         diffType: "static-patch",
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: MINIMAL_HTML,
       });
       try {
@@ -157,13 +140,12 @@ for (const [runtime, startServer] of [
       useTempDataDir();
       const repoDir = initRepo();
       const gitContext = await getVcsContext(repoDir, "git");
-      if (runtime === "Pi") await reservePiPort();
       const server = await startServer({
         rawPatch: PATCH,
         gitRef: "Working tree",
         diffType: "uncommitted",
         gitContext,
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: MINIMAL_HTML,
       });
       try {

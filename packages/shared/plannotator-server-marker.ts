@@ -1,6 +1,6 @@
 /**
  * The header every Plannotator server sets on every response (plan, review,
- * annotate, archive, goal setup, the Inbox; Bun and Pi).
+ * annotate, archive, goal setup, the Inbox).
  *
  * It exists so a client can tell a Plannotator server from any other local
  * server without reading a body: annotate's live app mode refuses to proxy a
@@ -8,7 +8,7 @@
  * probes the target and on every proxied response, because the proxy would
  * hand the proxied page same-origin writes on that server.
  *
- * Pure: no runtime APIs. Vendored to the Pi extension.
+ * Pure: no runtime APIs.
  */
 
 /** Header name, lowercase (Headers and node:http compare case-insensitively). */

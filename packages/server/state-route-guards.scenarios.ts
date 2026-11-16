@@ -1,9 +1,7 @@
 /**
  * Cross-origin and stale-tab guards on the plan, annotate and review servers'
  * state-changing routes, driven over HTTP against real servers. Shared by the
- * Bun suite (state-route-guards.test.ts) and the Pi mirror
- * (apps/pi-extension/server/state-route-guards.test.ts), so both runtimes
- * answer the same scenarios.
+ * Bun suite (state-route-guards.test.ts).
  *
  * Covered: the guard every server runs before routing (any POST, PUT, PATCH
  * or DELETE from another site is 403 `cross_origin`), and the routes that

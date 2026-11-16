@@ -1,6 +1,5 @@
 /**
- * Annotate's live app mode never proxies a Plannotator server (Bun side; the
- * Pi mirror is apps/pi-extension/server/live-proxy-plannotator.test.ts).
+ * Annotate's live app mode never proxies a Plannotator server.
  *
  * The live proxy mirrors its upstream's origin and passes the browser's own
  * Sec-Fetch-Site through, so a proxied Plannotator page would get same-origin

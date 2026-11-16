@@ -4,7 +4,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { startReviewServer as startBun } from "./review";
-import { startReviewServer as startPi } from "../../apps/pi-extension/server/serverReview";
 import { gitRuntime } from "./vcs";
 import { getGitContext, MAX_REVIEW_FILE_CONTENT_BYTES, runGitDiff } from "@plannotator/shared/review-core";
 import { contentHash } from "@plannotator/shared/draft";
@@ -58,7 +57,7 @@ async function snapshot() {
   return value;
 }
 
-for (const [name, start] of [["Bun", startBun], ["Pi", startPi]] as const) {
+for (const [name, start] of [["Bun", startBun]] as const) {
   describe(`${name} durable review progress`, () => {
     async function open() {
       const gitContext = await getGitContext(gitRuntime, cwd);

@@ -773,7 +773,7 @@ export function dshPluginInstalled(e: AgentEnvironment): boolean {
   });
 }
 
-/** Plannotator's Cline plugin package (apps/cline-plugin). */
+/** Plannotator's Cline plugin package (npm: @plannotator/cline). */
 export const CLINE_PLUGIN_PACKAGE = "@plannotator/cline";
 
 /** Cline's home: `$CLINE_DIR` when set, else `~/.cline` (Cline's own rule; a blank value counts as unset). */

@@ -1,8 +1,7 @@
 /**
  * Plannotator Inbox: the agent connection for hosts whose plugins run in a
  * JavaScript runtime with `node:` modules (plan step 7): the Pi extension
- * (vendored into `apps/pi-extension/generated/inbox/` by `vendor.sh`) and the
- * OpenCode plugin. The Claude Code mod has its own copy of this logic over the
+ * and the OpenCode plugin. The Claude Code mod has its own copy of this logic over the
  * engine's `$` (`apps/hook/hooks/mod/inbox.ts`); the contract, the wake text
  * and the tool shape are shared through `./connection`, never re-written.
  *
@@ -28,8 +27,7 @@
  *    Claude Code mod's rule); the claim keeps a delivery once whatever the
  *    lease says.
  *
- * Imports: `./connection` and `node:` modules only, so the vendored copy
- * resolves inside `generated/inbox/`.
+ * Imports: `./connection` and `node:` modules only.
  */
 
 import { spawn } from "node:child_process";

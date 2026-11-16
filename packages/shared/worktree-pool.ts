@@ -2,7 +2,6 @@
  * Worktree Pool — manages a set of per-PR git worktrees for a review session.
  *
  * Runtime-agnostic. Uses ReviewGitRuntime for all git operations.
- * Both Bun and Pi servers import this module (Pi via vendor.sh).
  *
  * Each PR visited during a session gets its own worktree, created on first
  * access and cached for the session lifetime. Agents run in their PR's
@@ -45,8 +44,8 @@ export type PoolCwdResolution =
 /**
  * Resolve a PR's checkout state from the pool. The "pending" case (entry exists
  * but isn't ready) is kept distinct from "absent" so callers don't fall back to
- * the launch repo for a checkout that simply hasn't finished warming up. Shared
- * by both servers' resolvePRLocalCwd so the readiness rule can't drift.
+ * the launch repo for a checkout that simply hasn't finished warming up. Used
+ * by resolvePRLocalCwd so the readiness rule can't drift.
  */
 export function resolvePoolCwd(pool: WorktreePool, prUrl: string): PoolCwdResolution {
   const entry = pool.get(prUrl);

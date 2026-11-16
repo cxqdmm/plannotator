@@ -1,14 +1,12 @@
 /**
- * Caller-pinned review open state (--base / --diff-type) — dual-runtime
- * (Bun + Pi) server flow.
+ * Caller-pinned review open state (--base / --diff-type) — server flow.
  *
  * Guards:
  *  1. `initialBase` + `initialBaseExplicit` seed the session verbatim — the
  *     server must serve and echo the caller's base, not the detected default.
  *  2. The startup base upgrade must NOT rewrite an explicitly-pinned local
  *     default name to origin/* (the exact regression the explicit bit exists
- *     to prevent), while an unpinned forwarded local name keeps upgrading
- *     (Pi's documented forward-and-let-it-upgrade behavior).
+ *     to prevent), while an unpinned forwarded local name keeps upgrading.
  *  3. `resolveReviewBase` canonicalization stays off for the session, so an
  *     unrelated switch echoing the pinned bare name does not revert it.
  *  4. `openStatePinned` rides /api/diff only when the caller set it — absent
@@ -19,20 +17,16 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startReviewServer as startBunReviewServer } from "./review";
-import { startReviewServer as startPiReviewServer } from "../../apps/pi-extension/server";
 import { getVcsContext, runVcsDiff } from "./vcs";
 
 const originalDataDir = process.env.PLANNOTATOR_DATA_DIR;
-const originalPort = process.env.PLANNOTATOR_PORT;
 const tempDirs: string[] = [];
 
 const RUNTIMES = [
   ["Bun", startBunReviewServer],
-  ["Pi", startPiReviewServer],
 ] as const;
 
 function makeTempDir(prefix: string): string {
@@ -76,22 +70,6 @@ function initRepoWithOrigin(): string {
   return repoDir;
 }
 
-async function reservePort(): Promise<number> {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => resolve());
-  });
-  const address = server.address();
-  const port = typeof address === "object" && address ? address.port : 0;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  return port;
-}
-
-async function preparePiPort(runtime: "Bun" | "Pi"): Promise<void> {
-  if (runtime === "Pi") process.env.PLANNOTATOR_PORT = String(await reservePort());
-}
-
 async function finishSession(server: { url: string; waitForDecision: () => Promise<unknown> }): Promise<void> {
   await fetch(`${server.url}/api/feedback`, {
     method: "POST",
@@ -127,8 +105,6 @@ async function waitForBase(
 afterEach(() => {
   if (originalDataDir === undefined) delete process.env.PLANNOTATOR_DATA_DIR;
   else process.env.PLANNOTATOR_DATA_DIR = originalDataDir;
-  if (originalPort === undefined) delete process.env.PLANNOTATOR_PORT;
-  else process.env.PLANNOTATOR_PORT = originalPort;
   for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
@@ -138,7 +114,6 @@ describe("caller-pinned review open state", () => {
       // Failure caught: the server ignoring the caller's base and serving the
       // patch under the detected default — a mixed-base review.
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir("plannotator-open-state-data-");
-      await preparePiPort(runtime);
       const repoDir = initRepo();
       git(repoDir, ["checkout", "-q", "-b", "develop"]);
       writeFileSync(join(repoDir, "develop.txt"), "develop\n");
@@ -159,7 +134,7 @@ describe("caller-pinned review open state", () => {
         initialBase: "develop",
         initialBaseExplicit: true,
         openStatePinned: true,
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: "<!doctype html><html><body>review</body></html>",
       });
       try {
@@ -179,7 +154,6 @@ describe("caller-pinned review open state", () => {
       // main (review.ts startup upgrade), and resolveReviewBase reverting the
       // pinned name on the first unrelated non-explicit switch echo.
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir("plannotator-open-state-data-");
-      await preparePiPort(runtime);
       const repoDir = initRepoWithOrigin();
       const gitContext = await getVcsContext(repoDir, "git");
       const diff = await runVcsDiff("branch", "main", repoDir);
@@ -193,7 +167,7 @@ describe("caller-pinned review open state", () => {
         initialBase: "main",
         initialBaseExplicit: true,
         openStatePinned: true,
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: "<!doctype html><html><body>review</body></html>",
       });
       try {
@@ -218,11 +192,10 @@ describe("caller-pinned review open state", () => {
     }, 20_000);
 
     test(`${runtime}: without the explicit bit a forwarded local name still upgrades`, async () => {
-      // Failure caught: the new option accidentally changing Pi's documented
+      // Failure caught: the new option accidentally changing the
       // forward-the-local-name-and-let-it-upgrade behavior. Also the control
       // proving the probe fires inside the pinned test's wait window.
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir("plannotator-open-state-data-");
-      await preparePiPort(runtime);
       const repoDir = initRepoWithOrigin();
       const gitContext = await getVcsContext(repoDir, "git");
       const diff = await runVcsDiff("branch", "main", repoDir);
@@ -234,7 +207,7 @@ describe("caller-pinned review open state", () => {
         diffType: "branch",
         gitContext,
         initialBase: "main",
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: "<!doctype html><html><body>review</body></html>",
       });
       try {
@@ -250,7 +223,6 @@ describe("caller-pinned review open state", () => {
       // Failure caught: pinning every session, which would disable the
       // first-run dialog and the panel-pair self-heal for everyone.
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir("plannotator-open-state-data-");
-      await preparePiPort(runtime);
       const repoDir = initRepo();
       const gitContext = await getVcsContext(repoDir, "git");
       const diff = await runVcsDiff("uncommitted", "main", repoDir);
@@ -261,7 +233,7 @@ describe("caller-pinned review open state", () => {
         error: diff.error,
         diffType: "uncommitted",
         gitContext,
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: "<!doctype html><html><body>review</body></html>",
       });
       try {
@@ -278,7 +250,6 @@ describe("caller-pinned review open state", () => {
       // diffOptions.defaultDiffType — the maintainer's stated constraint.
       const dataDir = makeTempDir("plannotator-open-state-data-");
       process.env.PLANNOTATOR_DATA_DIR = dataDir;
-      await preparePiPort(runtime);
       const configPath = join(dataDir, "config.json");
       mkdirSync(dataDir, { recursive: true });
       const configBytes = JSON.stringify({ displayName: "Reviewer" }, null, 2);
@@ -297,7 +268,7 @@ describe("caller-pinned review open state", () => {
         initialBase: "main",
         initialBaseExplicit: true,
         openStatePinned: true,
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: "<!doctype html><html><body>review</body></html>",
       });
       try {

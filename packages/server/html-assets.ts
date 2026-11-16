@@ -110,7 +110,7 @@ export interface HtmlAssetRegistryOptions {
    * this computer. Each such path that `allows` (judged on the absolute path
    * as named) gets an unguessable token of its own, for that one file, and
    * `serve` answers it (the host checks what it is and where it really
-   * leads). Absent (annotate, the Pi server): nothing outside the root is
+   * leads). Absent (annotate): nothing outside the root is
    * rewritten or served, as before.
    */
   pictures?: {

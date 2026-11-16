@@ -1,6 +1,5 @@
 /**
- * Bun servers: the POST /api/open-in guards. Scenarios are shared with the Pi
- * mirror (apps/pi-extension/server/open-in-guards.test.ts).
+ * Bun servers: the POST /api/open-in guards.
  */
 import { defineOpenInScenarios } from "./open-in.scenarios";
 import { startAnnotateServer } from "./annotate";

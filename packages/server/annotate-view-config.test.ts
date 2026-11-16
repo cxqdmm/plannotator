@@ -3,7 +3,6 @@
  * the Bun annotate server:
  *  - /api/plan's serverConfig sends a known view, and leaves a typo out;
  *  - it is config only: POST /api/config never writes it.
- * The Pi mirror is apps/pi-extension/annotate-view-config.test.ts.
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";

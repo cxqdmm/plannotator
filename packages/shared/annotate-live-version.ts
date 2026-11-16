@@ -20,9 +20,9 @@
  * `{ "annotateHistory": false }`: the caller passes the resolved knob and the
  * route answers `409 history_off` without touching the data dir.
  *
- * Runtime-agnostic (node:fs through ./source-save-node and ./storage), so the
- * Bun annotate server and the Pi mirror share every decision here; each
- * adapter only parses the body and writes the response.
+ * Runtime-agnostic (node:fs through ./source-save-node and ./storage), so
+ * every decision lives here; the route only parses the body and writes the
+ * response.
  */
 
 import { statSync } from "node:fs";

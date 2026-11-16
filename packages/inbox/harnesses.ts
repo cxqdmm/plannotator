@@ -90,9 +90,9 @@ export interface ConnectContext {
 }
 
 const SERVER = 'plannotator-inbox';
-/** Plannotator's Cline plugin package (apps/cline-plugin). */
+/** Plannotator's Cline plugin package (npm: @plannotator/cline). */
 const CLINE_PLUGIN = '@plannotator/cline';
-/** Plannotator's DeepSeek Harness plugin package (apps/dsh-plugin). */
+/** Plannotator's DeepSeek Harness plugin package (npm: @plannotator/dsh). */
 const DSH_PLUGIN = '@plannotator/dsh';
 const OPENCLAW_PLUGIN = '@plannotator/openclaw';
 
@@ -248,8 +248,7 @@ export function harnessPanel(id: HarnessId, ctx: ConnectContext): HarnessPanel {
         note: 'Run it in a terminal.',
       };
     case 'cline':
-      // Plannotator's Cline plugin: its tool, and replies as turns (apps/cline-plugin); over MCP alone nothing can
-      // wake a Cline session. The VS Code extension's older ("Legacy") bundle loads no plugins: MCP stays its way.
+      // Plannotator's Cline plugin: its tool, and replies as turns; over MCP alone nothing can wake a Cline session.
       return {
         artefacts: [{ kind: 'code', text: `cline plugin install npm:${CLINE_PLUGIN}` }],
         note: "Plannotator's Cline plugin. Its Inbox tool starts off: turn it on for Cline in Settings > Agents. Your replies then come back into each Cline session by themselves.",

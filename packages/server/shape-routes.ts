@@ -1,7 +1,6 @@
 /**
  * Shape's routes on Bun (the Inbox mounts them; packages/shared/shape/routes.ts
- * is the route core, apps/pi-extension/server/serverShape.ts the node:http
- * mirror). This file adds what a runtime owns: the Response, file bytes,
+ * is the route core). This file adds what a runtime owns: the Response, file bytes,
  * the event feed and code-nav.
  *
  * The caller decides who may reach these (the Inbox: Shape switched on, the

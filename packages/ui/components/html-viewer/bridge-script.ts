@@ -6,8 +6,7 @@
  * "plannotator-bridge-*" message protocol.
  *
  * This is a string constant — it gets prepended to the iframe's srcdoc.
- * Its one import, ./sandboxShim, is a dependency-free string constant as well;
- * the Pi extension vendors both files (apps/pi-extension/vendor.sh).
+ * Its one import, ./sandboxShim, is a dependency-free string constant as well.
  */
 import { SANDBOX_SHIM_SCRIPT } from "./sandboxShim";
 

@@ -1,6 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { FACE_FAVICON_PNG_BYTES, FAVICON_ICO_BYTES, FAVICON_PNG_BYTES, YELLOW_FAVICON_ICO_BYTES, YELLOW_FAVICON_PNG_BYTES } from "../core/favicon";
@@ -11,15 +10,6 @@ import { packApp } from "../shared/packed-app";
 import { startAnnotateServer as startBunAnnotateServer } from "./annotate.ts?api-404-guard";
 import { startPlannotatorServer as startBunPlanServer } from "./index";
 import { startReviewServer as startBunReviewServer } from "./review";
-import {
-  startAnnotateServer as startPiAnnotateServer,
-  startPlanReviewServer as startPiPlanServer,
-  startReviewServer as startPiReviewServer,
-} from "../../apps/pi-extension/server";
-import {
-  handlePiAIRequest,
-  type PiAIRuntime,
-} from "../../apps/pi-extension/server/ai-runtime";
 
 const SPA_HTML = "<!doctype html><html><body>SPA fallback</body></html>";
 // The built app carries its code-split chunks packed behind the page
@@ -88,41 +78,6 @@ const serverCases = [
         htmlContent: SPA_BUNDLE,
       }),
   },
-  {
-    name: "Pi plan",
-    knownApiPath: "/api/plan",
-    knownAIBackendUnavailable: true,
-    start: () =>
-      startPiPlanServer({
-        plan: "# Test Plan",
-        origin: "pi",
-        htmlContent: SPA_BUNDLE,
-        mode: "archive",
-        customPlanPath: archivePath,
-      }),
-  },
-  {
-    name: "Pi review",
-    knownApiPath: "/api/diff",
-    start: () =>
-      startPiReviewServer({
-        rawPatch: "",
-        gitRef: "HEAD",
-        origin: "pi",
-        htmlContent: SPA_BUNDLE,
-      }),
-  },
-  {
-    name: "Pi annotate",
-    knownApiPath: "/api/plan",
-    start: () =>
-      startPiAnnotateServer({
-        markdown: "# Test Document",
-        filePath: "test.md",
-        origin: "pi",
-        htmlContent: SPA_BUNDLE,
-      }),
-  },
 ] satisfies readonly ServerCase[];
 
 const archiveServerCases = [
@@ -132,17 +87,6 @@ const archiveServerCases = [
       startBunPlanServer({
         plan: "# Test Plan",
         origin: "claude-code",
-        htmlContent: SPA_HTML,
-        mode: "archive",
-        customPlanPath: archivePath,
-      }),
-  },
-  {
-    name: "Pi plan",
-    start: () =>
-      startPiPlanServer({
-        plan: "# Test Plan",
-        origin: "pi",
         htmlContent: SPA_HTML,
         mode: "archive",
         customPlanPath: archivePath,
@@ -276,16 +220,16 @@ describe("API route 404 guards", () => {
           FAVICON_PNG_BYTES,
         );
 
-        // /favicon.ico, what the entry HTML links: Glass's multi-size .ico on Bun and Pi alike.
+        // /favicon.ico, what the entry HTML links: Glass's multi-size .ico.
         const icoResponse = await fetch(`${server.url}/favicon.ico`);
         expect(icoResponse.status).toBe(200);
         expect(icoResponse.headers.get("content-type")).toBe("image/x-icon");
         expect(icoResponse.headers.get("cache-control")).toBe("no-cache");
         expect(new Uint8Array(await icoResponse.arrayBuffer())).toEqual(FAVICON_ICO_BYTES);
 
-        // Cross-runtime parity for the other styles: Bun and Pi must agree on
-        // both the bytes and the content type, since the entry HTML's
-        // <link rel="icon"> declares no type of its own.
+        // The other styles must answer with the right bytes and the content
+        // type, since the entry HTML's <link rel="icon"> declares no type of
+        // its own.
         // Face has no .ico: /favicon.ico answers its PNG. A 'classic' left by
         // 0.28.57 (the removed P) answers the default, Glass, on both URLs.
         for (const [style, png, ico, icoType] of [
@@ -356,36 +300,4 @@ describe("API route 404 guards", () => {
     });
   }
 
-  test("Pi serves a live runtime handler before unavailable-route classification", async () => {
-    const futurePath = "/api/ai/future-route";
-    const runtime: PiAIRuntime = {
-      endpoints: {
-        [futurePath]: async () => Response.json({ served: futurePath }),
-      },
-      dispose: () => {},
-    };
-    const nodeServer = createServer((req, res) => {
-      const url = new URL(req.url ?? "/", "http://localhost");
-      void handlePiAIRequest(req, res, url, runtime);
-    });
-
-    await new Promise<void>((resolve, reject) => {
-      nodeServer.once("error", reject);
-      nodeServer.listen(0, "127.0.0.1", resolve);
-    });
-
-    try {
-      const address = nodeServer.address();
-      if (!address || typeof address === "string") {
-        throw new Error("Expected an ephemeral TCP address");
-      }
-      const response = await fetch(`http://127.0.0.1:${address.port}${futurePath}`);
-      expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ served: futurePath });
-    } finally {
-      await new Promise<void>((resolve, reject) => {
-        nodeServer.close(error => error ? reject(error) : resolve());
-      });
-    }
-  });
 });

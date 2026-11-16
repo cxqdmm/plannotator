@@ -1,11 +1,11 @@
 /**
- * /api/skills — end-to-end route wiring, both runtimes.
+ * /api/skills — end-to-end route wiring.
  *
  * Same class of guard as annotate.test.ts (#844): a handler that exists but is
  * not wired into a server's route table falls through to the SPA HTML
  * catch-all (plan/annotate) and the composer silently loses skill references.
- * This boots the real Bun and Pi plan + annotate servers — the four surfaces
- * that serve the comment composer — against isolated skill roots and asserts
+ * This boots the real Bun plan + annotate servers — the two surfaces that
+ * serve the comment composer — against isolated skill roots and asserts
  * the route answers with the real discovered catalog as JSON.
  */
 
@@ -17,10 +17,6 @@ import { join } from "node:path";
 // real server (same pattern as api-404-guard.test.ts).
 import { startAnnotateServer as startBunAnnotateServer } from "./annotate.ts?skills-endpoint";
 import { startPlannotatorServer as startBunPlanServer } from "./index";
-import {
-  startAnnotateServer as startPiAnnotateServer,
-  startPlanReviewServer as startPiPlanServer,
-} from "../../apps/pi-extension/server";
 import { checkoutIsScratch, makeOutsideScratch } from "../../tests/helpers/outside-scratch";
 
 const SPA_HTML = "<!doctype html><html><body>SPA fallback</body></html>";
@@ -111,27 +107,6 @@ const serverCases = [
         htmlContent: SPA_HTML,
       }) as Promise<RunningServer>,
   },
-  {
-    name: "Pi plan",
-    start: () =>
-      startPiPlanServer({
-        plan: "# Test Plan",
-        origin: "pi",
-        htmlContent: SPA_HTML,
-        mode: "archive",
-        customPlanPath: archivePath,
-      }) as unknown as Promise<RunningServer>,
-  },
-  {
-    name: "Pi annotate",
-    start: () =>
-      startPiAnnotateServer({
-        markdown: "# Test Document",
-        filePath: join(tmpdir(), "test.md"),
-        origin: "pi",
-        htmlContent: SPA_HTML,
-      }) as unknown as Promise<RunningServer>,
-  },
 ] as const;
 
 describe("GET /api/skills route wiring", () => {
@@ -166,7 +141,6 @@ describe("GET /api/skills route wiring", () => {
   }
 });
 
-// Both runtimes: Pi runs its own vendored copy of the loader.
 describe.skipIf(checkoutIsScratch)("GET /api/skills under the test sandbox", () => {
   for (const serverCase of serverCases) {
     test(`${serverCase.name}: a home that is not scratch is read only outside the sandbox`, async () => {

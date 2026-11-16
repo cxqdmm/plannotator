@@ -1,12 +1,11 @@
 /** Local drafts must survive edits without leaking across Git review targets.
- * Exercise both HTTP runtimes and the same anchor check the client uses. */
+ * Exercise the HTTP runtime and the same anchor check the client uses. */
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startReviewServer as startBun } from './review';
-import { startReviewServer as startPi } from '../../apps/pi-extension/server/serverReview';
 import { getGitContext, runGitDiff, type DiffType } from '@plannotator/shared/review-core';
 import { contentHash, saveDraft } from '@plannotator/shared/draft';
 import { gitRuntime } from './vcs';
@@ -62,7 +61,7 @@ const note: CodeAnnotation = {
   id: 'note', filePath: 'a.txt', type: 'comment', side: 'new', lineStart: 1, lineEnd: 1,
   text: 'Please explain this change', createdAt: 1,
 };
-for (const [runtime, start] of [['Bun', startBun], ['Pi', startPi]] as const) {
+for (const [runtime, start] of [['Bun', startBun]] as const) {
   describe(`${runtime} local review draft recovery`, () => {
     async function open(diffType: DiffType = 'since-base', base = 'main', initialBaseExplicit = false) {
       const gitContext = await getGitContext(gitRuntime, cwd);

@@ -1,6 +1,5 @@
 import { afterAll, afterEach, describe, expect, test } from 'bun:test';
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { CallFlowInstallStage, CallFlowNodePreflight, CallFlowRuntimeInstallResult } from '@plannotator/shared/call-flow';
@@ -15,12 +14,12 @@ const originalPath = process.env.PATH;
 const tempDirs: string[] = [];
 
 // ---------------------------------------------------------------------------
-// Test seams: both runtimes' review servers take the coordinator's own
-// install and Node preflight through the test-only `callFlowInstall` option,
-// so these tests exercise the coordinator + endpoint wiring against a
-// controllable install, and a real install never runs. Nothing is replaced
-// module-wide: other test files in the same process still see the real
-// installCallFlowRuntime and preflightCallFlowNode.
+// Test seams: the review server takes the coordinator's own install and Node
+// preflight through the test-only `callFlowInstall` option, so these tests
+// exercise the coordinator + endpoint wiring against a controllable install,
+// and a real install never runs. Nothing is replaced module-wide: other test
+// files in the same process still see the real installCallFlowRuntime and
+// preflightCallFlowNode.
 // ---------------------------------------------------------------------------
 let installCalls = 0;
 let installedTargets: string[] = [];
@@ -41,7 +40,6 @@ const callFlowInstall = {
 };
 
 const { startReviewServer: startBunReviewServer } = await import('./review');
-const { startReviewServer: startPiReviewServer } = await import('../../apps/pi-extension/server');
 
 // Best-effort config hygiene: the /api/review-analysis POSTs below persist
 // { callFlow: true } through the process's frozen config module. When this
@@ -67,18 +65,6 @@ function makeTempDir(prefix: string): string {
   const dir = mkdtempSync(join(tmpdir(), prefix));
   tempDirs.push(dir);
   return dir;
-}
-
-async function reservePort(): Promise<number> {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => resolve());
-  });
-  const address = server.address();
-  const port = typeof address === 'object' && address ? address.port : 0;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  return port;
 }
 
 function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
@@ -180,17 +166,15 @@ process.on('exit', () => {
 describe('Call flow install endpoints', () => {
   for (const [runtime, startServer] of [
     ['Bun', startBunReviewServer],
-    ['Pi', startPiReviewServer],
   ] as const) {
     const boot = async (options: { rawPatch?: string; coreInstalled?: boolean } = {}) => {
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir('plannotator-call-flow-rt-');
       if (options.coreInstalled) materializeFakeRuntime();
-      if (runtime === 'Pi') process.env.PLANNOTATOR_PORT = String(await reservePort());
       return await startServer({
         rawPatch: options.rawPatch ?? '',
         gitRef: 'Working tree',
         diffType: 'uncommitted',
-        origin: runtime === 'Pi' ? 'pi' : 'claude-code',
+        origin: 'claude-code',
         htmlContent: '<!doctype html><html><body>review</body></html>',
         callFlowInstall,
       });

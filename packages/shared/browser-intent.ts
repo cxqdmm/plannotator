@@ -1,8 +1,6 @@
 /**
  * What the environment asks a session to do about a browser.
  *
- * One rule for both runtimes (vendored to Pi by apps/pi-extension/vendor.sh):
- *
  * - `PLANNOTATOR_BROWSER` (and the CLI's `--browser`, which sets it) belongs to
  *   Plannotator alone. A "none" value there means open nothing at all: no VS
  *   Code IPC, no Glimpse, no `BROWSER`, no system opener, local or remote.

@@ -2971,10 +2971,9 @@ export type InboxToolCostHost = "pi" | "opencode" | "dsh" | "cline" | "openclaw"
 
 /**
  * What turning the Inbox tool on adds to every request on Pi and OpenCode 2,
- * measured on the real hosts: apps/pi-extension/inbox.test.ts and
- * apps/opencode-plugin/inbox-v2.test.ts read the request the host sends a
- * scripted model and fail when the tool's entry drifts more than 5% from
- * `bytes`. Tokens depend on the model's tokenizer: Claude's tokenizer counts
+ * measured on the real hosts: apps/opencode-plugin/inbox-v2.test.ts reads
+ * the request the host sends a scripted model and fails when the tool's entry
+ * drifts more than 5% from `bytes`. Tokens depend on the model's tokenizer: Claude's tokenizer counts
  * JSON and code higher than o200k_base (GPT-4o and later), so `tokens` is a
  * rounded, deliberately high estimate, stated as "roughly". The window states
  * both (`inboxToolCostText`: the first-run screen, Settings → Agents), as does
@@ -2988,7 +2987,7 @@ export type InboxToolCostHost = "pi" | "opencode" | "dsh" | "cline" | "openclaw"
  * current value adds the Board's `card` action (approval "inbox-board"):
  * 8,503 bytes, 2,047 tokens with o200k_base, computed from the generated
  * entry in Pi's request shape (that computation gives 7,325 for the entry Pi
- * measured at 7,328); the Pi and OpenCode cost tests hold it to 5%. While the
+ * measured at 7,328); the OpenCode cost test holds it to 5%. While the
  * card action is held back (INBOX_CARD_ACTION_ON false), the size without it.
  * Action items (approval "inbox-next-actions") then added the `:::action`
  * paragraph to `body` and the `done` field: +861 bytes and +221 tokens with

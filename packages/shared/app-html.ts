@@ -7,10 +7,9 @@
  * reachable over a network sends the page and its text chunks brotli- or
  * gzip-compressed when the client says it can decode it.
  *
- * Shared by the Bun and the Pi node:http servers (through ./packed-app, and
- * the Inbox's own page; vendored to Pi by `apps/pi-extension/vendor.sh`), so
- * the negotiation and the cache cannot drift between runtimes. Only
- * `node:zlib` is used, which both runtimes provide.
+ * Shared by the review servers and the Inbox's own page (through
+ * ./packed-app), so the negotiation and the cache cannot drift between them.
+ * Only `node:zlib` is used, which every runtime provides.
  *
  * Which sessions compress (the `compress` argument): remote mode
  * (PLANNOTATOR_REMOTE or SSH detection) and `--tailscale`-published sessions,

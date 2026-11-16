@@ -1,7 +1,6 @@
 /**
  * Bun adapter for the host-only session control endpoints
  * (`/api/host/status`, `/api/host/close`; packages/shared/host-control.ts).
- * The Pi mirror lives in apps/pi-extension/server/host-control.ts.
  */
 
 import {

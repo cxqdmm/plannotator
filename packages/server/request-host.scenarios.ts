@@ -1,9 +1,7 @@
 /**
  * Host-header allowlist (packages/shared/request-host.ts), driven over HTTP
  * against real plan, review and annotate servers. Shared by the Bun suite
- * (request-host.test.ts) and the Pi mirror
- * (apps/pi-extension/server/request-host.test.ts), so both runtimes answer
- * the same scenarios.
+ * (request-host.test.ts).
  *
  * Requests go through node:http so the Host header is exactly the one under
  * test (fetch sets its own). Every test runs under a temp

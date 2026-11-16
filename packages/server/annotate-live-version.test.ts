@@ -1,6 +1,6 @@
 /**
  * Bun annotate server: a disk change becomes a version (#2037). The
- * scenarios are shared with the Pi mirror, see
+ * scenarios live in
  * annotate-live-version.scenarios.ts.
  */
 import { defineAnnotateLiveVersionScenarios } from "./annotate-live-version.scenarios";

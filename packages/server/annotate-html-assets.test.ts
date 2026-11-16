@@ -5,7 +5,6 @@ import { join } from "node:path";
 import { createHtmlAssetRegistry, framedDocumentNotFound, inlineHtmlLocalAssets } from "./html-assets";
 import { HTML_ASSET_SUBRESOURCE_CSP } from "@plannotator/shared/html-assets";
 import { startAnnotateServer } from "./annotate";
-import { startAnnotateServer as startPiAnnotateServer } from "../../apps/pi-extension/server/serverAnnotate";
 
 describe("annotate raw HTML assets", () => {
   test("rewrites raw HTML support assets and serves them from the source directory", async () => {
@@ -496,7 +495,7 @@ describe("annotate catch-all: framed requests", () => {
   });
 });
 
-for (const [runtime, startServer] of [["Bun", startAnnotateServer], ["Pi", startPiAnnotateServer]] as const) {
+for (const [runtime, startServer] of [["Bun", startAnnotateServer]] as const) {
   test(`${runtime} folder API resolves shared assets within the selected folder`, async () => {
     const parent = realpathSync(mkdtempSync(join(tmpdir(), "plannotator-folder-api-")));
     const root = join(parent, "course");

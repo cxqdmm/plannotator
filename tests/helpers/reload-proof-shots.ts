@@ -1,6 +1,6 @@
 /**
  * Screenshots of the Inbox window during a real-host reload proof
- * (apps/opencode-plugin/inbox-reload-v2.test.ts, apps/pi-extension/inbox-reload.test.ts),
+ * (apps/opencode-plugin/inbox-reload-v2.test.ts),
  * only when RELOAD_PROOF_SHOTS names a folder: a headless Chromium (Playwright's)
  * opens Settings → Agents on the proof's own Inbox, light and dark, desktop and
  * phone. Never the person's browser, never another Inbox.

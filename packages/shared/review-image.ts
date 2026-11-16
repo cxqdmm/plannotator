@@ -1,12 +1,12 @@
 /**
  * Code-review image preview (#1598): `GET /api/review-image`.
  *
- * Every decision lives here so the Bun server and the Pi mirror only do
+ * Every decision lives here so the route only does
  * transport: which requests are allowed (a file in the current patch, with no
  * hunks and an image extension), which side exists, the byte and pixel caps,
  * the content type (sniffed from magic bytes, never the extension), the image
- * header parse, the error mapping, and the response headers. The two servers
- * supply one thing each: how to read a side's bytes in their current mode.
+ * header parse, the error mapping, and the response headers. The caller
+ * supplies one thing: how to read a side's bytes in the current mode.
  */
 
 import {
@@ -314,7 +314,7 @@ export function createConcurrencyLimiter(limit: number) {
   };
 }
 
-// --- Side readers shared by both servers ----------------------------------------
+// --- Side readers ----------------------------------------------------------------
 
 /**
  * PR layer mode: read from the local checkout first (fixed merge-base / head

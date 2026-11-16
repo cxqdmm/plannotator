@@ -1,7 +1,7 @@
 /**
  * Plans on Bun, as an Inbox capability (packages/server/inbox-capability.ts). The route core is
  * packages/shared/plans/routes.ts; this file adds what a runtime owns: the Response, a version's bytes, and when the
- * import runs. Bun only: Plans lives in the Inbox, which the Pi server does not run.
+ * import runs. Bun only: Plans lives in the Inbox.
  *
  * Off, it costs nothing: no route (the Inbox answers 404), no store opened, no import, no file written, nothing in
  * the settings answer. On:

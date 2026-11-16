@@ -122,7 +122,6 @@ export function makeFakeGh(scenario: FakeGhScenario): FakeGh {
  * tobey-work; `readers` says which can read the repo.
  */
 export async function probeGhAccountRuntime(
-  which: "bun" | "pi",
   readers: string[],
 ): Promise<{ fake: FakeGh; out: Record<string, unknown> }> {
   const fake = makeFakeGh({
@@ -130,7 +129,7 @@ export async function probeGhAccountRuntime(
     repos: { "acme/widgets": { readers, prs: [7] } },
   });
   const probe = join(import.meta.dir, "gh-account-runtime-probe.ts");
-  const proc = Bun.spawn([process.execPath, probe, which, "acme/widgets", "7"], {
+  const proc = Bun.spawn([process.execPath, probe, "acme/widgets", "7"], {
     env: { ...fake.env, NO_BROWSER: "/usr/bin/true" },
     stdout: "pipe",
     stderr: "pipe",

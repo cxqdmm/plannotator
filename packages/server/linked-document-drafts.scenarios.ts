@@ -7,9 +7,7 @@
  * comments on its own document.
  *
  * Driven over HTTP against real servers. Shared by the Bun suite
- * (linked-document-drafts.test.ts) and the Pi mirror
- * (apps/pi-extension/server/linked-document-drafts.test.ts), so both runtimes
- * answer the same scenarios. Every test runs under a temp
+ * (linked-document-drafts.test.ts). Every test runs under a temp
  * PLANNOTATOR_DATA_DIR, in a temp project folder (the servers serve linked
  * documents from the working directory).
  */

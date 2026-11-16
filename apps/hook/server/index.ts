@@ -54,7 +54,7 @@
  *    - Internal structured last-message annotation bridge for OpenCode
  *
  * 12. DeepSeek Harness Plan (`plannotator dsh-plan`):
- *    - Internal bridge mode used by the @plannotator/dsh plugin (apps/dsh-plugin)
+ *    - Internal bridge mode used by the @plannotator/dsh plugin
  *    - Reads `{ plan, timeoutSeconds?, cwd? }` from stdin
  *    - Outputs `{ approved, feedback?, message?, savedPath?, answersOnly? }`,
  *      with `message` composed from the `dsh` prompt templates (dsh-plan.ts)
@@ -1134,7 +1134,7 @@ if (isInteractiveNoArgInvocation(args, process.stdin.isTTY)) {
 process.on("exit", () => unregisterSession());
 
 // Opt-in auto-update (#1634). Only this compiled-CLI entry point arms it; the
-// OpenCode and Pi servers never do. Both calls are no-ops for a dev/source run
+// OpenCode server never does. Both calls are no-ops for a dev/source run
 // (no __CLI_VERSION__), and the check itself is scheduled, never awaited.
 enableAutoUpdateNotice(getCliVersion());
 // One stderr line after an interactive session when the machine knows of a

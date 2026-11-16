@@ -1,6 +1,5 @@
 /**
- * Bun servers: `GET /api/ref` (the issue / PR / MR hover cards). Scenarios are
- * shared with the Pi mirror (apps/pi-extension/server/ref-card-route.test.ts).
+ * Bun servers: `GET /api/ref` (the issue / PR / MR hover cards).
  */
 import { defineRefCardRouteScenarios } from "./ref-card-route.scenarios";
 import { startPlannotatorServer } from "./index";

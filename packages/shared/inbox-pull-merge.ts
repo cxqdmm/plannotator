@@ -13,7 +13,7 @@
  * order GitHub's own button offers them (merge commit, squash, rebase); GitLab's merge request merges as its project
  * says. The head commit is pinned (`sha`), so the forge refuses if it moved between the check and the merge.
  *
- * No Bun or Node API: a `RefRunner` runs the person's own `gh` / `glab`. Inbox-only (the Pi server has no Inbox).
+ * No Bun or Node API: a `RefRunner` runs the person's own `gh` / `glab`. Inbox-only.
  */
 
 import type { RefCli, RefCommandResult, RefRunner } from "./ref-cards";

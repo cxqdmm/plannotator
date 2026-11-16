@@ -2,7 +2,7 @@
  * The Bun review server's guide routes take an id from the path. A malformed
  * escape in it (`/api/guide/%`) once threw a URIError that Bun turned into a
  * plain-text 500; it answers a JSON 400 now, and a well-formed id still
- * reaches the route. The Pi mirror is apps/pi-extension/server/guide-malformed-path.test.ts.
+ * reaches the route.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";

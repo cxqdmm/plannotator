@@ -1,5 +1,5 @@
 /**
- * generatedFiles sidecar on /api/diff (#1317) — dual-runtime (Bun + Pi).
+ * generatedFiles sidecar on /api/diff (#1317).
  *
  * Guards three behaviors:
  *  1. A plain local git session resolves `linguist-generated` through git's
@@ -16,11 +16,9 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startReviewServer as startBunReviewServer } from './review';
-import { startReviewServer as startPiReviewServer } from '../../apps/pi-extension/server';
 import { getVcsContext } from './vcs';
 
 const originalDataDir = process.env.PLANNOTATOR_DATA_DIR;
@@ -52,18 +50,6 @@ function initRepo(): string {
   return repoDir;
 }
 
-async function reservePort(): Promise<number> {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => resolve());
-  });
-  const address = server.address();
-  const port = typeof address === 'object' && address ? address.port : 0;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  return port;
-}
-
 function fileChunk(path: string): string {
   return [
     `diff --git a/${path} b/${path}`,
@@ -93,11 +79,9 @@ afterEach(() => {
 describe('generatedFiles sidecar (#1317)', () => {
   for (const [runtime, startServer] of [
     ['Bun', startBunReviewServer],
-    ['Pi', startPiReviewServer],
   ] as const) {
     test(`${runtime} resolves linguist-generated via git, honoring negated rules`, async () => {
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir('plannotator-generated-data-');
-      if (runtime === 'Pi') process.env.PLANNOTATOR_PORT = String(await reservePort());
       const repoDir = initRepo();
       writeFileSync(
         join(repoDir, '.gitattributes'),
@@ -117,7 +101,7 @@ describe('generatedFiles sidecar (#1317)', () => {
         gitRef: 'Working tree',
         diffType: 'uncommitted',
         gitContext,
-        origin: runtime === 'Pi' ? 'pi' : 'claude-code',
+        origin: 'claude-code',
         htmlContent: '<!doctype html><html><body>review</body></html>',
       });
       try {
@@ -136,12 +120,11 @@ describe('generatedFiles sidecar (#1317)', () => {
 
     test(`${runtime} without local git access emits the sidecar from name defaults alone`, async () => {
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir('plannotator-generated-data-');
-      if (runtime === 'Pi') process.env.PLANNOTATOR_PORT = String(await reservePort());
       const server = await startServer({
         rawPatch: [fileChunk('bun.lock'), fileChunk('src/app.ts')].join('\n'),
         gitRef: 'Piped diff',
         diffType: 'uncommitted',
-        origin: runtime === 'Pi' ? 'pi' : 'claude-code',
+        origin: 'claude-code',
         htmlContent: '<!doctype html><html><body>review</body></html>',
       });
       try {
@@ -156,12 +139,11 @@ describe('generatedFiles sidecar (#1317)', () => {
 
     test(`${runtime} omits the sidecar without git when no path matches a default`, async () => {
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir('plannotator-generated-data-');
-      if (runtime === 'Pi') process.env.PLANNOTATOR_PORT = String(await reservePort());
       const server = await startServer({
         rawPatch: RAW_PATCH,
         gitRef: 'Piped diff',
         diffType: 'uncommitted',
-        origin: runtime === 'Pi' ? 'pi' : 'claude-code',
+        origin: 'claude-code',
         htmlContent: '<!doctype html><html><body>review</body></html>',
       });
       try {
@@ -176,7 +158,6 @@ describe('generatedFiles sidecar (#1317)', () => {
 
     test(`${runtime} applies built-in defaults with no .gitattributes and honors -linguist-generated un-marks`, async () => {
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir('plannotator-generated-data-');
-      if (runtime === 'Pi') process.env.PLANNOTATOR_PORT = String(await reservePort());
       const repoDir = initRepo();
       // No .gitattributes: bun.lock collapses from the built-in list alone.
       // Then the second half: an explicit un-mark beats the built-in list.
@@ -188,7 +169,7 @@ describe('generatedFiles sidecar (#1317)', () => {
         gitRef: 'Working tree',
         diffType: 'uncommitted',
         gitContext,
-        origin: runtime === 'Pi' ? 'pi' : 'claude-code',
+        origin: 'claude-code',
         htmlContent: '<!doctype html><html><body>review</body></html>',
       });
       try {
@@ -200,14 +181,13 @@ describe('generatedFiles sidecar (#1317)', () => {
         bare.stop();
       }
 
-      if (runtime === 'Pi') process.env.PLANNOTATOR_PORT = String(await reservePort());
       writeFileSync(join(repoDir, '.gitattributes'), 'yarn.lock -linguist-generated\n');
       const unmarked = await startServer({
         rawPatch: patch,
         gitRef: 'Working tree',
         diffType: 'uncommitted',
         gitContext,
-        origin: runtime === 'Pi' ? 'pi' : 'claude-code',
+        origin: 'claude-code',
         htmlContent: '<!doctype html><html><body>review</body></html>',
       });
       try {
@@ -222,7 +202,6 @@ describe('generatedFiles sidecar (#1317)', () => {
 
     test(`${runtime} omits the sidecar when neither attributes nor defaults mark anything`, async () => {
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir('plannotator-generated-data-');
-      if (runtime === 'Pi') process.env.PLANNOTATOR_PORT = String(await reservePort());
       const repoDir = initRepo();
       const gitContext = await getVcsContext(repoDir, 'git');
       const server = await startServer({
@@ -230,7 +209,7 @@ describe('generatedFiles sidecar (#1317)', () => {
         gitRef: 'Working tree',
         diffType: 'uncommitted',
         gitContext,
-        origin: runtime === 'Pi' ? 'pi' : 'claude-code',
+        origin: 'claude-code',
         htmlContent: '<!doctype html><html><body>review</body></html>',
       });
       try {

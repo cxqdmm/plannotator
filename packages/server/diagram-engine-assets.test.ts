@@ -1,7 +1,6 @@
 /**
  * Code review's diagram engine, served on demand (owner approval
- * "review-diagrams-on-demand"), on BOTH review servers (Bun and the Pi
- * mirror) so the two cannot drift.
+ * "review-diagrams-on-demand"), on the review server.
  *
  * Regressions guarded:
  *  - the `/api/diff` advert missing, or naming a file the route does not
@@ -30,7 +29,6 @@ import { createTestEnvironment } from "../../tests/helpers/environment";
 import { closeServer, occupyConsecutivePorts } from "../../tests/helpers/ports";
 import { rawRequest } from "../../tests/helpers/app-html";
 import { startReviewServer as startBunReviewServer } from "./review";
-import { startReviewServer as startPiReviewServer } from "../../apps/pi-extension/server";
 
 const environment = createTestEnvironment(
   ["PLANNOTATOR_PORT", "PLANNOTATOR_REMOTE", "PLANNOTATOR_DATA_DIR", "PLANNOTATOR_BROWSER"],
@@ -115,7 +113,6 @@ describe("createDiagramEngineAssets", () => {
 type Start = (options: { rawPatch: string; gitRef: string; htmlContent: string; diagramEngine?: unknown }) => Promise<{ url: string; stop: () => unknown }>;
 const RUNTIMES: Array<[string, Start]> = [
   ["Bun", startBunReviewServer as unknown as Start],
-  ["Pi", startPiReviewServer as unknown as Start],
 ];
 
 for (const [runtime, start] of RUNTIMES) {

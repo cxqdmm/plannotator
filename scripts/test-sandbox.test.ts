@@ -104,7 +104,6 @@ describe("the refusals", () => {
     expect(refused(["nope.test.ts"])).toContain("not a file");
     expect(refused(["tests/e2e/inbox-thread-parity.spec.ts"])).toContain("own config");
     expect(refused(["tests/e2e"])).toContain("not a file");
-    expect(refused(["apps/pi-extension/inbox.test.ts"])).toContain("on purpose");
     expect(refused(["tests/never-touch-the-real-inbox.test.ts"])).toContain("on purpose");
     const outside = mkdtempSync(join(tmpdir(), "test-sandbox-outside-"));
     dirs.push(outside);
@@ -113,7 +112,7 @@ describe("the refusals", () => {
   });
 
   test("anything after -- that is not a flag: a path or a bare word would add files to the run", () => {
-    for (const extra of ["./", ".", "./apps/pi-extension/inbox.test.ts", "tests/never-touch-the-real-inbox.test.ts", "store", ""]) {
+    for (const extra of ["./", ".", "./packages/server/inbox.test.ts", "tests/never-touch-the-real-inbox.test.ts", "store", ""]) {
       expect(refused([plainFile, "--", "--bail", extra])).toContain("only runner flags");
     }
   });

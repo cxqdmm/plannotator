@@ -1,7 +1,6 @@
 /**
- * Endpoint wiring for durable guide persistence (#1112), against BOTH server
- * runtimes (Bun packages/server/review.ts and the Pi mirror
- * apps/pi-extension/server/serverReview.ts):
+ * Endpoint wiring for durable guide persistence (#1112), against the Bun
+ * review server (packages/server/review.ts):
  *
  *   GET    /api/guides                    — repo-scoped list
  *   GET    /api/guide/saved:{id}          — serve a persisted guide
@@ -11,12 +10,9 @@
  *   GET    /api/guide/:id/share-info      — enabled / serviceUrl / existing link
  *   DELETE /api/guide/:id/share           — remove on the host, forget the link
  *
- * Both servers are started with no gitContext/PR, so the guide store derives
+ * The server is started with no gitContext/PR, so the guide store derives
  * its repo key via the no-remote fallback (process.cwd()) — the tests seed the
  * store through @plannotator/shared/guide-store under that same key.
- *
- * Requires `bash apps/pi-extension/vendor.sh` to have been run (same as the
- * other cross-runtime tests).
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
@@ -37,7 +33,6 @@ import { GUIDE_SNAPSHOT_SCRIPT_ID, parseGuideSnapshot, parseGuideSnapshotJson } 
 import { decompress } from "@plannotator/shared/compress";
 import { decrypt } from "@plannotator/shared/crypto";
 import { startReviewServer as startBunReviewServer } from "./review";
-import { startReviewServer as startPiReviewServer } from "../../apps/pi-extension/server";
 
 const SPA_HTML = "<!doctype html><html><body>SPA fallback</body></html>";
 
@@ -78,23 +73,13 @@ const serverCases = [
         htmlContent: SPA_HTML,
       }),
   },
-  {
-    name: "Pi review",
-    start: () =>
-      startPiReviewServer({
-        rawPatch: "",
-        gitRef: "HEAD",
-        origin: "pi",
-        htmlContent: SPA_HTML,
-      }),
-  },
 ] as const;
 
 let dataDir = "";
 let previousDataDir: string | undefined;
 let previousPort: string | undefined;
 let previousRemote: string | undefined;
-// Both servers run with no gitContext/PR/workspace, so the session's repo key
+// The server runs with no gitContext/PR/workspace, so the session's repo key
 // is the fallback derivation over process.cwd().
 const repoKey = deriveGuideRepoKeyFallback(process.cwd());
 

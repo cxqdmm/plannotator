@@ -1,7 +1,7 @@
 /**
  * Plannotator Inbox: the face each agent's icon shows, for every window (core `inbox-types.ts` ("Agent faces"), the file in
  * packages/shared/inbox/agent-faces.ts). The window's routes (same origin for every POST, the page's
- * `serverSession`, as the pins' routes). Bun only: the Inbox runs on the Bun server; the Pi server serves no Inbox route.
+ * `serverSession`, as the pins' routes). Bun only: the Inbox runs on the Bun server.
  *
  *   GET  /api/inbox/agent-faces   `{ faces, rev }`
  *   POST /api/inbox/agent-faces   `{ agent, sessions?, face }`: one agent's face (`agent`: its own mark again); `{ faces, rev }`

@@ -15,7 +15,7 @@
  * an Origin whose hostname `PLANNOTATOR_ALLOWED_HOSTS` names explicitly (a
  * plain-HTTP reverse proxy that rewrites Host; `*` does not count, see
  * `isOriginNamedInAllowedHosts`). GET, HEAD and OPTIONS are left to their
- * routes. The Pi mirror is apps/pi-extension/server/request-origin-guard.ts.
+ * routes.
  */
 
 import {

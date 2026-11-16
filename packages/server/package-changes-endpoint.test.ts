@@ -1,5 +1,5 @@
 /**
- * Package changes routes, both runtimes (Bun + Pi).
+ * Package changes routes.
  *
  * Guards the privacy contract of the npm lookup:
  *  1. GET /api/package-changes works the cards out on the server, from the
@@ -16,11 +16,9 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startReviewServer as startBunReviewServer } from './review';
-import { startReviewServer as startPiReviewServer } from '../../apps/pi-extension/server';
 import { getVcsContext } from './vcs';
 import { clearPackageMetadataCache } from '@plannotator/shared/package-metadata';
 
@@ -49,18 +47,6 @@ function git(cwd: string, args: string[]): string {
   const result = spawnSync('git', args, { cwd, encoding: 'utf-8' });
   if (result.status !== 0) throw new Error(result.stderr || `git ${args.join(' ')} failed`);
   return result.stdout;
-}
-
-async function reservePort(): Promise<number> {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => resolve());
-  });
-  const address = server.address();
-  const port = typeof address === 'object' && address ? address.port : 0;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  return port;
 }
 
 /** A local stand-in for registry.npmjs.org and api.npmjs.org that records every name asked for. */
@@ -114,7 +100,6 @@ type Analysis = { cards: Card[]; lookup: { total: number } };
 describe('package changes routes', () => {
   for (const [runtime, startServer] of [
     ['Bun', startBunReviewServer],
-    ['Pi', startPiReviewServer],
   ] as const) {
     async function start(npmrc: string, committed = false) {
       process.env.PLANNOTATOR_DATA_DIR = tempDir('plannotator-pkg-data-');
@@ -129,14 +114,13 @@ describe('package changes routes', () => {
       const registry = stubRegistry();
       process.env.PLANNOTATOR_PACKAGE_REGISTRY_URL = registry.url;
       process.env.PLANNOTATOR_PACKAGE_DOWNLOADS_URL = registry.url;
-      if (runtime === 'Pi') process.env.PLANNOTATOR_PORT = String(await reservePort());
       const repo = makeRepo(npmrc, committed);
       const server = await startServer({
         rawPatch: committed ? git(repo, ['diff', 'HEAD~1', 'HEAD']) : git(repo, ['diff', 'HEAD']),
         gitRef: committed ? 'Last commit' : 'Working tree',
         diffType: committed ? 'last-commit' : 'uncommitted',
         gitContext: await getVcsContext(repo, 'git'),
-        origin: runtime === 'Pi' ? 'pi' : 'claude-code',
+        origin: 'claude-code',
         htmlContent: '<!doctype html><html><body>review</body></html>',
       });
       stops.push(() => server.stop());

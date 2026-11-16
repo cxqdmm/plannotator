@@ -33,10 +33,9 @@ import {
  * out of one stream event, how to discover models, and how to format a live log
  * line. There is exactly ONE copy of every shared piece below.
  *
- * PI-SAFETY: This file is vendored into the Pi (Node) build via vendor.sh, so it
- * MUST contain ZERO Bun.* / Bun-only APIs. The model-discovery SPAWN lives in
- * each runtime's agent-jobs adapter; this module only provides parseModels +
- * buildArgv + modelsArgv (pure data/functions).
+ * The model-discovery SPAWN lives in the runtime's agent-jobs adapter; this
+ * module only provides parseModels + buildArgv + modelsArgv (pure
+ * data/functions).
  */
 
 // ---------------------------------------------------------------------------

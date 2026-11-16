@@ -9,11 +9,11 @@
  * carries `bundle` (this module's `AnnotateBundleFile[]`), the file list keeps
  * the given order, and the feedback has one section per file in that order.
  *
- * Browser-safe and dependency-free: the editor, both servers and the hosts
+ * Browser-safe and dependency-free: the editor, the server and the hosts
  * share these helpers. The node-side argument rule (which tokens make a
  * bundle) lives in `packages/shared/annotate-target.ts`. It lives in shared,
  * not `@plannotator/core`, on purpose: nothing in the published UI package
- * needs it, so it adds no export to the published core manifest. Vendored to Pi.
+ * needs it, so it adds no export to the published core manifest.
  */
 
 /** How one bundle file renders, the same values /api/doc names in `renderAs`. */

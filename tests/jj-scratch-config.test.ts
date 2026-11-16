@@ -5,7 +5,7 @@
  * opens, and the test suite makes throwaway repos by the hundred: before
  * tests/helpers/jj-scratch-config.ts, each run left them in the real config
  * folder. This file proves the folder jj resolves under the helper is the
- * helper's temp folder (for a test's own spawn and for both review runtimes'
+ * helper's temp folder (for a test's own spawn and for the review runtime's
  * jj children), and fails on a test file that spawns jj without the helper.
  *
  * It never reads or lists the real config folder: it asks jj where its repo
@@ -17,7 +17,6 @@ import { mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync } from "no
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import { runtime as bunJjRuntime } from "../packages/server/jj";
-import { jjRuntime as piJjRuntime } from "../apps/pi-extension/server/vcs";
 import { useScratchJjConfig } from "./helpers/jj-scratch-config";
 import { stripComments } from "./helpers/real-inbox-scan";
 
@@ -34,7 +33,7 @@ function spawnsJjWithoutScratchConfig(source: string): boolean {
 }
 
 describe("the scratch jj config folder", () => {
-  test.skipIf(!hasJj)("jj, and both review runtimes' jj, keep this repo's config under the temp folder", async () => {
+  test.skipIf(!hasJj)("jj, and the review runtime's jj, keep this repo's config under the temp folder", async () => {
     const repo = realpathSync(mkdtempSync(join(tmpdir(), "plannotator-jj-guard-repo-")));
     try {
       const jj = (args: string[]) => spawnSync("jj", args, { cwd: repo, encoding: "utf-8", env: jjConfig.env() });
@@ -44,7 +43,7 @@ describe("the scratch jj config folder", () => {
 
       const reposRoot = join(jjConfig.dir, "jj", "repos") + sep;
       expect(own.stdout.trim().startsWith(reposRoot)).toBe(true);
-      for (const runtime of [bunJjRuntime, piJjRuntime]) {
+      for (const runtime of [bunJjRuntime]) {
         const result = await runtime.runJj(["config", "path", "--repo"], { cwd: repo });
         expect(result.exitCode).toBe(0);
         expect(result.stdout.trim()).toBe(own.stdout.trim());

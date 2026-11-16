@@ -143,22 +143,13 @@ describe("release CI marks every artifact that pings (else real users' pings are
     };
     const build = at((s) => commands(s).includes("bun run build:opencode"), "the build step");
     const markOpenCode = at((s) => commands(s).some((c) => c.endsWith("> apps/opencode-plugin/dist/release.json")), "the OpenCode mark");
-    const markPi = at((s) => commands(s).some((c) => c.endsWith("> apps/pi-extension/release.json")), "the Pi mark");
     const packOpenCode = at((s) => s.name === "Pack @plannotator/opencode", "the OpenCode pack");
-    const packPi = at((s) => s.name === "Pack @plannotator/pi-extension", "the Pi pack");
     expect(build).toBeLessThan(markOpenCode);
-    expect(build).toBeLessThan(markPi);
     expect(markOpenCode).toBeLessThan(packOpenCode);
-    expect(markPi).toBeLessThan(packPi);
   });
 
   test("no other workflow marks a build (a CI or e2e binary is never a release)", () => {
     const marking = workflowFiles().filter((f) => !f.endsWith("/release.yml") && readFileSync(f, "utf-8").includes("__PLANNOTATOR_RELEASE__"));
     expect(marking).toEqual([]);
-  });
-
-  test("the Pi package ships its release.json", () => {
-    const pkg = JSON.parse(readFileSync(join(repoRoot, "apps/pi-extension/package.json"), "utf-8")) as { files: string[] };
-    expect(pkg.files).toContain("release.json");
   });
 });

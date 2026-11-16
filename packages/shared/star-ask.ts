@@ -374,14 +374,14 @@ export function createStarAsk(deps: StarAskDeps): StarAskService {
   return service;
 }
 
-// ── The routes (plan review, code review and annotate; both runtimes) ──
+// ── The routes (plan review, code review and annotate) ──
 
 /**
  * `POST /api/star-ask/claim`, `/api/star-ask/shown` and `/api/star-ask/answer` (`{ answer: "not-now" | "opened" }`).
  * Null for any other path. At load the page claims: every gate and the check, nothing used up (`{ show, can_star }`:
- * may it show later). When the person sends the decision the page posts `shown` (the server is still up: every
- * runtime waits 800 to 1500 ms after the decision) and draws the card only on `{ show: true }`. Its button is the link
- * (the server stops right after: no gh star from there; the Inbox has one). Runtime-free: the Bun and Pi servers hand
+ * may it show later). When the person sends the decision the page posts `shown` (the server is still up: the server
+ * waits 800 to 1500 ms after the decision) and draws the card only on `{ show: true }`. Its button is the link
+ * (the server stops right after: no gh star from there; the Inbox has one). Runtime-free: the server hands
  * in the method and the parsed body.
  */
 export async function starAskRoute(

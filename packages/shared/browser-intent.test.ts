@@ -1,5 +1,5 @@
 /**
- * The browser rule both runtimes share. Pure: every case hands the resolver
+ * The browser rule the servers share. Pure: every case hands the resolver
  * its own env object, nothing is launched and process.env is never touched.
  */
 import { describe, expect, test } from "bun:test";

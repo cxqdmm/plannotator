@@ -1,7 +1,7 @@
 /**
  * DeepSeek Harness plan review bridge (`plannotator dsh-plan`).
  *
- * The @plannotator/dsh plugin (apps/dsh-plugin) answers DSH's `exit_plan_mode`
+ * The @plannotator/dsh plugin answers DSH's `exit_plan_mode`
  * review by running this internal subcommand: the plan arrives as JSON on
  * stdin and one JSON line comes back on stdout. The agent-facing text is
  * composed here with the shared prompt templates for the `dsh` runtime, so the

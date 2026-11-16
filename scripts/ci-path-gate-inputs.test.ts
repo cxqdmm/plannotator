@@ -1,22 +1,19 @@
 /**
- * Guard for the two CI path gates: `qwen-gate` and `diagram-engine-gate` in
+ * Guard for the CI path gate `diagram-engine-gate` in
  * .github/workflows/windows.yml.
  *
- * Each diffs a PR against its base and skips its job when nothing in a fixed
- * pattern changed, and each pattern claims to name every input of its job —
+ * It diffs a PR against its base and skips its job when nothing in a fixed
+ * pattern changed, and the pattern claims to name every input of its job —
  * diagram-engine-gate says so outright, "Only these files can change what that
  * build does". When a pattern is short, a PR that breaks the job skips the only
- * run that would have said so. Both were short:
+ * run that would have said so. It once was:
  *
- *   - qwen-installers-windows runs scripts/install.test.ts, which imports
- *     packages/shared/plannotator-tool.ts beside the t3-hook-command.ts the
- *     gate already named.
  *   - diagram-engine-windows builds apps/review/diagram-engine, whose
  *     engine.tsx bundles @plannotator/ui's MermaidBlock and GraphvizBlock and
  *     their tail into packages/core.
  *
- * Source of truth: the import closure of each job's entry files, walked here
- * rather than listed, so a new dependency of a gated job has to be in its
+ * Source of truth: the import closure of the job's entry files, walked here
+ * rather than listed, so a new dependency of the gated job has to be in its
  * gate.
  */
 import { describe, expect, test } from 'bun:test';
@@ -37,12 +34,6 @@ interface Gate {
 }
 
 const GATES: Gate[] = [
-  {
-    workflow: '.github/workflows/windows.yml',
-    job: 'qwen-gate',
-    entries: ['scripts/install.test.ts'],
-    known: 'packages/shared/plannotator-tool.ts',
-  },
   {
     workflow: '.github/workflows/windows.yml',
     job: 'diagram-engine-gate',

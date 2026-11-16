@@ -1,6 +1,6 @@
 /**
  * Code review under a user git config that forces color into pipes (#1661),
- * end to end through both review servers (Bun + Pi).
+ * end to end through the review server.
  *
  * Failure caught: with `color.diff = always` every patch line came back wrapped
  * in ANSI escapes, the parser found 0 files, and viewed-file identity capture
@@ -15,19 +15,13 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseDiffToFiles } from "../core/diff-files";
 import { gitColorFreeEnvironment } from "@plannotator/shared/review-core";
 import { startReviewServer as startBunReviewServer } from "./review";
-import { getVcsContext as getBunVcsContext, runVcsDiff as runBunVcsDiff } from "./vcs";
-import { startReviewServer as startPiReviewServer } from "../../apps/pi-extension/server";
-import {
-  getVcsContext as getPiVcsContext,
-  runVcsDiff as runPiVcsDiff,
-} from "../../apps/pi-extension/server/vcs";
+import { getVcsContext, runVcsDiff } from "./vcs";
 import { useScratchJjConfig } from "../../tests/helpers/jj-scratch-config";
 
 // Sets XDG_CONFIG_HOME in process.env, which run() and the child below pass on.
@@ -73,8 +67,7 @@ const savedEnv = new Map<string, string | undefined>();
 const tempDirs: string[] = [];
 
 const RUNTIMES = [
-  { name: "Bun", start: startBunReviewServer, getVcsContext: getBunVcsContext, runVcsDiff: runBunVcsDiff },
-  { name: "Pi", start: startPiReviewServer, getVcsContext: getPiVcsContext, runVcsDiff: runPiVcsDiff },
+  { name: "Bun", start: startBunReviewServer, getVcsContext, runVcsDiff },
 ] as const;
 
 function makeTempDir(prefix: string): string {
@@ -134,18 +127,6 @@ function initGitRepo(): string {
   return repo;
 }
 
-async function reservePort(): Promise<number> {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => resolve());
-  });
-  const address = server.address();
-  const port = typeof address === "object" && address ? address.port : 0;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  return port;
-}
-
 function fileSummary(rawPatch: string): string[] {
   return parseDiffToFiles(rawPatch).map((f) => `${f.path} +${f.additions}/-${f.deletions}`);
 }
@@ -181,7 +162,6 @@ describe("code review with color forced on in the user's git config (#1661)", ()
   for (const runtime of RUNTIMES) {
     test(`${runtime.name}: files, identities, commits, sections and expansion all work`, async () => {
       sandboxConfig();
-      if (runtime.name === "Pi") process.env.PLANNOTATOR_PORT = String(await reservePort());
       const repo = initGitRepo();
 
       const gitContext = await runtime.getVcsContext(repo, "git");
@@ -198,7 +178,7 @@ describe("code review with color forced on in the user's git config (#1661)", ()
         gitContext,
         initialBase: "main",
         initialFileIdentities: diff.fileIdentities,
-        origin: runtime.name === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: "<!doctype html><html><body>review</body></html>",
       });
       try {
@@ -250,7 +230,6 @@ describe("code review with color forced on in the user's git config (#1661)", ()
   const testIfJj = hasJj() ? test : test.skip;
   const JJ_MODULES = [
     ["Bun", resolve(import.meta.dir, "vcs.ts")],
-    ["Pi", resolve(import.meta.dir, "../../apps/pi-extension/server/vcs.ts")],
   ] as const;
   for (const [name, modulePath] of JJ_MODULES) {
     // Skipped when jj is not installed (CI runners do not ship it).

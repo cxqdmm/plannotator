@@ -1,7 +1,7 @@
 /**
  * Bun adapter for `isThisMachineReader` (packages/shared/this-machine-reader.ts):
  * whether a request is a page on this machine, for the reads that reach past
- * the session's roots. The Pi mirror is apps/pi-extension/server/this-machine.ts.
+ * the session's roots.
  *
  * Also the per-request answer for a remote session that only SSH turned on
  * (`isSshDetectedRemote`): the server still binds every interface, as it

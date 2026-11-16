@@ -15,7 +15,7 @@
  * annotate mode uses for its per-file history slugs.
  *
  * Runtime-agnostic (node:fs / node:path / node:crypto only), following the
- * storage.ts / draft.ts patterns. Vendored to Pi via vendor.sh. Corrupt or
+ * storage.ts / draft.ts patterns. Corrupt or
  * unreadable files load as "no saved guide" (the review-skill-loader
  * skip-and-log discipline); writes are atomic (tmp + rename).
  */
@@ -593,9 +593,8 @@ export function deleteGuide(repoKey: string, id: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Session glue — shared by the Bun review server and the Pi mirror so the
-// repo-key/headSha/label resolution and the jobId→savedId mapping are written
-// exactly once. All getters are late-bound because prMetadata / gitContext /
+// Session glue — the repo-key/headSha/label resolution and the jobId→savedId
+// mapping are written exactly once. All getters are late-bound because prMetadata / gitContext /
 // config can change mid-session (pr-switch, config edits).
 // ---------------------------------------------------------------------------
 

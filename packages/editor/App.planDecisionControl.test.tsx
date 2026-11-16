@@ -117,7 +117,7 @@ let agents: Array<{ id: string; name: string }> = [];
 /** Upcoming /api/approve POSTs that fail as a network error (recorded first). */
 let approveNetworkFailures = 0;
 /** How the next /api/deny POST fails (recorded first), then it answers ok.
- *  "closed" is Pi's refusal once the session that opened the review ended. */
+ *  "closed" is the refusal a server gives once the session that opened the review ended. */
 let nextDenyFailure: "network" | 500 | "closed" | null = null;
 /** When set, /api/deny POSTs wait for it before answering (a send in flight). */
 let denyGate: Promise<void> | null = null;
@@ -170,7 +170,6 @@ function makeFetch(plan: unknown): typeof fetch {
         nextDenyFailure = null;
         if (failure === "network") throw new TypeError("Failed to fetch");
         if (failure === "closed") {
-          // apps/pi-extension/server/serverPlan.ts refuseClosed.
           return Response.json({ error: "This review was closed: the session that opened it ended.", code: "already_decided" }, { status: 409 });
         }
         return Response.json({ error: "boom" }, { status: failure });
@@ -635,7 +634,7 @@ describe.if(hasDom)("plan review: a decision that does not reach Plannotator", (
     expect(decisions.map((d) => d.endpoint)).toEqual(["deny", "deny"]);
   });
 
-  // Pi's plan server refuses a decision after the session that opened the
+  // A plan server refuses a decision after the session that opened the
   // review ended (409 already_decided). It used to read as "The agent
   // revised the plan", which sends the reviewer looking for a new version.
   test("Pi's already_decided refusal is not a plan revision and offers no Retry", async () => {

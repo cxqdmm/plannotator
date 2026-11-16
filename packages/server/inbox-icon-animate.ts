@@ -2,7 +2,7 @@
  * Plannotator Inbox: "Animate it" (the agent icon dialog). The person asks an agent, in a new thread, to animate the
  * icon an agent shows (their own picture, a set's icon, or one of our faces); the agent hands the result back with
  * `plannotator inbox icon set <file> --request <id>` (apps/hook/server/inbox-icon-command.ts), and that agent's icon
- * becomes it in every window. Bun only: the Inbox runs on the Bun server; the Pi server serves no Inbox route.
+ * becomes it in every window. Bun only: the Inbox runs on the Bun server.
  *
  *   inbox/icon-animate.json   { v: 1, requests: [{ id, agent, sessions, icon, result, at }] }, newest last, 0600
  *

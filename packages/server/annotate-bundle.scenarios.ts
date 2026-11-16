@@ -1,8 +1,7 @@
 /**
  * Several files reviewed as one (`annotate-bundle`), driven over HTTP against
- * a real annotate server. Shared by the Bun suite (annotate-bundle.test.ts)
- * and the Pi mirror (apps/pi-extension/server/serverAnnotate-bundle.test.ts),
- * so both runtimes answer the same scenarios.
+ * a real annotate server. Shared with annotate-bundle.test.ts, which runs
+ * these scenarios against the server.
  *
  * Every test runs under a temp PLANNOTATOR_DATA_DIR; nothing touches the
  * real ~/.plannotator.

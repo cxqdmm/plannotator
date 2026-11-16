@@ -1,35 +1,30 @@
 /**
- * The Commits panel in a jj session, end to end through both review servers
- * (Bun + Pi): `/api/commits` answers with the jj rail, a `jj-commit:<id>`
- * switch serves that revision's first-parent diff with its description card,
- * and hunk expansion reads the same two revisions.
+ * The Commits panel in a jj session, end to end through the review server:
+ * `/api/commits` answers with the jj rail, a `jj-commit:<id>` switch serves
+ * that revision's first-parent diff with its description card, and hunk
+ * expansion reads the same two revisions.
  *
- * Failure caught: either runtime still gating `/api/commits` to git (the
- * reported "Commits view is gone" on jj), or one runtime drifting from the
- * other in how it answers a jj-commit switch.
+ * Failure caught: the server still gating `/api/commits` to git (the
+ * reported "Commits view is gone" on jj).
  *
  * Skipped when `jj` is not installed (CI runners do not ship it).
  */
 import { afterEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startReviewServer as startBunReviewServer } from "./review";
-import { startReviewServer as startPiReviewServer } from "../../apps/pi-extension/server";
 import { getVcsContext, runVcsDiff } from "./vcs";
 import { useScratchJjConfig } from "../../tests/helpers/jj-scratch-config";
 
 const jjConfig = useScratchJjConfig();
 
 const originalDataDir = process.env.PLANNOTATOR_DATA_DIR;
-const originalPort = process.env.PLANNOTATOR_PORT;
 const tempDirs: string[] = [];
 
 const RUNTIMES = [
   ["Bun", startBunReviewServer],
-  ["Pi", startPiReviewServer],
 ] as const;
 
 function hasJj(): boolean {
@@ -69,23 +64,9 @@ function initJjRepo(): { repoDir: string; one: string; two: string } {
   return { repoDir, one, two };
 }
 
-async function reservePort(): Promise<number> {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => resolve());
-  });
-  const address = server.address();
-  const port = typeof address === "object" && address ? address.port : 0;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  return port;
-}
-
 afterEach(() => {
   if (originalDataDir === undefined) delete process.env.PLANNOTATOR_DATA_DIR;
   else process.env.PLANNOTATOR_DATA_DIR = originalDataDir;
-  if (originalPort === undefined) delete process.env.PLANNOTATOR_PORT;
-  else process.env.PLANNOTATOR_PORT = originalPort;
   for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
@@ -95,7 +76,6 @@ describe("Commits panel in a jj review session", () => {
   for (const [runtime, startServer] of RUNTIMES) {
     testIfJj(`${runtime}: lists the jj rail and opens a jj-commit diff`, async () => {
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir("plannotator-jj-commits-data-");
-      if (runtime === "Pi") process.env.PLANNOTATOR_PORT = String(await reservePort());
       const { repoDir, one, two } = initJjRepo();
       const gitContext = await getVcsContext(repoDir, "jj");
       const diff = await runVcsDiff("jj-current", gitContext.defaultBranch, repoDir);
@@ -107,7 +87,7 @@ describe("Commits panel in a jj review session", () => {
         diffType: "jj-current",
         gitContext,
         initialBase: gitContext.defaultBranch,
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: "<!doctype html><html><body>review</body></html>",
       });
       try {

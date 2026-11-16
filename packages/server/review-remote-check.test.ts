@@ -1,6 +1,6 @@
 /**
  * Which review interactions are allowed to contact the git remote (#1553) —
- * dual-runtime (Bun + Pi) server flow.
+ * server flow.
  *
  * The reported failure: an OPEN BUT IDLE review page kept the server running
  * `git ls-remote --symref origin HEAD` about once a minute for as long as the
@@ -28,21 +28,17 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startReviewServer as startBunReviewServer } from "./review";
-import { startReviewServer as startPiReviewServer } from "../../apps/pi-extension/server";
 import { getVcsContext, runVcsDiff } from "./vcs";
 import { REMOTE_BASE_CHECK_INTERVAL_MS } from "@plannotator/shared/review-core";
 
 const RUNTIMES = [
   ["Bun", startBunReviewServer],
-  ["Pi", startPiReviewServer],
 ] as const;
 
 const originalDataDir = process.env.PLANNOTATOR_DATA_DIR;
-const originalPort = process.env.PLANNOTATOR_PORT;
 const originalPath = process.env.PATH;
 const tempDirs: string[] = [];
 
@@ -123,22 +119,6 @@ function lsRemoteCount(log: string): number {
   return readFileSync(log, "utf-8").split("\n").filter(Boolean).length;
 }
 
-async function reservePort(): Promise<number> {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => resolve());
-  });
-  const address = server.address();
-  const port = typeof address === "object" && address ? address.port : 0;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  return port;
-}
-
-async function preparePiPort(runtime: "Bun" | "Pi"): Promise<void> {
-  if (runtime === "Pi") process.env.PLANNOTATOR_PORT = String(await reservePort());
-}
-
 async function finishSession(server: {
   url: string;
   waitForDecision: () => Promise<unknown>;
@@ -187,8 +167,6 @@ async function settleStartupProbes(url: string, log: string): Promise<number> {
 afterEach(() => {
   if (originalDataDir === undefined) delete process.env.PLANNOTATOR_DATA_DIR;
   else process.env.PLANNOTATOR_DATA_DIR = originalDataDir;
-  if (originalPort === undefined) delete process.env.PLANNOTATOR_PORT;
-  else process.env.PLANNOTATOR_PORT = originalPort;
   if (originalPath === undefined) delete process.env.PATH;
   else process.env.PATH = originalPath;
   delete process.env.PLANNOTATOR_GIT_REMOTE_CHECK;
@@ -202,7 +180,6 @@ describe("review remote-check traffic", () => {
       // carrying the 60s remote probe, so an untouched page keeps asking the
       // remote (and a hardware key) forever.
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir("plannotator-remote-check-data-");
-      await preparePiPort(runtime);
       const log = installLsRemoteCounter();
       const repoDir = initRepoBehindRemote();
       const gitContext = await getVcsContext(repoDir, "git");
@@ -215,7 +192,7 @@ describe("review remote-check traffic", () => {
         diffType: "since-base",
         gitContext,
         initialBase: "origin/main",
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: "<!doctype html><html><body>review</body></html>",
       });
       const realNow = Date.now;
@@ -261,7 +238,6 @@ describe("review remote-check traffic", () => {
       // it a home — the staleness answer would then never refresh within a
       // session, and the "behind GitHub" banner could never appear or clear.
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir("plannotator-remote-check-data-");
-      await preparePiPort(runtime);
       const log = installLsRemoteCounter();
       const repoDir = initRepoBehindRemote();
       const gitContext = await getVcsContext(repoDir, "git");
@@ -274,7 +250,7 @@ describe("review remote-check traffic", () => {
         diffType: "since-base",
         gitContext,
         initialBase: "origin/main",
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: "<!doctype html><html><body>review</body></html>",
       });
       const realNow = Date.now;
@@ -318,7 +294,6 @@ describe("review remote-check traffic", () => {
       // the startup ones still fire — the user asked for no remote contact and
       // would still get authentication prompts when the review opens.
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir("plannotator-remote-check-data-");
-      await preparePiPort(runtime);
       const log = installLsRemoteCounter();
       const repoDir = initRepoBehindRemote();
       const gitContext = await getVcsContext(repoDir, "git");
@@ -332,7 +307,7 @@ describe("review remote-check traffic", () => {
         gitContext,
         initialBase: "origin/main",
         gitRemoteCheck: false,
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: "<!doctype html><html><body>review</body></html>",
       });
       const realNow = Date.now;

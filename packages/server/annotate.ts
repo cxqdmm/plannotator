@@ -279,9 +279,8 @@ export function runGuardedShutdown(
   }
 }
 
-// Stable identity for a live app session's annotation draft — moved to the
-// shared live-proxy core so the Pi mirror keys drafts identically; re-exported
-// here for existing import sites.
+// Stable identity for a live app session's annotation draft, from the
+// shared live-proxy core; re-exported here for existing import sites.
 export { liveAppDraftIdentity } from "@plannotator/shared/live-proxy-core";
 
 /**
@@ -1157,8 +1156,8 @@ export async function startAnnotateServer(
           // that hash. Single local Markdown/text sessions only, and never
           // with PLANNOTATOR_ANNOTATE_HISTORY=0 (annotate-live-version.ts).
           if (url.pathname === ANNOTATE_LIVE_VERSION_PATH && req.method === "POST") {
-            // A body that is not JSON reads as {} (Pi's parseBody does the
-            // same), so both runtimes answer it with one 400.
+            // A body that is not JSON reads as {}, so the route answers it
+            // with one 400.
             let body: unknown;
             try {
               body = await req.json();

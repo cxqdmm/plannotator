@@ -1,5 +1,5 @@
 /**
- * Stale-tab guard (packages/core/server-session.ts), both runtimes.
+ * Stale-tab guard (packages/core/server-session.ts).
  *
  * Regression guarded: a tab left open on a port that a NEW Plannotator server
  * now owns (fixed PLANNOTATOR_PORT, remote mode's 19432, a rare random-port
@@ -11,7 +11,7 @@
  * (an older client, an empty exit) must keep working.
  *
  * Temp PLANNOTATOR_DATA_DIR per test; nothing touches the real data dir. The
- * PR-mode review servers run their `gh` commands through a fake runtime.
+ * PR-mode review server runs its `gh` commands through a fake runtime.
  */
 
 import { afterEach, describe, expect, test } from "bun:test";
@@ -21,14 +21,8 @@ import { join } from "node:path";
 import { startPlannotatorServer } from "./index";
 import { startAnnotateServer as startBunAnnotateServer } from "./annotate";
 import { startReviewServer as startBunReviewServer } from "./review";
-import {
-  startAnnotateServer as startPiAnnotateServer,
-  startPlanReviewServer as startPiPlanServer,
-  startReviewServer as startPiReviewServer,
-} from "../../apps/pi-extension/server";
 import { SERVER_SESSION_MISMATCH_CODE } from "@plannotator/shared/server-session";
 import { setPRCommandRuntimeForTests as setBunPRCommandRuntime } from "./pr";
-import { setPRCommandRuntimeForTests as setPiPRCommandRuntime } from "../../apps/pi-extension/server/pr";
 import { createFakePRRuntime } from "../../tests/helpers/fake-pr-runtime";
 
 const MINIMAL_HTML = "<html><body>Plannotator</body></html>";
@@ -54,7 +48,6 @@ function sandbox(): string {
 
 afterEach(() => {
   setBunPRCommandRuntime(null);
-  setPiPRCommandRuntime(null);
   if (saved) {
     for (const key of ENV_KEYS) {
       if (saved[key] === undefined) delete process.env[key];
@@ -112,13 +105,6 @@ const cases: Case[] = [
     decisions: planDecisions,
   },
   {
-    name: "Pi plan",
-    surface: "plan",
-    start: async () => (await startPiPlanServer({ plan: planText(), htmlContent: MINIMAL_HTML, origin: "pi" })) as unknown as Running,
-    payloadPath: "/api/plan",
-    decisions: planDecisions,
-  },
-  {
     name: "Bun annotate",
     surface: "annotate",
     start: async (dir) =>
@@ -127,26 +113,10 @@ const cases: Case[] = [
     decisions: annotateDecisions,
   },
   {
-    name: "Pi annotate",
-    surface: "annotate",
-    start: async (dir) =>
-      (await startPiAnnotateServer({ markdown: "# Doc\n", filePath: docFile(dir), htmlContent: MINIMAL_HTML, gate: true })) as unknown as Running,
-    payloadPath: "/api/plan",
-    decisions: annotateDecisions,
-  },
-  {
     name: "Bun review",
     surface: "review",
     start: async () =>
       (await startBunReviewServer({ rawPatch: PATCH, gitRef: "HEAD", origin: "claude-code", htmlContent: MINIMAL_HTML })) as unknown as Running,
-    payloadPath: "/api/diff",
-    decisions: reviewDecisions,
-  },
-  {
-    name: "Pi review",
-    surface: "review",
-    start: async () =>
-      (await startPiReviewServer({ rawPatch: PATCH, gitRef: "HEAD", origin: "pi", htmlContent: MINIMAL_HTML })) as unknown as Running,
     payloadPath: "/api/diff",
     decisions: reviewDecisions,
   },
@@ -253,12 +223,12 @@ const PR_METADATA = {
   url: "https://github.invalid/acme/widgets/pull/42",
 } as const;
 
-for (const runtime of ["bun", "pi"] as const) {
+for (const runtime of ["bun"] as const) {
   describe(`${runtime} review /api/pr-action`, () => {
     test("a foreign nonce is refused before anything is posted; the matching one posts", async () => {
       sandbox();
       const prCommands = createFakePRRuntime();
-      (runtime === "bun" ? setBunPRCommandRuntime : setPiPRCommandRuntime)(prCommands.runtime);
+      setBunPRCommandRuntime(prCommands.runtime);
       const posted: unknown[] = [];
       const submitter = (async (...args: unknown[]) => {
         posted.push(args);
@@ -271,7 +241,7 @@ for (const runtime of ["bun", "pi"] as const) {
         prMetadata: PR_METADATA as never,
         prReviewSubmitter: submitter,
       };
-      const server = runtime === "bun" ? await startBunReviewServer(options) : await startPiReviewServer(options as never);
+      const server = await startBunReviewServer(options);
       try {
         const nonce = await nonceOf(server as never, "/api/diff");
         const body = { action: "comment", body: "Looks off.", fileComments: [] };

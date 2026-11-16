@@ -83,7 +83,7 @@ describe("the agent CLI stubs cover", () => {
   });
 
   test("every name a server looks up on PATH by a literal (Bun.which, onPath), or it is a known non-agent tool", () => {
-    const roots = ["packages/server", "packages/ai", "packages/shared", "apps/hook/server", "apps/pi-extension/server"].map((dir) => join(repoRoot, dir));
+    const roots = ["packages/server", "packages/ai", "packages/shared", "apps/hook/server"].map((dir) => join(repoRoot, dir));
     const missing: string[] = [];
     let seen = 0;
     for (const file of roots.flatMap((dir) => sourceFiles(dir))) {

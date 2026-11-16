@@ -59,8 +59,6 @@ import { INBOX_NOTE_BODY } from "../packages/server/inbox-agent-notes";
 import { createAgentEnvironmentFor } from "../packages/server/inbox-agents";
 import { formatInboxHelp } from "../apps/hook/server/inbox-help";
 import { inboxCommandTurnText } from "../apps/opencode-plugin/cli-bridge";
-import { runDroidInboxCommand } from "./helpers/droid-inbox-command";
-
 const root = resolve(import.meta.dir, "..");
 const home = realpathSync(mkdtempSync(join(tmpdir(), "plannotator-guidance-parity-")));
 afterAll(() => rmSync(home, { recursive: true, force: true }));
@@ -83,20 +81,15 @@ const COMMAND_FILES = [
   "apps/skills/claude/plannotator-inbox/SKILL.md",
   "apps/skills/core/plannotator-inbox/SKILL.md",
   "apps/opencode-plugin/commands/plannotator-inbox.md",
-  "apps/gemini/commands/plannotator-inbox.toml",
 ] as const;
-const DROID_OUTPUT = "/plannotator-inbox: Droid's script output";
 const INBOX_COMMANDS: Record<string, string> = {
   ...Object.fromEntries(COMMAND_FILES.map((path) => [`/plannotator-inbox: ${path}`, readFileSync(join(root, path), "utf8")])),
-  [DROID_OUTPUT]: process.platform === "win32" ? "" : runDroidInboxCommand("echo 'http://127.0.0.1:61234/'").stdout,
   "/plannotator-inbox briefing: Claude Code mod, Pi, OpenCode 2": INBOX_COMMAND_BRIEFING,
   "/plannotator-inbox: OpenCode 1's command turn": inboxCommandTurnText("Plannotator Inbox: http://127.0.0.1:61234/"),
 };
 const inboxCommands = Object.keys(INBOX_COMMANDS);
 /** The copies the person's command answers in the agent's own turn: they end by passing the address on. */
 const inboxCommandTurns = inboxCommands.filter((name) => name !== "/plannotator-inbox briefing: Claude Code mod, Pi, OpenCode 2");
-/** Where the agent may have no `plannotator_inbox` tool at all, so the send line names the MCP server alone. */
-const MCP_ONLY_SEND = ["/plannotator-inbox: apps/gemini/commands/plannotator-inbox.toml", DROID_OUTPUT];
 
 const SURFACES: Record<string, string> = {
   "tool: Claude Code (mod copy, bundled list)": entryText(modAgentTool(INBOX_DEFAULT_TOOLS)),
@@ -248,21 +241,18 @@ describe("Inbox guidance parity across harnesses", () => {
     expect(field.description).toContain("Pass an idempotency_key so a retry never posts twice.");
   });
 
-  test("every /plannotator-inbox copy carries the shared briefing's lines word for word (Gemini and Droid name the MCP server alone)", () => {
+  test("every /plannotator-inbox copy carries the shared briefing's lines word for word", () => {
     const bullets = INBOX_COMMAND_BRIEFING.split("\n").filter((line) => line.startsWith("- "));
-    const send = bullets.find((line) => line.startsWith("- Send with"))!;
     expect(bullets.length).toBeGreaterThan(5);
     for (const [surface, text] of Object.entries(INBOX_COMMANDS)) {
-      const missing = bullets.filter((line) => !(line === send && MCP_ONLY_SEND.includes(surface)) && !text.includes(line));
+      const missing = bullets.filter((line) => !text.includes(line));
       expect([surface, missing]).toEqual([surface, []]);
       expect([surface, text.includes(INBOX_BRIEFING_FROM_NOW_ON)]).toEqual([surface, true]);
     }
-    for (const surface of MCP_ONLY_SEND) expect(INBOX_COMMANDS[surface]).toContain("`send_message` tool of the Inbox's MCP server");
   });
 
   test("the command copies still open the Inbox, and their ending starts and resumes no work", () => {
     for (const path of COMMAND_FILES) expect([path, INBOX_COMMANDS[`/plannotator-inbox: ${path}`]!.includes("plannotator inbox --open")]).toEqual([path, true]);
-    expect(readFileSync(join(root, "apps/droid-plugin/commands/plannotator-inbox.js"), "utf8")).toContain('runPlannotator(["inbox", "--open"]');
     for (const surface of inboxCommandTurns) {
       expect([surface, INBOX_COMMANDS[surface]!.includes("This command starts no new work and resumes none: do anything else the person asked in the same message, otherwise stop there.")]).toEqual([surface, true]);
     }

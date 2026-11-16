@@ -1,10 +1,8 @@
 import { afterAll, afterEach, describe, expect, test } from 'bun:test';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startReviewServer as startBunReviewServer } from './review';
-import { startReviewServer as startPiReviewServer } from '../../apps/pi-extension/server';
 
 // Config reads resolve the data dir lazily, so per-test PLANNOTATOR_DATA_DIR
 // sandboxes genuinely isolate settings POSTs. Snapshot the real config anyway
@@ -29,18 +27,6 @@ function makeDataDir(): string {
   const dataDir = mkdtempSync(join(tmpdir(), 'plannotator-call-flow-endpoint-'));
   tempDirs.push(dataDir);
   return dataDir;
-}
-
-async function reservePort(): Promise<number> {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => resolve());
-  });
-  const address = server.address();
-  const port = typeof address === 'object' && address ? address.port : 0;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  return port;
 }
 
 async function waitForFile(path: string): Promise<void> {
@@ -77,12 +63,10 @@ afterAll(() => {
 describe('Call flow endpoint capability guards', () => {
   for (const [runtime, startServer] of [
     ['Bun', startBunReviewServer],
-    ['Pi', startPiReviewServer],
   ] as const) {
     test(`${runtime} returns the server-authored install disclosure while Call flow is disabled`, async () => {
       process.env.PLANNOTATOR_DATA_DIR = makeDataDir();
       delete process.env.PLANNOTATOR_CALLDIFF_PATH;
-      if (runtime === 'Pi') process.env.PLANNOTATOR_PORT = String(await reservePort());
       const server = await startServer({
         rawPatch: [
           'diff --git a/tool.py b/tool.py',
@@ -94,7 +78,7 @@ describe('Call flow endpoint capability guards', () => {
         ].join('\n'),
         gitRef: 'Working tree',
         diffType: 'uncommitted',
-        origin: runtime === 'Pi' ? 'pi' : 'claude-code',
+        origin: 'claude-code',
         htmlContent: '<!doctype html><html><body>review</body></html>',
       });
 
@@ -128,12 +112,11 @@ describe('Call flow endpoint capability guards', () => {
 
     test(`${runtime} returns unsupported for All Files before runtime execution`, async () => {
       process.env.PLANNOTATOR_DATA_DIR = makeDataDir();
-      if (runtime === 'Pi') process.env.PLANNOTATOR_PORT = String(await reservePort());
       const server = await startServer({
         rawPatch: '',
         gitRef: 'Every file',
         diffType: 'all',
-        origin: runtime === 'Pi' ? 'pi' : 'claude-code',
+        origin: 'claude-code',
         htmlContent: '<!doctype html><html><body>review</body></html>',
       });
 
@@ -185,12 +168,11 @@ describe('Call flow endpoint capability guards', () => {
       chmodSync(nodePath, 0o755);
       process.env.PLANNOTATOR_DATA_DIR = dataDir;
       process.env.PATH = `${binDir}:${originalPath ?? ''}`;
-      if (runtime === 'Pi') process.env.PLANNOTATOR_PORT = String(await reservePort());
       const server = await startServer({
         rawPatch: '',
         gitRef: 'Working tree',
         diffType: 'uncommitted',
-        origin: runtime === 'Pi' ? 'pi' : 'claude-code',
+        origin: 'claude-code',
         htmlContent: '<!doctype html><html><body>review</body></html>',
       });
 
@@ -234,12 +216,11 @@ describe('Call flow endpoint capability guards', () => {
       chmodSync(nodePath, 0o755);
       process.env.PLANNOTATOR_DATA_DIR = dataDir;
       process.env.PATH = `${binDir}:${originalPath ?? ''}`;
-      if (runtime === 'Pi') process.env.PLANNOTATOR_PORT = String(await reservePort());
       const server = await startServer({
         rawPatch: '',
         gitRef: 'Working tree',
         diffType: 'uncommitted',
-        origin: runtime === 'Pi' ? 'pi' : 'claude-code',
+        origin: 'claude-code',
         htmlContent: '<!doctype html><html><body>review</body></html>',
       });
 
@@ -288,12 +269,11 @@ describe('Call flow endpoint capability guards', () => {
       chmodSync(nodePath, 0o755);
       process.env.PLANNOTATOR_DATA_DIR = dataDir;
       process.env.PATH = `${binDir}:${originalPath ?? ''}`;
-      if (runtime === 'Pi') process.env.PLANNOTATOR_PORT = String(await reservePort());
       const server = await startServer({
         rawPatch: '',
         gitRef: 'Working tree',
         diffType: 'uncommitted',
-        origin: runtime === 'Pi' ? 'pi' : 'claude-code',
+        origin: 'claude-code',
         htmlContent: '<!doctype html><html><body>review</body></html>',
       });
 

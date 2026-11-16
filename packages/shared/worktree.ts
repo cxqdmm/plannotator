@@ -1,8 +1,7 @@
 /**
  * Worktree — runtime-agnostic git worktree primitives.
  *
- * Uses ReviewGitRuntime so both Bun and Node runtimes can use the same logic.
- * Lives in packages/shared/ and gets vendored to Pi via vendor.sh.
+ * Uses ReviewGitRuntime so the git operations stay injectable.
  *
  * Designed as composable primitives, not tied to any specific use case.
  * PR local checkout, agent sandboxes, parallel sessions — all compose from these.

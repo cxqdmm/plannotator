@@ -3,8 +3,7 @@
  * `/api/reference/files/stream`, `/api/reference/obsidian/files`,
  * `/api/reference/obsidian/doc`, `/api/obsidian/vaults`), driven over HTTP
  * against real plan and annotate servers. Shared by the Bun suite
- * (reference-readers.test.ts) and the Pi mirror
- * (apps/pi-extension/server/reference-readers.test.ts).
+ * (reference-readers.test.ts).
  *
  * Another site's page is refused on every one of them. A page on this machine
  * lists any folder and vault, as before; every reader that may be on another

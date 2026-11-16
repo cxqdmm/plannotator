@@ -1615,7 +1615,7 @@ function agentSwitchAdvert(value: unknown): { agentSwitch?: AgentSwitchConfigVal
 
 /**
  * The POST /api/config allowlist entry for the agent switch, shared by every
- * plan, review and annotate server in both runtimes. Returns the value to
+ * plan, review and annotate server. Returns the value to
  * save, `undefined` when the body leaves it out, or `null` when it is present
  * and invalid (the route answers 400 and saves nothing).
  */
@@ -1672,9 +1672,8 @@ function agentToolAdvert(
  * @plannotator/core: `PlannotatorConfig.agentTerminalSide` IS that type and
  * this predicate delegates to that module's guard, so neither the union nor
  * its membership test can drift on one side of the boundary. Direct import
- * rather than a duplicated literal check: the Pi vendor step rewrites the
- * relative specifier to the flat `./agent-terminal.ts` it already vendors
- * from core, so both runtimes end up on the same implementation.
+ * rather than a duplicated literal check, so both stay on the same
+ * implementation.
  */
 export function isAgentTerminalSide(
   value: unknown,
@@ -1949,10 +1948,10 @@ export function resolveClaudeCodeMod(
 }
 
 /**
- * The hosts that register the `plannotator` agent tool. `oh-my-pi` is the Pi
- * extension running inside Oh My Pi (a Pi fork), which the extension tells
- * from plain Pi itself (`apps/pi-extension/pi-host.ts`): it is the same
- * extension and the same session bridge (host `pi`), with its own default.
+ * The hosts that register the `plannotator` agent tool. `pi` and `oh-my-pi`
+ * (a Pi fork running the same extension and session bridge, with its own
+ * default) are recognized from existing sessions even though this fork no
+ * longer ships the Pi extension itself.
  */
 export type AgentToolHost = "claude-code" | "pi" | "oh-my-pi" | "opencode" | "dsh";
 
@@ -1980,8 +1979,8 @@ export const AGENT_TOOL_DEFAULTS: Readonly<Record<AgentToolHost, boolean>> = {
 /**
  * The tool host for a server's launching integration, or null. Callers pass
  * the session-bridge host that started the server (the Claude Code mod and
- * the OpenCode 2 plugin hand one to the CLI), or, for the servers that run
- * inside the Pi extension, the extension's own host (`pi` or `oh-my-pi`).
+ * the OpenCode 2 plugin hand one to the CLI), or, for a session still running
+ * the Pi extension, the extension's own host (`pi` or `oh-my-pi`).
  * Never the agent origin: an origin of claude-code or opencode also covers
  * the classic hook and OpenCode 1, which have no tool, and the CLI's origin
  * `oh-my-pi` is a `plannotator` run from OMP's shell, which has none either
@@ -2007,8 +2006,8 @@ export function parseAgentToolEnv(env: NodeJS.ProcessEnv = process.env): boolean
 export const AUTO_RELOAD_DEFAULT = true;
 
 /**
- * Whether Pi reloads itself to load an updated Plannotator extension (see
- * `autoReload`, apps/pi-extension/auto-reload.ts).
+ * Whether a host agent reloads itself to load an updated Plannotator
+ * integration (kept from the config format; see `autoReload`).
  *
  * Priority (highest wins):
  *   PLANNOTATOR_AUTO_RELOAD env var  →  config.autoReload  →  AUTO_RELOAD_DEFAULT

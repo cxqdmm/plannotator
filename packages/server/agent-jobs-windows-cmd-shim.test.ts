@@ -6,8 +6,7 @@
  * and Stop ends the whole tree, not only cmd.exe.
  *
  * Windows only (skipped elsewhere); it runs in the Windows workflow's
- * `pi-extension-ai-runtime-windows` job. The Pi mirror is
- * apps/pi-extension/server/agent-jobs-windows-cmd-shim.test.ts.
+ * `bun-server-windows` job.
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";

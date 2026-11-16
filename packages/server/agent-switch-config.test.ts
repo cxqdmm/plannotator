@@ -7,7 +7,6 @@
  *  - the serverConfig of /api/plan and /api/diff sends it back, so a webview
  *    with no cookies (Glimpse) still gets the choice;
  *  - a hand-edited value that does not parse is not advertised.
- * The Pi mirror is apps/pi-extension/agent-switch-config.test.ts.
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";

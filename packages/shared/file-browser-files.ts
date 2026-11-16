@@ -1,6 +1,5 @@
 /**
- * The annotate file browser's listing of one folder (`/api/reference/files`),
- * shared by the Bun server and the Pi mirror.
+ * The annotate file browser's listing of one folder (`/api/reference/files`).
  *
  * The cap (`PLANNOTATOR_FILE_BROWSER_MAX_FILES`, default 5,000) counts
  * supported files only; heavy folders (node_modules, .git, dist, …) are
@@ -100,8 +99,7 @@ export async function listFileBrowserFiles(
 
 /**
  * The cap from PLANNOTATOR_FILE_BROWSER_MAX_FILES only when it is set to a
- * positive integer, else Infinity (no cap). For the Pi mirror, whose file
- * browser listed every file before the cap existed.
+ * positive integer, else Infinity (no cap).
  */
 export function explicitFileBrowserMaxFiles(): number {
 	const value = Number.parseInt(process.env.PLANNOTATOR_FILE_BROWSER_MAX_FILES ?? "", 10);

@@ -2,14 +2,12 @@
  * `GET /api/ref` (the issue / PR / MR hover cards) on the plan, annotate and
  * review servers, driven over HTTP against real servers with a scripted
  * gh / glab runner (`refRunner`), never the real CLIs. Shared by the Bun suite
- * (ref-card-route.test.ts) and the Pi mirror
- * (apps/pi-extension/server/ref-card-route.test.ts), so both runtimes answer
- * the same scenarios.
+ * (ref-card-route.test.ts).
  *
  * Covered: the card and its `serverSession`; refusals that run nothing (another
  * site, a Host this server does not answer, a url that is no such link, a
  * method other than GET); and the exposure rule: off in remote mode, and in a
- * `--tailscale` session where the runtime has one (Bun annotate and review) on
+ * `--tailscale` session (annotate and review) on
  * for a tab on this machine and the tailnet owner's tab through serve, off for
  * any other tailnet device. Requests go through node:http so Origin, Host,
  * Sec-Fetch-Site and the serve headers are exactly the ones under test. Every

@@ -1,7 +1,6 @@
 /**
  * All files (`GET /api/repo-files`, `/api/repo-file`, `/api/repo-files/stream`)
- * against real repositories, on BOTH review servers (Bun and the Pi mirror),
- * so the two cannot drift.
+ * against real repositories, on the review server.
  *
  * Regressions guarded:
  *  - the tree listing files the diff's new side does not read (the working
@@ -20,11 +19,9 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
-import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startReviewServer as startBunReviewServer } from "./review";
-import { startReviewServer as startPiReviewServer } from "../../apps/pi-extension/server";
 import { getVcsContext, runVcsDiff } from "./vcs";
 import { MAX_REPO_FILE_BYTES } from "@plannotator/shared/repo-files";
 import { useScratchJjConfig } from "../../tests/helpers/jj-scratch-config";
@@ -42,19 +39,6 @@ function makeTempDir(prefix: string): string {
   const dir = mkdtempSync(join(tmpdir(), prefix));
   tempDirs.push(dir);
   return dir;
-}
-
-async function reservePiPort() {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => resolve());
-  });
-  const address = server.address();
-  const port = typeof address === "object" && address ? address.port : 0;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  saveEnv("PLANNOTATOR_PORT");
-  process.env.PLANNOTATOR_PORT = String(port);
 }
 
 function git(cwd: string, args: string[]): string {
@@ -123,13 +107,11 @@ interface FilesBody {
 
 for (const [runtime, startServer] of [
   ["Bun", startBunReviewServer],
-  ["Pi", startPiReviewServer],
 ] as const) {
   describe(`All files (${runtime})`, () => {
     async function start(repo: string, diffType: string, extra: Record<string, unknown> = {}) {
       saveEnv("PLANNOTATOR_DATA_DIR");
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir("plannotator-repo-files-data-");
-      if (runtime === "Pi") await reservePiPort();
       const gitContext = await getVcsContext(repo, "git");
       const diff = await runVcsDiff(diffType as never, "main", repo);
       const server = await startServer({
@@ -137,7 +119,7 @@ for (const [runtime, startServer] of [
         gitRef: diff.label,
         diffType: diffType as never,
         gitContext,
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: MINIMAL_HTML,
         ...extra,
       });
@@ -375,7 +357,7 @@ for (const [runtime, startServer] of [
     }, 40_000);
 
     // A page's EventSource.close() closes the connection; destroying a node
-    // request does the same (cancelling a fetch body does not, on either server).
+    // request does the same (cancelling a fetch body does not).
     function openPageStream(server: { url: string }, snapshotId: string) {
       return new Promise<() => void>((resolve, reject) => {
         const req = request(`${server.url}/api/repo-files/stream?snapshot=${encodeURIComponent(snapshotId)}`, (res) => {
@@ -483,12 +465,11 @@ for (const [runtime, startServer] of [
     test("a static patch session advertises no All files and lists nothing", async () => {
       saveEnv("PLANNOTATOR_DATA_DIR");
       process.env.PLANNOTATOR_DATA_DIR = makeTempDir("plannotator-repo-files-data-");
-      if (runtime === "Pi") await reservePiPort();
       const server = await startServer({
         rawPatch: "diff --git a/a.ts b/a.ts\n--- a/a.ts\n+++ b/a.ts\n@@ -1 +1 @@\n-a\n+b\n",
         gitRef: "reading.diff",
         diffType: "static-patch",
-        origin: runtime === "Pi" ? "pi" : "claude-code",
+        origin: "claude-code",
         htmlContent: MINIMAL_HTML,
       });
       try {
@@ -507,8 +488,8 @@ for (const [runtime, startServer] of [
   });
 }
 
-// jj lists the new side's revision through `jj file list` (the same shared
-// provider code both runtimes vendor), so one runtime is enough here.
+// jj lists the new side's revision through `jj file list`, exercised here
+// straight through the shared provider.
 describe("All files in a jj workspace", () => {
   const hasJj = Bun.which("jj") !== null;
   const jjConfig = useScratchJjConfig();

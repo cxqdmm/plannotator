@@ -1,13 +1,13 @@
 /**
- * Shared engine for the file-browser SSE watchers (Bun and Pi runtimes).
+ * Shared engine for the file-browser SSE watchers.
  *
- * #1313: the historical per-runtime implementations built a chokidar watcher
+ * #1313: the historical implementations built a chokidar watcher
  * over the whole workspace synchronously on the request path. chokidar's
  * directory scan monopolizes the event loop for roughly 40ms per directory
  * under Bun, so a 228-directory repository froze the entire server for about
  * nine seconds, and because teardown was immediate on the last unsubscribe,
  * every EventSource reconnect paid the scan again. This module fixes the
- * class, once, for both runtimes:
+ * class, once, for every watcher:
  *
  * 1. Watcher construction is deferred off the request path, so the SSE ready
  *    event and concurrent API requests are served before any scan starts.

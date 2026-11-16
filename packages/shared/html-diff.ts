@@ -16,8 +16,8 @@ import { diffArrays } from "diff";
  * structure, dropping removed tags (to keep the DOM balanced) and wrapping only
  * contiguous text runs.
  *
- * The implementation is pure and runtime-agnostic (no Node/Bun globals), so both
- * the Bun and Pi servers can import it.
+ * The implementation is pure and runtime-agnostic (no Node/Bun globals), so the
+ * editor and the server can both import it.
  */
 
 /** Token classification produced by {@link tokenize}. */

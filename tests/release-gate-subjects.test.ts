@@ -5,7 +5,7 @@
  * NPM_SUBJECTS (scripts/release-security/release-evidence.mjs), and the attest
  * job binds the SBOM to the subject paths it lists. A package packed into its
  * own artifact, or published from a path outside that list, would ship
- * unscanned and outside the SBOM attestation, as @plannotator/dsh first did.
+ * unscanned and outside the SBOM attestation.
  */
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -22,13 +22,13 @@ const attestBlock = workflow.match(/- name: Generate release SBOM attestation[\s
 describe("release.yml npm packages and the security gate", () => {
 	// Catches: a pack step writing a tarball the gate never scans.
 	test("every packed tarball is a gated subject", () => {
-		expect(packed.length).toBeGreaterThanOrEqual(3);
+		expect(packed.length).toBeGreaterThanOrEqual(1);
 		for (const path of packed) expect(NPM_SUBJECTS).toContain(path);
 	});
 
 	// Catches: a publish step that ships a tarball from outside the gated set.
 	test("every published tarball is a gated subject", () => {
-		expect(published.length).toBeGreaterThanOrEqual(3);
+		expect(published.length).toBeGreaterThanOrEqual(1);
 		for (const path of published) expect(NPM_SUBJECTS).toContain(path);
 	});
 
@@ -52,11 +52,11 @@ const jobs = (Bun.YAML.parse(workflow) as { jobs: Record<string, { needs?: strin
 const needsOf = (job: string): string[] => [jobs[job]?.needs ?? []].flat();
 
 describe("release.yml: nothing is attested or published before the gates pass", () => {
-	// Catches: a later edit dropping a smoke (or the security scan, or the viewer check) from a publishing job.
+	// Catches: a later edit dropping a smoke (or the security scan) from a publishing job.
 	// npm-package does not wait for the smokes, so these lists are the only place that wait lives.
 	for (const job of ["npm-publish", "attest"]) {
-		test(`${job} needs every smoke, release-security and viewer-pin-live`, () => {
-			for (const need of ["smoke-binaries", "pi-extension-ai-runtime-windows", "install-script-smoke", "release-security", "viewer-pin-live"]) {
+		test(`${job} needs every smoke and release-security`, () => {
+			for (const need of ["smoke-binaries", "install-script-smoke", "release-security"]) {
 				expect(needsOf(job)).toContain(need);
 			}
 		});

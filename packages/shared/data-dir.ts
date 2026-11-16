@@ -37,8 +37,7 @@
  * ~/.plannotator holds data too) the result is the same as before.
  *
  * The same rule is mirrored, and must stay identical, in the Claude Code mod
- * (apps/hook/hooks/mod/launch.ts `dataDirOf`), the Amp plugin
- * (apps/amp-plugin/plannotator.ts) and the install scripts
+ * (apps/hook/hooks/mod/launch.ts `dataDirOf`) and the install scripts
  * (scripts/install.sh, install.ps1, install.cmd);
  * tests/data-dir-mirrors.test.ts runs each copy it can, and
  * scripts/check-data-dir-windows.ps1 runs the Windows ones on Windows.

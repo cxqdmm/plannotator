@@ -32,17 +32,9 @@ import { appendFileSync } from 'node:fs';
 export const JSON_VERSION_FILES = [
   'package.json',
   'apps/opencode-plugin/package.json',
-  'apps/dsh-plugin/package.json',
-  'apps/cline-plugin/package.json',
-  'apps/openclaw-plugin/package.json',
-  'apps/pi-extension/package.json',
   'apps/hook/.claude-plugin/plugin.json',
-  'apps/copilot/plugin.json',
   'packages/server/package.json',
 ];
-/** The marketplace whose `plannotator-copilot` entry's `version` a release bumps. */
-export const MARKETPLACE_FILE = '.github/plugin/marketplace.json';
-export const MARKETPLACE_PLUGIN = 'plannotator-copilot';
 /** The YAML file whose top-level `version:` line a release bumps. */
 export const OPENPACKAGE_FILE = 'openpackage.yml';
 /** The Feedback form's search index, which `bun scripts/feedback-search-index.ts` rewrites at release time. */
@@ -50,7 +42,7 @@ export const FEEDBACK_INDEX_FILE = 'packages/inbox/feedbackSearch.data.json';
 /** The test that reads the shipped search index; it runs on a reused tag when the index changed. */
 export const FEEDBACK_INDEX_TEST = 'packages/inbox/feedbackSearch.test.ts';
 /** Every file a bump commit may change. */
-export const BUMP_FILES = [...JSON_VERSION_FILES, MARKETPLACE_FILE, OPENPACKAGE_FILE, FEEDBACK_INDEX_FILE];
+export const BUMP_FILES = [...JSON_VERSION_FILES, OPENPACKAGE_FILE, FEEDBACK_INDEX_FILE];
 /** Release notes at the repo root (untracked by design). */
 const RELEASE_NOTES = /^RELEASE_NOTES[^/]*\.md$/;
 /** How many passed Test runs on main the lookup reads (one API call). */
@@ -141,13 +133,6 @@ function withoutVersion(file: string, text: string): string {
     return lines.join('\n');
   }
   const json = parseObject(text, file);
-  if (file === MARKETPLACE_FILE) {
-    const plugins = Array.isArray(json.plugins) ? (json.plugins as Record<string, unknown>[]) : [];
-    const entries = plugins.filter((p) => p && typeof p === 'object' && p.name === MARKETPLACE_PLUGIN);
-    if (entries.length !== 1 || typeof entries[0]!.version !== 'string') throw new Error(`${file} has no single ${MARKETPLACE_PLUGIN} version`);
-    entries[0]!.version = '<release>';
-    return JSON.stringify(json);
-  }
   if (typeof json.version !== 'string') throw new Error(`${file} has no string version`);
   json.version = '<release>';
   return JSON.stringify(json);

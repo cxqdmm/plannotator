@@ -27,8 +27,6 @@ const PRODUCTION_TREES = [
   "packages/ai",
   "packages/t3-code",
   "apps/opencode-plugin",
-  "apps/amp-plugin",
-  "apps/pi-extension",
 ];
 
 const SKIP_DIRS = new Set(["node_modules", "dist", "generated", "fixtures", "testing", "test-setup", "test-fixtures", "tests", "test"]);

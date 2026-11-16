@@ -7,7 +7,6 @@
  *    that started the server registers it: the pull-bridge host the Claude
  *    Code mod / OpenCode 2 plugin hands the CLI, or an in-process bridge's
  *    host. The agent origin alone is not enough (classic hook, OpenCode 1).
- * The Pi mirror is apps/pi-extension/agent-tool-config.test.ts.
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";

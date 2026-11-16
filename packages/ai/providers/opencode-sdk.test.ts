@@ -251,12 +251,11 @@ describe("OpenCodeProvider server lifecycle", () => {
 describe("no eager opencode spawn at runtime startup", () => {
 	const repoRoot = resolve(import.meta.dir, "../../..");
 
-	// Both runtimes must keep opencode model discovery behind the deferred
+	// The runtime must keep opencode model discovery behind the deferred
 	// provider initializer. An eager fetchModels() at startup spawns
 	// `opencode serve` on every session for every user with opencode on PATH.
 	for (const relPath of [
 		"packages/server/ai-runtime.ts",
-		"apps/pi-extension/server/ai-runtime.ts",
 	]) {
 		test(`${relPath} defers opencode model discovery`, () => {
 			const src = readFileSync(resolve(repoRoot, relPath), "utf8");

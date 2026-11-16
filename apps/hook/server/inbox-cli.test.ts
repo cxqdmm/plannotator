@@ -24,8 +24,6 @@ import { INBOX_MAX_REQUEST_BYTES, INBOX_REMOVED_ACTION_TEXT } from "@plannotator
 import { INBOX_BRIDGE_POLL_PATH, parseInboxBridgeCommands } from "@plannotator/shared/inbox/connection";
 import { INBOX_AGENT_NAME, INBOX_HOST } from "../hooks/mod/inbox";
 import { OPENCODE_INBOX_AGENT_NAME, OPENCODE_INBOX_HOST } from "../../opencode-plugin/inbox";
-import { DSH_INBOX_AGENT_NAME, DSH_INBOX_HOST } from "../../dsh-plugin/inbox";
-import { CLINE_INBOX_AGENT_NAME, CLINE_INBOX_HOST } from "../../cline-plugin/inbox";
 import { detachedInboxEnv, inboxThreadRef } from "./inbox-command";
 import { fillInboxToolArguments, inboxCallHostSession, inboxHostSessionFromEnv, inboxQwenShimContext, INBOX_SESSION_HOST_NAMES, runInboxMcpShim } from "./inbox-mcp-shim";
 import { stubbedAgentClis } from "../../../tests/helpers/agent-cli-guard";
@@ -440,15 +438,13 @@ describe("plannotator inbox mcp inside an agent session", () => {
   test("the names it fills are the ones each host's own plannotator_inbox tool sends", () => {
     expect(INBOX_SESSION_HOST_NAMES[INBOX_HOST]).toBe(INBOX_AGENT_NAME);
     expect(INBOX_SESSION_HOST_NAMES[OPENCODE_INBOX_HOST]).toBe(OPENCODE_INBOX_AGENT_NAME);
-    expect(INBOX_SESSION_HOST_NAMES[DSH_INBOX_HOST]).toBe(DSH_INBOX_AGENT_NAME);
-    expect(INBOX_SESSION_HOST_NAMES[CLINE_INBOX_HOST]).toBe(CLINE_INBOX_AGENT_NAME);
-    // Pi's constants, read from source: apps/pi-extension/inbox.ts imports its generated/ folder, which exists only after vendor.sh.
-    const piSource = readFileSync(resolve(import.meta.dir, "../../pi-extension/inbox.ts"), "utf8");
-    const piHost = /export const PI_INBOX_HOST = "([^"]+)";/.exec(piSource)?.[1];
-    const piName = /export const PI_INBOX_AGENT_NAME = "([^"]+)";/.exec(piSource)?.[1];
-    expect(piHost).toBe("pi");
-    expect(piName).toBeDefined();
-    expect(INBOX_SESSION_HOST_NAMES[piHost!]).toBe(piName!);
+    // DSH and Cline entries are runtime knowledge kept for existing sessions
+    // (their plugins no longer ship with this fork).
+    expect(INBOX_SESSION_HOST_NAMES.dsh).toBe("DeepSeek Harness");
+    expect(INBOX_SESSION_HOST_NAMES.cline).toBe("Cline");
+    // Pi's entry is runtime knowledge kept for existing sessions (the Pi
+    // extension itself no longer ships with this fork).
+    expect(INBOX_SESSION_HOST_NAMES.pi).toBe("Pi");
     // Codex, Qwen Code, T3 Code and Antigravity have no plannotator_inbox tool: the Inbox wakes them itself (`codex queue`,
     // Qwen's cross-session messaging, T3's MCP API, Antigravity's agentapi), and the shim sends as their session.
     expect(Object.keys(INBOX_SESSION_HOST_NAMES).sort()).toEqual(["antigravity", "claude-code", "cline", "codex", "dsh", "hermes", "openclaw", "opencode", "pi", "qwen", "t3"]);

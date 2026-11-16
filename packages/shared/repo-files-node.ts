@@ -7,8 +7,7 @@
  * (repo-file.ts), the same reader code navigation uses: links are followed
  * like VS Code (the owner's ruling on #2261), only regular files are read (a
  * FIFO never blocks the server), and a file over the cap is refused before any
- * byte is read. Only a listed path reaches it (repo-files.ts). Vendored to Pi,
- * so both runtimes share it.
+ * byte is read. Only a listed path reaches it (repo-files.ts).
  */
 
 import { readRepoFile } from "./repo-file";

@@ -5,13 +5,12 @@
  * is the whole reason the feature needs no server change.
  *
  * Regression guarded: a future body validator, field whitelist, or
- * CodeAnnotation schema landing on either runtime's /api/feedback handler and
- * silently dropping (or rewriting) an annotation entry it does not recognise —
+ * CodeAnnotation schema landing on the /api/feedback handler and silently
+ * dropping (or rewriting) an annotation entry it does not recognise —
  * which would deliver the reviewer's note nowhere while still reporting 200.
  * Also guarded: the archive's hasContent computation demoting a note-carrying
  * submission to a decision-only line.
  *
- * Both runtimes are exercised in one file (precedent: api-404-guard.test.ts).
  * Every server here runs under a temp PLANNOTATOR_DATA_DIR set inside the test
  * body; the archive is opted back in per test and restored afterwards.
  */
@@ -21,7 +20,6 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startReviewServer as startBunReviewServer } from "./review";
-import { startReviewServer as startPiReviewServer } from "../../apps/pi-extension/server";
 import { parseFeedbackIndex } from "@plannotator/shared/feedback-archive";
 
 const MINIMAL_HTML = "<html><body>Plannotator</body></html>";
@@ -102,16 +100,6 @@ const runtimes: Array<{ name: string; start: () => Promise<RunningReview> }> = [
         rawPatch: PATCH,
         gitRef: "HEAD",
         origin: "claude-code",
-        htmlContent: MINIMAL_HTML,
-      }) as unknown as Promise<RunningReview>,
-  },
-  {
-    name: "Pi review",
-    start: () =>
-      startPiReviewServer({
-        rawPatch: PATCH,
-        gitRef: "HEAD",
-        origin: "pi",
         htmlContent: MINIMAL_HTML,
       }) as unknown as Promise<RunningReview>,
   },

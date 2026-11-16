@@ -6,8 +6,8 @@
  * `&` or `"` in a name change what is read too. Paths reach these reads from
  * the diff and, for the Markdown preview's images, from a Markdown file the
  * review shows (`/api/review-markdown-image`, `/api/review-image`, and the
- * full-file contents behind expansion and the preview). Both runtimes run the
- * shared reader over their own jj spawner, so both are exercised.
+ * full-file contents behind expansion and the preview). The server runs the
+ * shared reader over its jj spawner.
  *
  * Skipped when `jj` is not installed (CI runners do not ship it).
  */
@@ -18,7 +18,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getJjFileBytesForDiff, getJjFileContentsForDiff, jjRootFileFileset } from "@plannotator/shared/jj-core";
 import { runtime as bunJjRuntime } from "./jj";
-import { jjRuntime as piJjRuntime } from "../../apps/pi-extension/server/vcs.ts";
 import { useScratchJjConfig } from "../../tests/helpers/jj-scratch-config";
 
 const jjConfig = useScratchJjConfig();
@@ -71,7 +70,6 @@ describe("jjRootFileFileset", () => {
 
 describe.each([
   ["Bun", bunJjRuntime],
-  ["Pi", piJjRuntime],
 ] as const)("%s jj runtime reads one literal path", (_name, runtime) => {
   const testIfJj = hasJj ? test : test.skip;
 

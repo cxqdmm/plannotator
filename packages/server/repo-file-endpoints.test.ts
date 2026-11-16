@@ -1,31 +1,27 @@
 /**
- * Working-tree reads behind the code-nav preview and diff expansion, on both
- * servers (Bun + Pi), through packages/shared/repo-file.ts.
+ * Working-tree reads behind the code-nav preview and diff expansion, on the
+ * review server, through packages/shared/repo-file.ts.
  *
  * Like VS Code, links are followed wherever they point (owner's ruling on
  * #2261). What must not regress: a file over the 5 MB cap is refused with
  * its size instead of read whole, and a FIFO is refused instead of hanging
- * the request (on Pi, readFileSync on a FIFO froze the whole process).
- * Each runtime keeps its old text output (Bun strips a BOM, Pi keeps it).
+ * the request. The text output matches the old reader (Bun strips a BOM).
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { NO_BROWSER } from "../../tests/helpers/no-browser";
 import { MAX_REPO_FILE_BYTES } from "@plannotator/shared/repo-file";
 import { startReviewServer as startBunReviewServer } from "./review";
-import { startReviewServer as startPiReviewServer } from "../../apps/pi-extension/server";
 
 const PATCH = "diff --git a/src/app.ts b/src/app.ts\n--- a/src/app.ts\n+++ b/src/app.ts\n@@ -1 +1 @@\n-a\n+export const app = 1;\n";
 const BOM_BYTES = Buffer.from([0xef, 0xbb, 0xbf, 0x68, 0x69, 0x0a]);
 const BUN_SERVER_MODULE = join(import.meta.dir, "review.ts");
-const PI_SERVER_MODULE = join(import.meta.dir, "../../apps/pi-extension/server.ts");
 const RUNTIME_MODULES = {
   Bun: join(import.meta.dir, "git.ts"),
-  Pi: join(import.meta.dir, "../../apps/pi-extension/server/vcs.ts"),
 };
 const CHILD_TIMEOUT_MS = 15_000;
 
@@ -53,8 +49,8 @@ async function freePort(): Promise<number> {
 
 /**
  * Run `source` in a child Bun and return the JSON it prints last. A read
- * that blocks on a FIFO would freeze this process (Pi's server shares the
- * event loop), so FIFO checks run in a child that is killed on timeout.
+ * that blocks on a FIFO would freeze this process, so FIFO checks run in a
+ * child that is killed on timeout.
  */
 function runInChild(source: string, env: Record<string, string>): unknown {
   const child = spawnSync(process.execPath, ["--eval", source], {
@@ -93,7 +89,6 @@ describePosix("working-tree reads for the code-nav preview and diff expansion", 
 
   for (const [runtime, startServer] of [
     ["Bun", startBunReviewServer],
-    ["Pi", startPiReviewServer],
   ] as const) {
     describe(`${runtime}: GET /api/code-nav/file`, () => {
       let server: { url: string; stop: () => void } | null = null;
@@ -103,12 +98,11 @@ describePosix("working-tree reads for the code-nav preview and diff expansion", 
         setEnv("PLANNOTATOR_BROWSER", NO_BROWSER);
         setEnv("PLANNOTATOR_UPDATE_CHECK", "0");
         setEnv("PLANNOTATOR_INBOX_CONNECT", "0");
-        if (runtime === "Pi") setEnv("PLANNOTATOR_PORT", String(await freePort()));
         server = await startServer({
           rawPatch: PATCH,
           gitRef: "HEAD",
           agentCwd: repo,
-          origin: runtime === "Pi" ? "pi" : "claude-code",
+          origin: "claude-code",
           htmlContent: "<html></html>",
         });
       });
@@ -148,10 +142,8 @@ describePosix("working-tree reads for the code-nav preview and diff expansion", 
         expect(await get("src")).toMatchObject({ status: 400, body: { reason: "not-a-file" } });
       });
 
-      test("decodes like this runtime's old reader (Bun strips a BOM, Pi keeps it)", async () => {
-        const old = runtime === "Bun"
-          ? await Bun.file(join(repo, "bom.txt")).text()
-          : readFileSync(join(repo, "bom.txt"), "utf-8");
+      test("decodes like this runtime's old reader (Bun strips a BOM)", async () => {
+        const old = await Bun.file(join(repo, "bom.txt")).text();
         expect((await get("bom.txt")).body.content).toBe(old);
       });
     });
@@ -160,12 +152,12 @@ describePosix("working-tree reads for the code-nav preview and diff expansion", 
       const port = await freePort();
       const result = runInChild(
         `
-        const { startReviewServer } = await import(${JSON.stringify(runtime === "Pi" ? PI_SERVER_MODULE : BUN_SERVER_MODULE)});
+        const { startReviewServer } = await import(${JSON.stringify(BUN_SERVER_MODULE)});
         const server = await startReviewServer({
           rawPatch: ${JSON.stringify(PATCH)},
           gitRef: "HEAD",
           agentCwd: ${JSON.stringify(repo)},
-          origin: ${JSON.stringify(runtime === "Pi" ? "pi" : "claude-code")},
+          origin: "claude-code",
           htmlContent: "<html></html>",
         });
         const res = await fetch(server.url + "/api/code-nav/file?path=pipe");

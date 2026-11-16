@@ -1,8 +1,6 @@
 /**
  * `/api/doc` outside the project (#2291), driven over HTTP against real plan
- * and annotate servers. Shared by the Bun suite (doc-any-path.test.ts) and
- * the Pi mirror (apps/pi-extension/server/doc-any-path.test.ts), so both
- * runtimes answer the same scenarios.
+ * and annotate servers. Shared by the Bun suite (doc-any-path.test.ts).
  *
  * A tab on this machine opens a document anywhere: one in a folder added
  * under Settings → Files, and one the current document links outside the

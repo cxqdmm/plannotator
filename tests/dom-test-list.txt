@@ -52,7 +52,6 @@ packages/ui/utils/inputMethod.test.ts
 packages/ui/utils/vimNavigation.test.ts
 packages/ui/utils/clipboard.test.ts
 packages/ui/utils/pasteInsert.test.ts
-apps/vscode-extension/src/vscode-theme.test.ts
 packages/ui/utils/vimScroll.test.ts
 packages/ui/components/InlineMarkdown.resolveLinkedDoc.test.tsx
 packages/ui/components/MarkdownDiff.frozen.test.tsx
@@ -594,8 +593,6 @@ packages/review-editor/utils/localReviewDraft.test.tsx
 packages/ui/components/Settings.documentFont.test.tsx
 packages/ui/components/sidebar/FileBrowser.hover.test.tsx
 packages/ui/config/documentFontSetting.test.ts
-apps/vscode-extension/src/guides/reader/lines.test.ts
-apps/vscode-extension/src/guides/webview/diagram-loader.test.ts
 packages/review-editor/components/AnnotationToolbar.askOnly.test.tsx
 packages/ui/components/Settings.notion.test.tsx
 packages/inbox/cookieHostSettings.test.tsx

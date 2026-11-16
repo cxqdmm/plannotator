@@ -12,7 +12,7 @@
  *   bun run gen:skills
  *
  * SKILL.md stays committed (the installers copy it from the release tag, and
- * Pi's vendor.sh and OpenCode's build:skill copy it from this folder).
+ * OpenCode's build:skill copies it from this folder).
  * apps/hook/server/plannotator-skill-reference.test.ts fails until you run this
  * after changing a source.
  */

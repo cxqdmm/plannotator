@@ -1,8 +1,7 @@
 /**
  * Reading one working-tree file for the review UI, the way an editor does.
  *
- * Both review servers (Bun and Pi, which gets a copy through
- * `apps/pi-extension/vendor.sh`) read the code-navigation preview
+ * The review server reads the code-navigation preview
  * (`/api/code-nav/file`), the hover card's definition and the working-tree
  * side of `/api/file-content` through {@link readFileCapped}.
  *
@@ -14,8 +13,7 @@
  *   before any byte is read, so a huge file is never pulled into memory.
  * - Hangs: the file is opened with O_NONBLOCK and checked with fstat, so a
  *   FIFO (or device, or directory) is refused at once instead of blocking the
- *   read forever. Pi's server shares its host's event loop, so a blocked read
- *   there froze the whole process.
+ *   read forever.
  *
  * Request paths still get the cheap string checks the endpoints had: no
  * absolute path, no `..`, no NUL ({@link readRepoFile}).
@@ -58,7 +56,7 @@ export interface RepoFileReadOptions {
 	decode?: RepoFileDecoder;
 }
 
-/** HTTP status for each failure, so both servers answer alike. */
+/** HTTP status for each failure. */
 export const REPO_FILE_ERROR_STATUS: Record<RepoFileFailureReason, number> = {
 	"invalid-path": 400,
 	"not-found": 404,
@@ -66,7 +64,7 @@ export const REPO_FILE_ERROR_STATUS: Record<RepoFileFailureReason, number> = {
 	"too-large": 413,
 };
 
-/** The JSON error body both servers send for a failed read. */
+/** The JSON error body sent for a failed read. */
 export function repoFileErrorBody(failure: RepoFileFailure) {
 	return {
 		error: failure.message,

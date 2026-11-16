@@ -3,7 +3,7 @@
  * "inbox-artifact-stars", .product/approved/inbox-artifact-stars/; the word
  * is Pin). The window's routes (the page's `serverSession` on a write; reads
  * refuse another site, as the attachment routes do). Bun only: the Inbox
- * runs on the Bun server; the Pi server serves no Inbox route.
+ * runs on the Bun server.
  *
  *   GET  /api/inbox/artifact-pins   `{ pins: [{ key, thread_id, pinned_at }] }`, in pin order
  *   POST /api/inbox/artifact-pins   `{ thread_id, key, pinned: boolean }`: pin or unpin one artifact; `{ pins }`

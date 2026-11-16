@@ -1,6 +1,6 @@
 /**
  * Response headers for `GET /api/image?path=` (plan, annotate and review
- * servers, Bun and Pi). Vendored to Pi.
+ * servers).
  *
  * The route serves any local file whose name ends in an image extension, SVG
  * included. An SVG opened directly (a top-level tab, a frame) is a document,

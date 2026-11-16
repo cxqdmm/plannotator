@@ -45,7 +45,7 @@ async function serve(handle: { current: Handler }): Promise<{ server: Server; ur
   return { server, url: `http://127.0.0.1:${address.port}/` };
 }
 
-/** The Pi server before the pack (apps/pi-extension/server/helpers.ts `html`): the file as-is for every non-API path. */
+/** The pre-pack server behavior (the old `html` helper): the file as-is for every non-API path. */
 const oldServer = (bundle: string): Handler => (path) =>
   path.startsWith('/api/')
     ? { status: 404, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Not found', path }) }

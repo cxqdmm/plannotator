@@ -23,9 +23,8 @@ const HARDCODED = /(?:~|\$HOME|\$\{HOME\}|%USERPROFILE%|\$env:USERPROFILE)[/\\]\
 /**
  * Where agent instructions ship from: skills, slash commands and agent
  * definitions of every host. Tracked files only (`git ls-files`): builds copy
- * the skills into gitignored folders (apps/pi-extension/skills/,
- * apps/opencode-plugin/skills/), which are generated from these sources and
- * may be stale in a checkout.
+ * the skills into gitignored folders (apps/opencode-plugin/skills/), which
+ * are generated from these sources and may be stale in a checkout.
  */
 function shippedFiles(): string[] {
   const listed = Bun.spawnSync({
@@ -100,7 +99,6 @@ describe("shipped agent instructions never hardcode the data directory", () => {
     const files = shippedFiles();
     expect(files).toContain("apps/skills/extra/plannotator-compound/SKILL.md");
     expect(files).toContain("apps/skills/core/plannotator/SKILL.md");
-    expect(files).toContain("apps/kiro-cli/skills/plannotator-review/SKILL.md");
     expect(files).toContain("apps/opencode-plugin/commands/plannotator-review.md");
   });
 

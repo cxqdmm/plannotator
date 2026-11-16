@@ -5,7 +5,6 @@
  * server names it in `renderAs`, so /api/plan and /api/doc must say
  * "asciidoc" and serve the file's RAW text (never converted). The CLI must
  * accept the file, and a review of several files must carry the kind per file.
- * Pi mirrors this in apps/pi-extension/server/serverAnnotate-asciidoc.test.ts.
  */
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";

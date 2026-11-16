@@ -279,8 +279,7 @@ export interface ReviewServerOptions {
   workspace?: LocalWorkspaceReview;
   /**
    * Initial base branch the caller used to compute `rawPatch`. When a caller
-   * overrides the detected default (e.g. Pi's `openCodeReview` accepting a
-   * custom `defaultBranch`), this must be forwarded so the server's internal
+   * overrides the detected default, this must be forwarded so the server's internal
    * `currentBase` state, the `/api/diff` response, and downstream agent
    * prompts stay consistent with the patch that's already on screen.
    */
@@ -289,7 +288,7 @@ export interface ReviewServerOptions {
    * The caller pinned `initialBase` deliberately (a `--base` flag / an
    * explicit programmatic choice), not merely as the base its initial patch
    * happened to use. Seeds `baseExplicitlyChosen`: canonicalization off,
-   * startup upgrade suppressed. Additive and opt-in — Pi's plain
+   * startup upgrade suppressed. Additive and opt-in — the plain
    * forward-the-local-name-and-let-it-upgrade behavior is unchanged without
    * it.
    */
@@ -3113,8 +3112,7 @@ export async function startReviewServer(
               }
 
               // Guard against non-string payloads — resolveBaseBranch calls
-              // string methods and would throw a TypeError otherwise. Mirrors
-              // Pi's guard so both runtimes validate identically.
+              // string methods and would throw a TypeError otherwise.
               const requestedBase = typeof body.base === "string" ? body.base : undefined;
               // An explicit pick from the base picker is honored verbatim —
               // the local/remote groups are distinct choices, so "main" must
@@ -4057,7 +4055,7 @@ export async function startReviewServer(
               return Response.json({ error: "Local checkout unavailable" }, { status: 400 });
             }
             // Links followed like an editor; 5 MB cap and no FIFO hang
-            // (packages/shared/repo-file.ts, the Pi server uses the same).
+            // (packages/shared/repo-file.ts).
             const read = await readRepoFile(navCwd, url.searchParams.get("path"), { decode: decodeBunText });
             if (!read.ok) {
               return Response.json(repoFileErrorBody(read), { status: REPO_FILE_ERROR_STATUS[read.reason] });

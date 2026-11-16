@@ -1,6 +1,6 @@
 /**
- * Package changes in a PR review, both runtimes (Bun + Pi): how many GitHub
- * API calls the card costs before anyone consents to a lookup.
+ * Package changes in a PR review: how many GitHub API calls the card costs
+ * before anyone consents to a lookup.
  *
  * GitHub's hourly quota is shared with everything else the reviewer runs, so:
  *  - with a local checkout that holds the head commit, settings are read
@@ -19,7 +19,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { PRMetadata } from '@plannotator/shared/pr-types';
@@ -29,8 +28,6 @@ import type { PoolEntry, WorktreePool } from '@plannotator/shared/worktree-pool'
 import { NO_BROWSER } from '../../tests/helpers/no-browser';
 import { startReviewServer as startBunReviewServer } from './review';
 import { setPRCommandRuntimeForTests as setBunPRRuntime } from './pr';
-import { startReviewServer as startPiReviewServer } from '../../apps/pi-extension/server/serverReview';
-import { setPRCommandRuntimeForTests as setPiPRRuntime } from '../../apps/pi-extension/server/pr';
 import { createFakePRRuntime, type FakePRCommand } from '../../tests/helpers/fake-pr-runtime';
 
 const SAVED_ENV = ['PLANNOTATOR_AI', 'PLANNOTATOR_DATA_DIR', 'PLANNOTATOR_PORT', 'PLANNOTATOR_REMOTE', 'PLANNOTATOR_BROWSER', 'HOME', 'XDG_CONFIG_HOME', 'npm_config_globalconfig', 'npm_config_userconfig', 'npm_config_registry', 'NPM_CONFIG_REGISTRY'] as const;
@@ -41,7 +38,6 @@ const stops: (() => void)[] = [];
 afterEach(() => {
   for (const stop of stops.splice(0)) stop();
   setBunPRRuntime(null);
-  setPiPRRuntime(null);
   for (const k of SAVED_ENV) {
     if (original[k] === undefined) delete process.env[k];
     else process.env[k] = original[k];
@@ -59,18 +55,6 @@ function git(cwd: string, args: string[]): string {
   const result = spawnSync('git', args, { cwd, encoding: 'utf-8' });
   if (result.status !== 0) throw new Error(result.stderr || `git ${args.join(' ')} failed`);
   return result.stdout;
-}
-
-async function reservePort(): Promise<number> {
-  const server = createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => resolve());
-  });
-  const address = server.address();
-  const port = typeof address === 'object' && address ? address.port : 0;
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  return port;
 }
 
 const manifest = (deps: Record<string, string>) => JSON.stringify({ name: 'app', version: '1.0.0', dependencies: deps }, null, 2) + '\n';
@@ -123,7 +107,6 @@ type Analysis = { cards: { path: string; lookup: { names: string[] } }[]; lookup
 describe('package changes in a PR review: GitHub API calls before consent', () => {
   for (const [runtime, start, setRuntime] of [
     ['Bun', startBunReviewServer, setBunPRRuntime],
-    ['Pi', startPiReviewServer, setPiPRRuntime],
   ] as const) {
     async function review(n: number, checkout: boolean | 'late') {
       process.env.PLANNOTATOR_AI = 'disabled';
@@ -136,8 +119,7 @@ describe('package changes in a PR review: GitHub API calls before consent', () =
       delete process.env.npm_config_userconfig;
       delete process.env.npm_config_registry;
       delete process.env.NPM_CONFIG_REGISTRY;
-      if (runtime === 'Pi') process.env.PLANNOTATOR_PORT = String(await reservePort());
-      else delete process.env.PLANNOTATOR_PORT;
+      delete process.env.PLANNOTATOR_PORT;
 
       const { repo, base, head, patch } = makePRRepo(n);
       const fake = createFakePRRuntime(contentsFrom(repo));

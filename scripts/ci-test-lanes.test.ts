@@ -45,16 +45,14 @@ describe('Test workflow lanes', () => {
     expect(laneNames().length).toBe(Object.keys(HEAVY_LANES).length + UNIT_SHARDS + DOM_SHARDS);
   });
 
-  test('the unit and dom jobs run their lane through the script, after vendor.sh', () => {
+  test('the unit and dom jobs run their lane through the script', () => {
     // A matrix that names every lane runs nothing if its job stops calling the
-    // script (or calls it before the Pi extension's shared copies exist).
+    // script.
     const jobs = (Bun.YAML.parse(workflow) as { jobs: Record<string, { steps?: { run?: string; env?: Record<string, string> }[] }> }).jobs;
     for (const name of ['unit', 'dom']) {
       const runs = (jobs[name]?.steps ?? []).map((step) => step.run?.trim());
-      const vendor = runs.indexOf('bash apps/pi-extension/vendor.sh');
       const lane = runs.indexOf('bun run scripts/ci-test-lane.ts "$LANE"');
-      expect(vendor, `${name}: vendor.sh step`).toBeGreaterThanOrEqual(0);
-      expect(lane, `${name}: lane step after vendor.sh`).toBeGreaterThan(vendor);
+      expect(lane, `${name}: lane step`).toBeGreaterThanOrEqual(0);
       expect(jobs[name].steps![lane].env?.LANE, `${name}: LANE`).toBe('${{ matrix.lane }}');
     }
   });

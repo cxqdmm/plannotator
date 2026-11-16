@@ -154,6 +154,6 @@ export function openPackedApp(bundle: string): PackedApp {
 /** Fetch-API flavor for the Bun servers. */
 export async function packedAppResponse(app: PackedApp, req: Request, pathname: string, compress: boolean): Promise<Response> {
   const answer = await app.answer(pathname, req.method, req.headers.get("accept-encoding"), compress);
-  // A Buffer is a valid fetch body in both runtimes; the lib types lag.
+  // A Buffer is a valid fetch body in Bun; the lib types lag.
   return new Response(answer.body as BodyInit, { status: answer.status, headers: answer.headers });
 }

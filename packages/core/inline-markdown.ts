@@ -14,7 +14,7 @@ const LINK_RE = new RegExp(String.raw`\[((?:[^\][]|\[[^\][]*\])*)\]` + INLINE_DE
  * this; the question parser's `normalizeQuestionText` drops the marks).
  *
  * Imports nothing, so core/question-block and core/inbox-folding can both use
- * it with no cycle (Pi vendors it beside question-block: apps/pi-extension/vendor.sh).
+ * it with no cycle.
  *
  * Every pattern stops at the next opener (`[`, `<`; a link's destination at
  * a `(` it does not close; a link label at a `[` past its one nested pair),

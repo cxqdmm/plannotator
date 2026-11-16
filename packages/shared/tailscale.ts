@@ -9,7 +9,7 @@
  *   - `--tailscale` (Bun CLI): parse/compose the `tailscale serve` commands
  *     that publish a loopback-bound session over the tailnet with HTTPS.
  *
- * Pure parsers live here so both runtimes (Bun server, Pi extension) share
+ * Pure parsers live here so the server and the CLI share
  * them. The only process-spawning edge is `runTailscale`, which never invokes
  * a shell and is injectable for tests; it and the Inbox's async runner
  * (inbox-pairing-checks.ts) share one lookup, `tailscaleAppFallback`.
@@ -514,8 +514,7 @@ export function decodeTailscaleHeaderValue(value: string): string | null {
  * remote-session state before resolving, so a local session never spawns the
  * tailscale CLI. A failed detection warns once and resolves undefined
  * (callers advertise localhost); a display setting must never break a server
- * launch. Shared by the Bun runtime and the Pi mirror (vendored copy), each
- * process holding its own cache.
+ * launch. One cache per process.
  */
 let autoHostResolution: { host: string | undefined } | undefined;
 

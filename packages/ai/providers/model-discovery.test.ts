@@ -168,9 +168,9 @@ describe("Claude model discovery", () => {
     expect(provider.models).toBe(CLAUDE_FALLBACK_MODELS);
   }, 15_000);
 
-  // Discovery spawns `claude`, so neither runtime may run it at startup — only
+  // Discovery spawns `claude`, so the runtime may not run it at startup — only
   // behind the deferred initializer (?activate= from a picker, or a session).
-  for (const relPath of ["packages/server/ai-runtime.ts", "apps/pi-extension/server/ai-runtime.ts"]) {
+  for (const relPath of ["packages/server/ai-runtime.ts"]) {
     test(`${relPath} defers Claude model discovery`, () => {
       const src = readFileSync(resolve(import.meta.dir, "../../..", relPath), "utf8");
       const start = src.indexOf('"claude-agent-sdk"');
@@ -179,7 +179,7 @@ describe("Claude model discovery", () => {
       expect(end).toBeGreaterThan(start);
       const block = src.slice(start, end);
       // Claude sessions never wait on discovery (fix: first Ask AI answer
-      // blocked ~2-10s); both runtimes must register it that way.
+      // blocked ~2-10s); the runtime must register it that way.
       expect(block).toContain("deferModelDiscovery(providerId, provider, { blockSession: false })");
       expect(block).not.toContain("modelDiscovery.push");
     });

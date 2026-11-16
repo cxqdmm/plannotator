@@ -53,7 +53,6 @@ const E2E_SPEC = /^tests\/e2e\/[^/]+\.spec\.ts$/;
 
 /** Files this command does not run: each starts something real on purpose. */
 const REFUSED: Record<string, string> = {
-  "apps/pi-extension/inbox.test.ts": "starts the installed Pi agent; run it on purpose, not through test:sandbox",
   "tests/never-touch-the-real-inbox.test.ts": "starts Inbox servers to prove the real-Inbox guards; run it on purpose, not through test:sandbox",
 };
 

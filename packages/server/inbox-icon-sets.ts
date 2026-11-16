@@ -1,6 +1,6 @@
 /**
  * Plannotator Inbox: icon sets for agents' icons ("Sets" in the face picker; core `inbox-types.ts`, "Agent faces").
- * Bun only: the Inbox runs on the Bun server; the Pi server serves no Inbox route.
+ * Bun only: the Inbox runs on the Bun server.
  *
  *   GET  /api/inbox/icon-sets[?remote=1]        { sets }: the built-in sets, then the fetchable ones (`remote=1`: the
  *                                                pointer is read too, the only time it is; the picker's Sets asks it)

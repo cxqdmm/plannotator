@@ -3,8 +3,7 @@
  * than PLANNOTATOR_FILE_BROWSER_MAX_FILES: GET /api/reference/files on a real
  * annotate folder session says it left files out (`truncated`, `fileLimit`),
  * lists the folder's top levels first (breadth-first), and never counts the
- * heavy folders. Shared by the Bun suite (file-browser-cap.test.ts) and the Pi
- * mirror (apps/pi-extension/server/file-browser-cap.test.ts).
+ * heavy folders. Shared by the Bun suite (file-browser-cap.test.ts).
  *
  * Every test runs under a temp PLANNOTATOR_DATA_DIR; nothing touches the real
  * ~/.plannotator.
@@ -74,8 +73,7 @@ function seedFolder(root: string): void {
 
 /**
  * `defaultCap`: the cap with PLANNOTATOR_FILE_BROWSER_MAX_FILES unset. Bun
- * keeps 5,000; Pi's file browser never had a cap, so it lists every file
- * unless the variable is set (null).
+ * keeps 5,000; `null` means no cap, so every file is listed.
  */
 export function defineFileBrowserCapScenarios(
   runtime: string,

@@ -2,8 +2,7 @@
  * Bun adapter for the Host-header allowlist (packages/shared/request-host.ts).
  * Every Bun server (plan, review, annotate, goal setup) builds one guard at
  * start and runs it first in `fetch`, before any route, so the app HTML, every
- * API and the WebSocket upgrades are covered alike. The Pi mirror is
- * apps/pi-extension/server/request-host-guard.ts.
+ * API and the WebSocket upgrades are covered alike.
  */
 
 import os from "node:os";

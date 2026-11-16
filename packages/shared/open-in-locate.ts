@@ -1,11 +1,10 @@
 /**
  * Where a catalog app is installed on this computer: the one answer both the
- * "is it installed" check (GET /api/open-in/apps) and the launch use, in both
- * server runtimes (Bun: packages/server/open-in.ts, Pi:
- * apps/pi-extension/server/open-in-apps.ts, vendored to generated/).
+ * "is it installed" check (GET /api/open-in/apps) and the launch use
+ * (packages/server/open-in.ts).
  *
  * The runtime-specific parts (PATH lookup, the filesystem) come in as `deps`
- * so each runtime keeps its own PATH resolution and tests can stub every one.
+ * so the caller keeps its own PATH resolution and tests can stub every one.
  */
 
 import fs from "node:fs";
