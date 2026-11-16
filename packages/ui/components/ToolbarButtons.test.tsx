@@ -32,7 +32,7 @@ describe('ToolbarButtons responsive labels', () => {
     expect(html).toContain('hidden lg:inline xl:hidden');
     expect(html).toContain('hidden xl:inline');
     expect(html).toContain('lg:hidden');
-    expect(html).toContain('aria-label="Close session without sending feedback"');
+    expect(html).toContain('aria-label="关闭会话且不发送反馈"');
     expect(html).toContain('lucide-x');
   });
 });

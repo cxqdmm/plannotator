@@ -381,7 +381,7 @@ describe.if(hasDom)("App document permissions", () => {
     expect(findButtonContaining("Ask AI")).not.toBeUndefined();
     expect(findButtonContaining("Review and finish")).not.toBeUndefined();
     expect(findButton("Close session")).toBeUndefined();
-    expect(findButton("Approve")).toBeUndefined();
+    expect(findButton("通过")).toBeUndefined();
     expect(findButtonContaining("Edit document")).not.toBeUndefined();
 
     await act(async () => findButtonContaining("Annotations")?.click());
@@ -407,7 +407,7 @@ describe.if(hasDom)("App document permissions", () => {
     await act(async () => reviewTrigger.click());
     expect(document.querySelector('[data-pn-compact-plan-stage="true"]')?.getAttribute("aria-label")).toBe("Review");
     expect(findButton("Close session")).not.toBeUndefined();
-    expect(findButton("Approve")).not.toBeUndefined();
+    expect(findButton("通过")).not.toBeUndefined();
     const closeReview = document.querySelector<HTMLButtonElement>('button[aria-label="Close Review"]');
     if (!closeReview) throw new Error("Compact Review close control did not render");
     await act(async () => closeReview.click());
@@ -437,7 +437,7 @@ describe.if(hasDom)("App document permissions", () => {
     const reviewTrigger = document.querySelector<HTMLButtonElement>("#pn-compact-plan-review-trigger");
     if (!reviewTrigger) throw new Error("Compact review trigger did not render");
     await act(async () => reviewTrigger.click());
-    const approve = findButton("Approve");
+    const approve = findButton("通过");
     if (!approve) throw new Error("Compact review did not expose Approve");
     requestedRoutes = [];
     await act(async () => {

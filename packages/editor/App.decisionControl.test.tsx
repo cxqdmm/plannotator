@@ -332,7 +332,7 @@ describe.if(hasDom)("annotate decision control", () => {
     seedAnnouncementsSeen();
     await mountAnnotate();
 
-    await openComposer("Send a note");
+    await openComposer("发送备注");
     await typeNote("tighten the intro");
     await pressNoteKey("Enter", { metaKey: true });
 
@@ -360,7 +360,7 @@ describe.if(hasDom)("annotate decision control", () => {
 
     const items = Array.from(document.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'));
     expect(items).toHaveLength(1);
-    expect(menuItem("Done with a note")).toBeUndefined();
+    expect(menuItem("完成并附备注")).toBeUndefined();
   });
 
   test("the note rides alongside annotations already in the session", async () => {
@@ -381,7 +381,7 @@ describe.if(hasDom)("annotate decision control", () => {
     await settle();
     await settle();
 
-    await openComposer("Send with a note");
+    await openComposer("附备注发送");
     await typeNote("also: ship it");
     await pressNoteKey("Enter", { metaKey: true });
 
@@ -425,14 +425,14 @@ describe.if(hasDom)("annotate decision control", () => {
 
     await act(async () => caretButton()!.click());
     await settle();
-    const discardItem = menuItem("discard 1 annotation");
+    const discardItem = menuItem("放弃 1 条标注");
     if (!discardItem) throw new Error("discard menu item not found");
     await act(async () => discardItem.click());
     await settle();
 
     // Frozen copy (maintainer-approved): 'Discard & finish' is the confirm.
     const confirm = Array.from(document.querySelectorAll<HTMLButtonElement>("button"))
-      .find((el) => el.textContent === "Discard & finish");
+      .find((el) => el.textContent === "放弃并完成");
     if (!confirm) throw new Error("discard confirm did not open");
     expect(submissions).toHaveLength(0); // nothing sent before the confirm
     await act(async () => confirm.click());
@@ -450,16 +450,16 @@ describe.if(hasDom)("annotate decision control", () => {
     seedAnnouncementsSeen();
     await mountAnnotate();
 
-    await openComposer("Send a note");
+    await openComposer("发送备注");
     await typeNote("not ready to send");
     await pressNoteKey("Escape");
 
     // Back at the menu, nothing submitted.
     expect(noteInput()).toBeNull();
-    expect(menuItem("Send a note")).toBeDefined();
+    expect(menuItem("发送备注")).toBeDefined();
     expect(submissions).toHaveLength(0);
 
-    const item = menuItem("Send a note")!;
+    const item = menuItem("发送备注")!;
     await act(async () => item.click());
     await settle();
     expect(noteInput()?.value).toBe("not ready to send");
@@ -475,7 +475,7 @@ describe.if(hasDom)("annotate decision control", () => {
     failFeedbackPosts = 1;
     await mountAnnotate();
 
-    await openComposer("Send a note");
+    await openComposer("发送备注");
     await typeNote("hold the line");
     await pressNoteKey("Enter", { metaKey: true });
 
@@ -650,7 +650,7 @@ describe.if(hasDom)("annotate completion screen", () => {
     useImmediateHostClose();
     await mountAnnotate();
 
-    await openComposer("Send a note");
+    await openComposer("发送备注");
     await typeNote("tighten the intro");
     await pressNoteKey("Enter", { metaKey: true });
 
@@ -752,10 +752,10 @@ describe.if(hasDom)("annotate completion screen", () => {
 
     await act(async () => caretButton()!.click());
     await settle();
-    await act(async () => menuItem("discard 1 annotation")!.click());
+    await act(async () => menuItem("放弃 1 条标注")!.click());
     await settle();
     const confirm = Array.from(document.querySelectorAll<HTMLButtonElement>("button"))
-      .find((el) => el.textContent === "Discard & finish");
+      .find((el) => el.textContent === "放弃并完成");
     await act(async () => confirm!.click());
     await settle();
 
@@ -828,7 +828,7 @@ describe.if(hasDom)("annotate: a send that does not reach Plannotator", () => {
   }
 
   async function sendNote(text: string): Promise<void> {
-    await openComposer("Send a note");
+    await openComposer("发送备注");
     await typeNote(text);
     await pressNoteKey("Enter", { metaKey: true });
   }

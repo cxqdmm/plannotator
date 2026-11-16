@@ -390,7 +390,7 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
   test("empty-state Approve posts the bare approval body (no LGTM placeholder)", async () => {
     await mountReview();
 
-    expect(primaryButton()!.title).toContain("Approve");
+    expect(primaryButton()!.title).toContain("通过");
     await act(async () => primaryButton()!.click());
     await settle();
 
@@ -411,7 +411,7 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
     await settle();
     await settle();
 
-    expect(primaryButton()!.title).toContain("Send");
+    expect(primaryButton()!.title).toContain("发送");
     await act(async () => primaryButton()!.click());
     await settle();
 
@@ -428,7 +428,7 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
   test("Request changes… delivers the note as a scope:'general' sentinel annotation and in the export", async () => {
     await mountReview();
 
-    await openComposer("Request changes");
+    await openComposer("要求修改");
     await typeNote("rebase on main before merging");
     await pressNoteKey("Enter", { metaKey: true });
 
@@ -456,14 +456,14 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
     await settle();
 
     await openMenu();
-    const discardItem = menuItem("discard 1 annotation");
+    const discardItem = menuItem("放弃 1 条标注");
     if (!discardItem) throw new Error("discard menu item not found");
     await act(async () => discardItem.click());
     await settle();
 
     // Frozen copy (maintainer-approved): 'Discard & approve' is the confirm.
     const confirm = Array.from(document.querySelectorAll<HTMLButtonElement>("button"))
-      .find((el) => el.textContent === "Discard & approve");
+      .find((el) => el.textContent === "放弃并通过");
     if (!confirm) throw new Error("discard confirm did not open");
     expect(submissions).toHaveLength(0); // nothing sent before the confirm
     await act(async () => confirm.click());
@@ -490,7 +490,7 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
     await settle();
 
     await openMenu();
-    const discardItem = menuItem("discard 1 annotation");
+    const discardItem = menuItem("放弃 1 条标注");
     if (!discardItem) throw new Error("discard menu item not found");
     await act(async () => discardItem.click());
     await settle();
@@ -518,7 +518,7 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
     failFeedbackPosts = 1;
     await mountReview();
 
-    await openComposer("Request changes");
+    await openComposer("要求修改");
     await typeNote("hold the line");
     await pressNoteKey("Enter", { metaKey: true });
 
@@ -528,7 +528,7 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
     expect((submissions[0]!.annotations ?? []).some((a) => a.scope === "general" && a.text === "hold the line")).toBe(true);
     const primary = primaryButton();
     expect(primary).not.toBeNull(); // still reviewable, not submitted
-    expect(primary!.title).toContain("Send"); // the note kept the feedback state
+    expect(primary!.title).toContain("发送"); // the note kept the feedback state
 
     // Retry via the primary: the same note-carrying body posts and succeeds.
     await act(async () => primary!.click());
@@ -560,7 +560,7 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
     await settle();
     await settle();
 
-    expect(primaryButton()!.title).toContain("Send");
+    expect(primaryButton()!.title).toContain("发送");
     expect(noteInput()).toBeNull();
     await act(async () => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", metaKey: true, shiftKey: true, bubbles: true, cancelable: true }));
@@ -656,8 +656,8 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
     await settle();
 
     await openMenu();
-    expect(menuItem("Approve with notes")).toBeUndefined();
-    expect(menuItem("discard 1 annotation")).toBeDefined(); // the menu itself is live
+    expect(menuItem("通过并附备注")).toBeUndefined();
+    expect(menuItem("放弃 1 条标注")).toBeDefined(); // the menu itself is live
     await act(async () => {
       document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
     });
@@ -678,7 +678,7 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
     await settle();
 
     await openMenu();
-    const item = menuItem("Approve with notes");
+    const item = menuItem("通过并附备注");
     if (!item) throw new Error("Approve with notes did not render under the advert");
     await act(async () => item.click());
     await settle();
@@ -694,8 +694,8 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
     await mountReview();
 
     await openMenu();
-    expect(menuItem("Approve with a note")).toBeUndefined();
-    expect(menuItem("Request changes")).toBeDefined();
+    expect(menuItem("通过并附备注")).toBeUndefined();
+    expect(menuItem("要求修改")).toBeDefined();
   });
 
   // Spec §3.3 / test 17 — the state-driven proof, wired end to end: the
@@ -705,7 +705,7 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
   // dropped from the sidebar mount, or the handler stamping PR context.
   test("a sidebar general comment flips the header to Send Feedback and rides the posted body", async () => {
     await mountReview();
-    expect(primaryButton()!.textContent).toContain("Approve");
+    expect(primaryButton()!.textContent).toContain("通过");
 
     await act(async () => {
       document.querySelector<HTMLButtonElement>('button[title="Annotations"]')!.click();
@@ -732,7 +732,7 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
 
     // The control is state-driven: one durable comment flips the primary.
     // The label carries no count (maintainer ruling); the count lives in the menu copy only.
-    expect(primaryButton()!.textContent).toContain("Send Feedback");
+    expect(primaryButton()!.textContent).toContain("发送反馈");
     expect(primaryButton()!.textContent).not.toMatch(/\d/);
 
     await act(async () => primaryButton()!.click());
@@ -809,7 +809,7 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
     root = null;
     host?.remove();
     host = null;
-    await mount(() => document.body.textContent?.includes("Approve"), () => {});
+    await mount(() => document.body.textContent?.includes("通过"), () => {});
     expect(isOpen()).toBe(false);
   });
 
@@ -817,7 +817,7 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
     const target = window as { __PLANNOTATOR_VSCODE?: unknown };
     target.__PLANNOTATOR_VSCODE = true;
     try {
-      await mount(() => document.body.textContent?.includes("Approve"), () => {
+      await mount(() => document.body.textContent?.includes("通过"), () => {
         seedFirstRunSeen();
         memory.set("plannotator-token-hover-announcement-seen", "1");
         memory.delete("plannotator-announce-inbox-seen");
@@ -898,7 +898,7 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
 
     // Frozen copy (maintainer-approved): the positive row is 'Approve'.
     const positive = Array.from(document.querySelectorAll<HTMLButtonElement>("button"))
-      .find((el) => el.textContent?.trim() === "Approve");
+      .find((el) => el.textContent?.trim() === "通过");
     expect(positive).toBeDefined();
     await act(async () => positive!.click());
     await settle();
@@ -952,7 +952,7 @@ describe.if(hasDom)("review decision control (platform mode)", () => {
     await settle();
 
     // Frozen copy (maintainer-approved): 'Post Comments' is the platform primary.
-    expect(primaryButton()!.textContent).toContain("Post Comments");
+    expect(primaryButton()!.textContent).toContain("发布评论");
     await act(async () => primaryButton()!.click());
     await settle();
 
@@ -973,7 +973,7 @@ describe.if(hasDom)("review decision control (platform mode)", () => {
     await settle();
 
     await openMenu();
-    const thenItem = menuItem("Post comments, then");
+    const thenItem = menuItem("发布评论，然后");
     if (!thenItem) throw new Error("Post comments, then… did not render");
     await act(async () => thenItem.click());
     await settle();
@@ -1028,7 +1028,7 @@ describe.if(hasDom)("review decision control (platform mode)", () => {
     await mountReview();
 
     await openMenu();
-    const requestItem = menuItem("Request changes");
+    const requestItem = menuItem("要求修改");
     if (!requestItem) throw new Error("Request changes… did not render");
     expect(requestItem.disabled).toBe(false);
     await act(async () => requestItem.click());
@@ -1053,7 +1053,7 @@ describe.if(hasDom)("review decision control (platform mode)", () => {
     await settle();
 
     await openMenu();
-    const item = menuItem("Approve with comments");
+    const item = menuItem("通过并附评论");
     if (!item) throw new Error("Approve with comments… did not render");
     expect(item.disabled).toBe(false); // not self-authored
     await act(async () => item.click());
@@ -1074,12 +1074,12 @@ describe.if(hasDom)("review decision control (platform mode)", () => {
     expect(primaryButton()!.getAttribute("aria-disabled")).toBeNull();
 
     await openMenu();
-    const approveItem = menuItem("Approve with comments");
+    const approveItem = menuItem("通过并附评论");
     if (!approveItem) throw new Error("muted approve item must render, not disappear");
     expect(approveItem.disabled).toBe(true);
-    expect(approveItem.textContent).toContain("You can't approve your own PR");
+    expect(approveItem.textContent).toContain("你无法通过自己的 PR");
 
-    const thenItem = menuItem("Post comments, then");
+    const thenItem = menuItem("发布评论，然后");
     if (!thenItem) throw new Error("Post comments, then… did not render");
     expect(thenItem.disabled).toBe(false);
     await act(async () => thenItem.click());
@@ -1093,7 +1093,7 @@ describe.if(hasDom)("review decision control (platform mode)", () => {
     seedPlatformSession();
     await mountReview();
 
-    expect(primaryButton()!.textContent).toContain("Approve");
+    expect(primaryButton()!.textContent).toContain("通过");
     await act(async () => primaryButton()!.click());
     await settle();
     expect(submissionDialogOpen("Approve PR")).toBe(true);
@@ -1123,7 +1123,7 @@ describe.if(hasDom)("review decision control (platform mode)", () => {
     await mountReview();
 
     const primary = primaryButton()!;
-    expect(primary.textContent).toContain("Approve");
+    expect(primary.textContent).toContain("通过");
     expect(primary.getAttribute("aria-disabled")).toBeNull();
     await act(async () => primary.click());
     await settle();
@@ -1140,7 +1140,7 @@ describe.if(hasDom)("review decision control (platform mode)", () => {
     await act(async () => Array.from(document.querySelectorAll("button")).find((b) => b.textContent === "Cancel")?.click());
     await settle();
     await openMenu();
-    expect(menuItem("Request changes")?.disabled).toBe(false);
+    expect(menuItem("要求修改")?.disabled).toBe(false);
   });
 
   test("self-authored empty state: muted primary is a no-op (click and Mod+Enter); Request changes… mutes, Comment… stays live", async () => {
@@ -1155,7 +1155,7 @@ describe.if(hasDom)("review decision control (platform mode)", () => {
     const describedBy = primary.getAttribute("aria-describedby");
     expect(describedBy).toBeTruthy();
     expect(document.getElementById(describedBy!)?.textContent)
-      .toBe("You can't approve your own pull request on GitHub.");
+      .toBe("你无法在 GitHub 上通过自己的 PR。");
     expect(primary.title).toBe(""); // no native title doubling the tooltip
 
     await act(async () => primary.click());
@@ -1167,14 +1167,16 @@ describe.if(hasDom)("review decision control (platform mode)", () => {
     // GitHub refuses REQUEST_CHANGES on your own PR like APPROVE (#1611), so
     // Request changes… mutes with the reason; Comment… is the live path.
     await openMenu();
-    const approveItem = menuItem("Approve with a comment");
+    const approveItem = menuItem("通过并附评论");
     if (!approveItem) throw new Error("muted approve item must render, not disappear");
     expect(approveItem.disabled).toBe(true);
-    const requestItem = menuItem("Request changes");
+    const requestItem = menuItem("要求修改");
     if (!requestItem) throw new Error("Request changes… must render muted, not disappear");
     expect(requestItem.disabled).toBe(true);
-    expect(requestItem.textContent).toContain("You can't request changes on your own PR");
-    const commentItem = menuItem("Comment…");
+    expect(requestItem.textContent).toContain("你无法对自己的 PR 要求修改");
+    // Exact: "通过并附评论…" also contains "评论…".
+    const commentItem = Array.from(document.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'))
+      .find((el) => el.textContent?.trim() === "评论…");
     if (!commentItem) throw new Error("Comment… did not render");
     expect(commentItem.disabled).toBe(false);
     // Roving focus skips the dead rows: initial focus lands on the first
@@ -1201,7 +1203,7 @@ describe.if(hasDom)("review decision control (platform mode)", () => {
     await settle();
     await settle();
 
-    expect(primaryButton()!.textContent).toContain("Post Comments");
+    expect(primaryButton()!.textContent).toContain("发布评论");
 
     // A tap is Alt going down and coming up alone (the registry's double-tap).
     const tapAlt = () => {
@@ -1218,10 +1220,10 @@ describe.if(hasDom)("review decision control (platform mode)", () => {
 
     await doubleTapAlt();
     // Agent spec, same annotation count — the flip swaps the spec, never the state.
-    expect(primaryButton()!.textContent).toContain("Send Feedback");
+    expect(primaryButton()!.textContent).toContain("发送反馈");
 
     await doubleTapAlt();
-    expect(primaryButton()!.textContent).toContain("Post Comments");
+    expect(primaryButton()!.textContent).toContain("发布评论");
     expect(submissions).toHaveLength(0);
 
     // ⌥F5 twice (Next change) and Alt+← twice (Back on Windows) hold Alt
@@ -1236,7 +1238,7 @@ describe.if(hasDom)("review decision control (platform mode)", () => {
         }
       });
       await settle();
-      expect(primaryButton()!.textContent).toContain("Post Comments");
+      expect(primaryButton()!.textContent).toContain("发布评论");
     }
   });
 });
@@ -1277,7 +1279,7 @@ describe.if(hasDom)("review: a send that does not reach Plannotator", () => {
       await mountReview();
       await settle();
       await settle();
-      expect(primaryButton()!.title).toContain("Send");
+      expect(primaryButton()!.title).toContain("发送");
       await act(async () => primaryButton()!.click());
       await waitFor(failureToast, "the failure message");
 
@@ -1310,6 +1312,6 @@ describe.if(hasDom)("review: a send that does not reach Plannotator", () => {
     expect(failureToast()!.textContent).toContain("Approval not sent");
     expect(failureToast()!.textContent).toContain("500");
     expect(Boolean(toastButton("Copy feedback"))).toBe(false);
-    expect(primaryButton()!.title).toContain("Approve");
+    expect(primaryButton()!.title).toContain("通过");
   });
 });

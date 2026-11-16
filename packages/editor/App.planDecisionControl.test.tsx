@@ -259,7 +259,7 @@ async function chooseComposer(labelPart: string, note: string): Promise<void> {
  *  the primary reads Send Feedback (the note is now a general comment) and a
  *  click posts the deny it names, never the approve. */
 async function expectPrimarySendsFeedback(note: string, before: number): Promise<void> {
-  await waitFor(() => primaryButton()?.textContent?.includes("Send Feedback"), "Send Feedback");
+  await waitFor(() => primaryButton()?.textContent?.includes("发送反馈"), "Send Feedback");
   await act(async () => primaryButton()!.click());
   await waitFor(() => decisions.length > before, "the deny");
   expect(decisions.slice(before).map((d) => d.endpoint)).toEqual(["deny"]);
@@ -281,7 +281,7 @@ const COMMENT = {
 async function mountWithComment(plan: Record<string, unknown>): Promise<void> {
   seededExternalAnnotations = [COMMENT];
   await mount(planPayload(plan));
-  await waitFor(() => primaryButton()?.textContent?.includes("Send Feedback"), "Send Feedback");
+  await waitFor(() => primaryButton()?.textContent?.includes("发送反馈"), "Send Feedback");
 }
 
 afterEach(async () => {
@@ -311,11 +311,11 @@ afterAll(() => {
 describe.if(hasDom)("plan review decision control", () => {
   test("Claude Code hook, nothing to send: Approve; the menu has Request changes and the permission line", async () => {
     await mount(planPayload());
-    expect(primaryButton()!.textContent).toContain("Approve");
-    expect(buttonWithText("Send Feedback")).toBeUndefined(); // one control, not two buttons
+    expect(primaryButton()!.textContent).toContain("通过");
+    expect(buttonWithText("发送反馈")).toBeUndefined(); // one control, not two buttons
 
     await openMenu();
-    expect(menuLabels()).toEqual(["Request changes…"]);
+    expect(menuLabels()).toEqual(["要求修改…"]);
     const line = document.querySelector("[data-permission-mode-line]");
     expect(line?.textContent).toContain("Claude Code");
     expect(line?.textContent).toContain("Auto-accept Edits");
@@ -342,7 +342,7 @@ describe.if(hasDom)("plan review decision control", () => {
 
   test("Request changes… posts the note as a GLOBAL_COMMENT on /api/deny", async () => {
     await mount(planPayload());
-    await chooseComposer("Request changes", "split the migration out");
+    await chooseComposer("要求修改", "split the migration out");
     expect(decisions).toHaveLength(1);
     expect(decisions[0]!.endpoint).toBe("deny");
     expect(decisions[0]!.body.feedback).toContain("split the migration out");
@@ -352,8 +352,8 @@ describe.if(hasDom)("plan review decision control", () => {
   test("Claude Code hook with a comment: Send Feedback; Mod+Enter posts the deny; no Approve with notes", async () => {
     await mountWithComment({});
     await openMenu();
-    expect(menuLabels()).toEqual(["Send with a note…", "Approve, discard 1 annotation…"]);
-    expect(menuItem("Approve, discard")!.textContent).toContain("Claude Code can't take notes on approval");
+    expect(menuLabels()).toEqual(["附备注发送…", "通过，放弃 1 条标注…"]);
+    expect(menuItem("放弃 1 条标注")!.textContent).toContain("Claude Code 在通过时不接收备注");
     await act(async () => caretButton()!.click());
     await settle();
 
@@ -368,11 +368,11 @@ describe.if(hasDom)("plan review decision control", () => {
   test("the discard confirm names the agent and posts a bare approval", async () => {
     await mountWithComment({});
     await openMenu();
-    await act(async () => menuItem("Approve, discard")!.click());
+    await act(async () => menuItem("放弃 1 条标注")!.click());
     await settle();
-    expect(document.body.textContent).toContain("Claude Code doesn't take feedback on approval");
+    expect(document.body.textContent).toContain("Claude Code 在通过时不接收反馈");
     expect(decisions).toHaveLength(0);
-    await act(async () => buttonWithText("Discard & approve")!.click());
+    await act(async () => buttonWithText("放弃并通过")!.click());
     await waitFor(() => decisions.length > 0, "approve");
     expect(decisions[0]!.endpoint).toBe("approve");
     expect(decisions[0]!.body.feedback).toBeUndefined();
@@ -382,8 +382,8 @@ describe.if(hasDom)("plan review decision control", () => {
   test("a host that delivers notes: Approve with notes posts the comments as the approval's feedback", async () => {
     await mountWithComment({ origin: "pi", approvalNotesSupported: true });
     await openMenu();
-    expect(menuLabels()).toEqual(["Send with a note…", "Approve with notes", "Approve, discard 1 annotation…"]);
-    await act(async () => menuItem("Approve with notes")!.click());
+    expect(menuLabels()).toEqual(["附备注发送…", "通过并附备注", "通过，放弃 1 条标注…"]);
+    await act(async () => menuItem("通过并附备注")!.click());
     await waitFor(() => decisions.length > 0, "approve");
     expect(decisions[0]!.endpoint).toBe("approve");
     expect(decisions[0]!.body.feedback).toContain("use libsecret on Linux");
@@ -392,7 +392,7 @@ describe.if(hasDom)("plan review decision control", () => {
 
   test("Approve with a note… rides the approval on a host that delivers notes", async () => {
     await mount(planPayload({ origin: "pi", approvalNotesSupported: true }));
-    await chooseComposer("Approve with a note", "ship it after the spike");
+    await chooseComposer("通过并附备注", "ship it after the spike");
     expect(decisions[0]!.endpoint).toBe("approve");
     expect(decisions[0]!.body.feedback).toContain("ship it after the spike");
   });
@@ -403,10 +403,10 @@ describe.if(hasDom)("plan review decision control", () => {
     const label = Array.from(document.querySelectorAll("fieldset[data-question-key] label"))
       .find((el) => el.textContent?.includes("Nowhere"))!.querySelector("span")!;
     await act(async () => (label as HTMLElement).click());
-    await waitFor(() => primaryButton()?.textContent?.includes("Send answers"), "Send answers");
+    await waitFor(() => primaryButton()?.textContent?.includes("发送回答"), "Send answers");
 
     await openMenu();
-    expect(menuLabels()).toEqual(["Send answers with a note…", "Approve with notes", "Approve, discard 1 answer…"]);
+    expect(menuLabels()).toEqual(["附备注发送回答…", "通过并附备注", "通过，放弃 1 个回答…"]);
     await act(async () => caretButton()!.click());
     await settle();
 
@@ -419,7 +419,7 @@ describe.if(hasDom)("plan review decision control", () => {
   test("OpenCode: the agent picker is a menu section; a pick renames Approve and is what approval posts", async () => {
     agents = [{ id: "build", name: "build" }, { id: "plan", name: "plan" }];
     await mount(planPayload({ origin: "opencode", approvalNotesSupported: true }));
-    await waitFor(() => primaryButton()?.textContent?.includes("Approve → build"), "Approve → build");
+    await waitFor(() => primaryButton()?.textContent?.includes("通过 → build"), "Approve → build");
 
     await openMenu();
     const radios = Array.from(document.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]'));
@@ -430,7 +430,7 @@ describe.if(hasDom)("plan review decision control", () => {
     // A pick is not a decision: the menu stays open and nothing is posted.
     expect(document.querySelector('[data-decision-popover="menu"]')).not.toBeNull();
     expect(decisions).toHaveLength(0);
-    expect(primaryButton()!.textContent).toContain("Approve → plan");
+    expect(primaryButton()!.textContent).toContain("通过 → plan");
 
     await act(async () => primaryButton()!.click());
     await waitFor(() => decisions.length > 0, "approve");
@@ -450,7 +450,7 @@ describe.if(hasDom)("plan review decision control", () => {
     await mount(planPayload({ origin: "opencode", approvalNotesSupported: true }));
     await act(async () => configStore.set("agentSwitch", { switchTo: "ghost" }));
     await settle();
-    await writeNote("Approve with a note", "note sentinel foxtrot");
+    await writeNote("通过并附备注", "note sentinel foxtrot");
     await waitFor(() => decisions.length > 0, "approve");
     expect(decisions[0]!.endpoint).toBe("approve");
     expect(JSON.stringify(decisions[0]!.body)).toContain("note sentinel foxtrot");
@@ -461,7 +461,7 @@ describe.if(hasDom)("plan review decision control", () => {
   test("Approve with a note… whose POST fails: the primary then sends feedback", async () => {
     approveNetworkFailures = 1;
     await mount(planPayload({ origin: "pi", approvalNotesSupported: true }));
-    await chooseComposer("Approve with a note", "note sentinel golf");
+    await chooseComposer("通过并附备注", "note sentinel golf");
     expect(decisions[0]!.endpoint).toBe("approve");
     await expectPrimarySendsFeedback("note sentinel golf", 1);
   });
@@ -472,9 +472,9 @@ describe.if(hasDom)("plan review decision control", () => {
     await act(async () => configStore.set("agentSwitch", { switchTo: "ghost" }));
     await settle();
     await openMenu();
-    await act(async () => menuItem("Approve, discard")!.click());
+    await act(async () => menuItem("放弃 1 条标注")!.click());
     await settle();
-    await act(async () => buttonWithText("Discard & approve")!.click());
+    await act(async () => buttonWithText("放弃并通过")!.click());
     await waitFor(() => decisions.length > 0, "approve");
     expect(decisions).toHaveLength(1);
     expect(decisions[0]!.endpoint).toBe("approve");
@@ -506,12 +506,12 @@ describe.if(hasDom)("plan review decision control", () => {
 
     const rows = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-pn-compact-review-action]"));
     expect(rows.map((row) => row.getAttribute("data-pn-compact-review-action"))).toEqual(["feedback", "note", "discard-finish"]);
-    expect(rows[2]!.textContent).toContain("Approve, discard 1 annotation…");
+    expect(rows[2]!.textContent).toContain("通过，放弃 1 条标注…");
 
     await act(async () => rows[2]!.click());
     await settle();
     expect(decisions).toHaveLength(0); // the discard row asks first
-    await act(async () => buttonWithText("Discard & approve")!.click());
+    await act(async () => buttonWithText("放弃并通过")!.click());
     await waitFor(() => decisions.length > 0, "approve");
     expect(decisions[0]!.endpoint).toBe("approve");
     expect(decisions[0]!.body.feedback).toBeUndefined();
@@ -546,7 +546,7 @@ describe.if(hasDom)("plan review: a decision that does not reach Plannotator", (
     // Deliberate copy: the title says the feedback did not go out.
     expect(failureToast()!.textContent).toContain("Feedback not sent");
     expect(failureToast()!.textContent).toContain("500");
-    expect(primaryButton()!.textContent).toContain("Send Feedback");
+    expect(primaryButton()!.textContent).toContain("发送反馈");
     expect(primaryButton()!.disabled).toBe(false);
 
     await act(async () => toastButton("Retry")!.click());

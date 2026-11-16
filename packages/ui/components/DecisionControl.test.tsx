@@ -125,7 +125,7 @@ describe('DecisionControl', () => {
       const handlers = makeHandlers();
       await mountControl(REVIEW_FEEDBACK, handlers);
       await openMenu();
-      await clickItem('Send with a note…');
+      await clickItem('附备注发送…');
       await typeNote('  ship it  ');
 
       await pressKey(noteInput(), { key: 'Enter' });
@@ -205,12 +205,12 @@ describe('DecisionControl', () => {
     try {
       // Rung 1: composer → menu, draft kept.
       await openMenu();
-      await clickItem('Send with a note…');
+      await clickItem('附备注发送…');
       await typeNote('half a thought');
       await pressKey(noteInput(), { key: 'Escape' });
       expect(popover()?.dataset.decisionPopover).toBe('menu');
       expect(documentEscapes.length).toBe(0);
-      await clickItem('Send with a note…');
+      await clickItem('附备注发送…');
       expect(noteInput().value).toBe('half a thought');
       await pressKey(noteInput(), { key: 'Escape' });
 
@@ -237,7 +237,7 @@ describe('DecisionControl', () => {
     const handlers = makeHandlers();
     await mountControl(REVIEW_FEEDBACK, handlers);
     await openMenu();
-    await clickItem('Send with a note…');
+    await clickItem('附备注发送…');
     await typeNote('   ');
 
     const send = document.querySelector<HTMLButtonElement>('[data-decision-composer-send]');
@@ -255,7 +255,7 @@ describe('DecisionControl', () => {
     const handlers = makeHandlers();
     await mountControl(REVIEW_FEEDBACK, handlers);
     await openMenu();
-    await clickItem('Approve, discard 3 annotations…');
+    await clickItem('通过，放弃 3 条标注…');
 
     const dialog = () =>
       document.querySelector<HTMLElement>('[data-plannotator-confirm-dialog]');
@@ -264,7 +264,7 @@ describe('DecisionControl', () => {
 
     // Cancel: back to the open menu, one decision still one click away.
     const cancel = Array.from(dialog()!.querySelectorAll('button')).find(
-      (el) => el.textContent === 'Cancel',
+      (el) => el.textContent === '取消',
     );
     await act(async () => cancel!.click());
     expect(dialog()).toBeNull();
@@ -272,10 +272,10 @@ describe('DecisionControl', () => {
     expect(handlers['discard-and-finish']).not.toHaveBeenCalled();
 
     // Confirm: exactly one handler call, after confirmation only.
-    await clickItem('Approve, discard 3 annotations…');
+    await clickItem('通过，放弃 3 条标注…');
     const go = Array.from(dialog()!.querySelectorAll('button')).find(
       // Frozen copy (maintainer-approved): 'Discard & approve'.
-      (el) => el.textContent === 'Discard & approve',
+      (el) => el.textContent === '放弃并通过',
     );
     await act(async () => go!.click());
     expect(handlers['discard-and-finish']).toHaveBeenCalledTimes(1);
@@ -309,14 +309,14 @@ describe('DecisionControl', () => {
       // Escape is an outside-dismissal gesture, like an outside click) — and
       // the draft survives the full close.
       await openMenu();
-      await clickItem('Send with a note…');
+      await clickItem('附备注发送…');
       await typeNote('kept across dismissal');
       (document.activeElement as HTMLElement | null)?.blur?.();
       await pressKey(document.body, { key: 'Escape' });
       expect(popover()).toBeNull();
       expect(windowEscapes.length).toBe(0);
       await openMenu();
-      await clickItem('Send with a note…');
+      await clickItem('附备注发送…');
       expect(noteInput().value).toBe('kept across dismissal');
       await pressKey(noteInput(), { key: 'Escape' }); // back to menu
       await pressKey(document.activeElement!, { key: 'Escape' }); // close
@@ -392,7 +392,7 @@ describe('DecisionControl', () => {
     const handlers = makeHandlers();
     await mountControl(REVIEW_FEEDBACK, handlers);
     await openMenu();
-    await clickItem('Send with a note');
+    await clickItem('附备注发送…');
     expect(popover()?.dataset.decisionPopover).toBe('composer');
     await typeNote('half-typed');
 
@@ -429,9 +429,9 @@ describe('DecisionControl', () => {
         />,
       );
     });
-    await clickItem('discard 3');
+    await clickItem('放弃 3');
     const confirmButton = () => Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
-      .find((el) => el.textContent === 'Discard & approve');
+      .find((el) => el.textContent === '放弃并通过');
     expect(confirmButton()).toBeDefined();
     await act(async () => {
       root!.render(
@@ -480,7 +480,7 @@ describe('DecisionControl', () => {
     };
     await mountHost();
     await openMenu();
-    await clickItem('Send with a note…');
+    await clickItem('附备注发送…');
     expect(noteInput().value).toBe('kept from before');
     await typeNote('needs a test');
     expect(held).toEqual({ 'note-with-feedback': 'needs a test' });
@@ -494,7 +494,7 @@ describe('DecisionControl', () => {
     host = null;
     await mountHost();
     await openMenu();
-    await clickItem('Send with a note…');
+    await clickItem('附备注发送…');
     expect(noteInput().value).toBe('needs a test');
   });
 

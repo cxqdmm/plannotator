@@ -145,7 +145,7 @@ async function waitFor(check: () => boolean, timeoutMs: number): Promise<void> {
 function approveButton(): HTMLButtonElement | undefined {
   return Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find(
     // The decision control's primary reads "Approve" with nothing to send.
-    (button) => button.textContent?.trim().endsWith("Approve") ?? false,
+    (button) => button.textContent?.trim().endsWith("通过") ?? false,
   );
 }
 
@@ -279,7 +279,7 @@ describe.if(hasDom)("plan revisions and the decision control (#1057)", () => {
   // they never read.
   test("a revision waits while the decision note is being written", async () => {
     await mountPlan();
-    await openDecisionComposer("Request changes", "Half-written sentinel delta");
+    await openDecisionComposer("要求修改", "Half-written sentinel delta");
 
     server.revision = 1;
     server.plan = V2;
@@ -307,14 +307,14 @@ describe.if(hasDom)("plan revisions and the decision control (#1057)", () => {
     await mountPlan();
     server.revision = 1; // the agent revised; the tab has not polled yet
     server.plan = V2;
-    await openDecisionComposer("Approve with a note", "ship it sentinel echo");
+    await openDecisionComposer("通过并附备注", "ship it sentinel echo");
     await act(async () => {
       decisionNote()!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", metaKey: true, bubbles: true, cancelable: true }));
     });
     await waitFor(() => server.decisions.length >= 1, 4000);
     expect(server.decisions[0]).toMatchObject({ endpoint: "/api/approve", body: { planRevision: 0 } });
     await waitFor(() => document.body.textContent!.includes("sentinel bravo"), 4000);
-    await waitUntil(() => decisionPrimary()?.textContent?.includes("Send Feedback") ?? false);
+    await waitUntil(() => decisionPrimary()?.textContent?.includes("发送反馈") ?? false);
 
     await act(async () => decisionPrimary()!.click());
     await waitFor(() => server.decisions.length >= 2, 4000);

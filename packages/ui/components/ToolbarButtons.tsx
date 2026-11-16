@@ -21,11 +21,11 @@ export const FeedbackButton: React.FC<FeedbackButtonProps> = ({
   onClick,
   disabled = false,
   isLoading = false,
-  label = 'Send Feedback',
+  label = '发送反馈',
   shortLabel,
-  loadingLabel = 'Sending...',
+  loadingLabel = '发送中…',
   shortLoadingLabel,
-  title = 'Send Feedback',
+  title = '发送反馈',
   labelBreakpoint = 'md',
 }) => (
   <Button
@@ -73,9 +73,9 @@ export const ApproveButton: React.FC<ApproveButtonProps> = ({
   onClick,
   disabled = false,
   isLoading = false,
-  label = 'Approve',
-  loadingLabel = 'Approving...',
-  mobileLabel = 'OK',
+  label = '通过',
+  loadingLabel = '通过中…',
+  mobileLabel = '确定',
   mobileLoadingLabel = '...',
   title,
   dimmed = false,
@@ -118,7 +118,7 @@ export const ExitButton: React.FC<ExitButtonProps> = ({
   onClick,
   disabled = false,
   isLoading = false,
-  title = 'Close session without sending feedback',
+  title = '关闭会话且不发送反馈',
   labelBreakpoint = 'md',
   appearance = 'pill',
 }) => appearance === 'ghost' ? (
@@ -137,7 +137,7 @@ export const ExitButton: React.FC<ExitButtonProps> = ({
     {isLoading ? '…' : (
       <>
         <X className="size-3.5" aria-hidden="true" />
-        <span>Close</span>
+        <span>关闭</span>
       </>
     )}
   </Button>
@@ -154,6 +154,6 @@ export const ExitButton: React.FC<ExitButtonProps> = ({
     <span className={labelBreakpoint === 'lg' ? 'lg:hidden' : 'md:hidden'}>
       {isLoading ? '…' : <X className="size-3.5" aria-hidden="true" />}
     </span>
-    <span className={labelBreakpoint === 'lg' ? 'hidden lg:inline' : 'hidden md:inline'}>{isLoading ? 'Closing...' : 'Close'}</span>
+    <span className={labelBreakpoint === 'lg' ? 'hidden lg:inline' : 'hidden md:inline'}>{isLoading ? '关闭中…' : '关闭'}</span>
   </Button>
 );

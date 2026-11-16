@@ -672,7 +672,7 @@ export const DecisionControl: React.FC<DecisionControlProps> = ({
           title={confirmItem.confirm.title}
           message={confirmItem.confirm.message}
           confirmText={confirmItem.confirm.confirmText}
-          cancelText="Cancel"
+          cancelText="取消"
           variant="warning"
           showCancel
         />

@@ -63,7 +63,12 @@ export function wordSpanAt(text: string, index: number, useSegmenter = true): [n
   const seg = useSegmenter ? getSegmenter() : null;
   if (seg) {
     const words: [number, number][] = [];
-    for (const s of seg.segment(text)) if (s.isWordLike) words.push([s.index, s.index + s.segment.length]);
+    // Some ICU builds report numeric segments ("0.28") as not word-like while
+    // the fallback branch below treats digits as word characters; keep both
+    // branches agreeing. Punctuation-only segments never contain \p{N}.
+    for (const s of seg.segment(text)) {
+      if (s.isWordLike || /\p{N}/u.test(s.segment)) words.push([s.index, s.index + s.segment.length]);
+    }
     const at = (i: number) => words.find(([from, to]) => i >= from && i < to) ?? null;
     // On the joiner itself: the word before it, which the loops below grow across it.
     const first = at(index) ?? (joinsWords(text, index) ? at(index - 1) : null);

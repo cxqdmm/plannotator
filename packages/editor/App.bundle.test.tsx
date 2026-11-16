@@ -488,7 +488,7 @@ describe.if(hasDom)("annotate bundle", () => {
     expect(docRequests()).toContain(ALPHA);
     expect(document.title).toBe("alpha.md (2 of 2) · acme/payments");
     // Both files' saved comments are in the session now.
-    await waitFor(() => !!document.querySelector("[data-decision-primary]")?.textContent?.includes("Send Feedback"), "Send Feedback");
+    await waitFor(() => !!document.querySelector("[data-decision-primary]")?.textContent?.includes("发送反馈"), "Send Feedback");
 
     await act(async () => {
       document.querySelector<HTMLButtonElement>("[data-decision-primary]")!.click();

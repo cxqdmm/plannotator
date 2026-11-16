@@ -45,7 +45,7 @@ describe('buildDecisionSpec state matrix', () => {
     const spec = buildDecisionSpec({
       app: 'annotate', gate: false, count: 0, hasFeedback: false, approvalNotesSupported: false,
     });
-    expect(spec.primary.label).toBe('Done'); // frozen copy, maintainer-approved
+    expect(spec.primary.label).toBe('完成'); // frozen copy, maintainer-approved
     // Maintainer ruling (post-demo): Done without a gate is NOT an approval —
     // it must never wear the success tone or check icon Approve wears.
     expect(spec.primary.tone).toBe('neutral');
@@ -63,12 +63,12 @@ describe('buildDecisionSpec state matrix', () => {
     const withCap = buildDecisionSpec({
       app: 'annotate', gate: true, count: 0, hasFeedback: false, approvalNotesSupported: true,
     });
-    expect(withCap.primary.label).toBe('Approve'); // frozen copy, maintainer-approved
+    expect(withCap.primary.label).toBe('通过'); // frozen copy, maintainer-approved
     expect(withCap.primary.tone).toBe('success');
     expect(itemIds(withCap)).toEqual(['note-with-approval', 'request-changes']);
     // Free prose except the verb: the gate's positive-note item must speak of
     // approving, not finishing.
-    expect(withCap.items[0].label).toContain('Approve');
+    expect(withCap.items[0].label).toContain('通过');
 
     const withoutCap = buildDecisionSpec({
       app: 'annotate', gate: true, count: 0, hasFeedback: false, approvalNotesSupported: false,
@@ -81,24 +81,24 @@ describe('buildDecisionSpec state matrix', () => {
     const nonGate = buildDecisionSpec({
       app: 'annotate', gate: false, count: 3, hasFeedback: true, approvalNotesSupported: true,
     });
-    expect(nonGate.primary.label).toBe('Send Feedback'); // frozen copy, maintainer-approved
+    expect(nonGate.primary.label).toBe('发送反馈'); // frozen copy, maintainer-approved
     expect(nonGate.primary.tone).toBe('primary');
     expect(nonGate.primary.icon).toBe('send');
     // No gate ⇒ no approve channel ⇒ no Approve-with-notes, capability or not.
     expect(itemIds(nonGate)).toEqual(['note-with-feedback', 'discard-and-finish']);
     // Label is free prose; the data is the flow verb and the live count.
-    expect(nonGate.items[1].label).toContain('Done,');
+    expect(nonGate.items[1].label).toContain('完成，');
     expect(nonGate.items[1].label).toContain('3');
-    expect(nonGate.items[1].confirm?.confirmText).toBe('Discard & finish'); // frozen copy
+    expect(nonGate.items[1].confirm?.confirmText).toBe('放弃并完成'); // frozen copy
 
     const gate = buildDecisionSpec({
       app: 'annotate', gate: true, count: 3, hasFeedback: true, approvalNotesSupported: true,
     });
     expect(itemIds(gate)).toEqual(['note-with-feedback', 'approve-with-notes', 'discard-and-finish']);
-    expect(gate.items[1].label).toBe('Approve with notes'); // frozen copy, maintainer-approved
-    expect(gate.items[2].label).toContain('Approve,');
+    expect(gate.items[1].label).toBe('通过并附备注'); // frozen copy, maintainer-approved
+    expect(gate.items[2].label).toContain('通过，');
     expect(gate.items[2].label).toContain('3');
-    expect(gate.items[2].confirm?.confirmText).toBe('Discard & approve'); // frozen copy
+    expect(gate.items[2].confirm?.confirmText).toBe('放弃并通过'); // frozen copy
 
     const gateNoCap = buildDecisionSpec({
       app: 'annotate', gate: true, count: 3, hasFeedback: true, approvalNotesSupported: false,
@@ -117,8 +117,8 @@ describe('buildDecisionSpec state matrix', () => {
     const plain = buildDecisionSpec(base);
     const delivered = buildDecisionSpec({ ...base, feedbackDelivered: true });
 
-    expect(delivered.primary.label).toBe('Done'); // frozen copy, maintainer-approved
-    expect(delivered.primary.title).not.toContain('no feedback');
+    expect(delivered.primary.label).toBe('完成'); // frozen copy, maintainer-approved
+    expect(delivered.primary.title).not.toContain('无反馈');
     // The two states must actually differ — a regression that ignores the
     // flag would silently restore the lying tooltip.
     expect(delivered.primary.title).not.toBe(plain.primary.title);
@@ -129,22 +129,22 @@ describe('buildDecisionSpec state matrix', () => {
     const phase1 = buildDecisionSpec({
       app: 'review', gate: true, count: 0, hasFeedback: false, approvalNotesSupported: false,
     });
-    expect(phase1.primary.label).toBe('Approve');
+    expect(phase1.primary.label).toBe('通过');
     expect(itemIds(phase1)).toEqual(['request-changes']);
 
     const phase2 = buildDecisionSpec({
       app: 'review', gate: true, count: 0, hasFeedback: false, approvalNotesSupported: true,
     });
     expect(itemIds(phase2)).toEqual(['note-with-approval', 'request-changes']);
-    expect(phase2.items[0].label).toContain('Approve');
+    expect(phase2.items[0].label).toContain('通过');
   });
 
   it('review, feedback (n) → Send Feedback + note/(approve-with-notes)/discard', () => {
     const phase2 = buildDecisionSpec({
       app: 'review', gate: true, count: 3, hasFeedback: true, approvalNotesSupported: true,
     });
-    expect(phase2.primary.label).toBe('Send Feedback');
-    expect(phase2.primary.shortLabel).toBe('Send');
+    expect(phase2.primary.label).toBe('发送反馈');
+    expect(phase2.primary.shortLabel).toBe('发送');
     expect(itemIds(phase2)).toEqual(['note-with-feedback', 'approve-with-notes', 'discard-and-finish']);
 
     const phase1 = buildDecisionSpec({
@@ -166,8 +166,8 @@ describe('buildDecisionSpec invariants', () => {
       expect(itemIds(spec)).not.toContain('primary');
       // The header shows a send XOR a positive finish, never both. Plan's
       // Approve may name OpenCode's hand-off agent ("Approve → build").
-      const sendLabels = ['Send Feedback', 'Send answers'];
-      const isPositive = (label: string) => label === 'Done' || label === 'Approve' || label.startsWith('Approve → ');
+      const sendLabels = ['发送反馈', '发送回答'];
+      const isPositive = (label: string) => label === '完成' || label === '通过' || label.startsWith('通过 → ');
       if (sendLabels.includes(spec.primary.label)) {
         expect(isPositive(spec.primary.label)).toBe(false);
         expect(spec.primary.icon).toBe('send');
@@ -272,7 +272,7 @@ describe('buildDecisionSpec invariants', () => {
       app: 'review', gate: true, count: 3, hasFeedback: true, approvalNotesSupported: true,
     });
     expect('count' in three.primary).toBe(false);
-    expect(three.primary.label).toBe('Send Feedback');
+    expect(three.primary.label).toBe('发送反馈');
     const discard = three.items.find((item) => item.id === 'discard-and-finish')!;
     expect(discard.label).toContain('3');
     expect(discard.confirm!.title).toContain('3');
@@ -282,7 +282,7 @@ describe('buildDecisionSpec invariants', () => {
     });
     const discardOne = one.items.find((item) => item.id === 'discard-and-finish')!;
     // The singular form is the data here, not the sentence around it.
-    expect(discardOne.label).toContain('1 annotation…');
+    expect(discardOne.label).toContain('1 条标注…');
   });
 
   // Every composer item must actually be a composer and every plain item must
@@ -339,7 +339,7 @@ describe('buildDecisionSpec platform arm (PR6, §3.4)', () => {
       if (count === 0) {
         // The empty-state primary IS the approve: muted, reason in the tooltip.
         expect(muted.primary.muted).toBe(true);
-        expect(muted.primary.title).toContain("You can't approve your own");
+        expect(muted.primary.title).toContain('你无法在 GitHub 上通过自己的 PR');
       } else {
         // Posting comments to one's own PR is allowed — the primary never mutes.
         expect(muted.primary.muted).toBeUndefined();
@@ -359,7 +359,7 @@ describe('buildDecisionSpec platform arm (PR6, §3.4)', () => {
     });
     const request = own.items.find((item) => item.id === 'request-changes');
     expect(request?.muted).toBe(true);
-    expect(request?.subtitle).toContain("You can't request changes on your own PR");
+    expect(request?.subtitle).toContain('你无法对自己的 PR 要求修改');
     const comment = own.items.find((item) => item.id === 'note-with-feedback');
     expect(comment).toBeDefined();
     expect(comment?.muted).toBeUndefined();
@@ -390,7 +390,7 @@ describe('buildDecisionSpec platform arm (PR6, §3.4)', () => {
         expect(!!item.muted).toBe(item.tone === 'success');
       }
       const requestRow = own.items.find((item) => item.id === (count === 0 ? 'request-changes' : 'note-with-feedback'));
-      expect(requestRow?.subtitle).not.toContain("can't request changes");
+      expect(requestRow?.subtitle).not.toContain('你无法对自己的');
     }
   });
 
@@ -405,7 +405,7 @@ describe('buildDecisionSpec platform arm (PR6, §3.4)', () => {
           platform: { label: 'Forge', mrLabel: 'MR', selfAuthored, requestChangesSupported: false },
         });
         const row = spec.items.find((item) => item.id === (count === 0 ? 'request-changes' : 'note-with-feedback'));
-        expect(row?.subtitle).toContain('Forge has no request-changes review');
+        expect(row?.subtitle).toContain('Forge 没有“要求修改”评审');
         expect(row?.muted).toBeUndefined();
       }
     }
@@ -433,7 +433,7 @@ describe('buildDecisionSpec plan arm (#1057)', () => {
     const classic = buildDecisionSpec({
       app: 'plan', gate: true, count: 0, hasFeedback: false, approvalNotesSupported: false, plan: plan(),
     });
-    expect(classic.primary.label).toBe('Approve');
+    expect(classic.primary.label).toBe('通过');
     expect(classic.primary.tone).toBe('success');
     expect(itemIds(classic)).toEqual(['request-changes']);
     expect(classic.items[0].composer).toBeDefined();
@@ -451,17 +451,17 @@ describe('buildDecisionSpec plan arm (#1057)', () => {
       app: 'plan', gate: true, count: 0, hasFeedback: false, approvalNotesSupported: true,
       plan: plan({ agentName: 'OpenCode', approveTarget: 'build' }),
     });
-    expect(empty.primary.label).toBe('Approve → build');
+    expect(empty.primary.label).toBe('通过 → build');
     const withNotes = buildDecisionSpec({
       app: 'plan', gate: true, count: 2, hasFeedback: true, approvalNotesSupported: true,
       plan: plan({ agentName: 'OpenCode', approveTarget: 'build' }),
     });
-    expect(labels(withNotes)).toContain('Approve with notes → build');
+    expect(labels(withNotes)).toContain('通过并附备注 → build');
     const long = buildDecisionSpec({
       app: 'plan', gate: true, count: 0, hasFeedback: false, approvalNotesSupported: true,
       plan: plan({ approveTarget: 'a-very-long-custom-agent-name-indeed' }),
     });
-    expect(long.primary.label.length).toBeLessThanOrEqual('Approve → '.length + 24);
+    expect(long.primary.label.length).toBeLessThanOrEqual('通过 → '.length + 24);
     expect(long.primary.label.endsWith('…')).toBe(true);
   });
 
@@ -473,9 +473,9 @@ describe('buildDecisionSpec plan arm (#1057)', () => {
     const pi = buildDecisionSpec({
       app: 'plan', gate: true, count: 3, hasFeedback: true, approvalNotesSupported: true, plan: plan({ agentName: 'Pi' }),
     });
-    expect(pi.primary.label).toBe('Send Feedback');
+    expect(pi.primary.label).toBe('发送反馈');
     expect(itemIds(pi)).toEqual(['note-with-feedback', 'approve-with-notes', 'discard-and-finish']);
-    expect(labels(pi)).toEqual(['Send with a note…', 'Approve with notes', 'Approve, discard 3 annotations…']);
+    expect(labels(pi)).toEqual(['附备注发送…', '通过并附备注', '通过，放弃 3 条标注…']);
 
     const claude = buildDecisionSpec({
       app: 'plan', gate: true, count: 3, hasFeedback: true, approvalNotesSupported: false, plan: plan(),
@@ -484,8 +484,8 @@ describe('buildDecisionSpec plan arm (#1057)', () => {
     const discard = claude.items[1];
     expect(discard.subtitle).toContain('Claude Code');
     expect(discard.confirm!.message).toContain('Claude Code');
-    expect(discard.confirm!.message).toContain('Send Feedback');
-    expect(discard.confirm!.confirmText).toBe('Discard & approve'); // frozen copy
+    expect(discard.confirm!.message).toContain('发送反馈');
+    expect(discard.confirm!.confirmText).toBe('放弃并通过'); // frozen copy
     expect(discard.dividerBefore).toBe(true);
   });
 
@@ -496,17 +496,17 @@ describe('buildDecisionSpec plan arm (#1057)', () => {
       app: 'plan', gate: true, count: 2, hasFeedback: true, approvalNotesSupported: true,
       plan: plan({ answers: 2, answersOnly: true, agentName: 'Pi' }),
     });
-    expect(answers.primary.label).toBe('Send answers'); // frozen copy
-    expect(labels(answers)).toEqual(['Send answers with a note…', 'Approve with notes', 'Approve, discard 2 answers…']);
-    expect(answers.items[1].subtitle).toContain('2 answers');
+    expect(answers.primary.label).toBe('发送回答'); // frozen copy
+    expect(labels(answers)).toEqual(['附备注发送回答…', '通过并附备注', '通过，放弃 2 个回答…']);
+    expect(answers.items[1].subtitle).toContain('2 个回答');
 
     const mixed = buildDecisionSpec({
       app: 'plan', gate: true, count: 3, hasFeedback: true, approvalNotesSupported: false,
       plan: plan({ answers: 2 }),
     });
-    expect(mixed.primary.label).toBe('Send Feedback');
-    expect(labels(mixed)).toContain('Approve, discard 2 answers and 1 annotation…');
-    expect(mixed.items.at(-1)!.confirm!.message).toContain('use Send Feedback');
+    expect(mixed.primary.label).toBe('发送反馈');
+    expect(labels(mixed)).toContain('通过，放弃 2 个回答和 1 条标注…');
+    expect(mixed.items.at(-1)!.confirm!.message).toContain('要发送，请使用发送反馈');
   });
 
   // Direct edits are feedback with no annotation count: approving away still
@@ -517,16 +517,16 @@ describe('buildDecisionSpec plan arm (#1057)', () => {
       app: 'plan', gate: true, count: 0, hasFeedback: true, approvalNotesSupported: false,
       plan: plan({ directEdits: true }),
     });
-    expect(spec.primary.label).toBe('Send Feedback');
-    expect(labels(spec)).toEqual(['Send with a note…', 'Approve, discard direct edits…']);
+    expect(spec.primary.label).toBe('发送反馈');
+    expect(labels(spec)).toEqual(['附备注发送…', '通过，放弃直接编辑…']);
   });
 
   it('singular feedback reads as one thing', () => {
     const spec = buildDecisionSpec({
       app: 'plan', gate: true, count: 1, hasFeedback: true, approvalNotesSupported: true, plan: plan(),
     });
-    expect(spec.items[1].subtitle).toContain('1 annotation rides along');
-    expect(spec.items[2].confirm!.message).toContain('without it');
+    expect(spec.items[1].subtitle).toContain('1 条标注');
+    expect(spec.items[2].confirm!.message).toContain('不附带这些内容');
   });
 
   // Saved file changes are already on disk: approving drops nothing, the
@@ -538,15 +538,15 @@ describe('buildDecisionSpec plan arm (#1057)', () => {
       plan: plan({ savedFilesOnly: notice }),
     });
     const row = spec.items.find((item) => item.id === 'discard-and-finish')!;
-    expect(row.label).not.toContain('discard');
-    expect(row.confirm!.title).not.toContain('Discard');
+    expect(row.label).not.toContain('放弃');
+    expect(row.confirm!.title).not.toContain('放弃');
     expect(row.confirm!.message).toBe(notice);
   });
 
   // A host that never passes the plan facts still gets a coherent plan arm.
   it('plan facts absent: defaults, no throw', () => {
     const spec = buildDecisionSpec({ app: 'plan', gate: true, count: 2, hasFeedback: true, approvalNotesSupported: false });
-    expect(spec.primary.label).toBe('Send Feedback');
+    expect(spec.primary.label).toBe('发送反馈');
     expect(itemIds(spec)).toEqual(['note-with-feedback', 'discard-and-finish']);
   });
 });
