@@ -11,23 +11,10 @@
 </p>
 
 <p align="center">
-  <img src=".github/assets/icons/amp.svg" alt="Amp" title="Amp" height="28" />&nbsp;&nbsp;
   <img src=".github/assets/icons/claude.svg" alt="Claude Code" title="Claude Code" height="28" />&nbsp;&nbsp;
-  <img src=".github/assets/icons/codex.png" alt="Codex" title="Codex" height="28" />&nbsp;&nbsp;
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/icons/copilot-dark.svg" />
-    <img src=".github/assets/icons/copilot-light.svg" alt="Copilot CLI" title="Copilot CLI" height="28" />
-  </picture>&nbsp;&nbsp;
-  <img src=".github/assets/icons/droid.png" alt="Droid" title="Droid" height="28" />&nbsp;&nbsp;
-  <img src=".github/assets/icons/gemini.png" alt="Gemini CLI" title="Gemini CLI" height="28" />&nbsp;&nbsp;
-  <img src=".github/assets/icons/kiro.svg" alt="Kiro" title="Kiro" height="28" />&nbsp;&nbsp;
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/assets/icons/opencode-dark.svg" />
     <img src=".github/assets/icons/opencode-light.svg" alt="OpenCode" title="OpenCode" height="28" />
-  </picture>&nbsp;&nbsp;
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/icons/pi-dark.svg" />
-    <img src=".github/assets/icons/pi-light.svg" alt="Pi" title="Pi" height="28" />
   </picture>
 </p>
 
@@ -39,7 +26,7 @@
 
 **⭐️ NEW:** [Plannotator Inbox](https://plannotator.ai/inbox/) is the missing review layer between you and multi-agent work. It surfaces decisions, prototypes, variations, plans, and everything you need to stay in the loop. Works with all coding agents and personal assistants.
 
-Plannotator is a local, browser-based review surface for AI coding agents: Claude Code, Codex, Copilot CLI, Gemini CLI, OpenCode, Kiro, Droid, Amp, DeepSeek Harness, and Pi. Plannotator Inbox also works with personal assistants (Grok Bot, Muse, Hermes, OpenClaw).
+Plannotator is a local, browser-based review surface for AI coding agents: Claude Code and OpenCode out of the box, with any other agent reachable over MCP. Plannotator Inbox also works with personal assistants (Grok Bot, Muse, Hermes, OpenClaw).
 
 **It plugs directly into your agent** through plugins, hooks and commands. When the agent proposes a decision, plan, html, or finishes working, the app opens in your browser and you mark it up, comment, and send feedback directly to the agent for it to act on it.
 
@@ -95,7 +82,7 @@ The Plannotator Inbox is one local window where your agents leave you messages, 
 plannotator inbox
 ```
 
-Claude Code, Pi, and OpenCode connect through Plannotator's plugins, and your replies arrive as their next turn. Any other agent reaches it over MCP with `plannotator inbox mcp`, and `plannotator inbox --help` is the guide an agent reads.
+Claude Code and OpenCode connect through Plannotator's plugins, and your replies arrive as their next turn. Any other agent reaches it over MCP with `plannotator inbox mcp`, and `plannotator inbox --help` is the guide an agent reads.
 
 ## Herdr Annotate: Plannotator in the Terminal
 
@@ -124,8 +111,6 @@ Prefer it standalone? [Plannotator TUI](https://github.com/plannotator/plannotat
 ---
 
 ## Commands
-
-<sub>On Codex, swap the slash commands for `!plannotator …` (e.g. `!plannotator review`) or the `$plannotator-*` skills.</sub>
 
 ### Annotate
 
@@ -244,7 +229,7 @@ deleting the binary. Complete that cleanup and rerun uninstall.
 It also keeps the binary when an agent's config file can't be read (another
 tool's too), or when a hook it did not install still runs Plannotator. The
 error names the file, the tool, and what to do. A `plannotator-inbox` entry
-you added yourself, or a Claude Code or Droid plugin installed for one project,
+you added yourself, or a Claude Code plugin installed for one project,
 is named with how to remove it and does not keep the binary.
 These mechanics keep the ordinary confirmation default-negative, make the
 irreversible outcome require a stronger explicit word, and still give package
@@ -252,9 +237,8 @@ managers and scripts a conventional non-interactive flag.
 
 The command covers the conventional macOS, Linux, WSL, and Windows binary
 locations; the managed `sem` sidecar and agent-terminal runtime; installer
-skills, commands, hooks, policies, caches, and recognizable Amp/Kiro files; and
-detected Claude Code, Copilot CLI, Droid, Pi, and VS Code installations through
-their host CLIs. Shared JSONC settings are edited surgically, while strict JSON
+skills, commands, hooks, and caches; and a detected Claude Code installation
+through its host CLI. Shared JSONC settings are edited surgically, while strict JSON
 updates preserve the file's indentation, line endings, and trailing-newline
 style. Custom
 or unrecognized files, separately installed optional skills, project-local
@@ -274,9 +258,6 @@ If your dedicated data directory is symlinked, point `PLANNOTATOR_DATA_DIR` at
 its resolved target and retry.
 
 </details>
-
-If you installed only the standalone Pi extension and do not have the
-`plannotator` CLI, use `pi remove npm:@plannotator/pi-extension`.
 
 <details>
 <summary>Claude Code: manual hook setup (without the plugin system)</summary>
@@ -326,8 +307,6 @@ The fastest way to see what Plannotator does is to invoke it yourself, right now
 /plannotator-review                 # review your current diff, PR-style
 /plannotator-annotate report.html   # annotate any file, folder, or URL
 ```
-
-(Slash commands in most agents; `$plannotator-*` skills in Codex, command palette in Amp.)
 
 Plan review needs no command at all. The next time your agent proposes a plan, it opens in your browser automatically.
 

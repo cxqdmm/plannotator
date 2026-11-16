@@ -28,6 +28,8 @@ import {
 
 const SELF = ["/opt/plannotator/bin/plannotator"];
 const OURS = [...SELF, "inbox", "mcp"];
+/** What hermesPluginInstalled reads in a plugin.yaml: the plugin's name and its repo. The plugin installs from the upstream repo; its app folder does not ship with this fork. */
+const HERMES_PLUGIN_MANIFEST = "name: plannotator\nversion: 1.0.0\nrepo: https://github.com/backnotprop/plannotator\n";
 
 let fake: FakeAgents;
 let dataDir: string;
@@ -421,7 +423,7 @@ describe("Pi and OpenCode with Plannotator's extension or plugin: the tool switc
     fake.install("hermes");
     const plugin = join(fake.home, ".hermes", "plugins", "plannotator");
     mkdirSync(plugin, { recursive: true });
-    writeFileSync(join(plugin, "plugin.yaml"), readFileSync(join(import.meta.dir, "..", "..", "apps", "hermes-plugin", "plugin.yaml")));
+    writeFileSync(join(plugin, "plugin.yaml"), HERMES_PLUGIN_MANIFEST);
     const report = await connect();
     expect(report.added).toEqual(["hermes"]);
     expect(loadConfig().inboxTool).toEqual({ hermes: true });
@@ -434,7 +436,7 @@ describe("Pi and OpenCode with Plannotator's extension or plugin: the tool switc
     fake.install("hermes");
     const plugin = join(fake.home, ".hermes", "plugins", "plannotator");
     mkdirSync(plugin, { recursive: true });
-    writeFileSync(join(plugin, "plugin.yaml"), readFileSync(join(import.meta.dir, "..", "..", "apps", "hermes-plugin", "plugin.yaml")));
+    writeFileSync(join(plugin, "plugin.yaml"), HERMES_PLUGIN_MANIFEST);
     writeFileSync(join(fake.home, ".hermes", "config.yaml"), "plugins:\n  entries:\n    plannotator:\n      allow_gateway_injection: true\n");
     const already = await connect();
     expect(already.added).toEqual(["hermes"]);
@@ -464,7 +466,7 @@ describe("Pi and OpenCode with Plannotator's extension or plugin: the tool switc
     fake.install("hermes");
     const plugin = join(fake.home, ".hermes", "plugins", "plannotator");
     mkdirSync(plugin, { recursive: true });
-    writeFileSync(join(plugin, "plugin.yaml"), readFileSync(join(import.meta.dir, "..", "..", "apps", "hermes-plugin", "plugin.yaml")));
+    writeFileSync(join(plugin, "plugin.yaml"), HERMES_PLUGIN_MANIFEST);
     const failed = await connect({ FAKE_AGENT_FAIL: "hermes" });
     expect(failed.failed.map((entry) => entry.agent)).toEqual(["hermes"]);
     expect(failed.failed[0]!.reason).toContain("hermes config set plugins.entries.plannotator.allow_gateway_injection true exited with code 3");

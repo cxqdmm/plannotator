@@ -470,44 +470,7 @@ describe("default uninstall", () => {
       "SKILL.md",
     );
     writeText(customStaleLayoutEntry, "custom");
-    writeText(
-      join(homeDir, ".codex", "skills", "plannotator-archive", "SKILL.md"),
-    );
-    writeText(
-      join(homeDir, ".kiro", "skills", "plannotator-setup-goal", "SKILL.md"),
-    );
 
-    // Vibe: a hooks.toml holding both a user hook and the installer's
-    // managed block, plus installed skills. The managed block must be
-    // stripped and the user hook preserved.
-    const vibeHooks = join(homeDir, ".vibe", "hooks.toml");
-    writeText(
-      vibeHooks,
-      [
-        '[[hooks]]',
-        'name = "my-own-hook"',
-        'type = "pre_tool"',
-        'match = "write_file"',
-        'command = "/usr/local/bin/notify"',
-        "",
-        "# >>> plannotator-managed-vibe-hooks (managed; do not edit) >>>",
-        "[[hooks]]",
-        'name = "plannotator-exit-plan-mode"',
-        'type = "pre_tool"',
-        'match = "exit_plan_mode"',
-        `command = ${JSON.stringify(join(homeDir, ".local", "bin", "plannotator"))}`,
-        "timeout = 345600",
-        'description = "Plannotator plan review (managed)"',
-        "# <<< plannotator-managed-vibe-hooks <<<",
-      ].join("\n"),
-    );
-    writeText(
-      join(homeDir, ".vibe", "skills", "plannotator-review", "SKILL.md"),
-    );
-    writeText(
-      join(homeDir, ".vibe", "skills", "my-custom-skill", "SKILL.md"),
-      "user's own",
-    );
     const openCodePackageCache = join(
       homeDir,
       ".cache",
@@ -610,46 +573,8 @@ describe("default uninstall", () => {
       },
     });
 
-    const codexHooks = join(homeDir, ".codex", "hooks.json");
-    writeJson(codexHooks, {
-      hooks: {
-        Stop: [
-          {
-            hooks: [
-              { type: "command", command: binary, timeout: 345600 },
-              { type: "command", command: "custom-stop-hook" },
-            ],
-          },
-        ],
-      },
-    });
-    const codexConfig = join(homeDir, ".codex", "config.toml");
-    writeText(codexConfig, "[features]\nhooks = true\n\nmodel = \"custom\"\n");
-
-    const geminiSettings = join(homeDir, ".gemini", "settings.json");
-    writeJson(geminiSettings, {
-      theme: "custom",
-      hooks: {
-        BeforeTool: [
-          {
-            matcher: "exit_plan_mode",
-            hooks: [
-              { type: "command", command: "plannotator", timeout: 345600 },
-              { type: "command", command: "custom-gemini-hook" },
-            ],
-          },
-        ],
-      },
-    });
-    writeText(join(homeDir, ".gemini", "policies", "plannotator.toml"));
-    writeText(
-      join(homeDir, ".gemini", "commands", "plannotator-review.toml"),
-    );
-    // /plannotator-inbox: Gemini command, OpenCode stub, Kiro and Vibe skills.
-    writeText(join(homeDir, ".gemini", "commands", "plannotator-inbox.toml"));
+    // /plannotator-inbox: OpenCode stub.
     writeText(join(alternateConfig, "opencode", "commands", "plannotator-inbox.md"));
-    writeText(join(homeDir, ".kiro", "skills", "plannotator-inbox", "SKILL.md"));
-    writeText(join(homeDir, ".vibe", "skills", "plannotator-inbox", "SKILL.md"));
     // The installer never wrote a Claude command of that name: one there is the person's.
     const ownInboxCommand = join(homeDir, ".claude", "commands", "plannotator-inbox.md");
     writeText(ownInboxCommand, "my own command");
@@ -673,27 +598,6 @@ describe("default uninstall", () => {
       ),
     );
 
-    const recognizableAmp = [
-      'const CATEGORY = "Plannotator";',
-      "export default function plannotatorAmpPlugin() {}",
-      'const origin = "PLANNOTATOR_ORIGIN";',
-    ].join("\n");
-    writeText(
-      join(homeDir, ".config", "amp", "plugins", "plannotator.ts"),
-      recognizableAmp,
-    );
-    const customKiroAgent = join(
-      homeDir,
-      ".kiro",
-      "agents",
-      "plannotator.json",
-    );
-    writeJson(customKiroAgent, {
-      name: "plannotator",
-      description: "my custom agent",
-      prompt: "custom",
-    });
-
     const result = await runPlannotatorUninstall(
       { purge: false, dryRun: false },
       fixture.environment,
@@ -706,24 +610,14 @@ describe("default uninstall", () => {
     expect(existsSync(join(homeDir, ".agents", "skills", "plannotator"))).toBe(false);
     expect(existsSync(join(homeDir, ".agents", "skills", "plannotator-compound"))).toBe(true);
     expect(existsSync(join(homeDir, ".agents", "skills", "plannotator-archive"))).toBe(false);
-    expect(existsSync(join(homeDir, ".kiro", "skills", "plannotator-setup-goal"))).toBe(false);
-    expect(existsSync(join(homeDir, ".vibe", "skills", "plannotator-review"))).toBe(false);
-    expect(existsSync(join(homeDir, ".vibe", "skills", "my-custom-skill"))).toBe(true);
     for (const installed of [
       join(homeDir, ".claude", "skills", "plannotator-inbox"),
       join(homeDir, ".agents", "skills", "plannotator-inbox"),
-      join(homeDir, ".kiro", "skills", "plannotator-inbox"),
-      join(homeDir, ".vibe", "skills", "plannotator-inbox"),
-      join(homeDir, ".gemini", "commands", "plannotator-inbox.toml"),
       join(alternateConfig, "opencode", "commands", "plannotator-inbox.md"),
     ]) {
       expect(existsSync(installed)).toBe(false);
     }
     expect(readFileSync(ownInboxCommand, "utf8")).toBe("my own command");
-    const vibeHooksAfter = readFileSync(vibeHooks, "utf8");
-    expect(vibeHooksAfter).toContain("my-own-hook");
-    expect(vibeHooksAfter).not.toContain("plannotator-managed-vibe-hooks");
-    expect(vibeHooksAfter).not.toContain("exit_plan_mode");
     expect(existsSync(customStaleLayoutEntry)).toBe(true);
     expect(existsSync(openCodePackageCache)).toBe(false);
     expect(existsSync(join(homeDir, ".cache", "opencode", "npm", "@plannotator", "opencode@latest"))).toBe(false);
@@ -753,31 +647,6 @@ describe("default uninstall", () => {
         ],
       },
     });
-    expect(readJson(codexHooks)).toEqual({
-      hooks: {
-        Stop: [
-          {
-            hooks: [
-              { type: "command", command: "custom-stop-hook" },
-            ],
-          },
-        ],
-      },
-    });
-    expect(readFileSync(codexConfig, "utf8")).toContain('model = "custom"');
-    expect(readJson(geminiSettings)).toEqual({
-      theme: "custom",
-      hooks: {
-        BeforeTool: [
-          {
-            matcher: "exit_plan_mode",
-            hooks: [
-              { type: "command", command: "custom-gemini-hook" },
-            ],
-          },
-        ],
-      },
-    });
     expect(readJson(conventionalOpenCode)).toEqual({
       plugin: ["keep-plugin"],
       theme: "keep",
@@ -792,15 +661,6 @@ describe("default uninstall", () => {
         ),
       ),
     ).toBe(false);
-    expect(
-      existsSync(
-        join(homeDir, ".config", "amp", "plugins", "plannotator.ts"),
-      ),
-    ).toBe(false);
-    expect(existsSync(customKiroAgent)).toBe(true);
-    expect(result.preserved).toContain(
-      `${customKiroAgent} (custom or unrecognized Kiro agent)`,
-    );
     expect(fixture.commandCalls).toEqual([]);
   });
 
@@ -809,8 +669,8 @@ describe("default uninstall", () => {
     // legacy slash command and as anything else a user might name after the
     // product. That is exactly why KNOWLEDGE_SKILLS is a separate list from
     // CORE_SKILLS: folding it into CORE_SKILLS would put `plannotator` into
-    // LEGACY_COMMAND_NAMES and STALE_CODEX_SKILLS, and uninstall would start
-    // deleting a user's own commands/plannotator.md. This test is the wall.
+    // LEGACY_COMMAND_NAMES, and uninstall would start deleting a user's own
+    // commands/plannotator.md. This test is the wall.
     const fixture = createFixture();
     const { homeDir } = fixture;
     const alternateConfig = join(fixture.root, "xdg-config");
@@ -823,7 +683,6 @@ describe("default uninstall", () => {
     const installedScopes = [
       join(homeDir, ".claude", "skills", "plannotator"),
       join(homeDir, ".agents", "skills", "plannotator"),
-      join(homeDir, ".kiro", "skills", "plannotator"),
       join(alternateConfig, "opencode", "skills", "plannotator"),
       // Pre-0.27 Claude layout; cleanupStaleSkillLayout must know the
       // knowledge skill too, or an upgrader keeps a dead copy forever.
@@ -837,7 +696,6 @@ describe("default uninstall", () => {
     const userOwned = [
       join(homeDir, ".claude", "commands", "plannotator.md"),
       join(alternateConfig, "opencode", "commands", "plannotator.md"),
-      join(homeDir, ".codex", "skills", "plannotator", "SKILL.md"),
     ];
     for (const path of userOwned) {
       writeText(path, "the user's own file");
@@ -870,27 +728,6 @@ describe("default uninstall", () => {
     writeJson(join(fixture.homeDir, ".claude", "settings.json"), {
       enabledPlugins: { "plannotator@plannotator": true },
     });
-    // Vibe: a user hook beside the managed block, so the real run would
-    // REWRITE the file rather than delete it (the dry-run must not).
-    const vibeHooks = join(fixture.homeDir, ".vibe", "hooks.toml");
-    writeText(
-      vibeHooks,
-      [
-        "[[hooks]]",
-        'name = "my-own-hook"',
-        'type = "pre_tool"',
-        'match = "write_file"',
-        'command = "/usr/local/bin/notify"',
-        "",
-        "# >>> plannotator-managed-vibe-hooks (managed; do not edit) >>>",
-        "[[hooks]]",
-        'name = "plannotator-exit-plan-mode"',
-        // A TOML string: a Windows path's backslashes are escapes there.
-        `command = ${JSON.stringify(binary)}`,
-        "# <<< plannotator-managed-vibe-hooks <<<",
-        "",
-      ].join("\n"),
-    );
     const before = snapshotTree(fixture.root);
 
     const result = await runPlannotatorUninstall(
@@ -906,44 +743,9 @@ describe("default uninstall", () => {
     expect(result.planned).toContain(
       "Claude Code plugin plannotator@plannotator",
     );
-    expect(result.planned).toContain(
-      `Plannotator Vibe plan-review hook in ${vibeHooks}`,
-    );
     expect(existsSync(binary)).toBe(true);
     expect(fixture.commandCalls).toEqual([]);
     expect(snapshotTree(fixture.root)).toEqual(before);
-  });
-
-  test("strips the managed Vibe block, reports it, and keeps CRLF line endings", async () => {
-    const fixture = createFixture();
-    const vibeHooks = join(fixture.homeDir, ".vibe", "hooks.toml");
-    writeText(
-      vibeHooks,
-      [
-        "[[hooks]]",
-        'name = "my-own-hook"',
-        'command = "/usr/local/bin/notify"',
-        "",
-        "# >>> plannotator-managed-vibe-hooks (managed; do not edit) >>>",
-        "[[hooks]]",
-        'name = "plannotator-exit-plan-mode"',
-        "# <<< plannotator-managed-vibe-hooks <<<",
-        "",
-      ].join("\r\n"),
-    );
-
-    const result = await runPlannotatorUninstall(
-      { purge: false, dryRun: false },
-      fixture.environment,
-    );
-
-    expect(result.errors).toEqual([]);
-    expect(result.removed).toContain(
-      `Plannotator Vibe plan-review hook in ${vibeHooks}`,
-    );
-    expect(readFileSync(vibeHooks, "utf8")).toBe(
-      '[[hooks]]\r\nname = "my-own-hook"\r\ncommand = "/usr/local/bin/notify"\r\n',
-    );
   });
 
   test("removes OpenCode from JSONC while preserving comments and unrelated plugins", async () => {
@@ -1031,62 +833,20 @@ describe("default uninstall", () => {
     expect(readJson(configPath)).toEqual({ plugin: ["keep-plugin"] });
   });
 
-  test("preserves a custom Gemini hook sharing the managed matcher", async () => {
-    const fixture = createFixture();
-    const settingsPath = join(
-      fixture.homeDir,
-      ".gemini",
-      "settings.json",
-    );
-    writeJson(settingsPath, {
-      hooks: {
-        BeforeTool: [
-          {
-            matcher: "exit_plan_mode",
-            hooks: [
-              { type: "command", command: "plannotator", timeout: 345600 },
-              { type: "command", command: "my-custom-plan-hook" },
-            ],
-          },
-        ],
-      },
-      experimental: { plan: true },
-    });
-
-    await runPlannotatorUninstall(
-      { purge: false, dryRun: false },
-      fixture.environment,
-    );
-
-    expect(readJson(settingsPath)).toEqual({
-      hooks: {
-        BeforeTool: [
-          {
-            matcher: "exit_plan_mode",
-            hooks: [
-              { type: "command", command: "my-custom-plan-hook" },
-            ],
-          },
-        ],
-      },
-      experimental: { plan: true },
-    });
-  });
-
   test("preserves strict JSON indentation, line endings, and trailing newline", async () => {
     const fixture = createFixture();
     const settingsPath = join(
       fixture.homeDir,
-      ".gemini",
+      ".claude",
       "settings.json",
     );
     const contents = [
       "{",
       '    "theme": "custom",',
       '    "hooks": {',
-      '        "BeforeTool": [',
+      '        "PermissionRequest": [',
       "            {",
-      '                "matcher": "exit_plan_mode",',
+      '                "matcher": "ExitPlanMode",',
       '                "hooks": [{ "type": "command", "command": "plannotator" }]',
       "            }",
       "        ]",
@@ -1107,163 +867,17 @@ describe("default uninstall", () => {
     );
   });
 
-  test.skipIf(process.platform === "win32")(
-    "keeps the binary and hook when Gemini settings cannot be edited",
-    async () => {
-      const fixture = createFixture();
-      const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
-      const settingsPath = join(
-        fixture.homeDir,
-        ".gemini",
-        "settings.json",
-      );
-      writeText(binary);
-      writeJson(settingsPath, {
-        theme: "custom",
-        hooks: {
-          BeforeTool: [
-            {
-              matcher: "exit_plan_mode",
-              hooks: [{ type: "command", command: "plannotator" }],
-            },
-          ],
-        },
-      });
-      chmodSync(settingsPath, 0o400);
-
-      const blocked = await runPlannotatorUninstall(
-        { purge: false, dryRun: false },
-        fixture.environment,
-      );
-
-      expect(blocked.ok).toBe(false);
-      expect(existsSync(binary)).toBe(true);
-      expect(readFileSync(settingsPath, "utf8")).toContain("plannotator");
-      expect(blocked.errors[0]).toContain(
-        `Could not update ${settingsPath}`,
-      );
-      expect(blocked.errors[0]).toContain(
-        'Remove only Plannotator command hooks from hooks.BeforeTool entries whose matcher is "exit_plan_mode"',
-      );
-      expect(blocked.errors[0]).toContain(
-        "Then rerun `plannotator uninstall`.",
-      );
-
-      chmodSync(settingsPath, 0o600);
-      writeJson(settingsPath, { theme: "custom" });
-      const retry = await runPlannotatorUninstall(
-        { purge: false, dryRun: false },
-        fixture.environment,
-      );
-      expect(retry.ok).toBe(true);
-      expect(existsSync(binary)).toBe(false);
-      expect(readJson(settingsPath)).toEqual({ theme: "custom" });
-    },
-  );
-
-  test("removes a relocated Codex hook adopted by the installer", async () => {
-    const fixture = createFixture();
-    const hooksPath = join(fixture.homeDir, ".codex", "hooks.json");
-    writeJson(hooksPath, {
-      hooks: {
-        Stop: [
-          {
-            hooks: [
-              {
-                type: "command",
-                command: join(fixture.root, "relocated", "plannotator"),
-              },
-              {
-                type: "command",
-                command: join(fixture.root, "relocated", "plannotator-helper"),
-              },
-            ],
-          },
-        ],
-      },
-    });
-
-    const result = await runPlannotatorUninstall(
-      { purge: false, dryRun: false },
-      fixture.environment,
-    );
-
-    expect(result.ok).toBe(true);
-    expect(readJson(hooksPath)).toEqual({
-      hooks: {
-        Stop: [
-          {
-            hooks: [
-              {
-                type: "command",
-                command: join(fixture.root, "relocated", "plannotator-helper"),
-              },
-            ],
-          },
-        ],
-      },
-    });
-  });
-
-  test("requires manual repair for unrelated malformed Gemini settings", async () => {
-    const fixture = createFixture();
-    const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
-    const settingsPath = join(
-      fixture.homeDir,
-      ".gemini",
-      "settings.json",
-    );
-    const contents = '{ "theme": "custom" // comments are not strict JSON\n}';
-    writeText(binary);
-    writeText(settingsPath, contents);
-
-    const blocked = await runPlannotatorUninstall(
-      { purge: false, dryRun: false },
-      fixture.environment,
-    );
-
-    expect(blocked.ok).toBe(false);
-    expect(existsSync(binary)).toBe(true);
-    expect(readFileSync(settingsPath, "utf8")).toBe(contents);
-    expect(blocked.errors[0]).toContain(
-      `Preserved ${settingsPath}: it is not strict JSON, so managed Gemini hooks cannot be classified safely.`,
-    );
-    expect(blocked.errors[0]).toContain(
-      'Remove only Plannotator command hooks from hooks.BeforeTool entries whose matcher is "exit_plan_mode"',
-    );
-    expect(blocked.errors[0]).toContain(
-      "Then rerun `plannotator uninstall`.",
-    );
-
-    writeJson(settingsPath, { theme: "custom" });
-    const retry = await runPlannotatorUninstall(
-      { purge: false, dryRun: false },
-      fixture.environment,
-    );
-    expect(retry.ok).toBe(true);
-    expect(existsSync(binary)).toBe(false);
-    expect(readJson(settingsPath)).toEqual({ theme: "custom" });
-  });
-
   test("fails safe for escaped managed spellings in malformed host config", async () => {
     const fixture = createFixture();
     const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
     const settingsPath = join(
       fixture.homeDir,
-      ".gemini",
+      ".claude",
       "settings.json",
     );
-    const kiroAgentPath = join(
-      fixture.homeDir,
-      ".kiro",
-      "agents",
-      "plannotator.json",
-    );
     const contents = '{ "command": "pl\\u0061nnotator" // malformed managed hook\n}';
-    const kiroContents = '{ "name": "plannotator" // malformed agent\n}';
     writeText(binary);
     writeText(settingsPath, contents);
-    writeText(kiroAgentPath, kiroContents);
 
     const blocked = await runPlannotatorUninstall(
       { purge: false, dryRun: false },
@@ -1273,20 +887,14 @@ describe("default uninstall", () => {
     expect(blocked.ok).toBe(false);
     expect(existsSync(binary)).toBe(true);
     expect(contents.toLowerCase()).not.toContain("plannotator");
-    expect(blocked.errors).toHaveLength(2);
+    expect(blocked.errors).toHaveLength(1);
     expect(blocked.errors[0]).toContain(
-      "managed Gemini hooks cannot be classified safely",
+      `Could not read Claude Code's ${settingsPath}: it is not valid JSON.`,
     );
-    expect(blocked.errors[1]).toContain(
-      "the Plannotator Kiro agent cannot be classified safely",
+    expect(blocked.errors[0]).toContain(
+      "then run `plannotator uninstall` again.",
     );
-    expect(
-      blocked.errors.every((error) =>
-        error.includes("Then rerun `plannotator uninstall`.")
-      ),
-    ).toBe(true);
     expect(readFileSync(settingsPath, "utf8")).toBe(contents);
-    expect(readFileSync(kiroAgentPath, "utf8")).toBe(kiroContents);
   });
 
   test("skips data-contained runtimes when the configured data root is broad", async () => {
@@ -1653,8 +1261,6 @@ describe("purge uninstall", () => {
 describe("host and platform integrations", () => {
   test.each([
     [".claude", "settings.json", "PermissionRequest", "ExitPlanMode"],
-    [".codex", "hooks.json", "Stop", ""],
-    [".gemini", "settings.json", "BeforeTool", "exit_plan_mode"],
   ])("cleans customized %s hooks in dry-run and real uninstall", async (directory, file, event, matcher) => {
     const fixture = createFixture();
     const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
@@ -1725,27 +1331,10 @@ describe("host and platform integrations", () => {
     expect(result.errors.join("\n")).toContain("hooks.PermissionRequest[0].hooks[0].command");
   });
 
-  test("blocks on a Vibe command outside the managed block without deleting custom hooks", async () => {
-    const fixture = createFixture();
-    const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
-    const settings = join(fixture.homeDir, ".vibe", "hooks.toml");
-    const content = '[[hooks]]\nname = "custom-plan"\ncommand = "plannotator --browser Safari"\n';
-    writeText(binary);
-    writeText(settings, content);
-    const result = await runPlannotatorUninstall(
-      { purge: false, dryRun: false }, fixture.environment,
-    );
-    expect(result.ok).toBe(false);
-    expect(existsSync(binary)).toBe(true);
-    expect(readFileSync(settings, "utf8")).toBe(content);
-    expect(result.errors.join("\n")).toContain(settings);
-    expect(result.errors.join("\n")).toContain("hooks[0].command");
-  });
-
   test("does not trust a host manager's success while its configuration survives", async () => {
-    const fixture = createFixture({ which: () => "/fake/droid" });
+    const fixture = createFixture({ which: () => "/fake/claude" });
     const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
-    const settings = join(fixture.homeDir, ".factory", "settings.json");
+    const settings = join(fixture.homeDir, ".claude", "settings.json");
     writeText(binary);
     writeJson(settings, { enabledPlugins: { "plannotator@plannotator": true, "user-plugin": true } });
     const blocked = await runPlannotatorUninstall(
@@ -1838,7 +1427,7 @@ describe("host and platform integrations", () => {
       "plannotator",
     );
     writeText(binary);
-    writeJson(join(fixture.homeDir, ".factory", "settings.json"), {
+    writeJson(join(fixture.homeDir, ".claude", "settings.json"), {
       enabledPlugins: { "plannotator@plannotator": true },
     });
 
@@ -1849,23 +1438,23 @@ describe("host and platform integrations", () => {
 
     expect(result.ok).toBe(false);
     expect(result.errors[0]).toContain(
-      "Droid plugin plannotator@plannotator",
+      "Claude Code plugin plannotator@plannotator",
     );
-    expect(result.errors[0]).toContain("droid is unavailable");
+    expect(result.errors[0]).toContain("claude is unavailable");
     expect(result.errors[0]).toContain(
-      "restore droid on PATH and run `droid plugin uninstall plannotator@plannotator --scope user`",
+      "restore claude on PATH and run `claude plugin uninstall plannotator@plannotator --scope user --keep-data --yes`",
     );
     expect(result.errors[0]).toContain(
       "After it succeeds, rerun `plannotator uninstall`.",
     );
-    expect(result.errors[0]).toContain(join(fixture.homeDir, ".factory", "settings.json"));
+    expect(result.errors[0]).toContain(join(fixture.homeDir, ".claude", "settings.json"));
     expect(result.errors[0]).toContain('enabledPlugins["plannotator@plannotator"]');
     expect(existsSync(binary)).toBe(true);
     expect(result.warnings).toContain(
       "Preserved the Plannotator CLI and its Windows PATH entry so you can resolve the errors and retry uninstall.",
     );
 
-    writeJson(join(fixture.homeDir, ".factory", "settings.json"), {
+    writeJson(join(fixture.homeDir, ".claude", "settings.json"), {
       enabledPlugins: {},
     });
     const retry = await runPlannotatorUninstall(
@@ -1876,40 +1465,7 @@ describe("host and platform integrations", () => {
     expect(existsSync(binary)).toBe(false);
   });
 
-  test("keeps the binary and reports the exact command when a host manager fails", async () => {
-    const fixture = createFixture();
-    const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
-    writeText(binary);
-    writeJson(join(fixture.homeDir, ".pi", "agent", "settings.json"), {
-      packages: [{ source: "npm:@plannotator/pi-extension@0.25.1" }],
-    });
-
-    const result = await runPlannotatorUninstall(
-      { purge: true, dryRun: false },
-      {
-        ...fixture.environment,
-        which: (command) => command === "pi" ? "/fake/pi" : null,
-        runCommand: async (command, args, env) => {
-          fixture.commandCalls.push({ command, args, env });
-          return { exitCode: 23, timedOut: false };
-        },
-      },
-    );
-
-    expect(result.ok).toBe(false);
-    expect(existsSync(binary)).toBe(true);
-    expect(result.errors[0]).toContain(
-      "Pi extension npm:@plannotator/pi-extension was not removed automatically (exit 23)",
-    );
-    expect(result.errors[0]).toContain(
-      "run `pi remove npm:@plannotator/pi-extension` directly",
-    );
-    expect(result.errors[0]).toContain(
-      "Then rerun `plannotator uninstall --purge`.",
-    );
-  });
-
-  test("detects disabled Claude and Droid plugins from installation metadata", async () => {
+  test("detects disabled Claude plugins from installation metadata", async () => {
     const fixture = createFixture();
     writeJson(
       join(fixture.homeDir, ".claude", "plugins", "installed_plugins.json"),
@@ -1921,16 +1477,6 @@ describe("host and platform integrations", () => {
         },
       },
     );
-    writeJson(
-      join(fixture.homeDir, ".factory", "plugins", "installed_plugins.json"),
-      {
-        plugins: {
-          "plannotator@plannotator": [
-            { installPath: "/fake/droid/plannotator" },
-          ],
-        },
-      },
-    );
 
     await runPlannotatorUninstall(
       { purge: false, dryRun: false },
@@ -1949,13 +1495,6 @@ describe("host and platform integrations", () => {
         "user",
         "--keep-data",
         "--yes",
-      ],
-      [
-        "plugin",
-        "uninstall",
-        "plannotator@plannotator",
-        "--scope",
-        "user",
       ],
     ]);
   });
@@ -1965,24 +1504,6 @@ describe("host and platform integrations", () => {
     writeJson(join(fixture.homeDir, ".claude", "settings.json"), {
       enabledPlugins: { "plannotator@plannotator": true },
     });
-    writeJson(join(fixture.homeDir, ".copilot", "settings.json"), {
-      enabledPlugins: { "plannotator-copilot@plannotator": true },
-    });
-    writeJson(join(fixture.homeDir, ".factory", "settings.json"), {
-      enabledPlugins: { "plannotator@plannotator": true },
-    });
-    writeJson(join(fixture.homeDir, ".pi", "agent", "settings.json"), {
-      packages: [{ source: "npm:@plannotator/pi-extension@0.25.1" }],
-    });
-    writeText(
-      join(
-        fixture.homeDir,
-        ".vscode",
-        "extensions",
-        "backnotprop.plannotator-webview-0.25.1",
-        "package.json",
-      ),
-    );
 
     await runPlannotatorUninstall(
       { purge: false, dryRun: false },
@@ -2002,16 +1523,6 @@ describe("host and platform integrations", () => {
         "--keep-data",
         "--yes",
       ],
-      ["plugin", "uninstall", "plannotator-copilot@plannotator"],
-      [
-        "plugin",
-        "uninstall",
-        "plannotator@plannotator",
-        "--scope",
-        "user",
-      ],
-      ["remove", "npm:@plannotator/pi-extension"],
-      ["--uninstall-extension", "backnotprop.plannotator-webview"],
     ]);
   });
 
@@ -2458,23 +1969,6 @@ describe("the Inbox's agent connections (inbox-agents.ts)", () => {
     expect((readJson(join(fixture.dataDir, "inbox", "agents.json")).agents as Record<string, unknown>).cursor).toBeUndefined();
   });
 
-  test("Plannotator's trusted-sender token in Qwen Code is revoked through qwen before the data goes (also with --purge); --dry-run only lists it", async () => {
-    const fixture = createFixture();
-    const trust = join(fixture.dataDir, "inbox", "qwen-trust.json");
-    writeJson(trust, { v: 1, home: join(fixture.homeDir, ".qwen"), id: "c_0a1b2c3d", token: `qpc_${"ab".repeat(32)}`, created_at: "2026-10-27T00:00:00.000Z" });
-    const describe = "Plannotator's trusted-sender token in Qwen Code (qwen sessions controllers remove c_0a1b2c3d)";
-    const environment = { ...fixture.environment, which: (command: string) => (command === "qwen" ? "/fake/qwen" : null) };
-
-    const dry = await runPlannotatorUninstall({ purge: false, dryRun: true }, environment);
-    expect(dry.planned).toContain(describe);
-    expect(fixture.commandCalls.filter((call) => call.command === "/fake/qwen")).toEqual([]);
-    expect(existsSync(trust)).toBe(true);
-
-    const result = await runPlannotatorUninstall({ purge: true, dryRun: false }, environment);
-    expect(result.removed).toContain(describe);
-    expect(fixture.commandCalls.filter((call) => call.command === "/fake/qwen").map((call) => call.args)).toEqual([["sessions", "controllers", "remove", "c_0a1b2c3d"]]);
-  });
-
   test("a connected Hermes Agent plugin is left to Hermes and uninstall names the one command that removes it and its switch, without running hermes", async () => {
     const fixture = createFixture();
     const hermesConfig = join(fixture.homeDir, ".hermes", "config.yaml");
@@ -2486,30 +1980,6 @@ describe("the Inbox's agent connections (inbox-agents.ts)", () => {
     expect(result.warnings.filter((line) => line.includes("`hermes plugins remove plannotator`"))).toHaveLength(1);
     expect(fixture.commandCalls.filter((call) => call.command === "/fake/hermes")).toEqual([]);
     expect(readFileSync(hermesConfig, "utf8")).toContain("allow_gateway_injection: true");
-  });
-
-  test.skipIf(process.getuid?.() === 0)("a grant Qwen will not revoke while the data folder can't be written: the uninstall still removes the binary, and says so", async () => {
-    const fixture = createFixture();
-    const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
-    writeText(binary);
-    const inbox = join(fixture.dataDir, "inbox");
-    writeJson(join(inbox, "qwen-trust.json"), { v: 1, home: join(fixture.homeDir, ".qwen"), id: "c_0a1b2c3d", token: `qpc_${"ab".repeat(32)}`, created_at: "2026-10-27T00:00:00.000Z" });
-    const environment = {
-      ...fixture.environment,
-      which: (command: string) => (command === "qwen" ? "/fake/qwen" : null),
-      runCommand: async (command: string, args: string[], env?: Record<string, string>) => {
-        fixture.commandCalls.push({ command, args, env });
-        return command === "/fake/qwen" ? { exitCode: 1, timedOut: false, stdout: "", stderr: "Error: could not write" } : { exitCode: 0, timedOut: false, stdout: "" };
-      },
-    };
-    chmodSync(inbox, 0o500);
-    try {
-      const result = await runPlannotatorUninstall({ purge: false, dryRun: false }, environment);
-      expect(result.warnings.join("\n")).toContain("qwen sessions controllers remove c_0a1b2c3d");
-      expect(existsSync(binary)).toBe(false);
-    } finally {
-      chmodSync(inbox, 0o700);
-    }
   });
 
   test("an agent with one entry left (of two a move left) keeps its whole record, so the next uninstall tries again", async () => {
@@ -2624,9 +2094,9 @@ describe("hooks that still run Plannotator keep the CLI", () => {
   test.each(["plannotator review", "plannotator --custom-option"])("dry-run reports preserved hook blocker: %s", async (command) => {
     const fixture = createFixture();
     const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
-    const file = join(fixture.homeDir, ".gemini", "settings.json");
+    const file = join(fixture.homeDir, ".claude", "settings.json");
     writeText(binary);
-    writeJson(file, { hooks: { BeforeTool: [{ matcher: "exit_plan_mode", hooks: [
+    writeJson(file, { hooks: { PermissionRequest: [{ matcher: "ExitPlanMode", hooks: [
       { type: "command", command: "plannotator --browser Safari" },
       { type: "command", command },
     ] }] } });
@@ -2634,7 +2104,7 @@ describe("hooks that still run Plannotator keep the CLI", () => {
     const result = await runPlannotatorUninstall({ purge: false, dryRun: true }, fixture.environment);
     expect(result.ok).toBe(false);
     expect(result.errors.join("\n")).toContain(file);
-    expect(result.errors.join("\n")).toContain("hooks.BeforeTool[0].hooks[1].command");
+    expect(result.errors.join("\n")).toContain("hooks.PermissionRequest[0].hooks[1].command");
     expect(result.planned).not.toContain(binary);
     expect(snapshotTree(fixture.homeDir)).toEqual(before);
   });
@@ -2653,17 +2123,6 @@ describe("hooks that still run Plannotator keep the CLI", () => {
     expect(readJson(file)).toEqual(config);
   });
 
-  test("Vibe dry-run reports original index of a surviving hook beside the managed block", async () => {
-    const fixture = createFixture();
-    const file = join(fixture.homeDir, ".vibe", "hooks.toml");
-    const content = '# >>> plannotator-managed-vibe-hooks\n[[hooks]]\ncommand = "plannotator"\n# <<< plannotator-managed-vibe-hooks\n[[hooks]]\ncommand = "plannotator review"\n';
-    writeText(file, content);
-    const result = await runPlannotatorUninstall({ purge: false, dryRun: true }, fixture.environment);
-    expect(result.ok).toBe(false);
-    expect(result.errors.join("\n")).toContain("hooks[1].command");
-    expect(readFileSync(file, "utf8")).toBe(content);
-  });
-
   test("two surviving hooks in one file are one error naming both", async () => {
     const fixture = createFixture();
     const file = join(fixture.homeDir, ".claude", "settings.json");
@@ -2677,23 +2136,23 @@ describe("hooks that still run Plannotator keep the CLI", () => {
     expect(about[0]).toContain("hooks.PreToolUse[0].hooks[0].command, hooks.PreToolUse[0].hooks[1].command");
   });
 
-  // install.sh writes the Codex hook as `"command": "${PLANNOTATOR_BIN}"`: unquoted, spaces and all.
+  // An installer may write the hook command as the bare binary path: unquoted, spaces and all.
   test("an unquoted install path with spaces is still Plannotator's own hook", async () => {
     const fixture = createFixture();
     const homeDir = join(fixture.root, "my home");
     const binary = join(homeDir, ".local", "bin", "plannotator");
-    const file = join(homeDir, ".codex", "hooks.json");
+    const file = join(homeDir, ".claude", "settings.json");
     writeText(binary);
-    writeJson(file, { hooks: { Stop: [{ hooks: [{ type: "command", command: binary }] }] } });
+    writeJson(file, { hooks: { PermissionRequest: [{ matcher: "ExitPlanMode", hooks: [{ type: "command", command: binary }] }] } });
     const environment = { ...fixture.environment, homeDir };
 
     const dry = await runPlannotatorUninstall({ purge: false, dryRun: true }, environment);
     expect(dry.ok).toBe(true);
-    expect(dry.planned).toContain(`managed Codex Stop hook in ${file}`);
+    expect(dry.planned).toContain(`managed Claude Code hooks in ${file}`);
 
     const result = await runPlannotatorUninstall({ purge: false, dryRun: false }, environment);
     expect(result.ok).toBe(true);
-    expect(existsSync(file)).toBe(false);
+    expect(readJson(file)).toEqual({});
     expect(existsSync(binary)).toBe(false);
   });
 
@@ -2735,20 +2194,10 @@ describe("hooks that still run Plannotator keep the CLI", () => {
 });
 
 describe("host plugin managers", () => {
-  // Copilot CLI 1.0.68 refuses `copilot plugins remove … --plugin`.
-  test("without copilot on PATH, the command to run is one Copilot CLI accepts", async () => {
-    const fixture = createFixture();
-    writeJson(join(fixture.homeDir, ".copilot", "settings.json"), { enabledPlugins: { "plannotator-copilot@plannotator": true } });
-    const result = await runPlannotatorUninstall({ purge: false, dryRun: false }, fixture.environment);
-    expect(result.ok).toBe(false);
-    expect(result.errors).toHaveLength(1);
-    expect(result.errors[0]).toContain("run `copilot plugin uninstall plannotator-copilot@plannotator`");
-  });
-
   test("rejects a successful host cleanup whose formerly detected config is now malformed", async () => {
-    const fixture = createFixture({ which: () => "/fake/droid" });
+    const fixture = createFixture({ which: () => "/fake/claude" });
     const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
-    const file = join(fixture.homeDir, ".factory", "settings.json");
+    const file = join(fixture.homeDir, ".claude", "settings.json");
     writeText(binary);
     writeJson(file, { enabledPlugins: { "plannotator@plannotator": true } });
     const result = await runPlannotatorUninstall({ purge: false, dryRun: false }, {
@@ -2761,68 +2210,14 @@ describe("host plugin managers", () => {
     expect(result.ok).toBe(false);
     expect(existsSync(binary)).toBe(true);
     expect(result.errors).toEqual([
-      `Could not read Droid's ${file}: it is not valid JSON. Plannotator did not change it. To continue, fix that (or put back a working copy of the file), then run \`plannotator uninstall\` again.`,
+      `Could not read Claude Code's ${file}: it is not valid JSON. Plannotator did not change it. To continue, fix that (or put back a working copy of the file), then run \`plannotator uninstall\` again.`,
     ]);
     expect(readFileSync(file, "utf8")).toBe("{broken");
-  });
-
-  test("accepts VS Code removal when registration is gone but directory remains", async () => {
-    const fixture = createFixture({ which: (name) => name === "code" ? "/fake/code" : null });
-    const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
-    const directory = join(fixture.homeDir, ".vscode", "extensions", "backnotprop.plannotator-webview-0.1.0");
-    const registry = join(fixture.homeDir, ".vscode", "extensions", "extensions.json");
-    writeText(binary);
-    writeText(join(directory, "package.json"));
-    writeJson(registry, [{ identifier: { id: "backnotprop.plannotator-webview" }, version: "0.1.0" }]);
-    const result = await runPlannotatorUninstall({ purge: false, dryRun: false }, {
-      ...fixture.environment,
-      runCommand: async () => {
-        writeJson(registry, []);
-        return { exitCode: 0, timedOut: false };
-      },
-    });
-    expect(result.ok).toBe(true);
-    expect(existsSync(binary)).toBe(false);
-    expect(existsSync(directory)).toBe(true);
-    const remainingRegistry: unknown = JSON.parse(readFileSync(registry, "utf8"));
-    expect(remainingRegistry).toEqual([]);
-  });
-
-  test.each(["registry", "obsolete"])("does not invoke VS Code for unregistered leftovers: %s", async (kind) => {
-    const fixture = createFixture();
-    const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
-    const parent = join(fixture.homeDir, ".vscode", "extensions");
-    const name = "backnotprop.plannotator-webview-0.1.0";
-    writeText(binary);
-    writeText(join(parent, name, "package.json"));
-    if (kind === "registry") writeJson(join(parent, "extensions.json"), []);
-    else writeJson(join(parent, ".obsolete"), { [name]: true });
-    const result = await runPlannotatorUninstall({ purge: false, dryRun: false }, fixture.environment);
-    expect(result.ok).toBe(true);
-    expect(fixture.commandCalls).toEqual([]);
-    expect(existsSync(binary)).toBe(false);
-    expect(existsSync(join(parent, name))).toBe(true);
-  });
-
-  test("dry-run reports missing Droid CLI with exact recovery entries", async () => {
-    const fixture = createFixture();
-    const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
-    const file = join(fixture.homeDir, ".factory", "settings.json");
-    writeText(binary); writeJson(file, { enabledPlugins: { "plannotator@plannotator": true } });
-    const before = snapshotTree(fixture.homeDir);
-    const result = await runPlannotatorUninstall({ purge: false, dryRun: true }, fixture.environment);
-    expect(result.ok).toBe(false);
-    expect(result.errors.join("\n")).toContain("restore droid on PATH");
-    expect(result.errors.join("\n")).toContain(file);
-    expect(result.errors.join("\n")).toContain('enabledPlugins["plannotator@plannotator"]');
-    expect(result.planned).not.toContain(binary);
-    expect(snapshotTree(fixture.homeDir)).toEqual(before);
   });
 
   // `--scope user` removes only the user's install; a project's stays in installed_plugins.json.
   test.each([
     { host: "claude", dir: ".claude" },
-    { host: "droid", dir: ".factory" },
   ])("$host: a project-scope install that survives the user-scope uninstall is named, and the CLI still goes", async ({ host, dir }) => {
     const fixture = createFixture();
     const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
@@ -3085,10 +2480,7 @@ describe("configs uninstall cannot read keep the CLI", () => {
   });
 
   test.skipIf(process.platform === "win32" || process.getuid?.() === 0).each([
-    ["Codex", [".codex", "config.toml"], "[features]\nhooks = true\n"],
-    ["Codex", [".codex", "hooks.json"], "{}"],
     ["OpenCode", [".config", "opencode", "opencode.json"], "{}"],
-    ["Gemini CLI", [".gemini", "settings.json"], "{}"],
   ] as const)("%s's %j it cannot read names the file, the tool and what to do", async (owner, parts, content) => {
     const fixture = createFixture();
     const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
@@ -3108,41 +2500,13 @@ describe("configs uninstall cannot read keep the CLI", () => {
     } finally { chmodSync(file, 0o644); }
   });
 
-  test("a real run leaves a Vibe hooks.toml it cannot parse exactly as it was, managed block included", async () => {
-    const fixture = createFixture();
-    const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
-    const file = join(fixture.homeDir, ".vibe", "hooks.toml");
-    const content = '[[hooks]]\nname = "mine"\ncommand = "unterminated\n# >>> plannotator-managed-vibe-hooks\n[[hooks]]\ncommand = "plannotator"\n# <<< plannotator-managed-vibe-hooks\n';
-    writeText(binary);
-    writeText(file, content);
-    const result = await runPlannotatorUninstall({ purge: false, dryRun: false }, fixture.environment);
-    expect(result.ok).toBe(false);
-    expect(readFileSync(file, "utf8")).toBe(content);
-    expect(result.removed.some((item) => item.includes(file))).toBe(false);
-    expect(result.errors.filter((error) => error.includes(file))).toHaveLength(1);
-    expect(existsSync(binary)).toBe(true);
-  });
-
-  test("a Vibe hooks.toml that is not valid TOML says what is wrong", async () => {
-    const fixture = createFixture();
-    const file = join(fixture.homeDir, ".vibe", "hooks.toml");
-    const content = '[[hooks]]\nname = "mine"\ncommand = "unterminated\n';
-    writeText(file, content);
-    const result = await runPlannotatorUninstall({ purge: false, dryRun: true }, fixture.environment);
-    expect(result.ok).toBe(false);
-    expect(result.errors).toHaveLength(1);
-    expect(result.errors[0]).toStartWith(`Could not read Mistral Vibe's ${file}: it is not valid TOML (Unterminated string`);
-    expect(result.errors[0]).toContain("Plannotator did not change it. To continue, fix that");
-    expect(readFileSync(file, "utf8")).toBe(content);
-  });
-
   test.skipIf(process.platform === "win32" || process.getuid?.() === 0)("inaccessible hook target blocks removal instead of appearing missing", async () => {
     const fixture = createFixture();
     const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
     const targetDirectory = join(fixture.root, "inaccessible");
-    const target = join(targetDirectory, "hooks.toml");
-    const file = join(fixture.homeDir, ".vibe", "hooks.toml");
-    writeText(binary); writeText(target, '[[hooks]]\ncommand = "plannotator"\n');
+    const target = join(targetDirectory, "settings.json");
+    const file = join(fixture.homeDir, ".claude", "settings.json");
+    writeText(binary); writeText(target, '{ "hooks": { "PermissionRequest": [{ "matcher": "ExitPlanMode", "hooks": [{ "type": "command", "command": "plannotator" }] }] } }\n');
     mkdirSync(dirname(file), { recursive: true }); symlinkSync(target, file);
     chmodSync(targetDirectory, 0o000);
     try {
@@ -3152,99 +2516,10 @@ describe("configs uninstall cannot read keep the CLI", () => {
         expect(result.ok).toBe(false);
         expect(existsSync(binary)).toBe(true);
         expect(result.errors).toEqual([
-          `Could not read Mistral Vibe's ${file}: permission denied. Plannotator did not change it. To continue, fix that (or put back a working copy of the file), then run \`plannotator uninstall\` again.`,
+          `Could not read Claude Code's ${file}: permission denied. Plannotator did not change it. To continue, fix that (or put back a working copy of the file), then run \`plannotator uninstall\` again.`,
         ]);
         expect(result.planned).not.toContain(binary);
       }
     } finally { chmodSync(targetDirectory, 0o755); }
-  });
-});
-
-describe("Qwen Code", () => {
-  function writeQwenInstall(qwenDir: string): void {
-    writeJson(join(qwenDir, "extensions", "plannotator", "qwen-extension.json"), { name: "plannotator", version: "1.0.0" });
-    for (const skill of ["plannotator-review", "plannotator-annotate", "plannotator-last"]) {
-      writeText(join(qwenDir, "skills", skill, "SKILL.md"));
-    }
-    writeText(join(qwenDir, "skills", "my-own-skill", "SKILL.md"));
-  }
-
-  /** qwen on PATH; like the real `qwen extensions uninstall`, it removes the extension's folder. */
-  function withQwen(fixture: Fixture, qwenDir: string): UninstallEnvironment {
-    return {
-      ...fixture.environment,
-      which: (command) => (command === "qwen" ? "/fake/qwen" : null),
-      runCommand: async (command, args, env) => {
-        fixture.commandCalls.push({ command, args, env });
-        if (command === "/fake/qwen") rmSync(join(qwenDir, "extensions", "plannotator"), { recursive: true, force: true });
-        return { exitCode: 0, timedOut: false };
-      },
-    };
-  }
-
-  test("removes the extension with qwen and the installed skills, and keeps the person's own skill", async () => {
-    const fixture = createFixture();
-    const qwenDir = join(fixture.homeDir, ".qwen");
-    writeQwenInstall(qwenDir);
-
-    const result = await runPlannotatorUninstall({ purge: false, dryRun: false }, withQwen(fixture, qwenDir));
-
-    expect(fixture.commandCalls.map((call) => [call.command, ...call.args])).toEqual([
-      ["/fake/qwen", "extensions", "uninstall", "plannotator"],
-    ]);
-    expect(result.removed).toContain("Qwen Code extension plannotator");
-    for (const skill of ["plannotator-review", "plannotator-annotate", "plannotator-last"]) {
-      expect(existsSync(join(qwenDir, "skills", skill))).toBe(false);
-    }
-    expect(existsSync(join(qwenDir, "skills", "my-own-skill", "SKILL.md"))).toBe(true);
-  });
-
-  test("removes the extension source the installers keep in the data folder", async () => {
-    const fixture = createFixture();
-    writeQwenInstall(join(fixture.homeDir, ".qwen"));
-    writeJson(join(fixture.dataDir, "qwen-code", "extension", "qwen-extension.json"), { name: "plannotator", version: "1.0.0" });
-    writeText(join(fixture.dataDir, "config.json"));
-
-    await runPlannotatorUninstall({ purge: false, dryRun: false }, withQwen(fixture, join(fixture.homeDir, ".qwen")));
-
-    expect(existsSync(join(fixture.dataDir, "qwen-code"))).toBe(false);
-    expect(existsSync(join(fixture.dataDir, "config.json"))).toBe(true);
-  });
-
-  test("QWEN_HOME with a leading ~ is the Qwen folder", async () => {
-    const fixture = createFixture();
-    const qwenDir = join(fixture.homeDir, "qwen-home");
-    writeQwenInstall(qwenDir);
-
-    await runPlannotatorUninstall(
-      { purge: false, dryRun: false },
-      { ...withQwen(fixture, qwenDir), env: { QWEN_HOME: "~/qwen-home" } },
-    );
-
-    expect(fixture.commandCalls.map((call) => call.args)).toEqual([["extensions", "uninstall", "plannotator"]]);
-    expect(existsSync(join(qwenDir, "skills", "plannotator-last"))).toBe(false);
-  });
-
-  test("without the qwen command, the extension is reported with the command to run", async () => {
-    const fixture = createFixture();
-    writeQwenInstall(join(fixture.homeDir, ".qwen"));
-
-    const result = await runPlannotatorUninstall({ purge: false, dryRun: false }, fixture.environment);
-
-    expect(fixture.commandCalls).toEqual([]);
-    expect(result.ok).toBe(false);
-    expect(result.errors.join("\n")).toContain("run `qwen extensions uninstall plannotator`");
-  });
-
-  test("no extension installed: qwen is never run", async () => {
-    const fixture = createFixture();
-    mkdirSync(join(fixture.homeDir, ".qwen"), { recursive: true });
-
-    await runPlannotatorUninstall(
-      { purge: false, dryRun: false },
-      { ...fixture.environment, which: (command) => `/fake/${command}` },
-    );
-
-    expect(fixture.commandCalls.filter((call) => call.command === "/fake/qwen")).toEqual([]);
   });
 });

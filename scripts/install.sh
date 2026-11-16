@@ -71,8 +71,8 @@ NON_INTERACTIVE=0
 RECONFIGURE=0
 # Binary-only mode. Installs just the plannotator binary (to $INSTALL_DIR) and
 # no persistent state elsewhere — no sem sidecar, no CallDiff or agent-terminal runtime, no
-# skills, hooks, slash commands, or per-agent config (Claude, Codex, OpenCode,
-# Gemini, Kiro, Vibe, Qwen Code). Set by --minimal (1) / --no-minimal (0); -1 =
+# skills, hooks, slash commands, or per-agent config (Claude, OpenCode).
+# Set by --minimal (1) / --no-minimal (0); -1 =
 # neither flag given (fall through to the PLANNOTATOR_MINIMAL env var). Resolved
 # after arg parsing so a flag overrides the env var in either direction.
 MINIMAL_FLAG=-1
@@ -81,15 +81,10 @@ MINIMAL_FLAG=-1
 # writes nothing to that agent's home; it never removes an integration a
 # previous install already wired. 1 = flag passed. Resolution (flag > env >
 # config skipInstall.<agent> > default off) happens after _config_dir is known.
-SKIP_CODEX_FLAG=0
-SKIP_GEMINI_FLAG=0
-SKIP_KIRO_FLAG=0
-SKIP_VIBE_FLAG=0
 SKIP_OPENCODE_FLAG=0
-SKIP_QWEN_FLAG=0
 # Same shape, but scoped to the skills/slash-command sparse checkout rather
 # than one agent's home: --skip-skills turns the whole fetch into a no-op for
-# every scope it writes (Claude, ~/.agents, OpenCode, Gemini, Kiro), including
+# every scope it writes (Claude, ~/.agents, OpenCode), including
 # the extras and the skill-scope cleanup sweeps. Needed by any environment that
 # cannot reach github.com for the tag being installed — the release smoke test
 # installs a synthetic v9.9.9 whose tag has no GitHub counterpart.
@@ -105,9 +100,8 @@ usage() {
     cat <<'USAGE'
 Usage: install.sh [--version <tag>] [--verify-attestation | --skip-attestation]
                   [--extras | --no-extras] [--model-invocable <list>|none]
-                  [--minimal | --no-minimal] [--skip-codex] [--skip-gemini]
-                  [--skip-kiro] [--skip-vibe] [--skip-opencode] [--skip-skills]
-                  [--skip-qwen] [--with-t3 | --without-t3]
+                  [--minimal | --no-minimal] [--skip-opencode] [--skip-skills]
+                  [--with-t3 | --without-t3]
                   [--skip-claude-plugin] [--non-interactive] [--reconfigure] [--help]
        install.sh <tag>
 
@@ -144,47 +138,21 @@ Options:
                          --binary-only). Skips the sem semantic-diff sidecar,
                          the CallDiff runtime, the agent-terminal runtime, and every per-agent
                          integration (skills, hooks, slash commands, and config
-                         for Claude, Codex, OpenCode, Gemini, Kiro, and Vibe). No
+                         for Claude and OpenCode). No
                          persistent state is written outside $HOME/.local/bin
                          (a temp download file is still used and removed). Also
                          enabled by exporting PLANNOTATOR_MINIMAL=1.
   --no-minimal           Force a full install even when PLANNOTATOR_MINIMAL is
                          set in the environment.
-  --skip-codex           Do not write the Codex integration (hooks.json /
-                         config.toml under CODEX_HOME) even when Codex is
-                         detected. Never removes an existing integration.
-                         Also enabled by PLANNOTATOR_SKIP_CODEX_INSTALL=1 or
-                         { "skipInstall": { "codex": true } } in
-                         config.json in your Plannotator data folder
-                         (`plannotator data-dir`) (flag > env var > config).
-  --skip-gemini          Same opt-out for the Gemini CLI integration
-                         (~/.gemini policy, settings hook, commands). Env var:
-                         PLANNOTATOR_SKIP_GEMINI_INSTALL; config key:
-                         skipInstall.gemini.
-  --skip-kiro            Same opt-out for the Kiro CLI integration
-                         (~/.kiro skills and agent). Env var:
-                         PLANNOTATOR_SKIP_KIRO_INSTALL; config key:
-                         skipInstall.kiro.
-  --skip-vibe            Same opt-out for the Mistral Vibe integration
-                         (the managed hooks.toml block and the skills under
-                         VIBE_HOME). Env var:
-                         PLANNOTATOR_SKIP_VIBE_INSTALL; config key:
-                         skipInstall.vibe.
   --skip-opencode        Do not write the OpenCode integration (command stubs
                          under ~/.config/opencode/commands and the OpenCode
                          plugin cache clear). OpenCode has no detection leg,
                          so this is a plain do-not-write switch. Env var:
                          PLANNOTATOR_SKIP_OPENCODE_INSTALL; config key:
                          skipInstall.opencode.
-  --skip-qwen            Same opt-out for the Qwen Code integration (the
-                         plannotator extension installed with `qwen extensions
-                         install`, and the skills under ${QWEN_HOME:-~/.qwen}).
-                         Env var: PLANNOTATOR_SKIP_QWEN_INSTALL; config key:
-                         skipInstall.qwen.
   --skip-skills          Do not fetch or write the /plannotator-* skills and
                          slash commands (the sparse checkout that feeds Claude
-                         Code, ~/.agents, OpenCode, Gemini, Kiro, Vibe, and the
-                         Qwen Code extension), the extras, or the skill-scope
+                         Code, ~/.agents, and OpenCode), the extras, or the skill-scope
                          cleanup sweeps. Nothing
                          already installed is removed. The binary, hooks, and
                          per-agent config still install. Use it where
@@ -364,28 +332,8 @@ while [ $# -gt 0 ]; do
             T3_HOOK_FLAG="$_t3_value"
             shift
             ;;
-        --skip-codex)
-            SKIP_CODEX_FLAG=1
-            shift
-            ;;
-        --skip-gemini)
-            SKIP_GEMINI_FLAG=1
-            shift
-            ;;
-        --skip-kiro)
-            SKIP_KIRO_FLAG=1
-            shift
-            ;;
-        --skip-vibe)
-            SKIP_VIBE_FLAG=1
-            shift
-            ;;
         --skip-opencode)
             SKIP_OPENCODE_FLAG=1
-            shift
-            ;;
-        --skip-qwen)
-            SKIP_QWEN_FLAG=1
             shift
             ;;
         --skip-skills)
@@ -617,24 +565,14 @@ fi
 # The config layer first extracts JUST the skipInstall object (from the
 # first "{" after the "skipInstall" key to its first "}" — the object is a
 # flat map of booleans, so the first closing brace ends it) and matches
-# per-agent keys only inside that region. This keeps a "codex": true under
+# per-agent keys only inside that region. This keeps a "opencode": true under
 # some OTHER key from opting anyone out (M2), works whether the JSON is
-# pretty-printed or single-line, and an explicit `"codex": false` inside
+# pretty-printed or single-line, and an explicit `"opencode": false` inside
 # skipInstall is honored as a veto rather than being ignored. Each resolved
 # skip remembers its source so the detected-but-skipped report can name
 # what the user set.
-skip_codex=0
-skip_codex_source=""
-skip_gemini=0
-skip_gemini_source=""
-skip_kiro=0
-skip_kiro_source=""
-skip_vibe=0
-skip_vibe_source=""
 skip_opencode=0
 skip_opencode_source=""
-skip_qwen=0
-skip_qwen_source=""
 # skipInstall.skills is not an agent — it opts out of the skills/slash-command
 # checkout for every scope at once — but it shares the same three layers and
 # the same key region, so it rides along in the loop below.
@@ -670,35 +608,15 @@ if [ -f "$_config_dir/config.json" ]; then
         }' "$_config_dir/config.json" 2>/dev/null) || _skip_install_block=""
 fi
 if [ -n "$_skip_install_block" ]; then
-    for _agent in codex gemini kiro vibe opencode qwen skills claudePlugin; do
+    for _agent in opencode skills claudePlugin; do
         if printf '%s' "$_skip_install_block" | grep -q "\"$_agent\"[[:space:]]*:[[:space:]]*false"; then
             continue # explicit false is a veto, never a skip
         fi
         if printf '%s' "$_skip_install_block" | grep -q "\"$_agent\"[[:space:]]*:[[:space:]]*true"; then
             case "$_agent" in
-                codex)
-                    skip_codex=1
-                    skip_codex_source="config skipInstall.codex"
-                    ;;
-                gemini)
-                    skip_gemini=1
-                    skip_gemini_source="config skipInstall.gemini"
-                    ;;
-                kiro)
-                    skip_kiro=1
-                    skip_kiro_source="config skipInstall.kiro"
-                    ;;
-                vibe)
-                    skip_vibe=1
-                    skip_vibe_source="config skipInstall.vibe"
-                    ;;
                 opencode)
                     skip_opencode=1
                     skip_opencode_source="config skipInstall.opencode"
-                    ;;
-                qwen)
-                    skip_qwen=1
-                    skip_qwen_source="config skipInstall.qwen"
                     ;;
                 skills)
                     skip_skills=1
@@ -714,46 +632,6 @@ if [ -n "$_skip_install_block" ]; then
     unset _agent
 fi
 unset _skip_install_block
-case "${PLANNOTATOR_SKIP_CODEX_INSTALL:-}" in
-    1|true|yes|TRUE|YES|True|Yes)
-        skip_codex=1
-        skip_codex_source="PLANNOTATOR_SKIP_CODEX_INSTALL"
-        ;;
-    0|false|no|FALSE|NO|False|No)
-        skip_codex=0
-        skip_codex_source=""
-        ;;
-esac
-case "${PLANNOTATOR_SKIP_GEMINI_INSTALL:-}" in
-    1|true|yes|TRUE|YES|True|Yes)
-        skip_gemini=1
-        skip_gemini_source="PLANNOTATOR_SKIP_GEMINI_INSTALL"
-        ;;
-    0|false|no|FALSE|NO|False|No)
-        skip_gemini=0
-        skip_gemini_source=""
-        ;;
-esac
-case "${PLANNOTATOR_SKIP_KIRO_INSTALL:-}" in
-    1|true|yes|TRUE|YES|True|Yes)
-        skip_kiro=1
-        skip_kiro_source="PLANNOTATOR_SKIP_KIRO_INSTALL"
-        ;;
-    0|false|no|FALSE|NO|False|No)
-        skip_kiro=0
-        skip_kiro_source=""
-        ;;
-esac
-case "${PLANNOTATOR_SKIP_VIBE_INSTALL:-}" in
-    1|true|yes|TRUE|YES|True|Yes)
-        skip_vibe=1
-        skip_vibe_source="PLANNOTATOR_SKIP_VIBE_INSTALL"
-        ;;
-    0|false|no|FALSE|NO|False|No)
-        skip_vibe=0
-        skip_vibe_source=""
-        ;;
-esac
 case "${PLANNOTATOR_SKIP_OPENCODE_INSTALL:-}" in
     1|true|yes|TRUE|YES|True|Yes)
         skip_opencode=1
@@ -762,16 +640,6 @@ case "${PLANNOTATOR_SKIP_OPENCODE_INSTALL:-}" in
     0|false|no|FALSE|NO|False|No)
         skip_opencode=0
         skip_opencode_source=""
-        ;;
-esac
-case "${PLANNOTATOR_SKIP_QWEN_INSTALL:-}" in
-    1|true|yes|TRUE|YES|True|Yes)
-        skip_qwen=1
-        skip_qwen_source="PLANNOTATOR_SKIP_QWEN_INSTALL"
-        ;;
-    0|false|no|FALSE|NO|False|No)
-        skip_qwen=0
-        skip_qwen_source=""
         ;;
 esac
 case "${PLANNOTATOR_SKIP_SKILLS_INSTALL:-}" in
@@ -794,29 +662,9 @@ case "${PLANNOTATOR_SKIP_CLAUDE_PLUGIN_UPDATE:-}" in
         skip_claude_plugin_source=""
         ;;
 esac
-if [ "$SKIP_CODEX_FLAG" -eq 1 ]; then
-    skip_codex=1
-    skip_codex_source="--skip-codex"
-fi
-if [ "$SKIP_GEMINI_FLAG" -eq 1 ]; then
-    skip_gemini=1
-    skip_gemini_source="--skip-gemini"
-fi
-if [ "$SKIP_KIRO_FLAG" -eq 1 ]; then
-    skip_kiro=1
-    skip_kiro_source="--skip-kiro"
-fi
-if [ "$SKIP_VIBE_FLAG" -eq 1 ]; then
-    skip_vibe=1
-    skip_vibe_source="--skip-vibe"
-fi
 if [ "$SKIP_OPENCODE_FLAG" -eq 1 ]; then
     skip_opencode=1
     skip_opencode_source="--skip-opencode"
-fi
-if [ "$SKIP_QWEN_FLAG" -eq 1 ]; then
-    skip_qwen=1
-    skip_qwen_source="--skip-qwen"
 fi
 if [ "$SKIP_SKILLS_FLAG" -eq 1 ]; then
     skip_skills=1
@@ -1355,7 +1203,7 @@ print_path_advice() {
 
 # Remember the install-affecting choices this run took from COMMAND-LINE flags
 # (#1634), so a background auto-update re-runs this script with the same ones:
-# someone who installed with --minimal or --skip-codex must not get a full
+# someone who installed with --minimal or a --skip-* opt-out must not get a full
 # install back on the next update. Only the known flag set is written, as
 # neutral ids (never raw argv, paths, or secrets); env vars and config.json
 # already survive on their own and are not recorded. A run with none of these
@@ -1371,12 +1219,7 @@ write_install_flags() {
     [ "$WITH_CALL_FLOW_FLAG" = "1" ] && _if_add with-call-flow
     [ "$T3_HOOK_FLAG" = "1" ] && _if_add with-t3
     [ "$T3_HOOK_FLAG" = "0" ] && _if_add without-t3
-    [ "$SKIP_CODEX_FLAG" = "1" ] && _if_add skip-codex
-    [ "$SKIP_GEMINI_FLAG" = "1" ] && _if_add skip-gemini
-    [ "$SKIP_KIRO_FLAG" = "1" ] && _if_add skip-kiro
-    [ "$SKIP_VIBE_FLAG" = "1" ] && _if_add skip-vibe
     [ "$SKIP_OPENCODE_FLAG" = "1" ] && _if_add skip-opencode
-    [ "$SKIP_QWEN_FLAG" = "1" ] && _if_add skip-qwen
     [ "$SKIP_SKILLS_FLAG" = "1" ] && _if_add skip-skills
     [ "$SKIP_CLAUDE_PLUGIN_FLAG" = "1" ] && _if_add skip-claude-plugin
     _if_path="$_config_dir/install-flags.json"
@@ -1558,257 +1401,6 @@ install_agent_terminal_runtime
 install_call_flow_runtime
 
 print_path_advice
-
-# --- Codex CLI / Desktop app support (only if Codex is installed or configured) ---
-# Codex stores config and state under $CODEX_HOME when set, falling back to
-# ~/.codex (https://developers.openai.com/codex/config-advanced).
-CODEX_DIR="${CODEX_HOME:-$HOME/.codex}"
-
-codex_home_has_user_config() {
-    [ -d "$CODEX_DIR" ] || return 1
-    [ -n "$(find "$CODEX_DIR" -mindepth 1 -maxdepth 1 ! -name skills ! -name .DS_Store -print -quit 2>/dev/null)" ]
-}
-
-codex_available=0
-if command -v codex >/dev/null 2>&1 || codex_home_has_user_config; then
-    codex_available=1
-fi
-
-kiro_available=0
-if command -v kiro-cli >/dev/null 2>&1 || [ -d "$HOME/.kiro" ]; then
-    kiro_available=1
-fi
-
-# Vibe (Mistral's TUI coding agent) stores everything under $VIBE_HOME when
-# set, falling back to ~/.vibe (vibe/utils/paths.py:get_vibe_home). Detection
-# requires an existing home dir, not merely a `vibe` binary on PATH: a machine
-# with an unrelated `vibe` binary must not gain a ~/.vibe the user never had.
-# The write legs below only run when detection passed. The hook command is
-# argv-only, so it runs under both shell-based and shell-free hook executors;
-# the Windows installers print manual instructions instead of wiring hooks
-# (older Vibe builds spawned hooks via /bin/sh, which a .sh launcher can't
-# reach on Windows).
-VIBE_HOME="${VIBE_HOME:-$HOME/.vibe}"
-vibe_available=0
-if [ -d "$VIBE_HOME" ]; then
-    vibe_available=1
-fi
-
-# Qwen Code keeps its user files in $QWEN_HOME when set, else ~/.qwen
-# (Qwen's Storage.getGlobalQwenDir: $QWEN_HOME is the Qwen folder itself, a
-# leading ~ is expanded and a relative path is taken from the current folder).
-# Detection requires that folder, so an unrelated `qwen` on PATH never gains
-# a ~/.qwen. The folder alone is not enough: the `skills` CLI (npx skills add
-# -g) makes ~/.qwen/skills for people who never installed Qwen Code. So it
-# also needs the qwen command on PATH, or a file only Qwen Code writes there
-# (settings.json, installation_id, projects/, extensions/). The extension
-# step needs the qwen command.
-case "${QWEN_HOME:-}" in
-    "") QWEN_DIR="$HOME/.qwen" ;;
-    "~") QWEN_DIR="$HOME" ;;
-    "~/"*) QWEN_DIR="$HOME/${QWEN_HOME#??}" ;;
-    /*) QWEN_DIR="$QWEN_HOME" ;;
-    *) QWEN_DIR="$PWD/$QWEN_HOME" ;;
-esac
-QWEN_SKILLS_DIR="$QWEN_DIR/skills"
-qwen_available=0
-if [ -d "$QWEN_DIR" ]; then
-    if command -v qwen >/dev/null 2>&1 || [ -f "$QWEN_DIR/settings.json" ] ||
-        [ -f "$QWEN_DIR/installation_id" ] || [ -d "$QWEN_DIR/projects" ] ||
-        [ -d "$QWEN_DIR/extensions" ]; then
-        qwen_available=1
-    fi
-fi
-
-if [ "$codex_available" -eq 1 ] && [ "$skip_codex" -eq 1 ]; then
-    # HONEST three-state reporting (#1178): detected-but-skipped is its own
-    # state, never conflated with "not detected". Skip is do-not-write only:
-    # nothing under $CODEX_DIR is created, updated, or removed on this run.
-    echo ""
-    echo "Codex: detected, skipped (${skip_codex_source})."
-    if [ -f "$CODEX_DIR/hooks.json" ] && grep -q "plannotator" "$CODEX_DIR/hooks.json" 2>/dev/null; then
-        echo "An existing Codex integration at ${CODEX_DIR}/hooks.json was left untouched."
-    fi
-    echo "Note: the shared agent skills in ~/.agents/skills serve multiple agents"
-    echo "(Codex among them) and are still installed."
-elif [ "$codex_available" -eq 1 ]; then
-    CODEX_CONFIG="$CODEX_DIR/config.toml"
-    CODEX_HOOKS="$CODEX_DIR/hooks.json"
-    PLANNOTATOR_BIN="${INSTALL_DIR}/plannotator"
-    codex_hook_configured=0
-
-    mkdir -p "$CODEX_DIR"
-
-    enable_codex_hooks_config() {
-        if [ ! -f "$CODEX_CONFIG" ]; then
-            cat > "$CODEX_CONFIG" << 'CODEX_CONFIG_EOF'
-[features]
-hooks = true
-CODEX_CONFIG_EOF
-            echo "Created Codex config at ${CODEX_CONFIG}"
-            return 0
-        fi
-
-        if grep -Eq '^[[:space:]]*features[[:space:]]*=' "$CODEX_CONFIG"; then
-            echo ""
-            echo "Codex config uses inline features in ${CODEX_CONFIG}; leaving it unchanged."
-            echo "Add this manually to enable Plannotator plan review:"
-            echo ""
-            echo "  [features]"
-            echo "  hooks = true"
-            return 1
-        fi
-
-        tmp_config="$(mktemp)"
-        if awk '
-            function is_table(line) {
-                return line ~ /^[[:space:]]*\[[^]]+\][[:space:]]*$/
-            }
-            BEGIN {
-                in_features = 0
-                saw_features = 0
-                saw_hook = 0
-            }
-            {
-                if (is_table($0)) {
-                    if (in_features && !saw_hook) {
-                        print "hooks = true"
-                        saw_hook = 1
-                    }
-                    in_features = ($0 ~ /^[[:space:]]*\[features\][[:space:]]*$/)
-                    if (in_features) saw_features = 1
-                }
-
-                if (in_features && $0 ~ /^[[:space:]]*(codex_hooks|hooks)[[:space:]]*=/) {
-                    print "hooks = true"
-                    saw_hook = 1
-                    next
-                }
-
-                print
-            }
-            END {
-                if (saw_features && in_features && !saw_hook) {
-                    print "hooks = true"
-                } else if (!saw_features) {
-                    print ""
-                    print "[features]"
-                    print "hooks = true"
-                }
-            }
-        ' "$CODEX_CONFIG" > "$tmp_config"; then
-            mv "$tmp_config" "$CODEX_CONFIG"
-            echo "Enabled Codex hooks in ${CODEX_CONFIG}"
-            return 0
-        fi
-
-        rm -f "$tmp_config"
-        echo "Could not update ${CODEX_CONFIG}; add hooks manually." >&2
-        return 1
-    }
-
-    if [ ! -f "$CODEX_HOOKS" ]; then
-        cat > "$CODEX_HOOKS" << CODEX_HOOKS_EOF
-{
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${PLANNOTATOR_BIN}",
-            "timeout": 345600
-          }
-        ]
-      }
-    ]
-  }
-}
-CODEX_HOOKS_EOF
-        echo "Created Codex hooks at ${CODEX_HOOKS}"
-        codex_hook_configured=1
-    elif command -v node >/dev/null 2>&1; then
-        if codex_merge_result=$(node - "$CODEX_HOOKS" "$PLANNOTATOR_BIN" <<'NODE'
-const fs = require("fs");
-const path = require("path");
-const [hooksPath, command] = process.argv.slice(2);
-const config = JSON.parse(fs.readFileSync(hooksPath, "utf8"));
-config.hooks ||= {};
-const stopHooks = Array.isArray(config.hooks.Stop) ? config.hooks.Stop : [];
-let updated = false;
-let foundCustomPlannotatorHook = false;
-
-function isManagedPlannotatorCommand(value) {
-  const current = value.trim();
-  if (current === "plannotator" || current === command) return true;
-  return current.startsWith("/") && path.posix.basename(current) === "plannotator";
-}
-
-for (const entry of stopHooks) {
-  const hooks = Array.isArray(entry?.hooks) ? entry.hooks : [];
-  for (const hook of hooks) {
-    if (hook?.type !== "command" || typeof hook.command !== "string") continue;
-
-    if (isManagedPlannotatorCommand(hook.command)) {
-      hook.command = command;
-      hook.timeout = 345600;
-      updated = true;
-    } else if (hook.command.includes("plannotator")) {
-      foundCustomPlannotatorHook = true;
-    }
-  }
-}
-if (!updated && !foundCustomPlannotatorHook) {
-  stopHooks.push({
-    hooks: [
-      {
-        type: "command",
-        command,
-        timeout: 345600,
-      },
-    ],
-  });
-}
-config.hooks.Stop = stopHooks;
-if (updated || !foundCustomPlannotatorHook) {
-  fs.writeFileSync(hooksPath, JSON.stringify(config, null, 2) + "\n");
-}
-process.stdout.write(updated ? "updated" : foundCustomPlannotatorHook ? "custom" : "added");
-NODE
-        ); then
-            case "$codex_merge_result" in
-                custom)
-                    echo "Existing custom Codex Plannotator hook found at ${CODEX_HOOKS}; left it unchanged."
-                    ;;
-                added)
-                    echo "Added Codex hooks at ${CODEX_HOOKS}"
-                    ;;
-                *)
-                    echo "Updated Codex hooks at ${CODEX_HOOKS}"
-                    ;;
-            esac
-            codex_hook_configured=1
-        else
-            echo ""
-            echo "Codex hooks file already exists at ${CODEX_HOOKS}, but it could not be merged automatically."
-            echo "Leaving Codex hook support unchanged. Add or update this Stop hook manually:"
-            echo ""
-            echo "  command: ${PLANNOTATOR_BIN}"
-            echo "  timeout: 345600"
-        fi
-    else
-        echo ""
-        echo "Codex hooks file already exists at ${CODEX_HOOKS}, but node was not found to merge it safely."
-        echo "Leaving Codex hook support unchanged. Add or update this Stop hook manually:"
-        echo ""
-        echo "  command: ${PLANNOTATOR_BIN}"
-        echo "  timeout: 345600"
-    fi
-
-    if [ "$codex_hook_configured" -eq 1 ]; then
-        enable_codex_hooks_config || true
-    fi
-fi
 
 # Claude Code plugin: repair the marketplace clone, never rewrite it.
 #
@@ -2420,12 +2012,6 @@ update_pi_extension_if_present() {
 # a command file is only removed once its replacement skill is on disk, so a
 # failed or skipped skill install never leaves users with neither.
 
-# NOTE: Codex stale-skill cleanup happens AFTER the skill install below —
-# the core skills are only removed from the Codex home once their replacement
-# exists in ~/.agents/skills, so an old pinned tag never strips Codex users
-# of working skills without a successor.
-STALE_CODEX_SKILLS_DIR="$CODEX_DIR/skills"
-
 # Old installers (pre core/extra split) ran `cp -r apps/skills/*` against a
 # new-layout tag and could leave junk `core`/`extra` directory copies in the
 # Claude skills scope. Never valid skill names — always safe to remove.
@@ -2436,7 +2022,7 @@ for junk in core extra; do
     fi
 done
 
-# Extras are no longer installed by this script anywhere except Kiro. Remove
+# Extras are no longer installed by this script. Remove
 # previously default-installed copies ONCE per machine — recorded in the
 # migrations ledger under the Plannotator data dir — because copies the user
 # reinstalls via `npx skills add` are byte-identical to ours and can only be
@@ -2688,8 +2274,8 @@ fi
 # Install skills and slash commands from a sparse checkout (requires git).
 # Hard requirement: without git we cannot install the /plannotator-* skills,
 # so fail loudly instead of leaving a partial install. Hook/config writing
-# above has already run by this point; the Pi update and Gemini config below
-# are skipped on failure and complete when the user re-runs the installer.
+# above has already run by this point; the Pi update below
+# is skipped on failure and completes when the user re-runs the installer.
 # Nothing is fetched under --skip-skills, so git stops being a requirement
 # there — a git-less machine must still get the binary, hooks, and config.
 if [ "$skip_skills" -eq 0 ] && ! command -v git &>/dev/null; then
@@ -2699,10 +2285,7 @@ if [ "$skip_skills" -eq 0 ] && ! command -v git &>/dev/null; then
     exit 1
 fi
 
-KIRO_SKILLS_DIR="$HOME/.kiro/skills"
-VIBE_SKILLS_DIR="$VIBE_HOME/skills"
 OPENCODE_COMMANDS_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode/commands"
-GEMINI_COMMANDS_DIR="$HOME/.gemini/commands"
 skills_tmp=$(mktemp -d)
 
 copy_skill_if_present() {
@@ -2718,8 +2301,8 @@ copy_skill_if_present() {
 }
 
 # Copy every command file in a directory if the source dir exists.
-# Used for OpenCode (.md stubs) and Gemini (.toml) commands, both of
-# which are checked out from the repo rather than generated by heredocs.
+# Used for the OpenCode (.md stubs), which are checked out from the repo
+# rather than generated by heredocs.
 copy_commands_if_present() {
     local source_dir="$1"
     local target_dir="$2"
@@ -2729,31 +2312,6 @@ copy_commands_if_present() {
         cp "$source_dir"/* "$target_dir/"
     fi
 }
-
-# --- Qwen Code version (only when Qwen Code is detected) ---
-# Plan review needs extension hooks, which Qwen Code runs from 0.13.0 on.
-# Below that, nothing is installed for Qwen Code: no extension, no skills.
-# `qwen --version` runs like every qwen command here: with a time limit, no
-# input, in an empty temporary folder. A version that cannot be read does not
-# block the install.
-QWEN_MIN_VERSION="0.13.0"
-qwen_too_old=0
-qwen_version=""
-if [ "$qwen_available" -eq 1 ] && [ "$skip_qwen" -eq 0 ] && [ "$skip_skills" -eq 0 ] && command -v qwen >/dev/null 2>&1; then
-    _qv_secs="${PLANNOTATOR_QWEN_EXTENSION_TIMEOUT:-120}"
-    case "$_qv_secs" in ''|*[!0-9]*|0) _qv_secs=120 ;; esac
-    _qv_tmp=$(mktemp -d "${TMPDIR:-/tmp}/plannotator-qwen.XXXXXX" 2>/dev/null) || _qv_tmp=""
-    if [ -n "$_qv_tmp" ] && mkdir "$_qv_tmp/cwd" 2>/dev/null; then
-        (cd "$_qv_tmp/cwd" && run_with_time_limit "$_qv_secs" "$_qv_tmp/timed-out" qwen --version) >"$_qv_tmp/out" 2>/dev/null || true
-        qwen_version=$(grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' "$_qv_tmp/out" 2>/dev/null | head -n 1) || qwen_version=""
-    fi
-    if [ -n "$_qv_tmp" ]; then rm -rf "$_qv_tmp" 2>/dev/null || true; fi
-    if [ -n "$qwen_version" ] && ! version_ge "$qwen_version" "$QWEN_MIN_VERSION"; then
-        qwen_too_old=1
-        echo ""
-        echo "Qwen Code ${qwen_version} is older than ${QWEN_MIN_VERSION}, so nothing was installed for it. Update Qwen Code to use plan review."
-    fi
-fi
 
 # Wrap the cd-bearing block in a subshell so any `cd` is scoped to
 # the subshell and can't leave the parent script with a dangling CWD.
@@ -2831,25 +2389,25 @@ checkout_failed=0
     fi
     cd repo || exit 1
     if [ "$sparse_clone" -eq 1 ]; then
-        if ! git sparse-checkout set apps/skills apps/kiro-cli apps/vibe apps/opencode-plugin/commands apps/gemini/commands apps/qwen-code 2>"$git_err"; then
+        if ! git sparse-checkout set apps/skills apps/opencode-plugin/commands 2>"$git_err"; then
             surface_git_error
             exit 1
         fi
     fi
 
     # Core skills -> Claude Code (also serve as /plannotator-* slash commands)
-    # and the official OpenAI shared-agent path. SOFT guard: a tag pinned
+    # and the shared-agent path (~/.agents/skills). SOFT guard: a tag pinned
     # via --version may predate the core/extra layout — skip core skills
     # but keep installing the command files below (matches install.ps1 and
     # install.cmd, which guard each block independently).
-    # Claude Code and Codex consume different skill bodies. Claude Code reads
-    # the apps/skills/claude/* copies, which use dynamic-context injection
-    # (`!`plannotator … $ARGUMENTS``) + allowed-tools so /plannotator-* run the
-    # binary directly with no permission prompt — matching the old slash
-    # commands. Codex (the OpenAI shared-agent path) reads apps/skills/core/*,
-    # whose prose bodies the model follows via its own shell; the `!`…``
-    # injection is a Claude-Code-only extension, so the two are sourced
-    # separately rather than sharing one body.
+    # Claude Code and the shared-agent path consume different skill bodies.
+    # Claude Code reads the apps/skills/claude/* copies, which use
+    # dynamic-context injection (`!`plannotator … $ARGUMENTS``) + allowed-tools
+    # so /plannotator-* run the binary directly with no permission prompt —
+    # matching the old slash commands. The shared-agent path reads
+    # apps/skills/core/*, whose prose bodies the model follows via its own
+    # shell; the `!`…`` injection is a Claude-Code-only extension, so the two
+    # are sourced separately rather than sharing one body.
     if [ -d "apps/skills/claude" ] && [ -n "$(ls -A apps/skills/claude 2>/dev/null)" ]; then
         mkdir -p "$CLAUDE_SKILLS_DIR"
         copy_skill_if_present apps/skills/claude/plannotator-review "$CLAUDE_SKILLS_DIR"
@@ -2858,7 +2416,8 @@ checkout_failed=0
         copy_skill_if_present apps/skills/claude/plannotator-inbox "$CLAUDE_SKILLS_DIR"
         # The plannotator knowledge skill (CLI reference) has no Claude-only
         # injection form — its body is pure prose — so Claude installs the
-        # same single-sourced copy Codex gets from apps/skills/core.
+        # same single-sourced copy the shared-agent path gets from
+        # apps/skills/core.
         copy_skill_if_present apps/skills/core/plannotator "$CLAUDE_SKILLS_DIR"
         echo "Installed Claude Code skills to ${CLAUDE_SKILLS_DIR}/"
     else
@@ -2884,279 +2443,7 @@ checkout_failed=0
         copy_commands_if_present apps/opencode-plugin/commands "$OPENCODE_COMMANDS_DIR"
         echo "Installed OpenCode commands to ${OPENCODE_COMMANDS_DIR}/"
     fi
-
-    # Gemini native TOML commands — only when Gemini is present and not
-    # opted out (#1178; skip_gemini is inherited by this subshell).
-    if [ -d "$HOME/.gemini" ] && [ "$skip_gemini" -eq 0 ] && [ -d "apps/gemini/commands" ] && [ -n "$(ls -A apps/gemini/commands 2>/dev/null)" ]; then
-        copy_commands_if_present apps/gemini/commands "$GEMINI_COMMANDS_DIR"
-        echo "Installed Gemini commands to ${GEMINI_COMMANDS_DIR}/"
-    fi
-
-    if [ "$kiro_available" -eq 1 ] && [ "$skip_kiro" -eq 0 ] && [ -d "apps/kiro-cli/skills" ] && [ -n "$(ls -A apps/kiro-cli/skills 2>/dev/null)" ]; then
-        mkdir -p "$KIRO_SKILLS_DIR"
-        # Kiro-specific skills (origin baked in) come from apps/kiro-cli/skills.
-        copy_skill_if_present apps/kiro-cli/skills/plannotator-review "$KIRO_SKILLS_DIR"
-        copy_skill_if_present apps/kiro-cli/skills/plannotator-annotate "$KIRO_SKILLS_DIR"
-        # /plannotator-inbox needs no origin label: the shell-neutral core copy.
-        copy_skill_if_present apps/skills/core/plannotator-inbox "$KIRO_SKILLS_DIR"
-        # The plannotator knowledge skill (CLI reference) has no Kiro-specific
-        # form, so Kiro receives the single-sourced core copy like every other
-        # scope. Without it, Kiro users get the action skills but no reference.
-        copy_skill_if_present apps/skills/core/plannotator "$KIRO_SKILLS_DIR"
-        # Extras come from apps/skills/extra (not duplicated into apps/kiro-cli/skills).
-        copy_skill_if_present apps/skills/extra/plannotator-setup-goal "$KIRO_SKILLS_DIR"
-        copy_skill_if_present apps/skills/extra/plannotator-visual-explainer "$KIRO_SKILLS_DIR"
-        # Plannotator custom agent — don't clobber a user's existing one.
-        if [ ! -f "$HOME/.kiro/agents/plannotator.json" ] && [ -f "apps/kiro-cli/agents/plannotator.json" ]; then
-            mkdir -p "$HOME/.kiro/agents"
-            cp apps/kiro-cli/agents/plannotator.json "$HOME/.kiro/agents/plannotator.json"
-        fi
-        echo "Installed Kiro skills to ${KIRO_SKILLS_DIR}/ and agent to ~/.kiro/agents/plannotator.json"
-    fi
-
-    # Qwen Code: its own copies of review, annotate and last (they run the
-    # command in the background, past the shell tool's time limit). Qwen reads
-    # $QWEN_DIR/skills before ~/.agents/skills, so these take the place of the
-    # shared copies of the same name. The extension is copied out of the
-    # checkout here and installed after this block (it needs the qwen
-    # command, and its failure must never count as a fetch failure). A Qwen
-    # opt-out, or a Qwen Code too old for plan review, leaves $QWEN_DIR
-    # untouched. This block runs in a subshell, so a marker file tells the
-    # summary below that the skills were installed.
-    if [ "$qwen_available" -eq 1 ] && [ "$skip_qwen" -eq 0 ] && [ "$qwen_too_old" -eq 0 ] && [ -d "apps/qwen-code/skills" ] && [ -n "$(ls -A apps/qwen-code/skills 2>/dev/null)" ]; then
-        mkdir -p "$QWEN_SKILLS_DIR"
-        copy_skill_if_present apps/qwen-code/skills/plannotator-review "$QWEN_SKILLS_DIR"
-        copy_skill_if_present apps/qwen-code/skills/plannotator-annotate "$QWEN_SKILLS_DIR"
-        copy_skill_if_present apps/qwen-code/skills/plannotator-last "$QWEN_SKILLS_DIR"
-        echo "Installed Qwen Code skills to ${QWEN_SKILLS_DIR}/"
-        : > "$skills_tmp/qwen-skills-installed"
-    fi
-    if [ "$qwen_available" -eq 1 ] && [ "$skip_qwen" -eq 0 ] && [ "$qwen_too_old" -eq 0 ] && [ -f "apps/qwen-code/extension/qwen-extension.json" ]; then
-        cp -R apps/qwen-code/extension "$skills_tmp/qwen-extension" 2>/dev/null || rm -rf "$skills_tmp/qwen-extension"
-    fi
-
-    # Vibe — hand-maintained skills (origin baked in) plus the single-sourced
-    # knowledge skill. A Vibe opt-out (#1178) leaves $VIBE_HOME entirely
-    # untouched. VIBE_HOME is resolved above alongside the Vibe detection.
-    if [ "$vibe_available" -eq 1 ] && [ "$skip_vibe" -eq 0 ] && [ -d "apps/vibe/skills" ] && [ -n "$(ls -A apps/vibe/skills 2>/dev/null)" ]; then
-        mkdir -p "$VIBE_SKILLS_DIR"
-        # Vibe-specific skills (origin baked in) come from apps/vibe/skills.
-        copy_skill_if_present apps/vibe/skills/plannotator-review "$VIBE_SKILLS_DIR"
-        copy_skill_if_present apps/vibe/skills/plannotator-annotate "$VIBE_SKILLS_DIR"
-        copy_skill_if_present apps/vibe/skills/plannotator-last "$VIBE_SKILLS_DIR"
-        # /plannotator-inbox needs no origin label: the shell-neutral core copy.
-        copy_skill_if_present apps/skills/core/plannotator-inbox "$VIBE_SKILLS_DIR"
-        # The plannotator knowledge skill (CLI reference) is agent-agnostic and
-        # single-sourced in apps/skills/core; Vibe gets the same copy every
-        # other scope does. Without it, Vibe users get launchers but no CLI
-        # reference.
-        copy_skill_if_present apps/skills/core/plannotator "$VIBE_SKILLS_DIR"
-        echo "Installed Vibe skills to ${VIBE_SKILLS_DIR}/"
-    fi
 ) || checkout_failed=1
-
-# --- Qwen Code extension (only when Qwen Code is detected) ---
-# The extension (apps/qwen-code/extension: the plan-review hook on
-# exit_plan_mode) is installed and updated with Qwen's own commands, which
-# copy it into $QWEN_DIR/extensions/plannotator. Plannotator never writes into
-# that folder itself. The source comes from the skills checkout above (same
-# tag as the binary). It is kept at <data dir>/qwen-code/extension, one path
-# that does not change, because Qwen records the path as the extension's
-# source, derives the extension's id from it, and reads it on update.
-#
-# Never breaks or silently changes a working Qwen Code, and never fails the
-# install:
-# - Installed and the same version: no extension command runs.
-# - Installed and another version: `qwen extensions update plannotator`.
-#   Qwen keeps the extension's id and its on/off choices (global and per
-#   project), so an extension the user turned off stays off. The installer
-#   never uninstalls it. Qwen's update exits 0 even when it fails, so the
-#   result is read from the installed manifest.
-# - Linked with `qwen extensions link` (a developer's checkout), or installed
-#   from another source: left as it is.
-# - Not installed: `qwen extensions install <source> --consent`.
-# - Every qwen command has a time limit and reads no input (the consent
-#   prompt is answered by --consent). It runs in an empty temporary folder,
-#   so no project's .qwen/settings.json takes part.
-# - Any failure prints what happened and the command to run by hand.
-qwen_extension_state=""
-qwen_extension_off=0
-qwen_extension_source=""
-run_qwen_extension_command() {
-    _qx_rc=0
-    (cd "$_qx_tmp/cwd" && run_with_time_limit "$_qx_secs" "$_qx_tmp/timed-out" qwen extensions "$@") >"$_qx_log" 2>&1 || _qx_rc=$?
-    _qx_last=$(tr -cd '[:print:]\n' < "$_qx_log" 2>/dev/null | grep -v '^[[:space:]]*$' | tail -n 1 | cut -c 1-200) || _qx_last=""
-    if [ "$_qx_rc" -eq 124 ]; then
-        _qx_why="timed out after ${_qx_secs}s"
-    elif [ "$_qx_rc" -ne 0 ]; then
-        _qx_why="qwen exited ${_qx_rc}${_qx_last:+: ${_qx_last}}"
-    else
-        _qx_why=""
-    fi
-    return "$_qx_rc"
-}
-
-# The "version" of a qwen-extension.json, or nothing.
-qwen_manifest_version() {
-    [ -f "$1" ] || return 0
-    tr -d '\r\n' < "$1" 2>/dev/null | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1
-}
-
-# Succeeds when the plannotator extension is turned off anywhere: its default
-# or one project in Qwen's extension store (extension-store/state.json), or a
-# "!" rule in the older extensions/extension-enablement.json. Only used to
-# say so: the update keeps those choices either way.
-qwen_extension_turned_off() {
-    _qo_state="$QWEN_DIR/extension-store/state.json"
-    if [ -f "$_qo_state" ] && tr -d ' \t\r\n' < "$_qo_state" 2>/dev/null | awk '
-        {
-            s = $0; n = length(s); depth = 0; instr = 0; esc = 0
-            for (i = 1; i <= n; i++) {
-                c = substr(s, i, 1)
-                if (instr) {
-                    if (esc) esc = 0
-                    else if (c == "\\") esc = 1
-                    else if (c == "\"") instr = 0
-                    continue
-                }
-                if (c == "\"") { instr = 1; continue }
-                if (c == "{") { depth++; start[depth] = i; hit[depth] = 0 }
-                else if (c == "}" && depth > 0) {
-                    obj = substr(s, start[depth], i - start[depth] + 1)
-                    if (!hit[depth] && index(obj, "\"name\":\"plannotator\"") && index(obj, "\"defaultActivation\":")) {
-                        if (index(obj, "\"disabled\"")) found = 1
-                        if (depth > 1) hit[depth - 1] = 1
-                    } else if (hit[depth] && depth > 1) hit[depth - 1] = 1
-                    depth--
-                }
-            }
-        }
-        END { exit found ? 0 : 1 }'; then
-        return 0
-    fi
-    _qo_legacy="$QWEN_DIR/extensions/extension-enablement.json"
-    [ -f "$_qo_legacy" ] && tr -d ' \t\r\n' < "$_qo_legacy" 2>/dev/null | grep -q '"plannotator":{"overrides":\[[^]]*"!'
-}
-
-install_qwen_extension_if_present() {
-    [ "$qwen_available" -eq 1 ] || return 0
-    if [ "$skip_qwen" -eq 1 ]; then
-        # HONEST reporting (#1178): skip is do-not-write. Nothing under
-        # $QWEN_DIR is installed, updated or removed on this run.
-        echo ""
-        echo "Qwen Code: detected, skipped (${skip_qwen_source})."
-        if [ -f "$QWEN_DIR/extensions/plannotator/qwen-extension.json" ]; then
-            echo "The installed Qwen Code extension was left untouched."
-        fi
-        return 0
-    fi
-    [ "$skip_skills" -eq 0 ] || return 0
-    if [ "$qwen_too_old" -eq 1 ]; then
-        qwen_extension_state="too-old"
-        return 0
-    fi
-    _qx_src="$skills_tmp/qwen-extension"
-    if [ ! -f "$_qx_src/qwen-extension.json" ] || [ ! -f "$_qx_src/hooks/hooks.json" ]; then
-        # A pinned tag older than the Qwen Code integration.
-        qwen_extension_state="not-in-tag"
-        return 0
-    fi
-    _qx_dest="$QWEN_DIR/extensions/plannotator"
-    _qx_record="$_qx_dest/.qwen-extension-install.json"
-    if [ -f "$_qx_record" ] && tr -d ' \t\r\n' < "$_qx_record" 2>/dev/null | grep -q '"type":"link"'; then
-        # A developer's `qwen extensions link`: Qwen loads their checkout.
-        qwen_extension_state="linked"
-        echo "Qwen Code extension: linked from a local folder (qwen extensions link), left as it is."
-        return 0
-    fi
-    if ! command -v qwen >/dev/null 2>&1; then
-        qwen_extension_state="no-cli"
-        echo "Qwen Code extension: not installed (the qwen command is not on PATH)."
-        return 0
-    fi
-    case "$_config_dir" in
-        /*) _qx_stable="$_config_dir/qwen-code/extension" ;;
-        *) _qx_stable="$PWD/$_config_dir/qwen-code/extension" ;;
-    esac
-    _qx_new_version=$(qwen_manifest_version "$_qx_src/qwen-extension.json")
-    _qx_had=0
-    if [ -f "$_qx_dest/qwen-extension.json" ]; then
-        _qx_had=1
-        _qx_from=""
-        if [ -f "$_qx_record" ]; then
-            _qx_from=$(tr -d '\r\n' < "$_qx_record" 2>/dev/null | sed -n 's/.*"source"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
-        fi
-        if [ "$_qx_from" != "$_qx_stable" ]; then
-            # Installed by hand, from a fork or another folder: not ours to change.
-            qwen_extension_state="foreign"
-            qwen_extension_source="${_qx_from:-an unknown source}"
-            echo "Qwen Code extension: installed from ${qwen_extension_source}, not by this installer, so it was left as it is."
-            return 0
-        fi
-    fi
-    # Keep the new source at the stable path. It is Plannotator's own folder;
-    # Qwen reads it only to install or update.
-    rm -rf "$_qx_stable.new" 2>/dev/null || true
-    if ! mkdir -p "$(dirname "$_qx_stable")" 2>/dev/null || ! cp -R "$_qx_src" "$_qx_stable.new" 2>/dev/null ||
-        ! rm -rf "$_qx_stable" 2>/dev/null || ! mv "$_qx_stable.new" "$_qx_stable" 2>/dev/null; then
-        rm -rf "$_qx_stable.new" 2>/dev/null || true
-        qwen_extension_state="failed"
-        echo "Qwen Code extension: could not write its source to ${_qx_stable}. The installed one was left as it was."
-        return 0
-    fi
-    if [ "$_qx_had" -eq 1 ] && qwen_extension_turned_off; then
-        qwen_extension_off=1
-    fi
-    if [ "$_qx_had" -eq 1 ] && [ "$(qwen_manifest_version "$_qx_dest/qwen-extension.json")" = "$_qx_new_version" ]; then
-        qwen_extension_state="current"
-        echo "Qwen Code extension: already up to date."
-        return 0
-    fi
-    # Seconds per qwen command. Internal knob for the tests.
-    _qx_secs="${PLANNOTATOR_QWEN_EXTENSION_TIMEOUT:-120}"
-    case "$_qx_secs" in ''|*[!0-9]*|0) _qx_secs=120 ;; esac
-    _qx_tmp=$(mktemp -d "${TMPDIR:-/tmp}/plannotator-qwen.XXXXXX" 2>/dev/null) || _qx_tmp=""
-    if [ -z "$_qx_tmp" ] || [ ! -d "$_qx_tmp" ] || ! mkdir "$_qx_tmp/cwd" 2>/dev/null; then
-        qwen_extension_state="failed"
-        echo "Qwen Code extension: could not install it (no temporary directory)."
-        return 0
-    fi
-    _qx_log="$_qx_tmp/qwen.log"
-    if [ "$_qx_had" -eq 1 ]; then
-        echo "Updating the Qwen Code extension..."
-        run_qwen_extension_command update plannotator || true
-        if [ "$(qwen_manifest_version "$_qx_dest/qwen-extension.json")" = "$_qx_new_version" ]; then
-            qwen_extension_state="updated"
-            echo "Qwen Code extension: updated (restart Qwen Code to load it)."
-            if [ "$qwen_extension_off" -eq 1 ]; then
-                echo "It stays turned off where you turned it off in Qwen Code."
-            fi
-        else
-            qwen_extension_state="failed"
-            echo "Qwen Code extension: could not update it (${_qx_why:-${_qx_last:-qwen did not update it}}). The installed one was left as it was."
-            echo "To try again by hand: qwen extensions update plannotator"
-        fi
-    else
-        echo "Installing the Qwen Code extension..."
-        if run_qwen_extension_command install "$_qx_stable" --consent; then
-            qwen_extension_state="installed"
-            echo "Qwen Code extension: installed (restart Qwen Code to load it)."
-        else
-            qwen_extension_state="failed"
-            echo "Qwen Code extension: could not install it (${_qx_why})."
-            echo "To try again by hand: qwen extensions install \"${_qx_stable}\""
-        fi
-    fi
-    rm -rf "$_qx_tmp" 2>/dev/null || true
-    return 0
-}
-if [ "${checkout_failed:-0}" -eq 0 ]; then
-    install_qwen_extension_if_present || true
-fi
-qwen_skills_installed=0
-if [ -f "$skills_tmp/qwen-skills-installed" ]; then
-    qwen_skills_installed=1
-fi
 
 rm -rf "$skills_tmp"
 
@@ -3185,17 +2472,9 @@ done
 
 # plannotator-archive no longer ships as a skill. Remove any stale installed
 # copy from every skill scope so upgraders don't keep a dead skill around.
-for scope in "$CLAUDE_SKILLS_DIR" "$AGENTS_SKILLS_DIR" "$KIRO_SKILLS_DIR" "$VIBE_SKILLS_DIR"; do
+for scope in "$CLAUDE_SKILLS_DIR" "$AGENTS_SKILLS_DIR"; do
     # A skills opt-out leaves every skill scope untouched, sweep included.
     if [ "$skip_skills" -eq 1 ]; then
-        continue
-    fi
-    # A Kiro opt-out leaves ~/.kiro entirely untouched — including this sweep.
-    if [ "$scope" = "$KIRO_SKILLS_DIR" ] && [ "$skip_kiro" -eq 1 ]; then
-        continue
-    fi
-    # A Vibe opt-out leaves $VIBE_HOME entirely untouched — including this sweep.
-    if [ "$scope" = "$VIBE_SKILLS_DIR" ] && [ "$skip_vibe" -eq 1 ]; then
         continue
     fi
     if [ -d "$scope/plannotator-archive" ]; then
@@ -3212,31 +2491,10 @@ if [ "$skip_opencode" -eq 0 ] && [ "$skip_skills" -eq 0 ] && [ -f "$OPENCODE_COM
     echo "Removed stale plannotator-archive command from ${OPENCODE_COMMANDS_DIR}/"
 fi
 
-# Codex no longer hosts core skills (they now live in ~/.agents/skills).
-# Core skills are removed only once their replacement exists; the stale
-# shared-agent extras were never Codex's and are removed unconditionally.
-for skill in plannotator-review plannotator-annotate plannotator-last plannotator-compound plannotator-setup-goal; do
-    # A Codex opt-out leaves $CODEX_DIR entirely untouched — including this
-    # stale-skill cleanup. Skip means do-not-write, never remove. A skills
-    # opt-out installed no replacement, so it suspends the sweep as well.
-    if [ "$skip_codex" -eq 1 ] || [ "$skip_skills" -eq 1 ]; then
-        continue
-    fi
-    if [ -d "$STALE_CODEX_SKILLS_DIR/$skill" ]; then
-        case "$skill" in
-            plannotator-review|plannotator-annotate|plannotator-last)
-                [ -d "$AGENTS_SKILLS_DIR/$skill" ] || continue
-                ;;
-        esac
-        rm -rf "$STALE_CODEX_SKILLS_DIR/$skill"
-        echo "Removed Plannotator skill from ${STALE_CODEX_SKILLS_DIR}/$skill"
-    fi
-done
-
 # Apply the saved model-invocation choices. Installed skill copies always
 # arrive locked (disable-model-invocation: true in SKILL.md); for each chosen
-# skill we unlock the INSTALLED copy by removing that line, and flip the Codex
-# sidecar's allow_implicit_invocation to match. Re-applied on every run
+# skill we unlock the INSTALLED copy by removing that line, and flip the
+# shared-agent sidecar's allow_implicit_invocation to match. Re-applied on every run
 # because installs replace the skill folders wholesale. Source files in the
 # repo never change.
 # A skills opt-out installed no skill copies this run, so there is nothing to
@@ -3244,12 +2502,7 @@ done
 # promised not to make.
 if [ "$skip_skills" -eq 0 ] && [ -n "$invocable_choice" ] && [ "$invocable_choice" != "none" ]; then
     for skill in $(echo "$invocable_choice" | tr ',' ' '); do
-        for scope in "$CLAUDE_SKILLS_DIR" "$AGENTS_SKILLS_DIR" "$QWEN_SKILLS_DIR"; do
-            # A Qwen opt-out (or a Qwen Code too old for plan review) leaves
-            # $QWEN_DIR untouched, a previous run's copies included.
-            if [ "$scope" = "$QWEN_SKILLS_DIR" ] && { [ "$qwen_available" -eq 0 ] || [ "$skip_qwen" -eq 1 ] || [ "$qwen_too_old" -eq 1 ]; }; then
-                continue
-            fi
+        for scope in "$CLAUDE_SKILLS_DIR" "$AGENTS_SKILLS_DIR"; do
             skill_md="$scope/$skill/SKILL.md"
             if [ -f "$skill_md" ] && grep -q '^disable-model-invocation: true$' "$skill_md"; then
                 grep -v '^disable-model-invocation: true$' "$skill_md" > "$skill_md.tmp" && mv "$skill_md.tmp" "$skill_md"
@@ -3269,157 +2522,6 @@ fi
 # colliding with it (#1642). Updating is also what clears that collision for
 # anyone on an older extension that declared the skill in its manifest.
 update_pi_extension_if_present
-
-# --- Gemini CLI support (only if Gemini is installed) ---
-if [ -d "$HOME/.gemini" ] && [ "$skip_gemini" -eq 1 ]; then
-    # HONEST three-state reporting (#1178): detected-but-skipped is its own
-    # state. Nothing under ~/.gemini is created, updated, or removed.
-    echo ""
-    echo "Gemini: detected, skipped (${skip_gemini_source})."
-    if [ -f "$HOME/.gemini/settings.json" ] && grep -q '"plannotator"' "$HOME/.gemini/settings.json" 2>/dev/null; then
-        echo "An existing Gemini integration at ~/.gemini/settings.json was left untouched."
-    fi
-elif [ -d "$HOME/.gemini" ]; then
-    # Install policy file
-    GEMINI_POLICIES_DIR="$HOME/.gemini/policies"
-    mkdir -p "$GEMINI_POLICIES_DIR"
-    cat > "$GEMINI_POLICIES_DIR/plannotator.toml" << 'GEMINI_POLICY_EOF'
-# Plannotator policy for Gemini CLI
-# Allows exit_plan_mode without TUI confirmation so the browser UI is the sole gate.
-[[rule]]
-toolName = "exit_plan_mode"
-decision = "allow"
-priority = 100
-GEMINI_POLICY_EOF
-    echo "Installed Gemini policy to ${GEMINI_POLICIES_DIR}/plannotator.toml"
-
-    # Configure hook in settings.json
-    GEMINI_SETTINGS="$HOME/.gemini/settings.json"
-    PLANNOTATOR_HOOK='{"matcher":"exit_plan_mode","hooks":[{"type":"command","command":"plannotator","timeout":345600}]}'
-
-    if [ -f "$GEMINI_SETTINGS" ]; then
-        if ! grep -q '"plannotator"' "$GEMINI_SETTINGS" 2>/dev/null; then
-            # Merge hook into existing settings.json using node (ships with Gemini CLI)
-            if command -v node &>/dev/null; then
-                node -e "
-                  const fs = require('fs');
-                  const settings = JSON.parse(fs.readFileSync('$GEMINI_SETTINGS', 'utf8'));
-                  if (!settings.hooks) settings.hooks = {};
-                  if (!settings.hooks.BeforeTool) settings.hooks.BeforeTool = [];
-                  settings.hooks.BeforeTool.push($PLANNOTATOR_HOOK);
-                  fs.writeFileSync('$GEMINI_SETTINGS', JSON.stringify(settings, null, 2) + '\n');
-                "
-                echo "Added plannotator hook to ${GEMINI_SETTINGS}"
-            else
-                echo ""
-                echo "Add the following to your ~/.gemini/settings.json hooks:"
-                echo ""
-                echo '  "hooks": {'
-                echo '    "BeforeTool": [{'
-                echo '      "matcher": "exit_plan_mode",'
-                echo '      "hooks": [{"type": "command", "command": "plannotator", "timeout": 345600}]'
-                echo '    }]'
-                echo '  }'
-            fi
-        fi
-    else
-        cat > "$GEMINI_SETTINGS" << 'GEMINI_SETTINGS_EOF'
-{
-  "hooks": {
-    "BeforeTool": [
-      {
-        "matcher": "exit_plan_mode",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "plannotator",
-            "timeout": 345600
-          }
-        ]
-      }
-    ]
-  },
-  "experimental": {
-    "plan": true
-  }
-}
-GEMINI_SETTINGS_EOF
-        echo "Created Gemini settings at ${GEMINI_SETTINGS}"
-    fi
-
-    # Gemini slash commands (.toml) are installed from the sparse checkout in
-    # the skills/commands install block above (apps/gemini/commands).
-fi
-
-# --- Mistral Vibe support (only if Vibe is installed or configured) ---
-# Vibe (Mistral's TUI coding agent) hooks are [[hooks]] TOML blocks in
-# $VIBE_HOME/hooks.toml (stable since Vibe 2.25; no config flag needed).
-# Plan review gates exit_plan_mode via a pre_tool hook. The hook command is
-# argv-only (absolute binary path, no env prefix) so it survives both shell
-# and shell-free hook execution. plannotator detects the Vibe origin from
-# the hook payload itself; PLANNOTATOR_ORIGIN=mistral-vibe remains the
-# documented manual override. A managed marker block coexists with any
-# user/Orca hooks.
-VIBE_HOOKS="$VIBE_HOME/hooks.toml"
-VIBE_MANAGED_START="# >>> plannotator-managed-vibe-hooks (managed; do not edit) >>>"
-VIBE_MANAGED_END="# <<< plannotator-managed-vibe-hooks <<<"
-
-if [ "$vibe_available" -eq 1 ] && [ "$skip_vibe" -eq 1 ]; then
-    # HONEST three-state reporting (#1178): detected-but-skipped is its own
-    # state. Skip is do-not-write: nothing under $VIBE_HOME is created,
-    # updated, or removed on this run.
-    echo ""
-    echo "Vibe: detected, skipped (${skip_vibe_source})."
-    if [ -f "$VIBE_HOOKS" ] && grep -q "plannotator" "$VIBE_HOOKS" 2>/dev/null; then
-        echo "An existing Vibe integration at ${VIBE_HOOKS} was left untouched."
-    fi
-    echo "Note: the shared agent skills in ~/.agents/skills serve multiple agents"
-    echo "and are still installed."
-elif [ "$vibe_available" -eq 1 ]; then
-    mkdir -p "$VIBE_HOME"
-    PLANNOTATOR_BIN="${INSTALL_DIR}/plannotator"
-
-    # Strip any existing managed block (markers inclusive), then append a
-    # fresh one. awk prints every line except the managed region. A start
-    # marker with no end marker swallows everything to EOF (the block is
-    # always written with both markers, so this is corrupt-input handling,
-    # not a normal path): a truncated managed block has no trailing user
-    # TOML worth preserving, and dropping it fails closed into a clean
-    # rewrite. Atomic write via a temp file in the same dir + rename; keep
-    # a .bak for recovery.
-    write_vibe_hooks_block() {
-        _new_body=""
-        if [ -f "$VIBE_HOOKS" ]; then
-            _new_body=$(awk -v s="$VIBE_MANAGED_START" -v e="$VIBE_MANAGED_END" '
-                BEGIN { in_block = 0 }
-                $0 == s { in_block = 1; next }
-                in_block && $0 == e { in_block = 0; next }
-                in_block { next }
-                { print }
-            ' "$VIBE_HOOKS")
-            # Trim trailing blank lines so the appended block sits cleanly.
-            _new_body=$(printf '%s\n' "$_new_body" | sed -e '/^$/N;/^\n$/D')
-        fi
-        [ -f "$VIBE_HOOKS" ] && cp "$VIBE_HOOKS" "$VIBE_HOOKS.bak"
-        {
-            printf '%s\n' "$_new_body"
-            cat << VIBE_HOOKS_BLOCK_EOF
-# >>> plannotator-managed-vibe-hooks (managed; do not edit) >>>
-[[hooks]]
-name = "plannotator-exit-plan-mode"
-type = "pre_tool"
-match = "exit_plan_mode"
-command = "${PLANNOTATOR_BIN}"
-timeout = 345600
-description = "Plannotator plan review (managed)"
-# <<< plannotator-managed-vibe-hooks <<<
-VIBE_HOOKS_BLOCK_EOF
-        } > "$VIBE_HOOKS.tmp" && mv "$VIBE_HOOKS.tmp" "$VIBE_HOOKS"
-    }
-
-    write_vibe_hooks_block
-    echo "Installed Vibe plan-review hook at ${VIBE_HOOKS}"
-fi
 
 echo ""
 echo "=========================================="
@@ -3447,9 +2549,9 @@ else
 fi
 # Agent-specific closing sections print only for agents this run detected,
 # reusing the detection each integration block above already ran (Pi: `pi` on
-# PATH, as update_pi_extension_if_present checks; Gemini: ~/.gemini; Codex:
-# codex_available; Kiro: kiro_available). A detected-but-skipped agent keeps its
-# honest "detected, skipped" section. OpenCode has no detection leg and its
+# PATH, as update_pi_extension_if_present checks). A detected-but-skipped
+# agent keeps its honest "detected, skipped" section. OpenCode has no
+# detection leg and its
 # command stubs are written for everyone, so its section stays universal, as
 # does the Claude Code block. Output only: nothing here decides what installs.
 pi_detected=0
@@ -3485,159 +2587,6 @@ if command -v omp >/dev/null 2>&1; then
     echo ""
     echo "Then restart OMP and open reviews with /plannotator-review, /plannotator-annotate and"
     echo "/plannotator-last. Reviews opened that way can use Ask this session."
-fi
-if [ -d "$HOME/.gemini" ]; then
-    echo ""
-    echo "=========================================="
-    echo "  GEMINI CLI USERS"
-    echo "=========================================="
-    echo ""
-    if [ "$skip_gemini" -eq 1 ]; then
-        echo "Gemini was detected, but the integration was skipped (${skip_gemini_source})."
-        echo "No files under ~/.gemini were written or removed. Re-run without the"
-        echo "opt-out to configure plan mode."
-    else
-        echo "Enable plan mode in Gemini settings, then run:"
-        echo ""
-        echo "  gemini"
-        echo "  /plan"
-        echo ""
-        echo "Plans will open in your browser for review."
-        echo "If settings.json was not auto-configured, see:"
-        echo "  ~/.gemini/settings.json (add BeforeTool hook)"
-    fi
-fi
-if [ "$codex_available" -eq 1 ]; then
-    echo ""
-    echo "=========================================="
-    echo "  CODEX USERS"
-    echo "=========================================="
-    echo ""
-    if [ "$skip_codex" -eq 1 ]; then
-        echo "Codex was detected, but the integration was skipped (${skip_codex_source})."
-        echo "No files under ${CODEX_DIR} were written or removed. The shared agent"
-        echo "skills in ~/.agents/skills serve multiple agents and are still installed."
-        echo "Re-run without the opt-out to add the Stop hook."
-    else
-        echo "Restart Codex Desktop or CLI after installing."
-        echo "Plan review is configured through the Codex Stop hook."
-        echo ""
-        if [ "$skip_skills" -eq 1 ]; then
-            echo "Skills were skipped (${skip_skills_source}), so no core skills were"
-            echo "installed to ~/.agents/skills/. The Stop hook works without them;"
-            echo "re-run without the opt-out to add \$plannotator-review and friends."
-        else
-            echo "Core skills are installed to ~/.agents/skills/:"
-            echo "  \$plannotator-review"
-            echo "  \$plannotator-annotate <file|url|folder>"
-            echo "  \$plannotator-last"
-        fi
-    fi
-fi
-if [ "$kiro_available" -eq 1 ]; then
-    echo ""
-    echo "=========================================="
-    echo "  KIRO CLI USERS"
-    echo "=========================================="
-    echo ""
-    if [ "$skip_kiro" -eq 1 ]; then
-        echo "Kiro was detected, but the integration was skipped (${skip_kiro_source})."
-        echo "No files under ~/.kiro were written or removed. Re-run without the"
-        echo "opt-out to add Kiro skills."
-    elif [ "$skip_skills" -eq 1 ]; then
-        echo "Kiro was detected, but skills were skipped (${skip_skills_source}), so no"
-        echo "Kiro skills or agent were installed. Re-run without the opt-out to add them."
-    else
-        echo "Kiro skills are installed to ~/.kiro/skills/"
-        echo "The Plannotator agent is installed to ~/.kiro/agents/plannotator.json"
-        echo "Launch it: kiro-cli chat --agent plannotator"
-    fi
-fi
-# The Vibe section prints only when Vibe was detected; without a Vibe home
-# the installer says nothing about Vibe at all.
-if [ "$vibe_available" -eq 1 ]; then
-    echo ""
-    echo "=========================================="
-    echo "  VIBE USERS"
-    echo "=========================================="
-    echo ""
-    if [ "$skip_vibe" -eq 1 ]; then
-        echo "Vibe was detected, but the integration was skipped (${skip_vibe_source})."
-        echo "No files under ${VIBE_HOME} were written or removed. Re-run without the"
-        echo "opt-out to add the plan-review hook and Vibe skills."
-    elif [ "$skip_skills" -eq 1 ]; then
-        echo "Vibe was detected, and the plan-review hook is installed at ${VIBE_HOME}/hooks.toml."
-        echo "Skills were skipped (${skip_skills_source}), so no Vibe skills were installed."
-        echo "Re-run without the opt-out to add them."
-    else
-        echo "Plan review is configured through the Vibe pre_tool hook on exit_plan_mode"
-        echo "in ${VIBE_HOME}/hooks.toml (requires Vibe 2.25 or newer)."
-        echo ""
-        echo "Vibe skills are installed to ${VIBE_SKILLS_DIR}/"
-        echo "Note: improve-context (plan-mode enrichment) is not wired for Vibe —"
-        echo "only the plan-review gate runs."
-    fi
-fi
-# The Qwen Code section prints only when Qwen Code was detected.
-if [ "$qwen_available" -eq 1 ]; then
-    echo ""
-    echo "=========================================="
-    echo "  QWEN CODE USERS"
-    echo "=========================================="
-    echo ""
-    if [ "$skip_qwen" -eq 1 ]; then
-        echo "Qwen Code was detected, but the integration was skipped (${skip_qwen_source})."
-        echo "No extension was installed or removed, and no files under ${QWEN_DIR} were"
-        echo "written. Re-run without the opt-out to add plan review and the skills."
-    elif [ "$skip_skills" -eq 1 ]; then
-        echo "Qwen Code was detected, but skills were skipped (${skip_skills_source}). The"
-        echo "Qwen Code extension and skills come from the same download, so neither was"
-        echo "installed or changed. Re-run without the opt-out to add them."
-    elif [ "$qwen_too_old" -eq 1 ]; then
-        echo "Qwen Code ${qwen_version} is older than ${QWEN_MIN_VERSION}, the first release that runs"
-        echo "extension hooks, so nothing was installed for it. Update Qwen Code to use"
-        echo "plan review, then re-run this installer."
-    else
-        case "$qwen_extension_state" in
-            installed|updated|current)
-                if [ "$qwen_extension_off" -eq 1 ]; then
-                    echo "The plannotator extension is turned off in Qwen Code (in some or all"
-                    echo "projects), and it stays off. Where it is off, plan review is off. To"
-                    echo "turn it on: qwen extensions enable plannotator"
-                else
-                    echo "Plan review: when the agent calls exit_plan_mode, the plan opens in your"
-                    echo "browser. After you approve it there, Qwen Code asks you to confirm the plan"
-                    echo "once more in the terminal. Restart Qwen Code to load a new extension."
-                fi
-                ;;
-            linked)
-                echo "The plannotator extension is linked from a local folder (qwen extensions"
-                echo "link), so this installer left it as it is."
-                ;;
-            foreign)
-                echo "The plannotator extension was installed from ${qwen_extension_source},"
-                echo "not by this installer, so it was left as it is. To let this installer"
-                echo "manage it, run: qwen extensions uninstall plannotator"
-                echo "and re-run this installer."
-                ;;
-            no-cli)
-                echo "The qwen command was not found, so the plan-review extension was not"
-                echo "installed. Put qwen on PATH and re-run this installer."
-                ;;
-            not-in-tag)
-                echo "This release has no Qwen Code extension. Install a newer release for plan review."
-                ;;
-            *)
-                echo "The plan-review extension could not be installed (see the message above)."
-                echo "Re-run this installer to try again."
-                ;;
-        esac
-        if [ "$qwen_skills_installed" -eq 1 ]; then
-            echo ""
-            echo "Skills are installed to ${QWEN_SKILLS_DIR}/:"
-            echo "  /plannotator-review, /plannotator-annotate, /plannotator-last"
-        fi
-    fi
 fi
 echo ""
 echo "=========================================="

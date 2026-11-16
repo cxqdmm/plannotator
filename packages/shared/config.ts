@@ -230,13 +230,9 @@ export interface PlannotatorConfig {
    * integration even when the agent is detected, reports the detected state
    * honestly ("detected, skipped"), and never removes an integration a
    * previous install already wired. Overridden by the
-   * PLANNOTATOR_SKIP_CODEX_INSTALL / PLANNOTATOR_SKIP_GEMINI_INSTALL /
-   * PLANNOTATOR_SKIP_KIRO_INSTALL / PLANNOTATOR_SKIP_VIBE_INSTALL /
-   * PLANNOTATOR_SKIP_OPENCODE_INSTALL / PLANNOTATOR_SKIP_QWEN_INSTALL env
-   * vars, which are in turn overridden by the --skip-codex / --skip-gemini /
-   * --skip-kiro / --skip-vibe / --skip-opencode / --skip-qwen flags.
-   * OpenCode has no detection leg, so its entry is a plain do-not-write
-   * switch. `skills` skips the skills/slash-command
+   * PLANNOTATOR_SKIP_OPENCODE_INSTALL env var, which is in turn overridden
+   * by the --skip-opencode flag. OpenCode has no detection leg, so its entry
+   * is a plain do-not-write switch. `skills` skips the skills/slash-command
    * checkout for every scope (PLANNOTATOR_SKIP_SKILLS_INSTALL / --skip-skills).
    * `claudePlugin` stops the installers from updating an already-installed
    * Claude Code plugin (`claude plugin marketplace update plannotator` +
@@ -245,12 +241,7 @@ export interface PlannotatorConfig {
    * (-SkipClaudePlugin). Default: all off.
    */
   skipInstall?: {
-    codex?: boolean;
-    gemini?: boolean;
-    kiro?: boolean;
-    vibe?: boolean;
     opencode?: boolean;
-    qwen?: boolean;
     skills?: boolean;
     claudePlugin?: boolean;
   };

@@ -44,7 +44,7 @@ function isPlannotatorExecutable(
   return name === "plannotator" || name === "plannotator.exe";
 }
 
-/** The whole command is an install path, as written: install.sh writes the Codex hook unquoted, so a path with spaces is one word there. */
+/** The whole command is an install path, as written: an install path a host wrote unquoted is one word even with spaces. */
 function isBinaryPathCommand(command: string, binaryPaths: readonly string[], tail: string, platform: NodeJS.Platform): boolean {
   const trimmed = command.trim();
   return binaryPaths.some((path) => sameCommand(trimmed, `${path}${tail}`, platform));
@@ -150,7 +150,6 @@ export function remainingHookReferences(
   platform: NodeJS.Platform,
   allowRelocatedBinary: boolean,
   projectedRemovals: readonly ManagedHookSpec[] = [],
-  removedVibeIndices: ReadonlySet<number> = new Set(),
 ): string[] {
   const root = asRecord(config);
   const invokesPlannotator = (command: unknown): boolean => {
@@ -165,12 +164,6 @@ export function remainingHookReferences(
       return executable !== undefined && isPlannotatorExecutable(executable, binaryPaths, platform, allowRelocatedBinary);
     });
   };
-  // Vibe stores commands directly in [[hooks]], rather than nested event entries.
-  if (Array.isArray(root?.hooks)) {
-    return root.hooks.flatMap((value: unknown, index) =>
-      !removedVibeIndices.has(index) && invokesPlannotator(asRecord(value)?.command) ? [`hooks[${index}].command`] : [],
-    );
-  }
   const hooks = root ? asRecord(root.hooks) : null;
   if (!hooks) return [];
   const references: string[] = [];

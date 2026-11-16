@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describeFsError } from "./agent-files";
 
@@ -55,7 +55,7 @@ function objectFile(file: string): { value: Record<string, unknown> | null; unre
   return { value, unreadable: value ? [] : [{ file, reason: "it is not a JSON object" }] };
 }
 
-export function enabledPluginReferences(file: string, id: string): HostReferences {
+function enabledPluginReferences(file: string, id: string): HostReferences {
   const field = `enabledPlugins[${JSON.stringify(id)}]`;
   const read = objectFile(file);
   const enabled = record(read.value?.enabledPlugins);
@@ -63,7 +63,7 @@ export function enabledPluginReferences(file: string, id: string): HostReference
 }
 
 /**
- * Claude Code's and Droid's plugin records: `enabledPlugins` in the user's
+ * Claude Code's plugin records: `enabledPlugins` in the user's
  * settings.json, and one `installed_plugins.json` entry per scope. `--scope
  * user` removes only the user's; a project's or a managed one stays, so it
  * is named, never waited for. An entry with no scope predates scopes: the user's.
@@ -90,63 +90,4 @@ export function pluginReferences(directory: string, id: string): HostReferences 
   // A user enabledPlugins key counts even with no user install: Claude Code installs (or rescopes) the plugin
   // for the user from it at its next start.
   return { references: [...enabled.references, ...installs], otherScopes, unreadable: [...enabled.unreadable, ...installed.unreadable] };
-}
-
-export function piPackageReferences(file: string): HostReferences {
-  const read = objectFile(file);
-  const packages = read.value?.packages;
-  return {
-    otherScopes: [],
-    unreadable: read.unreadable,
-    references: Array.isArray(packages) ? packages.flatMap((entry: unknown, index) => {
-      const source = typeof entry === "string" ? entry : record(entry)?.source;
-      return typeof source === "string" && /^npm:@plannotator\/pi-extension(?:@|$)/.test(source)
-        ? [`${file}, packages[${index}]${typeof entry === "string" ? "" : ".source"}`]
-        : [];
-    }) : [],
-  };
-}
-
-export function directoryReferences(directory: string, prefix: string): HostReferences {
-  try {
-    return {
-      references: readdirSync(directory).filter((entry) => entry.startsWith(prefix)).map((entry) => join(directory, entry)),
-      otherScopes: [],
-      unreadable: [],
-    };
-  } catch (error) {
-    return { references: [], otherScopes: [], unreadable: missing(error) ? [] : [{ file: directory, reason: describeFsError(error) }] };
-  }
-}
-
-/** VS Code can unregister an extension while leaving its files for later cleanup. */
-export function vscodeReferences(directory: string): HostReferences {
-  const id = "backnotprop.plannotator-webview";
-  const file = join(directory, "extensions.json");
-  const registry = readJson(file);
-  if (registry.kind === "unreadable") return { references: [], otherScopes: [], unreadable: [registry.unreadable] };
-  if (registry.kind === "value") {
-    if (!Array.isArray(registry.value)) {
-      return { references: [], otherScopes: [], unreadable: [{ file, reason: "it is not a JSON array" }] };
-    }
-    return {
-      references: registry.value.flatMap((entry: unknown, index) => {
-        const identifier = record(record(entry)?.identifier)?.id;
-        return typeof identifier === "string" && identifier.toLowerCase() === id
-          ? [`${file}, [${index}].identifier.id (${id})`]
-          : [];
-      }),
-      otherScopes: [],
-      unreadable: [],
-    };
-  }
-  // Older installations may not have a registration index. Honor their removal markers.
-  const directories = directoryReferences(directory, `${id}-`);
-  if (directories.references.length === 0) return directories;
-  const obsolete = objectFile(join(directory, ".obsolete"));
-  return {
-    references: directories.references.filter((path) => obsolete.value?.[path.slice(directory.length + 1)] !== true),
-    otherScopes: [],
-    unreadable: [...directories.unreadable, ...obsolete.unreadable],
-  };
 }

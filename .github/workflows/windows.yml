@@ -1,13 +1,13 @@
 name: Windows
 
 # The Windows jobs: the uninstall lifecycle (with the installers' binary
-# download), the Qwen Code installer steps, the
-# code review diagram engine build, the Claude Code mod's Windows shells, the
-# Pi extension's Node runtime, and install.cmd / install.ps1 end to end. They
-# are part of the full tier: on a PR they run only once it has the `ci:full`
-# label (adding the label starts them on the current head; every later push
-# runs them again). The nightly run on main and manual runs always run them.
-# The `Full CI (all green)` job at the end is what the merge script requires.
+# download), the code review diagram engine build, the Claude Code mod's
+# Windows shells, the Bun server's Windows paths, and install.cmd /
+# install.ps1 end to end. They are part of the full tier: on a PR they run
+# only once it has the `ci:full` label (adding the label starts them on the
+# current head; every later push runs them again). The nightly run on main
+# and manual runs always run them. The `Full CI (all green)` job at the end
+# is what the merge script requires.
 
 on:
   workflow_dispatch:
@@ -61,14 +61,6 @@ jobs:
       - name: Run the installers' binary download tests
         run: bun test scripts/install-download.test.ts
 
-  # Path gate for the Qwen Code installer jobs below (about 20 Windows runner
-  # minutes per run). Only these files can change what those tests run: the
-  # installers, their tests, the Qwen Code extension they install, the test
-  # setup, and this workflow. The same Qwen Code tests also run under pwsh in
-  # the unit lanes on every PR. Anything this cannot resolve (the nightly run, a
-  # manual run, a checkout that is not the PR merge commit) runs the jobs:
-  # skipping is the risky direction. A skipped job reports as skipped, not
-  # missing.
   # Path gate for the diagram engine build below. Only these files can change
   # what that build does: the engine's build script and sources, the UI and
   # core packages it bundles, the contract it is built against, the review
@@ -162,8 +154,7 @@ jobs:
         run: bun test apps/hook/hooks/mod/paths.test.ts apps/hook/hooks/mod/git-bash.test.ts apps/hook/hooks/mod/shell.test.ts apps/hook/hooks/mod/powershell.test.ts apps/hook/hooks/mod/inbox-reminder.test.ts apps/hook/hooks/mod/delivery.test.ts
 
   bun-server-windows:
-    # Windows-only tests of the Bun server's spawn/launch paths (kept from the
-    # removed Pi extension job: they test packages/server, not the Pi app).
+    # Windows-only tests of the Bun server's spawn/launch paths.
     name: Bun server Windows paths
     if: github.event_name != 'pull_request' || (contains(github.event.pull_request.labels.*.name, 'ci:full') && (github.event.action != 'labeled' || github.event.label.name == 'ci:full'))
     runs-on: windows-latest
@@ -195,11 +186,9 @@ jobs:
   install-cmd-windows:
     # End-to-end integration test for scripts/install.cmd on real cmd.exe.
     # The unit tests in scripts/install.test.ts are file-content string checks
-    # that run on Linux and never exercise cmd's delayed-expansion parser or
-    # the embedded `node -e` Gemini merge — exactly where issue #506 lived.
-    # This job runs install.cmd end-to-end on Windows with a seeded ~/.gemini
-    # settings.json fixture so the Gemini merge path actually executes and
-    # any regression of #506 (or similar cmd-parser bugs) fails CI.
+    # that run on Linux and never exercise cmd's delayed-expansion parser —
+    # exactly where issue #506 lived. This job runs install.cmd end-to-end on
+    # Windows so any regression of #506 (or similar cmd-parser bugs) fails CI.
     name: install.cmd (Windows integration)
     if: github.event_name != 'pull_request' || (contains(github.event.pull_request.labels.*.name, 'ci:full') && (github.event.action != 'labeled' || github.event.label.name == 'ci:full'))
     runs-on: windows-latest
@@ -208,51 +197,16 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Seed fake ~/.gemini/settings.json with pre-existing hook
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.gemini" | Out-Null
-          # Fixture mirrors the shape of a real Gemini settings.json (top-level
-          # `hooks.BeforeTool` array plus unrelated sibling keys) but uses only
-          # obviously-fake values. Must NOT contain the literal string
-          # "plannotator" anywhere — install.cmd's Gemini block is gated on
-          # `findstr /c:"plannotator"` returning non-zero and would otherwise
-          # skip the merge entirely.
-          $fixture = @'
-          {
-            "theme": "ci-fixture-theme",
-            "hooks": {
-              "BeforeTool": [
-                {
-                  "matcher": "ci-fixture-existing-matcher",
-                  "hooks": [
-                    {
-                      "type": "command",
-                      "command": "ci-fixture-existing-command",
-                      "timeout": 1000
-                    }
-                  ]
-                }
-              ]
-            },
-            "general": {
-              "ciFixtureSentinel": true
-            }
-          }
-          '@
-          Set-Content -Path "$env:USERPROFILE\.gemini\settings.json" -Value $fixture -NoNewline
-
       - name: Run install.cmd end-to-end # zizmor: ignore[misfeature]
         # CMD is the subject of this regression test; replacing the shell would
         # invalidate it. Owner: maintainers; reassess by 2027-08-11.
         shell: cmd
         # v0.17.1 is pinned intentionally. This test needs a real binary
         # to download so it can exercise install.cmd end-to-end — SHA256
-        # verification, skills sparse-checkout, and (critically) the
-        # embedded `node -e` Gemini merge path that was the site of
-        # issue #506. Using `latest` would couple the Windows regression
-        # test to whatever version is currently released, so a bad
-        # release would retroactively break CI on every branch.
+        # verification and skills sparse-checkout. Using `latest` would
+        # couple the Windows regression test to whatever version is
+        # currently released, so a bad release would retroactively break
+        # CI on every branch.
         #
         # v0.17.1 was the current release when the test was added and is
         # locked in place by GitHub Immutable Releases. If you ever need
@@ -274,52 +228,6 @@ jobs:
           $flags = @((Get-Content -Raw $f | ConvertFrom-Json).flags)
           if (($flags -join ",") -ne "skip-attestation") { throw "expected [skip-attestation], got: $(Get-Content -Raw $f)" }
           Write-Host "✓ install.cmd wrote install-flags.json: $(Get-Content -Raw $f)"
-
-      - name: Verify Gemini settings.json was merged correctly
-        shell: pwsh
-        run: |
-          $path = "$env:USERPROFILE\.gemini\settings.json"
-          if (-not (Test-Path $path)) { throw "settings.json missing after install" }
-
-          # Must still parse as JSON after the merge (regression for #506,
-          # where cmd's delayed expansion corrupted the embedded node script
-          # and left settings.json in a broken state).
-          $s = Get-Content $path -Raw | ConvertFrom-Json
-
-          # The plannotator hook must have been added.
-          $plannotatorEntries = $s.hooks.BeforeTool | Where-Object {
-            $_.matcher -eq 'exit_plan_mode'
-          }
-          if (-not $plannotatorEntries) {
-            throw "plannotator hook was not added to BeforeTool"
-          }
-          $planCmd = $plannotatorEntries[0].hooks | Where-Object {
-            $_.command -eq 'plannotator'
-          }
-          if (-not $planCmd) {
-            throw "plannotator command entry missing inside the new hook"
-          }
-
-          # The pre-existing (fixture) hook must have survived the merge.
-          # The original buggy JS was `if(!s.hooks.BeforeTool)s.hooks.BeforeTool=[]`
-          # which — after cmd ate the `!` — wiped existing arrays. The fix
-          # (`s.hooks.BeforeTool = s.hooks.BeforeTool || []`) must preserve them.
-          $fixtureHook = $s.hooks.BeforeTool | Where-Object {
-            $_.matcher -eq 'ci-fixture-existing-matcher'
-          }
-          if (-not $fixtureHook) {
-            throw "pre-existing hook was wiped — merge clobbered existing data"
-          }
-
-          # Unrelated top-level keys must survive the merge.
-          if ($s.theme -ne 'ci-fixture-theme') {
-            throw "unrelated top-level field 'theme' was mangled"
-          }
-          if ($s.general.ciFixtureSentinel -ne $true) {
-            throw "unrelated top-level field 'general' was mangled"
-          }
-
-          Write-Host "✓ Gemini settings.json merge verified (issue #506 regression guard)"
 
       - name: Attestation pre-flight rejects v0.17.1 on real cmd.exe
         shell: pwsh
@@ -351,8 +259,8 @@ jobs:
           $installedBinary = "$env:USERPROFILE\.local\bin\plannotator.exe"
 
           # Capture the currently-installed binary's hash BEFORE running
-          # the rejection test. The earlier Gemini-merge integration step
-          # installed v0.17.1 at this path; we use the captured hash as
+          # the rejection test. The earlier end-to-end step installed
+          # v0.17.1 at this path; we use the captured hash as
           # a baseline so we can prove the rejected invocation left it
           # untouched (no wasted download, no overwrite).
           if (-not (Test-Path $installedBinary)) {
@@ -411,26 +319,6 @@ jobs:
             }
           }
           Write-Host "✓ No deprecated Claude Code command files were written (skills are the slash commands now)"
-
-          # Gemini slash commands — `.toml` files with `!{plannotator ...}` invocation
-          # syntax, now COPIED VERBATIM from the sparse checkout (apps/gemini/commands
-          # at the pinned tag) instead of being generated by echo escapes. The earlier
-          # integration step seeded `~/.gemini/settings.json`, so install.cmd's Gemini
-          # block fired. The `!{plannotator` content check verifies the verbatim copy
-          # actually delivered intact files (and would catch a regression back to
-          # generated content that mangles the `!`).
-          $geminiDir = "$env:USERPROFILE\.gemini\commands"
-          foreach ($file in @("plannotator-review.toml", "plannotator-annotate.toml")) {
-            $path = Join-Path $geminiDir $file
-            if (-not (Test-Path $path)) {
-              throw "Expected Gemini command file missing: $path"
-            }
-            $content = Get-Content $path -Raw
-            if ($content -notmatch '!\{plannotator') {
-              throw "Gemini command file $file is missing the '!' shell-invocation prefix. Content: $content"
-            }
-          }
-          Write-Host "✓ Both Gemini slash command files contain the '!' prefix"
 
       - name: Unknown flag is rejected with non-zero exit
         shell: pwsh

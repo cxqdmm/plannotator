@@ -32,7 +32,7 @@ import { T3_SETTINGS_BACKUP_SUFFIX } from "@plannotator/shared/t3-hook-command";
 import { isManagedHook, remainingHookReferences, type ManagedHookSpec } from "./uninstall-hooks";
 import { remainingInboxReferences } from "./uninstall-inbox-references";
 import {
-  pluginReferences, enabledPluginReferences, piPackageReferences, directoryReferences, vscodeReferences,
+  pluginReferences,
   type HostReferences, type Unreadable,
 } from "./uninstall-host-references";
 import { describeFsError } from "./agent-files";
@@ -43,7 +43,6 @@ import { hasTailnetDoorRecord, readTailnetDoorRecord } from "./inbox-tailnet-doo
 import { takeDownInboxTailscale } from "./inbox-tailscale";
 import { inboxLoginItem } from "./inbox-scheduled-login";
 import { agentHomeAllowed, forgetInboxAgents, planInboxAgentRemoval, type AgentEnvironment } from "./inbox-agents";
-import { qwenTrustRemoval, type QwenRevokeResult } from "./inbox-qwen-trust";
 import { hermesPluginInstalled } from "./inbox-hermes";
 import { HERMES_PLUGIN_REMOVE } from "@plannotator/core/inbox-hermes";
 import { planInboxNoteRemoval } from "./inbox-agent-notes";
@@ -65,18 +64,17 @@ const CORE_SKILLS = [
 
 // The knowledge-layer CLI reference skill (apps/skills/core/plannotator).
 // Installed to the same two scopes as CORE_SKILLS, but kept out of that list:
-// it never had a legacy slash command or a Codex-home era, so it must not
-// join LEGACY_COMMAND_NAMES (a user's own ~/.claude/commands/plannotator.md
-// would be collateral) or STALE_CODEX_SKILLS.
+// it never had a legacy slash command, so it must not join
+// LEGACY_COMMAND_NAMES (a user's own ~/.claude/commands/plannotator.md
+// would be collateral).
 const KNOWLEDGE_SKILLS = [
   "plannotator",
 ] as const;
 
 // /plannotator-inbox (apps/skills/{claude,core}/plannotator-inbox): installed
-// to the Claude and shared-agent scopes, ~/.kiro/skills and $VIBE_HOME/skills,
-// plus an OpenCode command stub and a Gemini command. Kept out of
-// CORE_SKILLS for the same reason as the knowledge skill: it never had a
-// legacy ~/.claude/commands file or a Codex-home era.
+// to the Claude and shared-agent scopes, plus an OpenCode command stub. Kept
+// out of CORE_SKILLS for the same reason as the knowledge skill: it never had
+// a legacy ~/.claude/commands file.
 const INBOX_SKILL = "plannotator-inbox";
 
 const EXTRA_SKILLS = [
@@ -87,46 +85,6 @@ const EXTRA_SKILLS = [
 
 const LEGACY_COMMAND_NAMES = [
   ...CORE_SKILLS,
-  "plannotator-archive",
-] as const;
-
-const KIRO_SKILLS = [
-  "plannotator-review",
-  "plannotator-annotate",
-  INBOX_SKILL,
-  // The knowledge skill installs into ~/.kiro/skills like the action skills.
-  // Safe to name here: this list only ever removes ~/.kiro/skills/<name>
-  // directories, never a command file a user may own.
-  "plannotator",
-  "plannotator-setup-goal",
-  "plannotator-visual-explainer",
-  "plannotator-archive",
-] as const;
-
-// Installed by scripts/install.sh to $VIBE_HOME/skills (same names as the
-// core skills plus the knowledge skill; the dirs are installer-created, so
-// removing them by name cannot touch a user's own skill).
-const VIBE_SKILLS = [
-  "plannotator-review",
-  "plannotator-annotate",
-  "plannotator-last",
-  INBOX_SKILL,
-  "plannotator",
-] as const;
-
-// Installed by the install scripts to $QWEN_HOME/skills (default ~/.qwen/skills)
-// from apps/qwen-code/skills. Removed by name, like the Vibe skills: only the
-// installer creates these folders there.
-const QWEN_SKILLS = [
-  "plannotator-review",
-  "plannotator-annotate",
-  "plannotator-last",
-] as const;
-
-const STALE_CODEX_SKILLS = [
-  ...CORE_SKILLS,
-  "plannotator-compound",
-  "plannotator-setup-goal",
   "plannotator-archive",
 ] as const;
 
@@ -538,21 +496,13 @@ export async function runPlannotatorUninstall(
   // A dry run checked each file as it planned it; a real run checks what the cleanup left.
   // It only reads, and runs even after another error, so one run names every blocker.
   if (!request.dryRun) {
-    for (const [owner, filePath, allowRelocatedBinary] of [
-      ["Claude Code", join(paths.claudeDir, "settings.json"), false],
-      ["Codex", join(paths.codexDir, "hooks.json"), true],
-      ["Gemini CLI", join(environment.homeDir, ".gemini", "settings.json"), false],
-      ["Mistral Vibe", join(paths.vibeDir, "hooks.toml"), false],
-    ] as const) {
-      const config = filePath.endsWith(".toml")
-        ? readVibeHooks(filePath, request, state)
-        : readJsonRecord(
-          owner, filePath, "remaining host hooks",
-          { manualCleanup: `Make ${filePath} a readable, writable strict JSON object and remove only hooks that invoke Plannotator; preserve unrelated settings.` },
-          request, state,
-        );
-      reportRemainingHookReferences(owner, config, filePath, paths.binaryPaths, environment.platform, allowRelocatedBinary, request, state);
-    }
+    const claudeSettings = join(paths.claudeDir, "settings.json");
+    const config = readJsonRecord(
+      "Claude Code", claudeSettings, "remaining host hooks",
+      { manualCleanup: `Make ${claudeSettings} a readable, writable strict JSON object and remove only hooks that invoke Plannotator; preserve unrelated settings.` },
+      request, state,
+    );
+    reportRemainingHookReferences("Claude Code", config, claudeSettings, paths.binaryPaths, environment.platform, false, request, state);
   }
 
   if (state.errors.length === 0) {
@@ -642,8 +592,6 @@ async function removeInboxAgentConnections(
   const plan = planInboxAgentRemoval(state.dataDir, agents, [environment.execPath, "inbox", "mcp"]);
   // The notes (inbox-agent-notes.ts): only the marked section, as the person left it.
   const notes = planInboxNoteRemoval(state.dataDir, agents, INBOX_AGENT_LABELS);
-  // Plannotator's trusted-sender token in Qwen Code (inbox-qwen-trust.ts): revoked in Qwen, whoever added the MCP entry.
-  const trust = agentHomeAllowed(agents) ? qwenTrustRemoval(state.dataDir, agents) : null;
   for (const skipped of [...plan.skipped, ...notes.skipped]) state.warnings.push(`Skipped: ${skipped}.`);
   if (agentHomeAllowed(agents) && hermesPluginInstalled(agents)) {
     state.warnings.push(`Skipped: Hermes Agent's Plannotator plugin and its permission to start turns, which Hermes keeps; run \`${HERMES_PLUGIN_REMOVE}\` to remove both.`);
@@ -658,17 +606,8 @@ async function removeInboxAgentConnections(
   if (request.dryRun) {
     for (const item of plan.items) state.planned.push(item.describe);
     for (const note of notes.items) state.planned.push(note.describe);
-    if (trust?.runnable) state.planned.push(trust.describe);
-    else if (trust) state.warnings.push(`Skipped: ${trust.describe}: qwen is not on PATH; run \`${trust.manual}\`.`);
     reportOthers();
     return;
-  }
-  if (trust) {
-    // Never stops the uninstall: the entries and the binary go whatever happens to the grant.
-    const result = await trust.apply().catch((error: unknown): QwenRevokeResult => ({ kind: "failed", reason: error instanceof Error ? error.message : String(error), manual: trust.manual, held: true }));
-    if (result.kind === "revoked") state.removed.push(trust.describe);
-    else if (result.kind === "forgotten") state.warnings.push(`Plannotator forgot ${trust.describe}, but qwen is not on PATH, so the grant may still be in Qwen Code; run \`${result.manual}\`.`);
-    else state.warnings.push(`Could not remove ${trust.describe}: ${result.reason}.${result.held ? " Run" : " Plannotator no longer uses it; run"} \`${result.manual}\` to remove it.`);
   }
   for (const note of notes.items) {
     const result = note.apply();
@@ -739,46 +678,17 @@ function reportRemainingHookReferences(
   request: UninstallRequest,
   state: MutableUninstallResult,
   projectedRemovals: readonly ManagedHookSpec[] = [],
-  removedVibeIndices: ReadonlySet<number> = new Set(),
 ): void {
-  const fields = remainingHookReferences(config, binaryPaths, platform, allowRelocatedBinary, projectedRemovals, removedVibeIndices);
+  const fields = remainingHookReferences(config, binaryPaths, platform, allowRelocatedBinary, projectedRemovals);
   if (fields.length === 0) return;
   state.errors.push(
     `${owner}'s ${filePath} still runs Plannotator at ${fields.join(", ")}. Plannotator removes only the hooks it installs exactly as it wrote them, so it did not change ${fields.length === 1 ? "this one" : "these"}. To continue, remove only ${fields.length === 1 ? "that hook" : "those hooks"} (keep the rest of the file), then run \`${formatUninstallRetryCommand(request)}\` again.`,
   );
 }
 
-/** Vibe's hooks.toml, parsed; null when missing or unreadable (said). */
-function readVibeHooks(filePath: string, request: UninstallRequest, state: MutableUninstallResult): unknown {
-  if (state.reported.has(filePath)) return null;
-  let content: string;
-  try {
-    content = readFileSync(filePath, "utf8");
-  } catch (error) {
-    if (!isMissingPathError(error)) reportUnreadableConfig("Mistral Vibe", { file: filePath, reason: describeFsError(error) }, request, state);
-    return null;
-  }
-  return parseVibeHooks(filePath, content, request, state);
-}
-
-function parseVibeHooks(filePath: string, content: string, request: UninstallRequest, state: MutableUninstallResult): unknown {
-  try {
-    return Bun.TOML.parse(content);
-  } catch (error) {
-    const detail = formatError(error).replace(/^TOML Parse error:\s*/, "");
-    reportUnreadableConfig("Mistral Vibe", { file: filePath, reason: `it is not valid TOML (${detail})` }, request, state);
-    return null;
-  }
-}
-
 function resolveOwnedPaths(environment: UninstallEnvironment) {
   const { homeDir, env } = environment;
   const claudeDir = env.CLAUDE_CONFIG_DIR || join(homeDir, ".claude");
-  const codexDir = env.CODEX_HOME || join(homeDir, ".codex");
-  const factoryDir = env.FACTORY_CONFIG_DIR || join(homeDir, ".factory");
-  const copilotDir = env.COPILOT_HOME || join(homeDir, ".copilot");
-  const vibeDir = env.VIBE_HOME || join(homeDir, ".vibe");
-  const qwenDir = resolveQwenDir(env.QWEN_HOME, homeDir);
   const xdgConfigDir = env.XDG_CONFIG_HOME || join(homeDir, ".config");
   const xdgCacheDir = env.XDG_CACHE_HOME || join(homeDir, ".cache");
   const configDirs = uniquePaths([
@@ -798,11 +708,6 @@ function resolveOwnedPaths(environment: UninstallEnvironment) {
 
   return {
     claudeDir,
-    codexDir,
-    factoryDir,
-    copilotDir,
-    vibeDir,
-    qwenDir,
     configDirs,
     xdgCacheDir,
     windowsInstallDir,
@@ -839,61 +744,6 @@ async function removeHostPlugins(
         "--yes",
       ],
       references: () => pluginReferences(paths.claudeDir, pluginId),
-    },
-    {
-      // Copilot CLI keeps one install per user: nothing in another scope to leave.
-      label: "GitHub Copilot CLI plugin plannotator-copilot@plannotator",
-      owner: "GitHub Copilot CLI",
-      command: "copilot",
-      // Copilot CLI 1.0.68: `copilot plugin uninstall <name>` (`plugins remove … --plugin` is refused).
-      args: ["plugin", "uninstall", "plannotator-copilot@plannotator"],
-      references: () => {
-        const enabled = enabledPluginReferences(join(paths.copilotDir, "settings.json"), "plannotator-copilot@plannotator");
-        const installed = directoryReferences(join(paths.copilotDir, "installed-plugins", "plannotator"), "plannotator-copilot");
-        return { references: [...enabled.references, ...installed.references], otherScopes: [], unreadable: [...enabled.unreadable, ...installed.unreadable] };
-      },
-    },
-    {
-      label: "Droid plugin plannotator@plannotator",
-      owner: "Droid",
-      command: "droid",
-      args: [
-        "plugin",
-        "uninstall",
-        "plannotator@plannotator",
-        "--scope",
-        "user",
-      ],
-      references: () => pluginReferences(paths.factoryDir, pluginId),
-    },
-    {
-      label: "Pi extension npm:@plannotator/pi-extension",
-      owner: "Pi",
-      command: "pi",
-      args: ["remove", "npm:@plannotator/pi-extension"],
-      references: () => {
-        const filePath = join(environment.env.PI_CODING_AGENT_DIR || join(environment.homeDir, ".pi", "agent"), "settings.json");
-        return piPackageReferences(filePath);
-      },
-    },
-    {
-      // The installers add it with `qwen extensions install`; Qwen's own
-      // command removes it from its extension store.
-      label: "Qwen Code extension plannotator",
-      owner: "Qwen Code",
-      command: "qwen",
-      args: ["extensions", "uninstall", "plannotator"],
-      references: () => {
-        const folder = join(paths.qwenDir, "extensions", "plannotator");
-        return { references: existsSync(join(folder, "qwen-extension.json")) ? [folder] : [], otherScopes: [], unreadable: [] };
-      },
-    },
-    {
-      label: "VS Code extension backnotprop.plannotator-webview",
-      owner: "VS Code",
-      command: "code",
-      args: ["--uninstall-extension", "backnotprop.plannotator-webview"],
-      references: () => vscodeReferences(join(environment.homeDir, ".vscode", "extensions")),
     },
   ];
 
@@ -976,37 +826,6 @@ function removeHostConfigEntries(
   // change to settings.json. The name is Plannotator's own; nothing else writes it.
   removePath(join(paths.claudeDir, `settings.json${T3_SETTINGS_BACKUP_SUFFIX}`), request, state);
 
-  cleanupHooksJson(
-    join(paths.codexDir, "hooks.json"),
-    [{ event: "Stop", suffix: "" }],
-    paths.binaryPaths,
-    environment.platform,
-    {
-      allowRelocatedBinary: true,
-      removeFileWhenEmpty: true,
-      owner: "Codex",
-    },
-    "managed Codex Stop hook",
-    `Make ${join(paths.codexDir, "hooks.json")} a readable, writable strict JSON object. Remove only Plannotator command hooks from hooks.Stop entries, then save the file; delete it only if no other settings remain.`,
-    request,
-    state,
-  );
-  cleanupCodexConfig(
-    join(paths.codexDir, "config.toml"),
-    request,
-    state,
-  );
-
-  cleanupGeminiSettings(
-    join(environment.homeDir, ".gemini", "settings.json"),
-    paths.binaryPaths,
-    environment.platform,
-    request,
-    state,
-  );
-
-  cleanupVibeHooks(join(paths.vibeDir, "hooks.toml"), paths.binaryPaths, environment.platform, request, state);
-
   for (const configDir of paths.configDirs) {
     for (const name of ["opencode.json", "opencode.jsonc"]) {
       cleanupOpenCodeConfig(
@@ -1059,30 +878,6 @@ function removeInstalledFiles(
     state,
   );
 
-  for (const skill of STALE_CODEX_SKILLS) {
-    removePath(join(paths.codexDir, "skills", skill), request, state);
-  }
-
-  for (const skill of KIRO_SKILLS) {
-    removePath(
-      join(environment.homeDir, ".kiro", "skills", skill),
-      request,
-      state,
-    );
-  }
-
-  for (const skill of VIBE_SKILLS) {
-    removePath(
-      join(paths.vibeDir, "skills", skill),
-      request,
-      state,
-    );
-  }
-
-  for (const skill of QWEN_SKILLS) {
-    removePath(join(paths.qwenDir, "skills", skill), request, state);
-  }
-
   for (const command of LEGACY_COMMAND_NAMES) {
     removePath(
       join(paths.claudeDir, "commands", `${command}.md`),
@@ -1115,38 +910,6 @@ function removeInstalledFiles(
         state,
       );
     }
-  }
-
-  for (const command of [
-    "plannotator-review",
-    "plannotator-annotate",
-    "plannotator-last",
-    INBOX_SKILL,
-  ]) {
-    removePath(
-      join(environment.homeDir, ".gemini", "commands", `${command}.toml`),
-      request,
-      state,
-    );
-  }
-
-  removePath(
-    join(environment.homeDir, ".gemini", "policies", "plannotator.toml"),
-    request,
-    state,
-  );
-
-  cleanupRecognizableKiroAgent(
-    join(environment.homeDir, ".kiro", "agents", "plannotator.json"),
-    request,
-    state,
-  );
-  for (const configDir of paths.configDirs) {
-    cleanupRecognizableAmpPlugin(
-      join(configDir, "amp", "plugins", "plannotator.ts"),
-      request,
-      state,
-    );
   }
 
   for (const cachePath of [
@@ -1237,10 +1000,6 @@ function removeInstallerData(
   // still make it. Every uninstall removes it, purge or not. config.json keys
   // that command wrote (`usageCounts`) stay with the config and are ignored.
   removePath(join(state.dataDir, "usage-counts"), request, state);
-  // The installers keep the Qwen Code extension's source here (Qwen reads it
-  // only to install or update); the extension itself goes with `qwen
-  // extensions uninstall` above.
-  removePath(join(state.dataDir, "qwen-code"), request, state);
 }
 
 function purgeLocalData(
@@ -1587,222 +1346,6 @@ function cleanupHooksJson(
   writeJson(filePath, parsed, label, recovery, request, state);
 }
 
-function cleanupCodexConfig(
-  filePath: string,
-  request: UninstallRequest,
-  state: MutableUninstallResult,
-): void {
-  if (!existsSync(filePath)) return;
-  const recovery = {
-    manualCleanup: `Make ${filePath} readable and writable. If its only nonblank lines are [features] and hooks = true, delete the file; otherwise leave its custom content in place.`,
-  };
-  let content: string;
-  try {
-    content = readFileSync(filePath, "utf8");
-  } catch (error) {
-    // The Inbox check reads this file too: said once.
-    reportUnreadableConfig("Codex", { file: filePath, reason: describeFsError(error) }, request, state);
-    return;
-  }
-
-  const meaningfulLines = content
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const isInstallerTemplate =
-    meaningfulLines.length === 2 &&
-    meaningfulLines[0] === "[features]" &&
-    /^hooks\s*=\s*true$/.test(meaningfulLines[1]);
-
-  if (!isInstallerTemplate) return;
-  removePath(filePath, request, state, recovery);
-}
-
-const VIBE_MANAGED_START = "# >>> plannotator-managed-vibe-hooks";
-const VIBE_MANAGED_END = "# <<< plannotator-managed-vibe-hooks";
-
-/**
- * Strip the installer's managed hook block from $VIBE_HOME/hooks.toml.
- *
- * The block is delimited by the plannotator-managed-vibe-hooks markers; only
- * lines between them (markers included) are ours, so everything else stays.
- * When nothing recognizable remains, the file is deleted; when a managed
- * start marker exists with no end marker, the whole tail from the marker is
- * treated as ours (the installer always writes both markers, so this is
- * corrupt-input handling) and the file is kept only if content survives.
- */
-function cleanupVibeHooks(
-  filePath: string,
-  binaryPaths: readonly string[],
-  platform: NodeJS.Platform,
-  request: UninstallRequest,
-  state: MutableUninstallResult,
-): void {
-  const recovery = {
-    manualCleanup: `Make ${filePath} readable and writable. Remove the lines between and including the "${VIBE_MANAGED_START}" and "${VIBE_MANAGED_END}" markers; keep every other hook. Delete the file only if nothing remains.`,
-  };
-  let content: string;
-  try {
-    content = readFileSync(filePath, "utf8");
-  } catch (error) {
-    if (!isMissingPathError(error)) reportUnreadableConfig("Mistral Vibe", { file: filePath, reason: describeFsError(error) }, request, state);
-    return;
-  }
-
-  const lines = content.split(/\r?\n/);
-  const nextLines: string[] = [];
-  let skipping = false;
-  let sawStart = false;
-  let hookIndex = -1;
-  const removedHookIndices = new Set<number>();
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (/^\[\[\s*(?:hooks|"hooks"|'hooks')\s*\]\]/.test(trimmed)) {
-      hookIndex++;
-      if (skipping) removedHookIndices.add(hookIndex);
-    }
-    if (!skipping && trimmed.startsWith(VIBE_MANAGED_START)) {
-      skipping = true;
-      sawStart = true;
-      continue;
-    }
-    if (skipping) {
-      if (trimmed.startsWith(VIBE_MANAGED_END)) {
-        skipping = false;
-      }
-      continue;
-    }
-    nextLines.push(line);
-  }
-
-  // Parsed before anything is written: a file it cannot read as TOML is left exactly as it was.
-  const original = parseVibeHooks(filePath, content, request, state);
-  if (state.reported.has(filePath)) return;
-  if (request.dryRun) {
-    reportRemainingHookReferences("Mistral Vibe", original, filePath, binaryPaths, platform, false, request, state, [], removedHookIndices);
-  }
-  if (!sawStart) return;
-
-  const remaining = nextLines.filter((line) => line.trim().length > 0);
-  if (remaining.length === 0) {
-    removePath(filePath, request, state, recovery);
-    return;
-  }
-
-  const label = "Plannotator Vibe plan-review hook";
-  if (request.dryRun) {
-    state.planned.push(`${label} in ${filePath}`);
-    return;
-  }
-
-  const lineEnding = content.includes("\r\n") ? "\r\n" : "\n";
-  try {
-    writeFileSync(
-      filePath,
-      nextLines.join(lineEnding).replace(/\s+$/, lineEnding),
-      "utf8",
-    );
-    state.removed.push(`${label} in ${filePath}`);
-  } catch (error) {
-    state.reported.add(filePath);
-    reportHostCleanupFailure(
-      `Could not rewrite ${filePath}`,
-      formatError(error),
-      recovery,
-      request,
-      state,
-    );
-  }
-}
-
-function cleanupGeminiSettings(
-  filePath: string,
-  binaryPaths: readonly string[],
-  platform: NodeJS.Platform,
-  request: UninstallRequest,
-  state: MutableUninstallResult,
-): void {
-  const recovery = {
-    manualCleanup: `Make ${filePath} a readable, writable strict JSON object. Remove only Plannotator command hooks from hooks.BeforeTool entries whose matcher is "exit_plan_mode", then save the file.`,
-  };
-  const parsed = readJsonRecord(
-    "Gemini CLI",
-    filePath,
-    "managed Gemini hooks",
-    recovery,
-    request,
-    state,
-  );
-  if (!parsed) return;
-  if (request.dryRun) reportRemainingHookReferences("Gemini CLI", parsed, filePath, binaryPaths, platform, false, request, state,
-    [{ event: "BeforeTool", matcher: "exit_plan_mode", suffix: "" }]);
-  const wasInstallerTemplate = isGeminiInstallerTemplate(
-    parsed,
-    binaryPaths,
-    platform,
-  );
-
-  const hooks = asRecord(parsed.hooks);
-  const beforeTool = hooks?.BeforeTool;
-  if (!hooks || !Array.isArray(beforeTool)) {
-    return;
-  }
-
-  let changed = false;
-  const nextEntries: unknown[] = [];
-  for (const value of beforeTool) {
-    const entry = asRecord(value);
-    if (
-      !entry ||
-      entry.matcher !== "exit_plan_mode" ||
-      !Array.isArray(entry.hooks)
-    ) {
-      nextEntries.push(value);
-      continue;
-    }
-
-    const nextHooks = entry.hooks.filter(
-      (hook) => !isManagedHook(hook, binaryPaths, "", platform),
-    );
-    if (nextHooks.length === entry.hooks.length) {
-      nextEntries.push(value);
-      continue;
-    }
-
-    changed = true;
-    if (nextHooks.length === 0 && hasOnlyKeys(entry, ["matcher", "hooks"])) {
-      continue;
-    }
-    nextEntries.push({ ...entry, hooks: nextHooks });
-  }
-
-  if (!changed) {
-    return;
-  }
-  if (nextEntries.length === 0) delete hooks.BeforeTool;
-  else hooks.BeforeTool = nextEntries;
-  if (Object.keys(hooks).length === 0) delete parsed.hooks;
-  else parsed.hooks = hooks;
-  if (request.dryRun) {
-    state.planned.push(`managed Gemini hook in ${filePath}`);
-    return;
-  }
-
-  if (wasInstallerTemplate) {
-    removePath(filePath, request, state, recovery);
-    return;
-  }
-
-  writeJson(
-    filePath,
-    parsed,
-    "managed Gemini hook",
-    recovery,
-    request,
-    state,
-  );
-}
-
 function cleanupOpenCodeConfig(
   filePath: string,
   request: UninstallRequest,
@@ -1925,68 +1468,6 @@ function findJsoncCommaOffset(
     }
   }
   return null;
-}
-
-function cleanupRecognizableKiroAgent(
-  filePath: string,
-  request: UninstallRequest,
-  state: MutableUninstallResult,
-): void {
-  const recovery = {
-    manualCleanup: `Make ${filePath} a readable, writable strict JSON object without changing its intent. If it is the installer-provided Plannotator Kiro agent, delete it; otherwise keep the repaired custom agent at that path.`,
-  };
-  const parsed = readJsonRecord(
-    "Kiro",
-    filePath,
-    "the Plannotator Kiro agent",
-    recovery,
-    request,
-    state,
-  );
-  if (!parsed) return;
-
-  const prompt = typeof parsed.prompt === "string" ? parsed.prompt : "";
-  const description =
-    typeof parsed.description === "string" ? parsed.description : "";
-  const recognizable =
-    parsed.name === "plannotator" &&
-    description.includes("Kiro custom agent wiring for Plannotator") &&
-    prompt.includes("Each skill runs a `plannotator` shell command");
-
-  if (recognizable) {
-    removePath(filePath, request, state, recovery);
-  } else {
-    state.preserved.push(`${filePath} (custom or unrecognized Kiro agent)`);
-  }
-}
-
-function cleanupRecognizableAmpPlugin(
-  filePath: string,
-  request: UninstallRequest,
-  state: MutableUninstallResult,
-): void {
-  if (!existsSync(filePath)) return;
-  const recovery = {
-    manualCleanup: `Make ${filePath} readable and writable. If it contains the installer-provided Plannotator Amp plugin, delete it; otherwise keep the custom plugin at that path.`,
-  };
-  let content: string;
-  try {
-    content = readFileSync(filePath, "utf8");
-  } catch (error) {
-    reportUnreadableConfig("Amp", { file: filePath, reason: describeFsError(error) }, request, state);
-    return;
-  }
-
-  const recognizable =
-    content.includes('const CATEGORY = "Plannotator"') &&
-    content.includes("export default function plannotatorAmpPlugin") &&
-    content.includes("PLANNOTATOR_ORIGIN");
-
-  if (recognizable) {
-    removePath(filePath, request, state, recovery);
-  } else {
-    state.preserved.push(`${filePath} (custom or unrecognized Amp plugin)`);
-  }
 }
 
 function readJsonRecord(
@@ -2274,45 +1755,6 @@ function removePath(
   }
 }
 
-function isGeminiInstallerTemplate(
-  value: JsonRecord,
-  binaryPaths: readonly string[],
-  platform: NodeJS.Platform,
-): boolean {
-  const hooks = asRecord(value.hooks);
-  const experimental = asRecord(value.experimental);
-  if (!hooks || !experimental || experimental.plan !== true) return false;
-  if (!hasOnlyKeys(value, ["hooks", "experimental"])) return false;
-  if (!hasOnlyKeys(experimental, ["plan"])) return false;
-
-  const beforeTool = hooks.BeforeTool;
-  if (
-    !hasOnlyKeys(hooks, ["BeforeTool"]) ||
-    !Array.isArray(beforeTool) ||
-    beforeTool.length !== 1
-  ) {
-    return false;
-  }
-
-  const entry = asRecord(beforeTool[0]);
-  if (
-    !entry ||
-    entry.matcher !== "exit_plan_mode" ||
-    !hasOnlyKeys(entry, ["matcher", "hooks"]) ||
-    !Array.isArray(entry.hooks) ||
-    entry.hooks.length !== 1
-  ) {
-    return false;
-  }
-
-  const hook = asRecord(entry.hooks[0]);
-  return (
-    hook !== null &&
-    hasOnlyKeys(hook, ["type", "command", "timeout"]) &&
-    isManagedHook(hook, binaryPaths, "", platform)
-  );
-}
-
 function isPlannotatorOpenCodePlugin(value: unknown): boolean {
   const spec =
     typeof value === "string"
@@ -2321,19 +1763,6 @@ function isPlannotatorOpenCodePlugin(value: unknown): boolean {
         ? value[0]
         : null;
   return spec !== null && /^@plannotator\/opencode(?:@|$)/.test(spec);
-}
-
-/**
- * Qwen Code's user folder: $QWEN_HOME (the folder itself, a leading ~
- * expanded, a relative path taken from the current folder) or ~/.qwen, as in
- * Qwen's Storage.getGlobalQwenDir.
- */
-function resolveQwenDir(qwenHome: string | undefined, homeDir: string): string {
-  const value = qwenHome?.trim();
-  if (!value) return join(homeDir, ".qwen");
-  if (value === "~") return homeDir;
-  if (value.startsWith("~/") || value.startsWith("~\\")) return join(homeDir, value.slice(2));
-  return resolve(value);
 }
 
 function asRecord(value: unknown): JsonRecord | null {

@@ -9,7 +9,6 @@
 
 import { afterAll, describe, expect, test } from "bun:test";
 import {
-  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -80,14 +79,14 @@ describe("install.sh", () => {
     expect(script).toContain("git clone --depth 1 --filter=blob:none --sparse");
     // Sparse set extended to also fetch the command stubs from the checkout.
     expect(script).toContain(
-      "git sparse-checkout set apps/skills apps/kiro-cli apps/vibe apps/opencode-plugin/commands apps/gemini/commands",
+      "git sparse-checkout set apps/skills apps/opencode-plugin/commands",
     );
     expect(script).toContain("CLAUDE_SKILLS_DIR");
     expect(script).toContain("AGENTS_SKILLS_DIR");
     expect(script).toContain("$HOME/.agents/skills");
     expect(script).toContain("copy_skill_if_present");
     // Claude Code reads the injection-form skills from apps/skills/claude;
-    // the OpenAI shared-agent (Codex) path reads the prose skills from
+    // the shared-agent (~/.agents) path reads the prose skills from
     // apps/skills/core. Sourced separately because `!`…`` injection is a
     // Claude-Code-only extension.
     for (const skill of CORE_SKILLS) {
@@ -98,9 +97,7 @@ describe("install.sh", () => {
     // install the single-sourced apps/skills/core/plannotator copy.
     expect(script).toContain('copy_skill_if_present apps/skills/core/plannotator "$CLAUDE_SKILLS_DIR"');
     expect(script).toContain('copy_skill_if_present apps/skills/core/plannotator "$AGENTS_SKILLS_DIR"');
-    // Codex no longer receives a skills install (core skills live in ~/.agents/skills).
-    expect(script).not.toContain('copy_skill_if_present apps/skills/core/plannotator-review "$CODEX_SKILLS_DIR"');
-    // Extras are not default-installed anywhere except Kiro.
+    // Extras are not default-installed anywhere.
     expect(script).not.toContain("copy_skill_if_present apps/skills/extra/plannotator-compound");
     expect(script).not.toContain('cp -r apps/skills/* "$CLAUDE_SKILLS_DIR/"');
     // Missing git is a hard failure with an actionable message, not a silent
@@ -144,7 +141,7 @@ describe("install.sh", () => {
     // Extras install is delegated to the skills CLI with the terminal attached.
     expect(script).toContain("npx skills add backnotprop/plannotator/apps/skills/extra --global < /dev/tty");
     // Flip pass unlocks INSTALLED copies only (repo sources always stay
-    // locked) and flips the Codex sidecar to match.
+    // locked) and flips the shared-agent sidecar to match.
     expect(script).toContain("grep -v '^disable-model-invocation: true$'");
     expect(script).toContain("allow_implicit_invocation: true");
   });
@@ -152,8 +149,8 @@ describe("install.sh", () => {
   test("old pinned tags soft-skip core skills without aborting command installs", () => {
     // Regression guard: a --version tag that predates apps/skills/core must
     // skip the core-skill copy with an accurate message — NOT abort the whole
-    // sparse-checkout subshell, which would also skip the OpenCode/Gemini
-    // command installs that follow it (and ps1/cmd would diverge).
+    // sparse-checkout subshell, which would also skip the OpenCode command
+    // installs that follow it (and ps1/cmd would diverge).
     expect(script).toContain("predates the core/extra skill layout");
     expect(script).not.toMatch(/^\s*\[ -d "apps\/skills\/core" \]\s*$/m);
     // Subshell failure (clone/network) gets its own honest message rather
@@ -161,80 +158,12 @@ describe("install.sh", () => {
     expect(script).toContain("network or git error");
   });
 
-  test("installs OpenCode and Gemini commands from the checkout, not heredocs", () => {
-    // Command stubs/TOMLs are copied verbatim from the sparse checkout.
+  test("installs OpenCode commands from the checkout, not heredocs", () => {
+    // Command stubs are copied verbatim from the sparse checkout.
     expect(script).toContain("copy_commands_if_present");
     expect(script).toContain('copy_commands_if_present apps/opencode-plugin/commands "$OPENCODE_COMMANDS_DIR"');
-    expect(script).toContain('copy_commands_if_present apps/gemini/commands "$GEMINI_COMMANDS_DIR"');
-    // Gemini commands only when ~/.gemini exists.
-    expect(script).toContain('if [ -d "$HOME/.gemini" ]; then');
     // The old command heredocs must be gone entirely.
     expect(script).not.toContain("COMMAND_EOF");
-    expect(script).not.toContain("GEMINI_CMD_EOF");
-  });
-
-  test("auto-installs Kiro skills when ~/.kiro is detected (no flag)", () => {
-    // Auto-detected like Codex/Gemini — never gated behind a bespoke flag.
-    expect(script).toContain("kiro_available=0");
-    expect(script).toContain('[ -d "$HOME/.kiro" ]');
-    expect(script).toContain("KIRO_SKILLS_DIR");
-    expect(script).toContain("$HOME/.kiro/skills");
-    expect(script).toContain('if [ "$kiro_available" -eq 1 ]');
-    // Kiro-specific skills (origin baked in) come from apps/kiro-cli/skills.
-    expect(script).toContain('copy_skill_if_present apps/kiro-cli/skills/plannotator-review "$KIRO_SKILLS_DIR"');
-    expect(script).toContain('copy_skill_if_present apps/kiro-cli/skills/plannotator-annotate "$KIRO_SKILLS_DIR"');
-    // The knowledge skill has no Kiro-specific form either, so Kiro gets the
-    // same single-sourced core copy as Claude and ~/.agents. Kiro shipping
-    // only the action skills and no CLI reference was the #1377 install-reach
-    // gap; assert the copy line so the scope cannot be dropped again.
-    expect(script).toContain('copy_skill_if_present apps/skills/core/plannotator "$KIRO_SKILLS_DIR"');
-    // The two extras Kiro keeps receiving come from apps/skills/extra.
-    expect(script).toContain('copy_skill_if_present apps/skills/extra/plannotator-setup-goal "$KIRO_SKILLS_DIR"');
-    expect(script).toContain('copy_skill_if_present apps/skills/extra/plannotator-visual-explainer "$KIRO_SKILLS_DIR"');
-    // sparse-checkout fetches apps/kiro-cli (skills + agent example).
-    expect(script).toContain("git sparse-checkout set apps/skills apps/kiro-cli apps/vibe");
-    // The installer also writes the example custom agent to ~/.kiro/agents.
-    expect(script).toContain('cp apps/kiro-cli/agents/plannotator.json "$HOME/.kiro/agents/plannotator.json"');
-    // Parity: no bespoke flag, like every other agent.
-    expect(script).not.toContain("--kiro");
-    expect(script).not.toContain("INSTALL_KIRO");
-  });
-
-  test("auto-installs Vibe skills + managed hook when ~/.vibe is detected (no flag)", () => {
-    // Vibe (Mistral's TUI coding agent) is auto-detected like Kiro/Codex:
-    // PATH executable or an existing ~/.vibe, never gated behind a bespoke flag.
-    expect(script).toContain("vibe_available=0");
-    expect(script).toContain('[ -d "$VIBE_HOME" ]');
-    expect(script).toContain('VIBE_HOME="${VIBE_HOME:-$HOME/.vibe}"');
-    expect(script).toContain("VIBE_SKILLS_DIR");
-    expect(script).toContain('$VIBE_HOME/skills');
-    expect(script).toContain('if [ "$vibe_available" -eq 1 ]');
-    // Vibe-specific skills (origin baked in) come from apps/vibe/skills.
-    for (const skill of ["plannotator-review", "plannotator-annotate", "plannotator-last"]) {
-      expect(script).toContain(`copy_skill_if_present apps/vibe/skills/${skill} "$VIBE_SKILLS_DIR"`);
-    }
-    // The knowledge skill is agent-agnostic and single-sourced in apps/skills/core.
-    expect(script).toContain('copy_skill_if_present apps/skills/core/plannotator "$VIBE_SKILLS_DIR"');
-    // So is /plannotator-inbox, which needs no origin label.
-    expect(script).toContain('copy_skill_if_present apps/skills/core/plannotator-inbox "$VIBE_SKILLS_DIR"');
-    // sparse-checkout fetches apps/vibe (skills + hook templates).
-    expect(script).toContain("git sparse-checkout set apps/skills apps/kiro-cli apps/vibe");
-    // Managed marker block so the hook coexists with the user's own hooks.toml.
-    expect(script).toContain('VIBE_MANAGED_START="# >>> plannotator-managed-vibe-hooks (managed; do not edit) >>>"');
-    expect(script).toContain('VIBE_MANAGED_END="# <<< plannotator-managed-vibe-hooks <<<"');
-    // The hook command is argv-only with the absolute binary path (no env
-    // prefix) so it survives both shell and shell-free hook executors, and
-    // origin detection happens in the binary from the hook payload.
-    expect(script).toContain('command = "${PLANNOTATOR_BIN}"');
-    expect(script).toContain("PLANNOTATOR_BIN=\"${INSTALL_DIR}/plannotator\"");
-    expect(script).toContain('match = "exit_plan_mode"');
-    // Hooks are stable in Vibe 2.25+; no config.toml flag is written, and the
-    // installer must not touch $VIBE_HOME/config.toml at all.
-    expect(script).not.toContain("enable_experimental_hooks");
-    expect(script).not.toContain('VIBE_CONFIG="$VIBE_HOME/config.toml"');
-    // Parity: no bespoke flag, like every other agent.
-    expect(script).not.toContain("--vibe-only");
-    expect(script).not.toContain("INSTALL_VIBE");
   });
 
   test("aggressively cleans up deprecated commands and stale skills on upgrade", () => {
@@ -246,18 +175,12 @@ describe("install.sh", () => {
     // The legacy ~/.agents cleanup block (review/annotate/last) is GONE —
     // core skills now intentionally live in ~/.agents/skills.
     expect(script).not.toContain("LEGACY_AGENTS_SKILLS_DIR");
-    // Codex cleanup now also removes the per-command skills, plus the
-    // previously-stale compound/setup-goal.
-    expect(script).toContain("STALE_CODEX_SKILLS_DIR");
-    expect(script).toContain(
-      "for skill in plannotator-review plannotator-annotate plannotator-last plannotator-compound plannotator-setup-goal; do",
-    );
     // Extras stop being managed in the Claude and shared-agent scopes.
     expect(script).toContain("plannotator-compound plannotator-setup-goal plannotator-visual-explainer");
     // plannotator-archive no longer ships as a skill — a stale installed copy
-    // is removed unconditionally from every skill scope.
+    // is removed from every skill scope.
     expect(script).toContain(
-      'for scope in "$CLAUDE_SKILLS_DIR" "$AGENTS_SKILLS_DIR" "$KIRO_SKILLS_DIR" "$VIBE_SKILLS_DIR"; do',
+      'for scope in "$CLAUDE_SKILLS_DIR" "$AGENTS_SKILLS_DIR"; do',
     );
     expect(script).toContain('rm -rf "$scope/plannotator-archive"');
     // The removed /plannotator-archive OpenCode command stub is swept too.
@@ -267,41 +190,6 @@ describe("install.sh", () => {
   test("suggests installing extras via npx skills add", () => {
     expect(script).toContain("Optional skills (compound planning, setup-goal, visual explainer):");
     expect(script).toContain("npx skills add backnotprop/plannotator/apps/skills/extra --global");
-  });
-
-  test("no longer installs core skills to ~/.codex/skills", () => {
-    // Codex skills install removed; ~/.codex/skills only appears in cleanup.
-    expect(script).not.toContain('mkdir -p "$CODEX_SKILLS_DIR"');
-    expect(script).not.toContain('copy_skill_if_present apps/skills/core/plannotator-review "$CODEX_SKILLS_DIR"');
-  });
-
-  test("enables Codex hooks only after Stop hook setup succeeds", () => {
-    const hookSetupIndex = script.indexOf('if [ ! -f "$CODEX_HOOKS" ]; then');
-    const enableConfigIndex = script.indexOf('enable_codex_hooks_config || true');
-    expect(hookSetupIndex).toBeGreaterThan(0);
-    expect(enableConfigIndex).toBeGreaterThan(hookSetupIndex);
-    expect(script).toContain('codex_hook_configured=1');
-    expect(script).toContain('if [ "$codex_hook_configured" -eq 1 ]; then');
-    expect(script).toContain("Leaving Codex hook support unchanged");
-  });
-
-  test("does not treat a skills-only Codex home as configured", () => {
-    expect(script).toContain("codex_home_has_user_config");
-    expect(script).toContain("! -name skills");
-    expect(script).toContain("codex_available=1");
-    expect(script).not.toContain('if command -v codex >/dev/null 2>&1 || [ -d "$HOME/.codex" ]; then');
-  });
-
-  test("does not rewrite inline Codex features config", () => {
-    expect(script).toContain("Codex config uses inline features");
-    expect(script).toContain('grep -Eq \'^[[:space:]]*features[[:space:]]*=\' "$CODEX_CONFIG"');
-  });
-
-  test("preserves custom Codex Plannotator hook wrappers", () => {
-    expect(script).toContain("isManagedPlannotatorCommand");
-    expect(script).toContain("foundCustomPlannotatorHook");
-    expect(script).toContain("Existing custom Codex Plannotator hook found");
-    expect(script).not.toContain('hook.command.includes("plannotator")) {\n      hook.command = command;');
   });
 
   test("Pi extension update keeps no settings.json package-skills filter", () => {
@@ -326,8 +214,8 @@ describe("install.sh", () => {
 
   test("hook/config writing happens before the git hard-fail", () => {
     // Missing git hard-fails the install, but the hook/config writes that
-    // don't need git (plugin hooks, Codex hook config) must already have run
-    // by then so a re-run after installing git completes the rest.
+    // don't need git (plugin hooks) must already have run by then so a re-run
+    // after installing git completes the rest.
     // The gate is now conditional: git is a hard requirement only when the
     // skills checkout actually runs (see the --skip-skills test below), but
     // the ordering invariant this test guards is unchanged.
@@ -336,15 +224,8 @@ describe("install.sh", () => {
     );
     expect(gitGateIndex).toBeGreaterThan(0);
     const pluginHooksIndex = script.indexOf('repair_legacy_plugin_hooks "$PLUGIN_MARKETPLACE_DIR" || true');
-    const codexHooksIndex = script.indexOf('enable_codex_hooks_config || true');
     expect(pluginHooksIndex).toBeGreaterThan(0);
     expect(pluginHooksIndex).toBeLessThan(gitGateIndex);
-    expect(codexHooksIndex).toBeGreaterThan(0);
-    expect(codexHooksIndex).toBeLessThan(gitGateIndex);
-    // Gemini policy/settings config heredocs are still present (after the
-    // skills section, unaffected by the git requirement once git exists).
-    expect(script).toContain('GEMINI_POLICY_EOF');
-    expect(script).toContain('GEMINI_SETTINGS_EOF');
   });
 
   test("--minimal flag and PLANNOTATOR_MINIMAL env var are documented", () => {
@@ -377,9 +258,6 @@ describe("install.sh", () => {
     const semInstall = script.indexOf("install_sem_sidecar\n");
     const agentTerminal = script.indexOf("install_agent_terminal_runtime\n");
     const callFlow = script.indexOf("install_call_flow_runtime\n");
-    const codexBlock = script.indexOf(
-      "# --- Codex CLI / Desktop app support",
-    );
     const skillsCheckout = script.indexOf(
       "git clone --depth 1 --filter=blob:none --sparse",
     );
@@ -390,7 +268,6 @@ describe("install.sh", () => {
     expect(semInstall).toBeGreaterThan(minimalExit);
     expect(agentTerminal).toBeGreaterThan(minimalExit);
     expect(callFlow).toBeGreaterThan(minimalExit);
-    expect(codexBlock).toBeGreaterThan(minimalExit);
     expect(skillsCheckout).toBeGreaterThan(minimalExit);
     // The gate really exits rather than falling through.
     const gateBody = script.slice(minimalExit, minimalExit + 400);
@@ -406,22 +283,19 @@ describe("install.sh", () => {
   });
 
   test("per-agent skip opt-outs: flags, env vars, config keys, precedence (#1178)", () => {
-    // Flags exist for Codex plus the two integrations where the mechanism
-    // generalizes identically (detect -> write): Gemini and Kiro. OpenCode
-    // gets a plain do-not-write switch (no detection leg).
-    for (const flag of ["--skip-codex)", "--skip-gemini)", "--skip-kiro)", "--skip-vibe)", "--skip-opencode)"]) {
+    // OpenCode gets a plain do-not-write switch; skills and claudePlugin ride
+    // the same mechanism for their own opt-outs.
+    for (const flag of ["--skip-opencode)", "--skip-skills)", "--skip-claude-plugin)"]) {
       expect(script).toContain(flag);
     }
-    // Env vars follow the existing PLANNOTATOR_SKIP_*_INSTALL naming.
-    expect(script).toContain("PLANNOTATOR_SKIP_CODEX_INSTALL");
-    expect(script).toContain("PLANNOTATOR_SKIP_GEMINI_INSTALL");
-    expect(script).toContain("PLANNOTATOR_SKIP_KIRO_INSTALL");
-    expect(script).toContain("PLANNOTATOR_SKIP_VIBE_INSTALL");
+    // Env vars follow the existing PLANNOTATOR_SKIP_* naming.
     expect(script).toContain("PLANNOTATOR_SKIP_OPENCODE_INSTALL");
+    expect(script).toContain("PLANNOTATOR_SKIP_SKILLS_INSTALL");
+    expect(script).toContain("PLANNOTATOR_SKIP_CLAUDE_PLUGIN_UPDATE");
     // Config layer (M2): the skipInstall OBJECT is extracted first (awk,
     // character-indexed so single-line JSON works too) and per-agent keys
-    // are matched only inside it - a "codex": true under some OTHER key can
-    // never opt anyone out, and an explicit false inside skipInstall is a
+    // are matched only inside it - an "opencode": true under some OTHER key
+    // can never opt anyone out, and an explicit false inside skipInstall is a
     // veto rather than being ignored.
     expect(script).toContain('index(substr(buf, pos), "\\"skipInstall\\"")');
     // Token check: a string VALUE containing "skipInstall" cannot anchor the
@@ -434,46 +308,35 @@ describe("install.sh", () => {
     expect(script).toContain("continue # explicit false is a veto, never a skip");
     // skills rides the same loop: not an agent, but the same three layers
     // and the same skipInstall key region.
-    expect(script).toContain("for _agent in codex gemini kiro vibe opencode qwen skills claudePlugin; do");
-    // The old whole-file grep form is gone.
-    expect(script).not.toContain('grep -q \'"codex"[[:space:]]*:[[:space:]]*true\' "$_config_dir/config.json"');
+    expect(script).toContain("for _agent in opencode skills claudePlugin; do");
     // Precedence by textual layering (later assignment wins): config grep,
     // then env-var case, then flag check — mirroring verifyAttestation.
-    const configIdx = script.indexOf('skip_codex_source="config skipInstall.codex"');
-    const envIdx = script.indexOf('skip_codex_source="PLANNOTATOR_SKIP_CODEX_INSTALL"');
-    const flagIdx = script.indexOf('skip_codex_source="--skip-codex"');
+    const configIdx = script.indexOf('skip_opencode_source="config skipInstall.opencode"');
+    const envIdx = script.indexOf('skip_opencode_source="PLANNOTATOR_SKIP_OPENCODE_INSTALL"');
+    const flagIdx = script.indexOf('skip_opencode_source="--skip-opencode"');
     expect(configIdx).toBeGreaterThan(0);
     expect(envIdx).toBeGreaterThan(configIdx);
     expect(flagIdx).toBeGreaterThan(envIdx);
     // The env var can also force-disable a config-enabled skip (env > config).
-    expect(script).toContain('case "${PLANNOTATOR_SKIP_CODEX_INSTALL:-}" in');
+    expect(script).toContain('case "${PLANNOTATOR_SKIP_OPENCODE_INSTALL:-}" in');
   });
 
   test("skip states are reported honestly and never remove existing integrations (#1178)", () => {
-    // Three distinct Codex states, never conflated: detected-skipped vs not
-    // detected vs installed. "Not detected" is now conveyed by omitting the
-    // CODEX USERS closing section entirely (see the functional closing-summary
-    // tests below), never by a skip message.
-    expect(script).toContain('Codex: detected, skipped (${skip_codex_source}).');
-    expect(script).not.toContain("Codex was not detected.");
-    expect(script).toContain("Codex was detected, but the integration was skipped");
-    // When a previous install wired Codex, the skip run says it left the
-    // existing integration alone.
-    expect(script).toContain("An existing Codex integration at ${CODEX_DIR}/hooks.json was left untouched.");
-    // Same honest reporting for the mirrored opt-outs.
-    expect(script).toContain('Gemini: detected, skipped (${skip_gemini_source}).');
-    expect(script).toContain("Kiro was detected, but the integration was skipped");
-    // Skip means do-not-write, never remove: even plannotator's own
-    // stale-skill cleanup in the skipped agent's home is suspended.
-    // (A skills opt-out suspends the same sweep, hence the || arm.)
+    // A skip is reported with its resolved source, and the skip branch says
+    // what was (not) touched — never a silent no-op.
+    expect(script).toContain('OpenCode: integration skipped (${skip_opencode_source}).');
+    expect(script).toContain('Skills: skipped (${skip_skills_source}).');
+    expect(script).toContain("No command stubs were written and OpenCode's plugin cache was left alone.");
+    // Skip means do-not-write, never remove: even plannotator's own stale
+    // command sweep is suspended by an OpenCode opt-out (and a skills
+    // opt-out suspends it for the same reason).
     expect(script).toContain(
-      'if [ "$skip_codex" -eq 1 ] || [ "$skip_skills" -eq 1 ]; then\n        continue',
+      'if [ "$skip_opencode" -eq 0 ] && [ "$skip_skills" -eq 0 ] && [ -f "$OPENCODE_COMMANDS_DIR/plannotator-archive.md" ]; then',
     );
-    expect(script).toContain('[ "$scope" = "$KIRO_SKILLS_DIR" ] && [ "$skip_kiro" -eq 1 ]');
     // The skip branch must not gain any removal command.
     const skipBlock = script.slice(
-      script.indexOf('if [ "$codex_available" -eq 1 ] && [ "$skip_codex" -eq 1 ]; then'),
-      script.indexOf('elif [ "$codex_available" -eq 1 ]; then'),
+      script.indexOf('if [ "$skip_opencode" -eq 1 ]; then'),
+      script.indexOf('elif [ "$skip_skills" -eq 1 ]; then'),
     );
     expect(skipBlock.length).toBeGreaterThan(0);
     expect(skipBlock).not.toContain("rm ");
@@ -492,15 +355,15 @@ describe("install.sh", () => {
     // token check and explicit-false veto apply to skipInstall.skills.
     expect(script).toContain('skip_skills_source="config skipInstall.skills"');
     // Precedence by textual layering (later assignment wins): config, then
-    // env var, then flag - matching skip_codex.
+    // env var, then flag - matching skip_opencode.
     const configIdx = script.indexOf('skip_skills_source="config skipInstall.skills"');
     const envIdx = script.indexOf('skip_skills_source="PLANNOTATOR_SKIP_SKILLS_INSTALL"');
     const flagIdx = script.indexOf('skip_skills_source="--skip-skills"');
     expect(configIdx).toBeGreaterThan(0);
     expect(envIdx).toBeGreaterThan(configIdx);
     expect(flagIdx).toBeGreaterThan(envIdx);
-    // Advertised in the usage text alongside the per-agent opt-outs.
-    expect(script).toContain("[--skip-kiro] [--skip-vibe] [--skip-opencode] [--skip-skills]");
+    // Advertised in the usage text alongside the other opt-outs.
+    expect(script).toContain("[--minimal | --no-minimal] [--skip-opencode] [--skip-skills]");
     expect(script).toContain("PLANNOTATOR_SKIP_SKILLS_INSTALL; config key:");
   });
 
@@ -610,14 +473,14 @@ describe("install.ps1", () => {
   test("installs core skills via git sparse-checkout to claude + agents", () => {
     expect(script).toContain("git clone --depth 1 --filter=blob:none --sparse");
     expect(script).toContain(
-      "git sparse-checkout set apps/skills apps/kiro-cli apps/vibe apps/opencode-plugin/commands apps/gemini/commands",
+      "git sparse-checkout set apps/skills apps/opencode-plugin/commands",
     );
     expect(script).toContain("claudeSkillsDir");
     expect(script).toContain("agentsSkillsDir");
     expect(script).toContain("$env:USERPROFILE\\.agents\\skills");
     expect(script).toContain("Copy-SkillIfPresent");
     // Claude Code reads injection-form skills (apps\skills\claude); the
-    // shared-agent (Codex) scope reads the prose skills (apps\skills\core).
+    // shared-agent (~/.agents) scope reads the prose skills (apps\skills\core).
     // Per-skill via Copy-SkillIfPresent so re-runs replace rather than nest
     // (PowerShell's Copy-Item -Recurse into an existing dir nests).
     expect(script).toContain('Copy-SkillIfPresent "apps\\skills\\claude\\$skill" $claudeSkillsDir');
@@ -629,19 +492,14 @@ describe("install.ps1", () => {
     expect(script).toContain('foreach ($skill in @("plannotator-review", "plannotator-annotate", "plannotator-last", "plannotator-inbox"))');
     // Copy-SkillIfPresent pre-removes the destination to avoid nesting on upgrade.
     expect(script).toContain("Remove-Item -Recurse -Force -LiteralPath $dest");
-    // No Codex skills install.
-    expect(script).not.toContain('Copy-SkillIfPresent "apps\\skills\\plannotator-review" $codexSkillsDir');
     // Missing git is a hard failure with an actionable message (parity with sh).
     expect(script).toContain("Error: git is required to install Plannotator's skills and slash commands.");
     expect(script).toContain("Install git, then run this installer again.");
     expect(script).toContain("checkoutFailed");
   });
 
-  test("installs OpenCode and Gemini commands from the checkout", () => {
+  test("installs OpenCode commands from the checkout", () => {
     expect(script).toContain('Copy-Item -Force "apps\\opencode-plugin\\commands\\*.md" $opencodeCommandsDir');
-    expect(script).toContain('Copy-Item -Force "apps\\gemini\\commands\\*.toml" $geminiCommandsDir');
-    // No Gemini command heredocs remain.
-    expect(script).not.toContain("GEMINI_CMD_EOF");
   });
 
   test("aggressively cleans up deprecated commands and stale skills on upgrade", () => {
@@ -651,39 +509,18 @@ describe("install.ps1", () => {
     expect(script).toContain("(Test-Path $skillPath) -and (Test-Path $cmdPath)");
     // Legacy ~/.agents review/annotate/last cleanup is gone.
     expect(script).not.toContain("legacyAgentsSkillsDir");
-    // Codex cleanup includes the per-command skills now.
-    expect(script).toContain("staleCodexSkillsDir");
-    expect(script).toContain('"plannotator-review", "plannotator-annotate", "plannotator-last", "plannotator-compound", "plannotator-setup-goal"');
     // Extras removed from Claude + shared-agent scopes, once, via the ledger.
     expect(script).toContain('"plannotator-compound", "plannotator-setup-goal", "plannotator-visual-explainer"');
     expect(script).toContain("2026-06-extras-default-install-removed");
     expect(script).toContain("if (-not (Test-Path $extrasMigration))");
     // plannotator-archive no longer ships as a skill — a stale installed copy
-    // is removed unconditionally from every skill scope.
+    // is removed from every skill scope.
     expect(script).toContain(
-      'foreach ($scope in @($claudeSkillsDir, $agentsSkillsDir, "$env:USERPROFILE\\.kiro\\skills"))',
+      'foreach ($scope in @($claudeSkillsDir, $agentsSkillsDir))',
     );
     expect(script).toContain('Join-Path $scope "plannotator-archive"');
     // The removed /plannotator-archive OpenCode command stub is swept too.
     expect(script).toContain('Removing stale plannotator-archive command');
-  });
-
-  test("detects Vibe only by its home and writes nothing under it", () => {
-    // A `vibe` binary on PATH alone must not count as Vibe detected
-    // (install.sh parity).
-    expect(script).toContain("$vibeAvailable = [bool](Test-Path $vibeHome)");
-    expect(script).not.toContain("Get-Command vibe");
-    // The apps/vibe skills use a POSIX env-prefix that Vibe's PowerShell
-    // fallback cannot run, so Windows never copies them (or anything else)
-    // into the Vibe home.
-    expect(script).not.toContain("apps\\vibe\\skills\\");
-    expect(script).not.toContain('Join-Path $vibeHome "skills"');
-  });
-
-  test("does not treat a skills-only Codex home as configured", () => {
-    expect(script).toContain("codexHomeHasUserConfig");
-    expect(script).toContain('$_.Name -ne "skills"');
-    expect(script).toContain("$codexAvailable");
   });
 
   test("suggests installing extras via npx skills add", () => {
@@ -736,56 +573,49 @@ describe("install.ps1", () => {
   });
 
   test("per-agent skip opt-outs: switches, env vars, config keys, precedence (#1178)", () => {
-    expect(script).toContain("[switch]$SkipCodex");
-    expect(script).toContain("[switch]$SkipGemini");
-    expect(script).toContain("[switch]$SkipKiro");
-    expect(script).toContain("[switch]$SkipVibe");
     expect(script).toContain("[switch]$SkipOpencode");
-    expect(script).toContain("PLANNOTATOR_SKIP_CODEX_INSTALL");
-    expect(script).toContain("PLANNOTATOR_SKIP_GEMINI_INSTALL");
-    expect(script).toContain("PLANNOTATOR_SKIP_KIRO_INSTALL");
-    expect(script).toContain("PLANNOTATOR_SKIP_VIBE_INSTALL");
+    expect(script).toContain("[switch]$SkipSkills");
+    expect(script).toContain("[switch]$SkipClaudePlugin");
     expect(script).toContain("PLANNOTATOR_SKIP_OPENCODE_INSTALL");
+    expect(script).toContain("PLANNOTATOR_SKIP_SKILLS_INSTALL");
+    expect(script).toContain("PLANNOTATOR_SKIP_CLAUDE_PLUGIN_UPDATE");
     // Config layer parses the real nested JSON (strict boolean check, like
     // verifyAttestation).
-    expect(script).toContain("$cfg.skipInstall.codex -is [bool]");
-    expect(script).toContain("$cfg.skipInstall.gemini -is [bool]");
-    expect(script).toContain("$cfg.skipInstall.kiro -is [bool]");
-    expect(script).toContain("$cfg.skipInstall.vibe -is [bool]");
     expect(script).toContain("$cfg.skipInstall.opencode -is [bool]");
+    expect(script).toContain("$cfg.skipInstall.skills -is [bool]");
+    expect(script).toContain("$cfg.skipInstall.claudePlugin -is [bool]");
     // Precedence by textual layering (later assignment wins): config, then
     // env var, then switch.
-    const configIdx = script.indexOf('$skipCodexSource = "config skipInstall.codex"');
-    const envIdx = script.indexOf('$skipCodexSource = "PLANNOTATOR_SKIP_CODEX_INSTALL"');
-    const flagIdx = script.indexOf('$skipCodexSource = "-SkipCodex"');
+    const configIdx = script.indexOf('$skipOpencodeSource = "config skipInstall.opencode"');
+    const envIdx = script.indexOf('$skipOpencodeSource = "PLANNOTATOR_SKIP_OPENCODE_INSTALL"');
+    const flagIdx = script.indexOf('$skipOpencodeSource = "-SkipOpencode"');
     expect(configIdx).toBeGreaterThan(0);
     expect(envIdx).toBeGreaterThan(configIdx);
     expect(flagIdx).toBeGreaterThan(envIdx);
   });
 
   test("skip states are reported honestly and never remove existing integrations (#1178)", () => {
-    // Three distinct Codex states (ps1 never writes the Codex home; the
-    // installed state prints manual instructions instead, and the skip
-    // wording says exactly that - M4).
-    expect(script).toContain('Codex: detected, skipped ($skipCodexSource)."');
-    expect(script).toContain('Write-Host "Codex detected."');
-    expect(script).toContain("The Windows installer only prints manual Codex setup instructions");
-    // M4: the existing-hook note requires plannotator CONTENT in hooks.json,
-    // never mere file existence (the file may hold only the user's own
-    // hooks), and its wording matches what this platform actually does.
-    expect(script).toContain('$codexHooksContent -match "plannotator"');
-    expect(script).toContain("Your existing Codex Stop hook at $codexDir\\hooks.json is unaffected.");
-    expect(script).not.toContain("An existing Codex integration at $codexDir\\hooks.json was left untouched.");
-    expect(script).toContain('Gemini: detected, skipped ($skipGeminiSource)."');
-    expect(script).toContain("Kiro was detected, but the integration was skipped");
-    // Skip suspends even plannotator's own cleanup inside the skipped
-    // agent's home (do-not-write, never remove).
-    // (A skills opt-out suspends the same sweep, hence the -or arm.)
-    expect(script).toContain("if ($skipCodexResolved -or $skipSkillsResolved) { continue }");
-    expect(script).toContain('if ($skipKiroResolved -and ($scope -eq "$env:USERPROFILE\\.kiro\\skills")) { continue }');
-    // Gated install sites for the mirrored opt-outs.
-    expect(script).toContain("-not $skipKiroResolved");
-    expect(script).toContain("-not $skipGeminiResolved");
+    // A skip is reported with its resolved source, and the skip branch says
+    // what was (not) touched — never a silent no-op.
+    expect(script).toContain('Write-Host "OpenCode: integration skipped ($skipOpencodeSource)."');
+    expect(script).toContain('Write-Host "Skills: skipped ($skipSkillsSource)."');
+    expect(script).toContain("No command stubs were written and OpenCode's plugin cache was left alone.");
+    // Skip suspends even plannotator's own cleanup (do-not-write, never
+    // remove): the stale-stub sweep needs BOTH opt-outs clear.
+    expect(script).toContain(
+      "(-not $skipOpencodeResolved) -and (-not $skipSkillsResolved) -and (Test-Path $staleOpencodeArchive)",
+    );
+    // The skip branch must not gain any removal command.
+    const skipBlock = script.slice(
+      script.indexOf("if ($skipOpencodeResolved) {"),
+      script.indexOf("} elseif ($skipSkillsResolved) {"),
+    );
+    expect(skipBlock.length).toBeGreaterThan(0);
+    expect(skipBlock).not.toContain("Remove-Item");
+    expect(skipBlock).not.toContain("New-Item");
+    expect(skipBlock).not.toContain("Set-Content");
+    // Gated install site for the opt-out.
+    expect(script).toContain('if ((-not $skipOpencodeResolved) -and (Test-Path "apps\\opencode-plugin\\commands")) {');
   });
 
   test("-SkipSkills: switch, env var, config key, precedence (#1201)", () => {
@@ -793,7 +623,7 @@ describe("install.ps1", () => {
     expect(script).toContain("PLANNOTATOR_SKIP_SKILLS_INSTALL");
     expect(script).toContain("$cfg.skipInstall.skills -is [bool]");
     // Precedence by textual layering (later assignment wins): config, then
-    // env var, then switch - matching skipCodex.
+    // env var, then switch - matching skipOpencode.
     const configIdx = script.indexOf('$skipSkillsSource = "config skipInstall.skills"');
     const envIdx = script.indexOf('$skipSkillsSource = "PLANNOTATOR_SKIP_SKILLS_INSTALL"');
     const flagIdx = script.indexOf('$skipSkillsSource = "-SkipSkills"');
@@ -883,85 +713,54 @@ describe("install.cmd", () => {
   test("installs core skills via git sparse-checkout to claude + agents", () => {
     expect(script).toContain("git clone --depth 1 --filter=blob:none --sparse");
     expect(script).toContain(
-      "git sparse-checkout set apps/skills apps/kiro-cli apps/vibe apps/opencode-plugin/commands apps/gemini/commands",
+      "git sparse-checkout set apps/skills apps/opencode-plugin/commands",
     );
     expect(script).toContain("CLAUDE_SKILLS_DIR");
     expect(script).toContain("AGENTS_SKILLS_DIR");
     expect(script).toContain("%USERPROFILE%\\.agents\\skills");
     // Claude Code reads injection-form skills (apps\skills\claude); the shared
-    // agent (Codex) scope reads the prose skills (apps\skills\core).
+    // agent (~/.agents) scope reads the prose skills (apps\skills\core).
     expect(script).toContain('xcopy /s /i /y /q "apps\\skills\\claude\\%%S" "!CLAUDE_SKILLS_DIR!\\%%S\\"');
     expect(script).toContain('xcopy /s /i /y /q "apps\\skills\\core\\%%S" "!AGENTS_SKILLS_DIR!\\%%S\\"');
     expect(script).toContain("for %%S in (plannotator-review plannotator-annotate plannotator-last plannotator-inbox) do");
     // Knowledge skill: single-sourced from core into both scopes.
     expect(script).toContain("for %%S in (plannotator-review plannotator-annotate plannotator-last plannotator-inbox plannotator) do");
     expect(script).toContain('xcopy /s /i /y /q "apps\\skills\\core\\plannotator" "!CLAUDE_SKILLS_DIR!\\plannotator\\"');
-    // No Codex skills install — only the cleanup loop references CODEX skills.
-    expect(script).not.toContain('xcopy /s /i /y /q "apps\\skills\\core\\%%S" "!CODEX_SKILLS_DIR!\\%%S\\"');
     // Missing git is a hard failure with an actionable message (parity with sh/ps1).
     expect(script).toContain("Error: git is required to install Plannotator's skills and slash commands.");
     expect(script).toContain("Install git, then run this installer again.");
     expect(script).toContain("CHECKOUT_FAILED");
   });
 
-  test("installs OpenCode and Gemini commands from the checkout", () => {
+  test("installs OpenCode commands from the checkout", () => {
     expect(script).toContain('xcopy /y /q "apps\\opencode-plugin\\commands\\*.md" "!OPENCODE_COMMANDS_DIR!\\"');
-    expect(script).toContain('xcopy /y /q "apps\\gemini\\commands\\*.toml" "!GEMINI_COMMANDS_DIR!\\"');
   });
 
   test("aggressively cleans up deprecated commands and stale skills on upgrade", () => {
     expect(script).toContain("CLAUDE_COMMANDS_DIR");
     // Command cleanup is guarded on the replacement skill existing and runs
-    // after the skill install (parity with install.sh / install.ps1).
-    expect(script).toContain('if exist "!CLAUDE_SKILLS_DIR!\\%%C" if exist "!CLAUDE_COMMANDS_DIR!\\%%C.md"');
+    // after the skill install (parity with install.sh / install.ps1); a
+    // skills opt-out removes nothing either.
+    expect(script).toContain('if "!SKIP_SKILLS!"=="0" if exist "!CLAUDE_SKILLS_DIR!\\%%C" if exist "!CLAUDE_COMMANDS_DIR!\\%%C.md"');
     // Legacy ~/.agents review/annotate/last cleanup is gone.
     expect(script).not.toContain("LEGACY_AGENTS_SKILLS_DIR");
-    // Codex cleanup includes the per-command skills now.
-    expect(script).toContain("STALE_CODEX_SKILLS_DIR");
-    expect(script).toContain("for %%S in (plannotator-review plannotator-annotate plannotator-last plannotator-compound plannotator-setup-goal) do");
     // Extras removed from Claude + shared-agent scopes, once, via the ledger.
     expect(script).toContain("for %%S in (plannotator-compound plannotator-setup-goal plannotator-visual-explainer) do");
     expect(script).toContain("2026-06-extras-default-install-removed");
     expect(script).toContain('if not exist "!EXTRAS_MIGRATION!"');
     // plannotator-archive no longer ships as a skill — a stale installed copy
-    // is removed unconditionally from every skill scope.
+    // is removed from every skill scope.
     expect(script).toContain(
-      'for %%D in ("!CLAUDE_SKILLS_DIR!" "!AGENTS_SKILLS_DIR!" "!KIRO_SKILLS_DIR!") do',
+      'for %%D in ("!CLAUDE_SKILLS_DIR!" "!AGENTS_SKILLS_DIR!") do',
     );
     expect(script).toContain('rmdir /s /q "%%~D\\plannotator-archive"');
     // The removed /plannotator-archive OpenCode command stub is swept too.
     expect(script).toContain('del /q "!OPENCODE_COMMANDS_DIR!\\plannotator-archive.md"');
   });
 
-  test("detects Vibe only by its home and writes nothing under it", () => {
-    // A vibe executable on PATH alone must not count as Vibe detected
-    // (install.sh parity).
-    expect(script).toContain('if exist "!VIBE_HOME!" set "VIBE_AVAILABLE=1"');
-    expect(script).not.toContain("where vibe");
-    // Windows never copies the POSIX-only apps/vibe skills into the Vibe home.
-    expect(script).not.toContain("apps\\vibe\\skills\\");
-    expect(script).not.toContain("VIBE_SKILLS_DIR");
-  });
-
-  test("does not treat a skills-only Codex home as configured", () => {
-    expect(script).toContain("CODEX_AVAILABLE");
-    expect(script).toContain('if /i not "%%C"=="skills"');
-  });
-
   test("suggests installing extras via npx skills add", () => {
     expect(script).toContain("Optional skills");
     expect(script).toContain("npx skills add backnotprop/plannotator/apps/skills/extra --global");
-  });
-
-  test("Gemini settings merge uses || idiom (issue #506 regression)", () => {
-    // cmd's delayed expansion parser eats `!` operators in `node -e "..."`
-    // blocks, turning `if(!s.hooks)` into a broken variable expansion and
-    // crashing node. The merge script must use `x = x || {}` instead, which
-    // contains no `!` chars. See backnotprop/plannotator#506.
-    expect(script).toContain("s.hooks=s.hooks||{}");
-    expect(script).toContain("s.hooks.BeforeTool=s.hooks.BeforeTool||[]");
-    expect(script).not.toContain("if(!s.hooks)");
-    expect(script).not.toContain("if(!s.hooks.BeforeTool)");
   });
 
   test("Pi extension update keeps no settings.json package-skills filter", () => {
@@ -1105,66 +904,55 @@ describe("install.cmd", () => {
   });
 
   test("per-agent skip opt-outs: flags, env vars, config keys, precedence (#1178)", () => {
-    expect(script).toContain('if /i "%~1"=="--skip-codex"');
-    expect(script).toContain('if /i "%~1"=="--skip-gemini"');
-    expect(script).toContain('if /i "%~1"=="--skip-kiro"');
-    expect(script).toContain('if /i "%~1"=="--skip-vibe"');
     expect(script).toContain('if /i "%~1"=="--skip-opencode"');
-    expect(script).toContain("PLANNOTATOR_SKIP_CODEX_INSTALL");
-    expect(script).toContain("PLANNOTATOR_SKIP_GEMINI_INSTALL");
-    expect(script).toContain("PLANNOTATOR_SKIP_KIRO_INSTALL");
-    expect(script).toContain("PLANNOTATOR_SKIP_VIBE_INSTALL");
+    expect(script).toContain('if /i "%~1"=="--skip-skills"');
+    expect(script).toContain('if /i "%~1"=="--skip-claude-plugin"');
     expect(script).toContain("PLANNOTATOR_SKIP_OPENCODE_INSTALL");
+    expect(script).toContain("PLANNOTATOR_SKIP_SKILLS_INSTALL");
+    expect(script).toContain("PLANNOTATOR_SKIP_CLAUDE_PLUGIN_UPDATE");
     // Config layer (M2): the REAL JSON is parsed by PowerShell (strict
     // boolean check, matching install.ps1) instead of a line-oblivious
-    // findstr - so a "codex": true under some OTHER key can never opt
+    // findstr - so an "opencode": true under some OTHER key can never opt
     // anyone out and an explicit false inside skipInstall is honored.
     expect(script).toContain("$c.skipInstall.$k");
-    expect(script).toContain("@('codex','gemini','kiro','vibe','opencode','qwen','skills','claudePlugin')");
+    expect(script).toContain("@('opencode','skills','claudePlugin')");
     expect(script).toContain("$v -is [bool] -and $v");
     expect(script).toContain("PLN_CONFIG_JSON");
-    expect(script).toContain("skipInstall.codex");
-    expect(script).toContain("skipInstall.gemini");
-    expect(script).toContain("skipInstall.kiro");
-    expect(script).toContain("skipInstall.vibe");
     expect(script).toContain("skipInstall.opencode");
-    // The old whole-file findstr form is gone.
-    expect(script).not.toContain('findstr /r /c:"\\"codex\\"');
+    expect(script).toContain("skipInstall.skills");
+    expect(script).toContain("skipInstall.claudePlugin");
     // Precedence by textual layering (later assignment wins): config, then
     // env var, then flag.
-    const configIdx = script.indexOf('set "SKIP_CODEX_SOURCE=config skipInstall.codex"');
-    const envIdx = script.indexOf('set "SKIP_CODEX_SOURCE=PLANNOTATOR_SKIP_CODEX_INSTALL"');
-    const flagIdx = script.indexOf('set "SKIP_CODEX_SOURCE=--skip-codex"');
+    const configIdx = script.indexOf('set "SKIP_OPENCODE_SOURCE=config skipInstall.opencode"');
+    const envIdx = script.indexOf('set "SKIP_OPENCODE_SOURCE=PLANNOTATOR_SKIP_OPENCODE_INSTALL"');
+    const flagIdx = script.indexOf('set "SKIP_OPENCODE_SOURCE=--skip-opencode"');
     expect(configIdx).toBeGreaterThan(0);
     expect(envIdx).toBeGreaterThan(configIdx);
     expect(flagIdx).toBeGreaterThan(envIdx);
   });
 
   test("skip states are reported honestly and never remove existing integrations (#1178)", () => {
-    // Three distinct Codex states (cmd never writes the Codex home; the
-    // installed state prints manual instructions instead, and the skip
-    // wording says exactly that - M4).
-    expect(script).toContain("Codex: detected, skipped ^(!SKIP_CODEX_SOURCE!^).");
-    expect(script).toContain("echo Codex detected.");
-    expect(script).toContain("The Windows installer only prints manual Codex setup instructions");
-    // M4: the existing-hook note requires plannotator CONTENT in hooks.json,
-    // never mere file existence, and its wording matches what this platform
-    // actually does.
-    expect(script).toContain('findstr /c:"plannotator" "!CODEX_DIR!\\hooks.json"');
-    expect(script).toContain("Your existing Codex Stop hook at !CODEX_DIR!\\hooks.json is unaffected.");
-    expect(script).not.toContain("An existing Codex integration at !CODEX_DIR!\\hooks.json was left untouched.");
-    expect(script).toContain("Gemini: detected, skipped ^(!SKIP_GEMINI_SOURCE!^).");
-    expect(script).toContain("Kiro was detected, but the integration was skipped");
-    // Skip suspends even plannotator's own cleanup inside the skipped
-    // agent's home (do-not-write, never remove).
-    // (A skills opt-out suspends the same sweep, hence the extra guard.)
+    // A skip is reported with its resolved source, and the skip branch says
+    // what was (not) touched — never a silent no-op.
+    expect(script).toContain("echo OpenCode: integration skipped ^(!SKIP_OPENCODE_SOURCE!^).");
+    expect(script).toContain("echo Skills: skipped ^(!SKIP_SKILLS_SOURCE!^).");
+    expect(script).toContain("echo No command stubs were written and OpenCode's plugin cache was left alone.");
+    // Skip suspends even plannotator's own cleanup (do-not-write, never
+    // remove): the stale-stub sweep needs BOTH opt-outs clear.
     expect(script).toContain(
-      'if "!SKIP_CODEX!"=="0" if "!SKIP_SKILLS!"=="0" if exist "!STALE_CODEX_SKILLS_DIR!\\%%S"',
+      'if "!SKIP_OPENCODE!"=="0" if "!SKIP_SKILLS!"=="0" if exist "!OPENCODE_COMMANDS_DIR!\\plannotator-archive.md"',
     );
-    expect(script).toContain('if /i "%%~D"=="!KIRO_SKILLS_DIR!" if "!SKIP_KIRO!"=="1" set "SCOPE_OK=0"');
-    // Gated install sites for the mirrored opt-outs.
-    expect(script).toContain('if "!KIRO_AVAILABLE!"=="1" if "!SKIP_KIRO!"=="0" if exist "apps\\kiro-cli\\skills"');
-    expect(script).toContain('if exist "%USERPROFILE%\\.gemini" if "!SKIP_GEMINI!"=="0"');
+    // The skip branch must not gain any removal command.
+    const skipBlock = script.slice(
+      script.indexOf('if "!SKIP_OPENCODE!"=="1" ('),
+      script.indexOf("echo Test the install:"),
+    );
+    expect(skipBlock.length).toBeGreaterThan(0);
+    expect(skipBlock).not.toContain("del ");
+    expect(skipBlock).not.toContain("rmdir");
+    expect(skipBlock).not.toContain("mkdir");
+    // Gated install site for the opt-out.
+    expect(script).toContain('if "!SKIP_OPENCODE!"=="0" if exist "apps\\opencode-plugin\\commands"');
   });
 
   test("--skip-skills: flag, env var, config key, precedence (#1201)", () => {
@@ -1173,7 +961,7 @@ describe("install.cmd", () => {
     expect(script).toContain("PLANNOTATOR_SKIP_SKILLS_INSTALL");
     expect(script).toContain("skipInstall.skills");
     // Precedence by textual layering (later assignment wins): config, then
-    // env var, then flag - matching SKIP_CODEX.
+    // env var, then flag - matching SKIP_OPENCODE.
     const configIdx = script.indexOf('set "SKIP_SKILLS_SOURCE=config skipInstall.skills"');
     const envIdx = script.indexOf('set "SKIP_SKILLS_SOURCE=PLANNOTATOR_SKIP_SKILLS_INSTALL"');
     const flagIdx = script.indexOf('set "SKIP_SKILLS_SOURCE=--skip-skills"');
@@ -1256,7 +1044,6 @@ describe("Core Plannotator skills", () => {
     const skillRoots = [
       join(scriptsDir, "..", "apps", "skills", "core"),
       join(scriptsDir, "..", "apps", "skills", "extra"),
-      join(scriptsDir, "..", "apps", "kiro-cli", "skills"),
     ];
     let checked = 0;
     let invocableSeen = 0;
@@ -1274,12 +1061,12 @@ describe("Core Plannotator skills", () => {
         checked++;
       }
     }
-    // 3 core + 3 extra + 2 kiro — bump when adding skills, never below.
-    expect(checked).toBeGreaterThanOrEqual(8);
+    // 4 core + 3 extra — bump when adding skills, never below.
+    expect(checked).toBeGreaterThanOrEqual(7);
     expect(invocableSeen).toBe(1);
   });
 
-  test("the knowledge skill's Codex sidecar allows implicit invocation", () => {
+  test("the knowledge skill's OpenAI sidecar allows implicit invocation", () => {
     // The counterpart of the exception above: the OpenAI sidecar must not
     // re-lock what the frontmatter deliberately leaves invocable.
     const sidecar = readFileSync(
@@ -1303,21 +1090,6 @@ describe("install shared behavior", () => {
       expect(script, name).toContain(
         "To uninstall later: plannotator uninstall",
       );
-    }
-  });
-
-  test("every installer copies the knowledge skill into the Kiro scope", () => {
-    // #1377 install reach: the Kiro leg copied only the two action skills, so
-    // Kiro users got launchers and no CLI reference. Each script spells the
-    // copy differently, so assert the source path reaches the Kiro skills dir
-    // in each dialect rather than one shared string.
-    const kiroKnowledgeSkillCopy: ReadonlyArray<readonly [string, string]> = [
-      ["install.sh", 'copy_skill_if_present apps/skills/core/plannotator "$KIRO_SKILLS_DIR"'],
-      ["install.ps1", 'Copy-SkillIfPresent "apps\\skills\\core\\plannotator" $kiroSkillsDir'],
-      ["install.cmd", 'xcopy /s /i /y /q "apps\\skills\\core\\plannotator" "!KIRO_SKILLS_DIR!\\plannotator\\"'],
-    ];
-    for (const [name, expected] of kiroKnowledgeSkillCopy) {
-      expect(readScript(name), name).toContain(expected);
     }
   });
 
@@ -1416,23 +1188,12 @@ describe("install shared behavior", () => {
       expect(s).not.toContain("glimpseui");
       expect(s.toLowerCase()).not.toContain("--no-glimpse");
     }
-    // Flip pass in all three: SKILL.md line removal + Codex sidecar flip.
+    // Flip pass in all three: SKILL.md line removal + shared-agent sidecar flip.
     expect(ps).toContain('Where-Object { $_ -ne "disable-model-invocation: true" }');
     expect(cmdScript).toContain('findstr /v /c:"disable-model-invocation: true"');
     for (const s of [sh, ps, cmdScript]) {
       expect(s).toContain("allow_implicit_invocation: true");
     }
-  });
-
-  test("all installers respect CODEX_HOME for the Codex home directory", () => {
-    // Codex stores config and state under $CODEX_HOME when set, falling back
-    // to ~/.codex (developers.openai.com/codex/config-advanced). #852
-    const cmdScript = readScript("install.cmd");
-    expect(sh).toContain('CODEX_DIR="${CODEX_HOME:-$HOME/.codex}"');
-    expect(ps).toContain('if ($env:CODEX_HOME) { $env:CODEX_HOME } else { "$env:USERPROFILE\\.codex" }');
-    expect(cmdScript).toContain('if defined CODEX_HOME set "CODEX_DIR=%CODEX_HOME%"');
-    // The fallback definition must be the ONLY hardcoded ~/.codex path left.
-    expect((sh.match(/\$HOME\/\.codex/g) ?? []).length).toBe(1);
   });
 
   test("all installers explain the old-tag core-skill soft-skip", () => {
@@ -1834,9 +1595,9 @@ describe("install shared behavior", () => {
 
   test("no installer generates slash command files via heredoc/echo", () => {
     // Commands are now copied verbatim from the sparse checkout
-    // (apps/opencode-plugin/commands, apps/gemini/commands) instead of being
-    // emitted by heredocs/echoes. This retires the old `^^!` cmd-escaping
-    // regression entirely — the fragile echo lines no longer exist.
+    // (apps/opencode-plugin/commands) instead of being emitted by
+    // heredocs/echoes. This retires the old `^^!` cmd-escaping regression
+    // entirely — the fragile echo lines no longer exist.
     const cmdScript = readScript("install.cmd");
     // install.cmd no longer echoes plannotator command bodies.
     expect(cmdScript).not.toContain("echo ^^!`plannotator");
@@ -1845,8 +1606,7 @@ describe("install shared behavior", () => {
     expect(cmdScript).not.toMatch(/^echo \^!{plannotator/m);
     // install.sh / install.ps1 no longer carry command heredocs.
     expect(sh).not.toContain("COMMAND_EOF");
-    expect(sh).not.toContain("GEMINI_CMD_EOF");
-    expect(ps).not.toContain("GEMINI_CMD_EOF");
+    expect(ps).not.toContain("COMMAND_EOF");
   });
 
   test("install.cmd uses substring test (not echo|findstr) for v-prefix normalization", () => {
@@ -2201,10 +1961,8 @@ describe("PlannotatorConfig schema", () => {
     );
     expect(match).toBeTruthy();
     expect(match![1]).toContain("skipInstall?: {");
-    expect(match![1]).toContain("codex?: boolean");
-    expect(match![1]).toContain("gemini?: boolean");
-    expect(match![1]).toContain("kiro?: boolean");
     expect(match![1]).toContain("opencode?: boolean");
+    expect(match![1]).toContain("skills?: boolean");
     expect(match![1]).toContain("claudePlugin?: boolean");
   });
 });
@@ -2225,7 +1983,7 @@ const FAKE_BINARY_SHA256 = createHash("sha256").update(FAKE_BINARY).digest("hex"
 const ATTESTATION_FIXTURE = join(scriptsDir, "fixtures", "attestations-response.json");
 
 type GhBehavior = "reject-bundle" | "fail-all" | "pass-all";
-type GitBehavior = "fail" | "sparse-unsupported" | "network-error" | "real-no-clone" | "repo-copy";
+type GitBehavior = "fail" | "sparse-unsupported" | "network-error" | "real-no-clone";
 
 // git shim that behaves like git 2.23 (macOS with stale Xcode CLT, #1238):
 // `clone --sparse` dies instantly on "unknown option" (exit 129, before any
@@ -2266,27 +2024,6 @@ fi
 exit 0
 `;
 
-// git shim whose clone copies this checkout's real apps/skills and
-// apps/qwen-code (so the installer copies the files that ship), and whose
-// sparse-checkout succeeds and records its paths in $HOME/git-sparse.log.
-// GIT_SHIM_NO_QWEN=1 leaves apps/qwen-code out, like a tag from before it.
-const GIT_REPO_COPY_SHIM = `#!/bin/bash
-if [ "$1" = "clone" ]; then
-  dest=""
-  for a in "$@"; do dest="$a"; done
-  dest="\${dest//\\\\//}"
-  mkdir -p "$dest/apps"
-  cp -R "${join(scriptsDir, "..", "apps", "skills")}" "$dest/apps/skills"
-  [ -n "$GIT_SHIM_NO_QWEN" ] || cp -R "${join(scriptsDir, "..", "apps", "qwen-code")}" "$dest/apps/qwen-code"
-  exit 0
-fi
-if [ "$1" = "sparse-checkout" ]; then
-  printf '%s\\n' "$*" >> "$HOME/git-sparse.log"
-  exit 0
-fi
-exit 0
-`;
-
 // git shim for a genuine (network) clone failure with a distinctive stderr
 // the installer must now surface instead of swallowing (#1238).
 const GIT_NETWORK_ERROR_SHIM = `#!/bin/bash
@@ -2310,15 +2047,12 @@ function gitShimBody(git: GitBehavior): string {
       // The host git for everything but a clone (which would reach the
       // network), so the installer can inspect a real fixture repository.
       return `#!/bin/bash\nif [ "$1" = "clone" ]; then exit 1; fi\nexec "${Bun.which("git")}" "$@"\n`;
-    case "repo-copy":
-      return GIT_REPO_COPY_SHIM;
   }
 }
 
 function setupInstallSandbox(opts: {
   gh: GhBehavior;
   git?: GitBehavior;
-  codexHome?: boolean;
   plannotatorConfig?: string;
   binary?: string;
 }) {
@@ -2406,10 +2140,6 @@ exit 1`
   const nodeBin = Bun.which("node");
   if (nodeBin) symlinkSync(nodeBin, join(stub, "node"));
 
-  if (opts.codexHome) {
-    mkdirSync(join(home, ".codex"), { recursive: true });
-    writeFileSync(join(home, ".codex", "config.toml"), 'model = "gpt-5"\n');
-  }
   if (opts.plannotatorConfig) {
     mkdirSync(join(home, ".plannotator"), { recursive: true });
     writeFileSync(join(home, ".plannotator", "config.json"), opts.plannotatorConfig);
@@ -3013,32 +2743,32 @@ describe.skipIf(process.platform === "win32" || !Bun.which("node"))(
       expect(existsSync(join(sandbox.home, ".local", "bin", "plannotator"))).toBe(false);
     });
 
-    test("M2: a foreign \"codex\": true outside skipInstall (plus explicit false inside) does NOT skip", () => {
+    test("M2: a foreign \"opencode\": true outside skipInstall (plus explicit false inside) does NOT skip", () => {
       const sandbox = setupInstallSandbox({
         gh: "pass-all",
-        codexHome: true,
-        plannotatorConfig: '{"skipInstall":{"codex":false},"somethingElse":{"codex":true}}\n',
+        git: "sparse-unsupported",
+        plannotatorConfig: '{"skipInstall":{"opencode":false},"somethingElse":{"opencode":true}}\n',
       });
       const { out } = runInstallSh(sandbox, [
         "--version", "v99.9.9", "--non-interactive", "--no-extras",
       ]);
-      expect(out).not.toContain("detected, skipped");
-      expect(out).toContain("Created Codex hooks at");
-      expect(existsSync(join(sandbox.home, ".codex", "hooks.json"))).toBe(true);
+      expect(out).not.toContain("OpenCode: integration skipped");
+      expect(
+        existsSync(join(sandbox.home, ".config", "opencode", "commands", "plannotator-review.md")),
+      ).toBe(true);
     });
 
-    test("M2: skipInstall.codex true skips, names the config as the source, and writes nothing to the Codex home", () => {
+    test("M2: skipInstall.opencode true skips, names the config as the source, and writes no command stubs", () => {
       const sandbox = setupInstallSandbox({
         gh: "pass-all",
-        codexHome: true,
-        plannotatorConfig: '{ "skipInstall": { "codex": true } }\n',
+        git: "sparse-unsupported",
+        plannotatorConfig: '{ "skipInstall": { "opencode": true } }\n',
       });
       const { out } = runInstallSh(sandbox, [
         "--version", "v99.9.9", "--non-interactive", "--no-extras",
       ]);
-      expect(out).toContain("Codex: detected, skipped (config skipInstall.codex).");
-      expect(out).not.toContain("Created Codex hooks at");
-      expect(existsSync(join(sandbox.home, ".codex", "hooks.json"))).toBe(false);
+      expect(out).toContain("OpenCode: integration skipped (config skipInstall.opencode).");
+      expect(existsSync(join(sandbox.home, ".config", "opencode", "commands"))).toBe(false);
     });
 
     test("#1238: a git without clone --sparse falls back to a plain shallow clone and still installs the skills", () => {
@@ -3090,29 +2820,23 @@ describe.skipIf(process.platform === "win32" || !Bun.which("node"))(
 
 // ---------------------------------------------------------------------------
 // Closing summary: agent-specific sections print only for agents the run
-// detected (existing detection legs: `pi` on PATH, ~/.gemini, Codex home or
-// CLI, ~/.kiro or kiro-cli). OpenCode (no detection leg) and Claude Code stay
-// universal. Every run is a full install into a temp HOME with a stubbed PATH;
-// the git shim supplies a local checkout, so nothing reaches the network.
+// detected (detection legs: `pi` on PATH, `omp` on PATH). OpenCode (no
+// detection leg) and Claude Code stay universal. Every run is a full install
+// into a temp HOME with a stubbed PATH; the git shim supplies a local
+// checkout, so nothing reaches the network.
 // ---------------------------------------------------------------------------
-type SummaryAgent = "pi" | "omp" | "gemini" | "codex" | "kiro";
+type SummaryAgent = "pi" | "omp";
 
 const SUMMARY_HEADERS: Record<SummaryAgent, string> = {
   pi: "  PI USERS",
   omp: "  OH MY PI (OMP) USERS",
-  gemini: "  GEMINI CLI USERS",
-  codex: "  CODEX USERS",
-  kiro: "  KIRO CLI USERS",
 };
 
 function runSummaryInstall(detected: SummaryAgent[], extraArgs: string[] = []) {
   const sandbox = setupInstallSandbox({
     gh: "pass-all",
     git: "sparse-unsupported",
-    codexHome: detected.includes("codex"),
   });
-  if (detected.includes("gemini")) mkdirSync(join(sandbox.home, ".gemini"), { recursive: true });
-  if (detected.includes("kiro")) mkdirSync(join(sandbox.home, ".kiro"), { recursive: true });
   // A no-op `pi` on PATH is exactly what the Pi detection leg checks; the
   // installer's `pi install` call against it succeeds without doing anything.
   if (detected.includes("pi")) writeFileSync(join(sandbox.stub, "pi"), "#!/bin/bash\nexit 0\n", { mode: 0o755 });
@@ -3156,7 +2880,7 @@ describe.skipIf(process.platform === "win32" || !Bun.which("node"))(
     }
 
     test("all detected: every agent section prints, in the original order", () => {
-      const all: SummaryAgent[] = ["pi", "omp", "gemini", "codex", "kiro"];
+      const all: SummaryAgent[] = ["pi", "omp"];
       const { code, out } = runSummaryInstall(all);
       expect(code).toBe(0);
       expectOnlySections(out, all);
@@ -3164,30 +2888,20 @@ describe.skipIf(process.platform === "win32" || !Bun.which("node"))(
         out.indexOf(h),
       );
       expect([...order].sort((a, b) => a - b)).toEqual(order);
-      expect(out).toContain("Launch it: kiro-cli chat --agent plannotator");
-      expect(out).toContain("Plan review is configured through the Codex Stop hook.");
       // The OMP section names the plugin install command (#1814).
       expect(out).toContain("  omp plugin install @plannotator/pi-extension");
     });
 
-    test("a detected-but-skipped agent keeps its honest skipped section", () => {
-      const { code, out } = runSummaryInstall(["codex", "gemini"], ["--skip-codex", "--skip-gemini"]);
+    test("--skip-skills swaps the Claude Code banner for the honest skipped one", () => {
+      const { code, out } = runSummaryInstall(["pi"], ["--skip-skills"]);
       expect(code).toBe(0);
-      expectOnlySections(out, ["codex", "gemini"]);
-      expect(out).toContain("Codex was detected, but the integration was skipped (--skip-codex).");
-      expect(out).toContain("Gemini was detected, but the integration was skipped (--skip-gemini).");
-    });
-
-    test("--skip-skills: detected sections report the skip, undetected ones stay hidden", () => {
-      const { code, out } = runSummaryInstall(["kiro"], ["--skip-skills"]);
-      expect(code).toBe(0);
-      expectOnlySections(out, ["kiro"]);
-      expect(out).toContain("Kiro was detected, but skills were skipped (--skip-skills)");
+      expectOnlySections(out, ["pi"]);
+      expect(out).toContain("Skills were skipped (--skip-skills)");
       expect(out).toContain("  CLAUDE CODE USERS: BINARY INSTALLED");
     });
 
     test("--minimal prints no agent sections at all, detected or not", () => {
-      const { code, out } = runSummaryInstall(["pi", "omp", "gemini", "codex", "kiro"], ["--minimal"]);
+      const { code, out } = runSummaryInstall(["pi", "omp"], ["--minimal"]);
       expect(code).toBe(0);
       expect(out).toContain("Minimal install complete");
       expect(out).not.toContain(" USERS");
@@ -3206,15 +2920,15 @@ describe.skipIf(process.platform === "win32" || !Bun.which("node"))(
       JSON.parse(readFileSync(join(home, ".plannotator", "install-flags.json"), "utf-8"));
 
     test("a full install records its opt-out flags as neutral ids", () => {
-      const { code, home } = runSummaryInstall(["codex"], ["--skip-codex", "--skip-skills"]);
+      const { code, home } = runSummaryInstall([], ["--skip-opencode", "--skip-skills"]);
       expect(code).toBe(0);
-      expect(readFlags(home)).toEqual({ v: 1, flags: ["skip-codex", "skip-skills"] });
+      expect(readFlags(home)).toEqual({ v: 1, flags: ["skip-opencode", "skip-skills"] });
     });
 
     test("a minimal install records --minimal (the binary-only early exit writes it too)", () => {
-      const { code, home } = runSummaryInstall([], ["--minimal", "--skip-gemini"]);
+      const { code, home } = runSummaryInstall([], ["--minimal", "--skip-opencode"]);
       expect(code).toBe(0);
-      expect(readFlags(home)).toEqual({ v: 1, flags: ["minimal", "skip-gemini"] });
+      expect(readFlags(home)).toEqual({ v: 1, flags: ["minimal", "skip-opencode"] });
     });
 
     test("a run with no flags records an empty set; non-install flags are never recorded", () => {
@@ -3256,7 +2970,7 @@ describe("install-flags.json is written by every installer", () => {
   test("install.ps1 and install.cmd record the same neutral ids after both exits", () => {
     const ps = readScript("install.ps1");
     const cmd = readScript("install.cmd");
-    for (const id of ["minimal", "no-minimal", "verify-attestation", "skip-attestation", "with-call-flow", "skip-codex", "skip-gemini", "skip-kiro", "skip-vibe", "skip-opencode", "skip-qwen", "skip-skills", "skip-claude-plugin"]) {
+    for (const id of ["minimal", "no-minimal", "verify-attestation", "skip-attestation", "with-call-flow", "skip-opencode", "skip-skills", "skip-claude-plugin"]) {
       expect(ps).toContain(`$ids += "${id}"`);
       expect(cmd).toContain(`call :AddInstallFlag ${id}`);
     }
@@ -3455,10 +3169,7 @@ function runPs1SkillsCheckout(git: GitBehavior): { code: number; out: string; ho
     `$repo = "backnotprop/plannotator"`,
     `$latestTag = "v9.9.9"`,
     `$skipSkillsResolved = $false`,
-    `$skipKiroResolved = $true`,
     `$skipOpencodeResolved = $true`,
-    `$skipGeminiResolved = $true`,
-    `$kiroAvailable = $false`,
     `$claudeSkillsDir = Join-Path "${home}" ".claude/skills"`,
     `$agentsSkillsDir = Join-Path "${home}" ".agents/skills"`,
     extractPs1SkillsCheckoutRegion(),
@@ -3512,10 +3223,10 @@ describe.skipIf(!pwshBin || process.platform === "win32")(
 );
 
 // ---------------------------------------------------------------------------
-// Closing summary on Windows: install.ps1 prints PI USERS / KIRO CLI USERS
-// only for a detected agent (install.ps1 has no Gemini or Codex closing
-// section), and install.cmd prints KIRO CLI USERS only when KIRO_AVAILABLE.
-// The ps1 region is driven under pwsh when available; both are source-scanned.
+// Closing summary on Windows: install.ps1 prints PI USERS / OH MY PI (OMP)
+// USERS only for a detected agent; OpenCode and Claude Code stay universal.
+// The ps1 region is driven under pwsh when available and source-scanned
+// otherwise.
 // ---------------------------------------------------------------------------
 
 function extractPs1ClosingSummaryRegion(): string {
@@ -3529,40 +3240,23 @@ function extractPs1ClosingSummaryRegion(): string {
 }
 
 describe("closing summary sections are gated on detection (Windows installers)", () => {
-  test("install.ps1 gates PI USERS on the Pi detection leg and KIRO CLI USERS on $kiroAvailable", () => {
+  test("install.ps1 gates PI USERS and OMP USERS on their detection legs", () => {
     const region = extractPs1ClosingSummaryRegion();
     const piGate = region.indexOf("if ($piDetected) {");
-    const kiroGate = region.indexOf("if ($kiroAvailable) {");
     expect(region).toContain("$piDetected = [bool](Get-Command pi -ErrorAction SilentlyContinue)");
     expect(piGate).toBeGreaterThan(0);
-    expect(kiroGate).toBeGreaterThan(piGate);
     // Each header sits inside its gate, not before it.
     expect(region.indexOf('Write-Host "  PI USERS"')).toBeGreaterThan(piGate);
     const ompGate = region.indexOf("if ($ompDetected) {");
     expect(region).toContain("$ompDetected = [bool](Get-Command omp -ErrorAction SilentlyContinue)");
     expect(ompGate).toBeGreaterThan(piGate);
     expect(region.indexOf('Write-Host "  OH MY PI (OMP) USERS"')).toBeGreaterThan(ompGate);
-    expect(region.indexOf('Write-Host "  KIRO CLI USERS"')).toBeGreaterThan(kiroGate);
-    expect(region).not.toContain("Kiro was not detected");
     // The Claude Code block stays universal.
     expect(region).toContain('Write-Host "  CLAUDE CODE USERS: YOU ARE ALL SET!"');
   });
-
-  test("install.cmd prints the KIRO CLI USERS header only inside the KIRO_AVAILABLE gate", () => {
-    const script = readScript("install.cmd");
-    const header = script.indexOf("echo   KIRO CLI USERS");
-    const gate = script.lastIndexOf('if "!KIRO_AVAILABLE!"=="1" (', header);
-    expect(header).toBeGreaterThan(0);
-    expect(gate).toBeGreaterThan(0);
-    // Nothing but the separator lines between the gate and the header.
-    expect(script.slice(gate, header)).toBe(
-      'if "!KIRO_AVAILABLE!"=="1" (\n    echo.\n    echo ==========================================\n    ',
-    );
-    expect(script).not.toContain("Kiro was not detected");
-  });
 });
 
-function runPs1ClosingSummary(opts: { pi: boolean; kiro: boolean; omp?: boolean; skipKiro?: boolean; skipSkills?: boolean }) {
+function runPs1ClosingSummary(opts: { pi: boolean; omp?: boolean; skipSkills?: boolean }) {
   const root = mkdtempSync(join(tmpdir(), "plannotator-ps1-summary-test-"));
   const home = join(root, "home");
   const stub = join(root, "stub-bin");
@@ -3575,9 +3269,6 @@ function runPs1ClosingSummary(opts: { pi: boolean; kiro: boolean; omp?: boolean;
     `$skipOpencodeResolved = $false`,
     `$skipSkillsResolved = $${opts.skipSkills ? "true" : "false"}`,
     `$skipSkillsSource = "-SkipSkills"`,
-    `$kiroAvailable = $${opts.kiro ? "true" : "false"}`,
-    `$skipKiroResolved = $${opts.skipKiro ? "true" : "false"}`,
-    `$skipKiroSource = "-SkipKiro"`,
     `$extrasChoice = "no"`,
     // The Claude Code block reads the plugin-update state and prints the
     // manual commands through the installer's own helper.
@@ -3603,47 +3294,37 @@ function runPs1ClosingSummary(opts: { pi: boolean; kiro: boolean; omp?: boolean;
 describe.skipIf(!pwshBin || process.platform === "win32")(
   "install.ps1 closing summary under PowerShell",
   () => {
-    test("nothing detected: no PI or KIRO section, universal sections intact", () => {
-      const { code, out } = runPs1ClosingSummary({ pi: false, kiro: false });
+    test("nothing detected: no PI or OMP section, universal sections intact", () => {
+      const { code, out } = runPs1ClosingSummary({ pi: false });
       expect(code).toBe(0);
       expect(out).not.toContain("PI USERS");
       expect(out).not.toContain("OH MY PI (OMP) USERS");
-      expect(out).not.toContain("KIRO CLI USERS");
       expect(out).not.toContain("was not detected");
       expect(out).toContain("OPENCODE USERS");
       expect(out).toContain("CLAUDE CODE USERS: YOU ARE ALL SET!");
     }, PWSH_SCANNER_TIMEOUT_MS);
 
-    test("pi and kiro detected: both sections print", () => {
-      const { code, out } = runPs1ClosingSummary({ pi: true, kiro: true });
+    test("pi detected: its section prints", () => {
+      const { code, out } = runPs1ClosingSummary({ pi: true });
       expect(code).toBe(0);
       expect(out).toContain("  PI USERS");
       // Install and update are different Pi commands (#902).
       expect(out).toContain("  pi install npm:@plannotator/pi-extension\n");
       expect(out).toContain("  pi update npm:@plannotator/pi-extension\n");
-      expect(out).toContain("  KIRO CLI USERS");
-      expect(out).toContain("Launch it: kiro-cli chat --agent plannotator");
     }, PWSH_SCANNER_TIMEOUT_MS);
 
     test("omp detected: the OMP section names the plugin install command", () => {
-      const { code, out } = runPs1ClosingSummary({ pi: false, kiro: false, omp: true });
+      const { code, out } = runPs1ClosingSummary({ pi: false, omp: true });
       expect(code).toBe(0);
       expect(out).toContain("  OH MY PI (OMP) USERS");
       expect(out).toContain("  omp plugin install @plannotator/pi-extension");
       expect(out.split("\n")).not.toContain("  PI USERS");
     }, PWSH_SCANNER_TIMEOUT_MS);
 
-    test("detected-but-skipped Kiro keeps its honest skipped section", () => {
-      const { code, out } = runPs1ClosingSummary({ pi: false, kiro: true, skipKiro: true });
+    test("-SkipSkills reports the skills skip", () => {
+      const { code, out } = runPs1ClosingSummary({ pi: false, skipSkills: true });
       expect(code).toBe(0);
-      expect(out).toContain("Kiro was detected, but the integration was skipped (-SkipKiro).");
-      expect(out).not.toContain("PI USERS");
-    }, PWSH_SCANNER_TIMEOUT_MS);
-
-    test("-SkipSkills with Kiro detected reports the skills skip", () => {
-      const { code, out } = runPs1ClosingSummary({ pi: false, kiro: true, skipSkills: true });
-      expect(code).toBe(0);
-      expect(out).toContain("Kiro was detected, but skills were skipped (-SkipSkills)");
+      expect(out).toContain("Skills were skipped (-SkipSkills)");
       expect(out).toContain("CLAUDE CODE USERS: BINARY INSTALLED");
     }, PWSH_SCANNER_TIMEOUT_MS);
   },
@@ -5053,13 +4734,13 @@ describe("Claude Code plugin update: every installer (source scan)", () => {
     const cmd = readScript("install.cmd");
     expect(sh).toContain("        --skip-claude-plugin)");
     expect(sh).toContain('case "${PLANNOTATOR_SKIP_CLAUDE_PLUGIN_UPDATE:-}" in');
-    expect(sh).toContain("for _agent in codex gemini kiro vibe opencode qwen skills claudePlugin; do");
+    expect(sh).toContain("for _agent in opencode skills claudePlugin; do");
     expect(ps).toContain("[switch]$SkipClaudePlugin");
     expect(ps).toContain("$env:PLANNOTATOR_SKIP_CLAUDE_PLUGIN_UPDATE -match");
     expect(ps).toContain("$cfg.skipInstall.claudePlugin -is [bool]");
     expect(cmd).toContain('if /i "%~1"=="--skip-claude-plugin" (');
     expect(cmd).toContain('if /i "!PLANNOTATOR_SKIP_CLAUDE_PLUGIN_UPDATE!"=="%%V"');
-    expect(cmd).toContain("'skills','claudePlugin'");
+    expect(cmd).toContain("@('opencode','skills','claudePlugin')");
   });
 
   test("each installer runs the update after the legacy hooks.json repair", () => {
@@ -5674,401 +5355,9 @@ describe("install.cmd's Pi step", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Qwen Code: the skills go to $QWEN_HOME/skills (default ~/.qwen/skills) and
-// the plannotator extension is installed and updated with Qwen's own
-// `qwen extensions` commands, from <data dir>/qwen-code/extension. A fake
-// `qwen` on PATH (scripts/fixtures/fake-qwen.ts, started by a shell shim, or
-// by a qwen.cmd on Windows like npm's) acts like Qwen's commands on
-// $QWEN_HOME, extension store included, and logs every call. The git shim
-// hands install.sh this checkout's real apps/skills and apps/qwen-code, so
-// the files that ship are the ones installed.
-// ---------------------------------------------------------------------------
-const FAKE_QWEN_SCRIPT = join(scriptsDir, "fixtures", "fake-qwen.ts");
-
-function writeFakeQwen(dir: string): void {
-  if (process.platform === "win32") {
-    writeFileSync(join(dir, "qwen.cmd"), `@echo off\r\n"${process.execPath}" "${FAKE_QWEN_SCRIPT}" %*\r\n`);
-  } else {
-    writeFileSync(join(dir, "qwen"), `#!/bin/sh\nexec "${process.execPath}" "${FAKE_QWEN_SCRIPT}" "$@"\n`, { mode: 0o755 });
-  }
-}
-
-function removeFakeQwen(dir: string): void {
-  rmSync(join(dir, process.platform === "win32" ? "qwen.cmd" : "qwen"), { force: true });
-}
-
-const QWEN_SKILLS = ["plannotator-review", "plannotator-annotate", "plannotator-last"];
-const QWEN_ARGS = ["--version", "v99.9.9", "--non-interactive", "--no-extras"];
-
-// Helpers on a Qwen folder the fake qwen manages.
-function qwenFiles(qwenDir: string) {
-  const extension = join(qwenDir, "extensions", "plannotator");
-  const statePath = join(qwenDir, "extension-store", "state.json");
-  type Policy = { name: string; defaultActivation: string; workspaceOverrides: Record<string, string> };
-  const state = (): { extensions: Record<string, Policy> } => JSON.parse(readFileSync(statePath, "utf8"));
-  return {
-    extension,
-    record: () => JSON.parse(readFileSync(join(extension, ".qwen-extension-install.json"), "utf8")) as { source: string; type: string },
-    installedVersion: () => JSON.parse(readFileSync(join(extension, "qwen-extension.json"), "utf8")).version as string,
-    policies: () => Object.entries(state().extensions).filter(([, p]) => p.name === "plannotator"),
-    // An older version installed by the installer: what an update must replace.
-    makeOlder: () => {
-      const manifest = join(extension, "qwen-extension.json");
-      writeFileSync(manifest, JSON.stringify({ ...JSON.parse(readFileSync(manifest, "utf8")), version: "0.0.1" }));
-      writeFileSync(join(extension, "hooks", "hooks.json"), '{"hooks":{}}\n');
-    },
-    turnOff: (how: "default" | "project") => {
-      const s = state();
-      for (const policy of Object.values(s.extensions)) {
-        if (policy.name !== "plannotator") continue;
-        if (how === "default") policy.defaultActivation = "disabled";
-        else policy.workspaceOverrides["/work/some project"] = "disabled";
-      }
-      writeFileSync(statePath, JSON.stringify(s, null, 2));
-    },
-    seedLink: () => {
-      mkdirSync(extension, { recursive: true });
-      writeFileSync(join(extension, ".qwen-extension-install.json"), JSON.stringify({ source: "/dev/plannotator/apps/qwen-code/extension", type: "link" }));
-    },
-    seedForeign: () => {
-      mkdirSync(join(extension, "hooks"), { recursive: true });
-      writeFileSync(join(extension, "qwen-extension.json"), '{"name":"plannotator","version":"0.0.1"}\n');
-      writeFileSync(join(extension, "hooks", "hooks.json"), '{"hooks":{}}\n');
-      writeFileSync(join(extension, ".qwen-extension-install.json"), JSON.stringify({ source: "/elsewhere/plannotator", type: "local" }));
-    },
-  };
-}
-
-const qwenSource = (file: string) => readFileSync(join(scriptsDir, "..", "apps", "qwen-code", "extension", file), "utf8");
-
-describe.skipIf(process.platform === "win32")("Qwen Code integration (install.sh, fake qwen)", () => {
-  const roots: string[] = [];
-  afterAll(() => {
-    for (const root of roots) rmSync(root, { recursive: true, force: true });
-  });
-
-  function qwenSandbox(opts: { qwenDir?: boolean; marker?: string | null; qwenCli?: boolean; config?: string } = {}) {
-    const sandbox = setupInstallSandbox({ gh: "pass-all", git: "repo-copy" });
-    roots.push(join(sandbox.home, ".."));
-    const data = join(sandbox.home, "plannotator data");
-    // The run's data dir (PLANNOTATOR_DATA_DIR below) is where the installer reads config.json.
-    if (opts.config) {
-      mkdirSync(data, { recursive: true });
-      writeFileSync(join(data, "config.json"), opts.config);
-    }
-    const qwenDir = join(sandbox.home, ".qwen");
-    if (opts.qwenDir ?? true) {
-      mkdirSync(qwenDir, { recursive: true });
-      // A real Qwen Code folder has its settings.json.
-      const marker = opts.marker === undefined ? "settings.json" : opts.marker;
-      if (marker) writeFileSync(join(qwenDir, marker), "{}\n");
-    }
-    if (opts.qwenCli ?? true) writeFakeQwen(sandbox.stub);
-    const log = join(sandbox.home, "qwen-calls.log");
-    const run = (args: string[] = [], env: Record<string, string> = {}) =>
-      runInstallSh(sandbox, [...QWEN_ARGS, ...args], { FAKE_QWEN_LOG: log, FAKE_QWEN_HOME: sandbox.home, PLANNOTATOR_DATA_DIR: data, ...env });
-    const lines = () => (existsSync(log) ? readFileSync(log, "utf8").trim().split("\n").filter(Boolean) : []);
-    const calls = () => lines().map((line) => line.slice(line.indexOf("|") + 1));
-    const extensionCalls = () => calls().filter((call) => call.startsWith("extensions "));
-    const callDirs = () => lines().map((line) => line.slice(0, line.indexOf("|")));
-    return {
-      home: sandbox.home,
-      stub: sandbox.stub,
-      data,
-      stable: join(data, "qwen-code", "extension"),
-      qwenDir,
-      run,
-      calls,
-      extensionCalls,
-      callDirs,
-      ...qwenFiles(qwenDir),
-    };
-  }
-
-  test("installs the extension from the data folder with qwen, and the Qwen skills; the run succeeds", () => {
-    const q = qwenSandbox();
-    const r = q.run();
-    expect(r.code).toBe(0);
-    expect(r.out).toContain("Installing the Qwen Code extension...\nQwen Code extension: installed (restart Qwen Code to load it).\n");
-    expect(q.calls()).toEqual(["--version", `extensions install ${q.stable} --consent`]);
-    // Run outside any project, so no project's .qwen settings take part.
-    for (const dir of q.callDirs()) expect(dir).toContain("plannotator-qwen.");
-    // Qwen records the source; it must be a path that stays.
-    expect(q.record().source).toBe(q.stable);
-    expect(readFileSync(join(q.stable, "hooks", "hooks.json"), "utf8")).toBe(qwenSource("hooks/hooks.json"));
-    expect(readFileSync(join(q.extension, "hooks", "hooks.json"), "utf8")).toBe(qwenSource("hooks/hooks.json"));
-    expect(readFileSync(join(q.extension, "qwen-extension.json"), "utf8")).toBe(qwenSource("qwen-extension.json"));
-    for (const skill of QWEN_SKILLS) {
-      expect(readFileSync(join(q.qwenDir, "skills", skill, "SKILL.md"), "utf8")).toBe(
-        readFileSync(join(scriptsDir, "..", "apps", "qwen-code", "skills", skill, "SKILL.md"), "utf8"),
-      );
-    }
-    expect(readFileSync(join(q.home, "git-sparse.log"), "utf8")).toContain(" apps/qwen-code");
-    expect(r.out).toContain("  QWEN CODE USERS");
-    expect(r.out).toContain("Qwen Code asks you to confirm the plan");
-    expect(r.out).toContain(`Skills are installed to ${q.qwenDir}/skills/:`);
-  });
-
-  test("a re-run with the same version runs no extension command and changes nothing in Qwen", () => {
-    const q = qwenSandbox();
-    expect(q.run().code).toBe(0);
-    const record = readFileSync(join(q.extension, ".qwen-extension-install.json"), "utf8");
-    const state = readFileSync(join(q.qwenDir, "extension-store", "state.json"), "utf8");
-    const r = q.run();
-    expect(r.code).toBe(0);
-    expect(r.out).toContain("Qwen Code extension: already up to date.");
-    expect(q.extensionCalls()).toHaveLength(1);
-    expect(readFileSync(join(q.extension, ".qwen-extension-install.json"), "utf8")).toBe(record);
-    expect(readFileSync(join(q.qwenDir, "extension-store", "state.json"), "utf8")).toBe(state);
-  });
-
-  test("another version is updated with qwen extensions update, keeping the id; never uninstalled", () => {
-    const q = qwenSandbox();
-    expect(q.run().code).toBe(0);
-    const [[id]] = q.policies();
-    q.makeOlder();
-    const r = q.run();
-    expect(r.code).toBe(0);
-    expect(r.out).toContain("Updating the Qwen Code extension...\nQwen Code extension: updated (restart Qwen Code to load it).\n");
-    expect(q.extensionCalls().slice(1)).toEqual(["extensions update plannotator"]);
-    expect(q.extensionCalls().some((call) => call.includes("uninstall"))).toBe(false);
-    expect(q.installedVersion()).toBe(JSON.parse(qwenSource("qwen-extension.json")).version);
-    expect(readFileSync(join(q.extension, "hooks", "hooks.json"), "utf8")).toBe(qwenSource("hooks/hooks.json"));
-    expect(q.policies().map(([key]) => key)).toEqual([id]);
-  });
-
-  for (const how of ["default", "project"] as const) {
-    test(`an extension turned off (${how === "default" ? "everywhere" : "in one project"}) stays off through an update, and the installer says so`, () => {
-      const q = qwenSandbox();
-      expect(q.run().code).toBe(0);
-      q.turnOff(how);
-      const before = q.policies();
-      q.makeOlder();
-      const r = q.run();
-      expect(r.code).toBe(0);
-      expect(q.installedVersion()).toBe(JSON.parse(qwenSource("qwen-extension.json")).version);
-      expect(q.policies()).toEqual(before);
-      expect(r.out).toContain("Qwen Code extension: updated (restart Qwen Code to load it).\nIt stays turned off where you turned it off in Qwen Code.\n");
-      expect(r.out).toContain("The plannotator extension is turned off in Qwen Code");
-      expect(r.out).not.toContain("the plan opens in your");
-    });
-  }
-
-  test("a turned-off rule in Qwen's older enablement file is read too; an enabled extension says nothing", () => {
-    const q = qwenSandbox();
-    expect(q.run().code).toBe(0);
-    q.makeOlder();
-    expect(q.run().out).not.toContain("It stays turned off");
-    q.makeOlder();
-    writeFileSync(join(q.qwenDir, "extensions", "extension-enablement.json"), JSON.stringify({ plannotator: { overrides: ["!/*"] } }));
-    expect(q.run().out).toContain("It stays turned off where you turned it off in Qwen Code.");
-  });
-
-  test("an update qwen did not make (it exits 0) is reported, and the installed one kept", () => {
-    const q = qwenSandbox();
-    expect(q.run().code).toBe(0);
-    q.makeOlder();
-    const r = q.run([], { FAKE_QWEN_UPDATE_FAIL: "1" });
-    expect(r.code).toBe(0);
-    expect(r.out).toContain("Qwen Code extension: could not update it (Update failed: disk full). The installed one was left as it was.");
-    expect(r.out).toContain("To try again by hand: qwen extensions update plannotator");
-    expect(r.out).toContain("The plan-review extension could not be installed");
-    expect(q.installedVersion()).toBe("0.0.1");
-    expect(r.out).toContain("YOU'RE ALL SET!");
-  });
-
-  test("a linked extension (qwen extensions link) is left alone, quietly", () => {
-    const q = qwenSandbox();
-    q.seedLink();
-    const r = q.run();
-    expect(r.code).toBe(0);
-    expect(q.extensionCalls()).toEqual([]);
-    expect(r.out).toContain("Qwen Code extension: linked from a local folder (qwen extensions link), left as it is.");
-    expect(r.out).not.toContain("could not");
-    expect(r.out).not.toContain("the plan opens in your");
-    expect(q.record().type).toBe("link");
-  });
-
-  test("an extension installed from another source is left alone, and says from where", () => {
-    const q = qwenSandbox();
-    q.seedForeign();
-    const r = q.run();
-    expect(r.code).toBe(0);
-    expect(q.extensionCalls()).toEqual([]);
-    expect(r.out).toContain("Qwen Code extension: installed from /elsewhere/plannotator, not by this installer, so it was left as it is.");
-    expect(readFileSync(join(q.extension, "hooks", "hooks.json"), "utf8")).toBe('{"hooks":{}}\n');
-  });
-
-  test("a failed first install is reported with the command to run, and never fails the install", () => {
-    const q = qwenSandbox();
-    const r = q.run([], { FAKE_QWEN_INSTALL_FAIL: "1" });
-    expect(r.code).toBe(0);
-    expect(r.out).toContain("Qwen Code extension: could not install it (qwen exited 1: Install failed: disk full).");
-    expect(r.out).toContain(`To try again by hand: qwen extensions install "${q.stable}"`);
-    expect(r.out).toContain("The plan-review extension could not be installed");
-    expect(existsSync(q.extension)).toBe(false);
-    // The skills still install.
-    expect(existsSync(join(q.qwenDir, "skills", "plannotator-review", "SKILL.md"))).toBe(true);
-  });
-
-  test("a qwen that hangs is stopped at the time limit and the install goes on", () => {
-    const q = qwenSandbox();
-    const started = Date.now();
-    const r = q.run([], { FAKE_QWEN_HANG: "1", PLANNOTATOR_QWEN_EXTENSION_TIMEOUT: "1" });
-    expect(r.code).toBe(0);
-    expect(r.out).toContain("Qwen Code extension: could not install it (timed out after 1s).");
-    expect(Date.now() - started).toBeLessThan(40_000);
-  }, 45_000);
-
-  for (const version of ["0.12.9", "0.6.0"]) {
-    test(`Qwen Code ${version} (before extension hooks): nothing installed, and it says to update`, () => {
-      const q = qwenSandbox();
-      const r = q.run([], { FAKE_QWEN_VERSION: version });
-      expect(r.code).toBe(0);
-      expect(q.calls()).toEqual(["--version"]);
-      expect(r.out).toContain(`Qwen Code ${version} is older than 0.13.0, so nothing was installed for it. Update Qwen Code to use plan review.`);
-      expect(existsSync(join(q.qwenDir, "skills"))).toBe(false);
-      expect(existsSync(q.extension)).toBe(false);
-      expect(r.out).not.toContain("Skills are installed to");
-      expect(r.out).not.toContain("the plan opens in your");
-    });
-  }
-
-  test("a release from before the Qwen Code integration: no extension, and no claim that skills were installed", () => {
-    const q = qwenSandbox();
-    const r = q.run([], { GIT_SHIM_NO_QWEN: "1" });
-    expect(r.code).toBe(0);
-    expect(r.out).toContain("This release has no Qwen Code extension.");
-    expect(existsSync(join(q.qwenDir, "skills"))).toBe(false);
-    expect(r.out).not.toContain("Skills are installed to");
-  });
-
-  for (const version of ["0.13.0", "0.26.2-nightly.20261020", "not a version"]) {
-    test(`Qwen Code reporting "${version}" gets the extension`, () => {
-      const q = qwenSandbox();
-      expect(q.run([], { FAKE_QWEN_VERSION: version }).out).toContain("Qwen Code extension: installed");
-    });
-  }
-
-  for (const [label, args, env, config, sourceName] of [
-    ["--skip-qwen", ["--skip-qwen"], {}, undefined, "--skip-qwen"],
-    ["PLANNOTATOR_SKIP_QWEN_INSTALL", [], { PLANNOTATOR_SKIP_QWEN_INSTALL: "1" }, undefined, "PLANNOTATOR_SKIP_QWEN_INSTALL"],
-    ["skipInstall.qwen", [], {}, '{ "skipInstall": { "qwen": true } }\n', "config skipInstall.qwen"],
-  ] as const) {
-    test(`${label}: no qwen command, nothing written under ~/.qwen, an installed extension left alone`, () => {
-      const q = qwenSandbox({ config });
-      q.seedForeign();
-      const r = q.run([...args], env);
-      expect(r.code).toBe(0);
-      expect(r.out).toContain(`Qwen Code: detected, skipped (${sourceName}).`);
-      expect(r.out).toContain("The installed Qwen Code extension was left untouched.");
-      expect(q.calls()).toEqual([]);
-      expect(existsSync(join(q.qwenDir, "skills"))).toBe(false);
-      expect(existsSync(q.stable)).toBe(false);
-      expect(readFileSync(join(q.extension, "hooks", "hooks.json"), "utf8")).toBe('{"hooks":{}}\n');
-    });
-  }
-
-  test("--skip-qwen is remembered for auto-update", () => {
-    const q = qwenSandbox();
-    expect(q.run(["--skip-qwen"]).code).toBe(0);
-    const flags = JSON.parse(readFileSync(join(q.data, "install-flags.json"), "utf8"));
-    expect(flags.flags).toContain("skip-qwen");
-  });
-
-  test("no Qwen folder: nothing Qwen-related runs or prints, even with qwen on PATH", () => {
-    const q = qwenSandbox({ qwenDir: false });
-    const r = q.run();
-    expect(r.code).toBe(0);
-    expect(q.calls()).toEqual([]);
-    expect(existsSync(q.qwenDir)).toBe(false);
-    expect(r.out).not.toContain("Qwen Code");
-    expect(r.out).not.toContain("QWEN CODE USERS");
-  });
-
-  test("a ~/.qwen the skills CLI made (skills/ only, no qwen command) is not Qwen Code: nothing written or printed", () => {
-    const q = qwenSandbox({ marker: null, qwenCli: false });
-    mkdirSync(join(q.home, ".agents", "skills", "other-skill"), { recursive: true });
-    mkdirSync(join(q.qwenDir, "skills"), { recursive: true });
-    symlinkSync(join(q.home, ".agents", "skills", "other-skill"), join(q.qwenDir, "skills", "other-skill"));
-    const r = q.run();
-    expect(r.code).toBe(0);
-    expect(readdirSync(join(q.qwenDir, "skills"))).toEqual(["other-skill"]);
-    expect(readdirSync(q.qwenDir)).toEqual(["skills"]);
-    expect(r.out).not.toContain("Qwen Code");
-    expect(r.out).not.toContain("QWEN CODE USERS");
-  });
-
-  test("a ~/.qwen with only skills/ counts once the qwen command is on PATH", () => {
-    const q = qwenSandbox({ marker: null });
-    mkdirSync(join(q.qwenDir, "skills"), { recursive: true });
-    expect(q.run().out).toContain("Qwen Code extension: installed");
-  });
-
-  for (const marker of ["settings.json", "installation_id", "projects", "extensions"]) {
-    test(`Qwen Code's ${marker} counts as Qwen Code without the qwen command: skills installed, the extension reported`, () => {
-      const q = qwenSandbox({ marker: null, qwenCli: false });
-      if (marker.includes(".") || marker === "installation_id") writeFileSync(join(q.qwenDir, marker), "x\n");
-      else mkdirSync(join(q.qwenDir, marker), { recursive: true });
-      const r = q.run();
-      expect(r.code).toBe(0);
-      expect(r.out).toContain("Qwen Code extension: not installed (the qwen command is not on PATH).");
-      expect(existsSync(join(q.qwenDir, "skills", "plannotator-last", "SKILL.md"))).toBe(true);
-      expect(existsSync(join(q.extension, "qwen-extension.json"))).toBe(false);
-    });
-  }
-
-  test("a Qwen skill the skills CLI linked is replaced, and what it pointed to is kept", () => {
-    const q = qwenSandbox();
-    const shared = join(q.home, "elsewhere", "plannotator-review");
-    mkdirSync(shared, { recursive: true });
-    writeFileSync(join(shared, "SKILL.md"), "shared copy\n");
-    mkdirSync(join(q.qwenDir, "skills"), { recursive: true });
-    symlinkSync(shared, join(q.qwenDir, "skills", "plannotator-review"));
-    expect(q.run().code).toBe(0);
-    expect(readFileSync(join(shared, "SKILL.md"), "utf8")).toBe("shared copy\n");
-    expect(readFileSync(join(q.qwenDir, "skills", "plannotator-review", "SKILL.md"), "utf8")).toContain("is_background: true");
-  });
-
-  test("QWEN_HOME with a leading ~ is the Qwen folder itself", () => {
-    const q = qwenSandbox({ qwenDir: false });
-    mkdirSync(join(q.home, "qwen-home"), { recursive: true });
-    const r = q.run([], { QWEN_HOME: "~/qwen-home" });
-    expect(r.code).toBe(0);
-    expect(existsSync(join(q.home, "qwen-home", "skills", "plannotator-review", "SKILL.md"))).toBe(true);
-    expect(existsSync(join(q.home, "qwen-home", "extensions", "plannotator", "qwen-extension.json"))).toBe(true);
-    expect(existsSync(q.qwenDir)).toBe(false);
-  });
-
-  test("--skip-skills: no extension and no Qwen skills, said plainly", () => {
-    const q = qwenSandbox();
-    const r = q.run(["--skip-skills"]);
-    expect(r.code).toBe(0);
-    expect(q.calls()).toEqual([]);
-    expect(existsSync(join(q.qwenDir, "skills"))).toBe(false);
-    expect(r.out).toContain("so neither was\ninstalled or changed");
-  });
-
-  test("--model-invocable unlocks the Qwen copy of a chosen skill too", () => {
-    const q = qwenSandbox();
-    const r = q.run(["--model-invocable", "plannotator-review"]);
-    expect(r.code).toBe(0);
-    expect(readFileSync(join(q.qwenDir, "skills", "plannotator-review", "SKILL.md"), "utf8")).not.toContain(
-      "disable-model-invocation: true",
-    );
-    expect(readFileSync(join(q.qwenDir, "skills", "plannotator-last", "SKILL.md"), "utf8")).toContain(
-      "disable-model-invocation: true",
-    );
-  });
-});
-
-// The Windows installers' Qwen Code steps, driven with the same fake qwen:
-// install.ps1's regions (its functions and state), and install.cmd's
-// PowerShell program, both under PowerShell (pwsh on Linux and macOS; pwsh
-// and Windows PowerShell 5.1 on Windows). On Windows install.cmd's
-// subroutines also run under cmd.exe itself, and the fake is a qwen.cmd, as
-// npm installs it. Every folder name has a space in it.
+// Region extraction for driving slices of the Windows installers under
+// PowerShell (the F7 suite below); PS_SHELLS lists the shells to drive them
+// with (pwsh on Linux and macOS; pwsh and Windows PowerShell 5.1 on Windows).
 function extractRegion(text: string, start: string, end: string, what: string): string {
   const from = text.indexOf(start);
   const to = text.indexOf(end, from);
@@ -6077,371 +5366,16 @@ function extractRegion(text: string, start: string, end: string, what: string): 
 }
 
 const ps1Text = () => readScript("install.ps1").replace(/\r\n/g, "\n");
-const cmdText = () => readScript("install.cmd").replace(/\r\n/g, "\n");
-
-function extractPs1QwenRegions(): string {
-  const ps = ps1Text();
-  return [
-    extractRegion(ps, "# --- Qwen Code commands (only when Qwen Code is detected) ---", "# Captured tail of git's stderr", "the Qwen Code commands in install.ps1"),
-    extractRegion(ps, "# --- Qwen Code extension (only when Qwen Code is detected) ---", "\nif (-not $checkoutFailed) {\n    try { Install-QwenExtensionIfPresent", "the Qwen Code extension in install.ps1"),
-  ].join("\n");
-}
-
-function extractCmdQwenBlock(): string {
-  return extractRegion(cmdText(), "REM BEGIN Qwen Code subroutines", "REM END Qwen Code subroutines", "the Qwen Code subroutines in install.cmd");
-}
-
-// install.cmd's PowerShell program, put together as install.cmd does.
-function cmdQwenProgramLines(): string[] {
-  const lines = extractCmdQwenBlock().split("\n");
-  return lines.filter((line) => line.startsWith('set "PLN_QX_P')).map((line) => {
-    const m = /^set "PLN_QX_P(\d{3})=(.*)"$/.exec(line);
-    if (!m) throw new Error(`unexpected line: ${line}`);
-    return m[2];
-  });
-}
-
-describe("install.cmd's Qwen Code steps", () => {
-  test("its PowerShell lines carry nothing cmd.exe would reinterpret, and are numbered in order", () => {
-    const lines = extractCmdQwenBlock().split("\n").filter((line) => line.startsWith('set "PLN_QX_P'));
-    expect(lines.length).toBeGreaterThan(10);
-    lines.forEach((line, i) => expect(line.startsWith(`set "PLN_QX_P${String(i + 1).padStart(3, "0")}=`)).toBe(true));
-    for (const line of cmdQwenProgramLines()) expect(line).not.toMatch(/["%!^]/);
-  });
-
-  test("its commands stay well under cmd.exe's 8191-character line limit", () => {
-    for (const line of extractCmdQwenBlock().split("\n")) expect(line.length).toBeLessThan(2000);
-  });
-
-  test("runs as subroutines called outside any parenthesized block", () => {
-    const cmd = cmdText();
-    expect(cmd).toContain('\nif "!CHECKOUT_FAILED!"=="0" if "!QWEN_AVAILABLE!"=="1" call :InstallQwenExtension\n');
-    expect(cmd).toContain("\ncall :QwenVersionCheck\nset \"CHECKOUT_FAILED=0\"\n");
-  });
-});
-
-// Qwen state, as each runner reports it.
-type QwenRunResult = { out: string; state: string; off: boolean; tooOld: boolean };
-type QwenRunner = { name: string; run: (s: QwenPsSandbox, env?: Record<string, string>, skipSource?: string) => QwenRunResult };
-type QwenPsSandbox = ReturnType<typeof setupQwenPs>;
 
 const PS_SHELLS = (process.platform === "win32" ? ["pwsh", "powershell"] : ["pwsh"]).map((name) => Bun.which(name)).filter(
   (path): path is string => !!path,
 );
 
-function setupQwenPs(roots: string[]) {
-  const root = mkdtempSync(join(tmpdir(), "plannotator-ps-qwen-test-"));
-  roots.push(root);
-  const stub = join(root, "stub bin");
-  const qwenDir = join(root, "qwen home");
-  const skillsTmp = join(root, "skills tmp");
-  const src = join(skillsTmp, "qwen-extension");
-  const data = join(root, "plannotator data");
-  for (const dir of [stub, qwenDir, join(root, "tmp")]) mkdirSync(dir, { recursive: true });
-  writeFakeQwen(stub);
-  cpSync(join(scriptsDir, "..", "apps", "qwen-code", "extension"), src, { recursive: true });
-  const log = join(root, "qwen-calls.log");
-  const calls = () =>
-    existsSync(log)
-      ? readFileSync(log, "utf8").trim().split("\n").filter(Boolean).map((line) => line.slice(line.indexOf("|") + 1).trim())
-      : [];
-  return {
-    root,
-    stub,
-    qwenDir,
-    skillsTmp,
-    src,
-    data,
-    stable: join(data, "qwen-code", "extension"),
-    log,
-    calls,
-    extensionCalls: () => calls().filter((call) => call.startsWith("extensions ")),
-    ...qwenFiles(qwenDir),
-  };
-}
-
-function qwenPsEnv(s: QwenPsSandbox, env: Record<string, string>): Record<string, string> {
-  const base: Record<string, string> =
-    process.platform === "win32"
-      ? {
-          // Only the system folders, so no real qwen on this machine's PATH is found.
-          PATH: [
-            s.stub,
-            ...PS_SHELLS.map((shell) => join(shell, "..")),
-            join(process.env.SystemRoot ?? "C:\\Windows", "System32"),
-            process.env.SystemRoot ?? "C:\\Windows",
-            join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0"),
-          ].join(";"),
-          SystemRoot: process.env.SystemRoot ?? "C:\\Windows",
-          ComSpec: process.env.ComSpec ?? "C:\\Windows\\System32\\cmd.exe",
-          PATHEXT: process.env.PATHEXT ?? ".COM;.EXE;.BAT;.CMD",
-          USERPROFILE: s.root,
-          TEMP: join(s.root, "tmp"),
-          TMP: join(s.root, "tmp"),
-        }
-      : { PATH: `${s.stub}:/usr/bin:/bin`, HOME: s.root, TMPDIR: join(s.root, "tmp") };
-  return { ...base, QWEN_HOME: s.qwenDir, FAKE_QWEN_HOME: s.root, FAKE_QWEN_LOG: s.log, ...env };
-}
-
-function spawnPs(shell: string, s: QwenPsSandbox, body: string, env: Record<string, string>) {
-  const driver = join(s.root, `driver-${Math.random().toString(36).slice(2)}.ps1`);
-  writeFileSync(driver, body);
-  const r = Bun.spawnSync([shell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", driver], {
-    env: qwenPsEnv(s, env),
-    cwd: s.root,
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  return { code: r.exitCode, out: r.stdout.toString() + r.stderr.toString() };
-}
-
 const psQuote = (value: string) => `'${value.replace(/'/g, "''")}'`;
 
-function ps1Runner(shell: string): QwenRunner {
-  return {
-    name: `install.ps1 (${shell.split(/[\\/]/).pop()})`,
-    run: (s, env = {}, skipSource) => {
-      const body = [
-        `$ErrorActionPreference = "Stop"`,
-        `$qwenAvailable = $true`,
-        `$skipQwenResolved = $${skipSource ? "true" : "false"}`,
-        `$skipQwenSource = ${psQuote(skipSource ?? "")}`,
-        `$skipSkillsResolved = $false`,
-        `$qwenDir = ${psQuote(s.qwenDir)}`,
-        `$configDir = ${psQuote(s.data)}`,
-        extractPs1QwenRegions(),
-        `Install-QwenExtensionIfPresent ${psQuote(s.src)}`,
-        `Write-Host ("RESULT=" + $qwenExtensionState + ";" + $qwenExtensionOff + ";" + $qwenTooOld)`,
-        `exit 0`,
-      ].join("\n");
-      const r = spawnPs(shell, s, body, env);
-      const m = /RESULT=([^;]*);(\w+);(\w+)/.exec(r.out);
-      if (!m) throw new Error(`no result: ${r.out}`);
-      return { out: r.out, state: m[1], off: m[2] === "True", tooOld: m[3] === "True" };
-    },
-  };
-}
-
-// install.cmd's exit codes, as its :InstallQwenExtension reads them.
-const CMD_STATES: Record<number, [string, boolean]> = {
-  30: ["no-cli", false],
-  31: ["current", false],
-  32: ["installed", false],
-  33: ["updated", false],
-  34: ["failed", false],
-  35: ["not-in-tag", false],
-  37: ["linked", false],
-  38: ["foreign", false],
-  41: ["current", true],
-  43: ["updated", true],
-};
-
-function cmdPsRunner(shell: string): QwenRunner {
-  return {
-    name: `install.cmd's PowerShell (${shell.split(/[\\/]/).pop()})`,
-    run: (s, env = {}, skipSource) => {
-      if (skipSource) throw new Error("install.cmd handles the opt-out in cmd.exe");
-      const program = `${cmdQwenProgramLines().join("\n")}\nexit $rc\n`;
-      const common = { PLN_QX_HOME: s.qwenDir, ...env };
-      const version = spawnPs(shell, s, program, { ...common, PLN_QX_MODE: "version" });
-      if (version.code === 36) return { out: version.out, state: "too-old", off: false, tooOld: true };
-      expect(version.code).toBe(0);
-      const r = spawnPs(shell, s, program, { ...common, PLN_QX_MODE: "extension", PLN_QX_SRC: s.src, PLN_QX_DATA: s.data });
-      const [state, off] = CMD_STATES[r.code] ?? [`exit ${r.code}`, false];
-      return { out: version.out + r.out, state, off, tooOld: false };
-    },
-  };
-}
-
-// install.cmd's own subroutines under cmd.exe (Windows only).
-const cmdExeRunner: QwenRunner = {
-  name: "install.cmd (cmd.exe)",
-  run: (s, env = {}, skipSource) => {
-    const driver = join(s.root, `driver-${Math.random().toString(36).slice(2)}.cmd`);
-    const lines = [
-      "@echo off",
-      "setlocal EnableDelayedExpansion",
-      'set "QWEN_AVAILABLE=1"',
-      `set "SKIP_QWEN=${skipSource ? 1 : 0}"`,
-      `set "SKIP_QWEN_SOURCE=${skipSource ?? ""}"`,
-      'set "SKIP_SKILLS=0"',
-      'set "QWEN_DIR=%DRV_QWEN_DIR%"',
-      'set "SKILLS_TMP=%DRV_SKILLS_TMP%"',
-      'set "_CONFIG_DIR=%DRV_DATA%"',
-      'set "QWEN_EXTENSION_STATE="',
-      "call :QwenVersionCheck",
-      "call :InstallQwenExtension",
-      "echo RESULT=!QWEN_EXTENSION_STATE!;!QWEN_TOO_OLD!",
-      "exit /b 0",
-      extractCmdQwenBlock(),
-    ];
-    writeFileSync(driver, lines.join("\r\n") + "\r\n");
-    const r = Bun.spawnSync([process.env.ComSpec ?? "cmd.exe", "/d", "/c", driver], {
-      env: qwenPsEnv(s, { DRV_QWEN_DIR: s.qwenDir, DRV_SKILLS_TMP: s.skillsTmp, DRV_DATA: s.data, ...env }),
-      cwd: s.root,
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const out = r.stdout.toString() + r.stderr.toString();
-    const m = /RESULT=([^;\r\n]*);(\d)/.exec(out);
-    if (!m) throw new Error(`no result: ${out}`);
-    // cmd.exe keeps only ok / ok-off for a working extension.
-    const state = { ok: "ok", "ok-off": "ok", "too-old": "too-old" }[m[1]] ?? m[1];
-    return { out, state, off: m[1] === "ok-off", tooOld: m[2] === "1" };
-  },
-};
-
-// install.cmd's program runs under pwsh directly; on Windows the cmd.exe
-// runner covers it under Windows PowerShell 5.1 (what install.cmd starts),
-// so it is not run under 5.1 a second time.
-const QWEN_PS_RUNNERS: QwenRunner[] = [
-  ...PS_SHELLS.map(ps1Runner),
-  ...PS_SHELLS.filter((shell) => !/powershell(\.exe)?$/i.test(shell)).map(cmdPsRunner),
-  ...(process.platform === "win32" ? [cmdExeRunner] : []),
-];
-
 // Windows PowerShell 5.1 on a CI runner takes many seconds per start.
-const QWEN_PS_TIMEOUT_MS = process.platform === "win32" ? 300_000 : 120_000;
+const PS_SHELL_TIMEOUT_MS = process.platform === "win32" ? 300_000 : 120_000;
 
-describe.skipIf(QWEN_PS_RUNNERS.length === 0)("Windows installers' Qwen Code steps (PowerShell, fake qwen)", () => {
-  const roots: string[] = [];
-  afterAll(() => {
-    for (const root of roots) rmSync(root, { recursive: true, force: true });
-  });
-  const shipped = () => JSON.parse(qwenSource("qwen-extension.json")).version as string;
-
-  for (const runner of QWEN_PS_RUNNERS) {
-    // cmd.exe reports a working extension as "ok".
-    const expectState = (r: QwenRunResult, state: string) =>
-      expect(r.state).toBe(runner === cmdExeRunner && ["installed", "updated", "current"].includes(state) ? "ok" : state);
-
-    test(`${runner.name}: installs from the data folder, then a re-run runs no extension command`, () => {
-      const s = setupQwenPs(roots);
-      const first = runner.run(s);
-      expectState(first, "installed");
-      expect(first.out).toContain("Qwen Code extension: installed (restart Qwen Code to load it).");
-      expect(s.extensionCalls()).toEqual([`extensions install ${s.stable} --consent`]);
-      expect(s.record().source).toBe(s.stable);
-      expect(readFileSync(join(s.extension, "hooks", "hooks.json"), "utf8")).toBe(qwenSource("hooks/hooks.json"));
-      const second = runner.run(s);
-      expectState(second, "current");
-      expect(second.out).toContain("Qwen Code extension: already up to date.");
-      expect(s.extensionCalls()).toHaveLength(1);
-    }, QWEN_PS_TIMEOUT_MS);
-
-    test(`${runner.name}: another version is updated in place, and one turned off stays off`, () => {
-      const s = setupQwenPs(roots);
-      runner.run(s);
-      s.turnOff("default");
-      const before = s.policies();
-      s.makeOlder();
-      const r = runner.run(s);
-      expectState(r, "updated");
-      expect(r.off).toBe(true);
-      expect(r.out).toContain("It stays turned off where you turned it off in Qwen Code.");
-      expect(s.extensionCalls().slice(1)).toEqual(["extensions update plannotator"]);
-      expect(s.installedVersion()).toBe(shipped());
-      expect(s.policies()).toEqual(before);
-    }, QWEN_PS_TIMEOUT_MS);
-
-    test(`${runner.name}: an update qwen did not make is reported, the installed one kept`, () => {
-      const s = setupQwenPs(roots);
-      runner.run(s);
-      s.makeOlder();
-      const r = runner.run(s, { FAKE_QWEN_UPDATE_FAIL: "1" });
-      expectState(r, "failed");
-      expect(r.out).toContain("Qwen Code extension: could not update it (Update failed: disk full). The installed one was left as it was.");
-      expect(s.installedVersion()).toBe("0.0.1");
-    }, QWEN_PS_TIMEOUT_MS);
-
-    test(`${runner.name}: a linked or a foreign extension is left alone`, () => {
-      const linked = setupQwenPs(roots);
-      linked.seedLink();
-      const l = runner.run(linked);
-      expectState(l, "linked");
-      expect(linked.extensionCalls()).toEqual([]);
-      const foreign = setupQwenPs(roots);
-      foreign.seedForeign();
-      const f = runner.run(foreign);
-      expectState(f, "foreign");
-      expect(f.out).toContain("installed from /elsewhere/plannotator, not by this installer");
-      expect(foreign.extensionCalls()).toEqual([]);
-    }, QWEN_PS_TIMEOUT_MS);
-
-    test(`${runner.name}: a Qwen Code before 0.13.0 gets nothing`, () => {
-      const s = setupQwenPs(roots);
-      const r = runner.run(s, { FAKE_QWEN_VERSION: "0.12.0" });
-      expect(r.tooOld).toBe(true);
-      expect(r.out).toContain("Qwen Code 0.12.0 is older than 0.13.0, so nothing was installed for it. Update Qwen Code to use plan review.");
-      expect(s.calls()).toEqual(["--version"]);
-      expect(existsSync(s.extension)).toBe(false);
-    }, QWEN_PS_TIMEOUT_MS);
-
-    test(`${runner.name}: no qwen on PATH is reported, nothing runs`, () => {
-      const s = setupQwenPs(roots);
-      removeFakeQwen(s.stub);
-      const r = runner.run(s);
-      expectState(r, "no-cli");
-      expect(r.out).toContain("Qwen Code extension: not installed (the qwen command is not on PATH).");
-      expect(existsSync(s.extension)).toBe(false);
-    }, QWEN_PS_TIMEOUT_MS);
-
-    test(`${runner.name}: a qwen that hangs is stopped at the time limit`, () => {
-      const s = setupQwenPs(roots);
-      const r = runner.run(s, { FAKE_QWEN_HANG: "1", PLANNOTATOR_QWEN_EXTENSION_TIMEOUT: "2" });
-      expectState(r, "failed");
-      expect(r.out).toContain("could not install it (timed out after 2s)");
-    }, QWEN_PS_TIMEOUT_MS);
-
-    if (process.platform === "win32") {
-      test(`${runner.name}: qwen.cmd is not run with a path cmd.exe would change`, () => {
-        const odd = setupQwenPs(roots);
-        const data = join(odd.root, "data 100%");
-        const run = runner.run({ ...odd, data, stable: join(data, "qwen-code", "extension") });
-        expectState(run, "failed");
-        expect(run.out).toContain("a path has a character cmd.exe would change");
-        expect(existsSync(odd.extension)).toBe(false);
-      }, QWEN_PS_TIMEOUT_MS);
-    }
-  }
-
-  for (const shell of PS_SHELLS) {
-    test(`install.ps1 (${shell.split(/[\\/]/).pop()}): an opt-out runs nothing and says so`, () => {
-      const s = setupQwenPs(roots);
-      const r = ps1Runner(shell).run(s, {}, "-SkipQwen");
-      expect(r.out).toContain("Qwen Code: detected, skipped (-SkipQwen).");
-      expect(s.calls()).toEqual([]);
-    }, QWEN_PS_TIMEOUT_MS);
-
-    test(`install.ps1 (${shell.split(/[\\/]/).pop()}): the older enablement file's "!" rule counts as turned off`, () => {
-      const s = setupQwenPs(roots);
-      const runner = ps1Runner(shell);
-      runner.run(s);
-      s.makeOlder();
-      expect(runner.run(s).off).toBe(false);
-      s.makeOlder();
-      writeFileSync(join(s.qwenDir, "extensions", "extension-enablement.json"), JSON.stringify({ plannotator: { overrides: ["!/*"] } }));
-      expect(runner.run(s).off).toBe(true);
-    }, QWEN_PS_TIMEOUT_MS);
-
-    test(`install.ps1 (${shell.split(/[\\/]/).pop()}): Copy-SkillIfPresent replaces a linked skill and keeps what it pointed to`, () => {
-      const s = setupQwenPs(roots);
-      const shared = join(s.root, "agents skills", "plannotator-review");
-      mkdirSync(shared, { recursive: true });
-      writeFileSync(join(shared, "SKILL.md"), "shared copy\n");
-      const skills = join(s.qwenDir, "skills");
-      mkdirSync(skills, { recursive: true });
-      symlinkSync(shared, join(skills, "plannotator-review"), process.platform === "win32" ? "junction" : "dir");
-      const source = join(scriptsDir, "..", "apps", "qwen-code", "skills", "plannotator-review");
-      const fn = extractRegion(ps1Text(), "function Copy-SkillIfPresent {", "\n# Captured tail of git's stderr", "Copy-SkillIfPresent");
-      const body = `$ErrorActionPreference = "Stop"\n${fn.slice(0, fn.indexOf("\n}\n") + 3)}\nCopy-SkillIfPresent ${psQuote(source)} ${psQuote(skills)}\nexit 0\n`;
-      const r = spawnPs(shell, s, body, {});
-      expect(r.code).toBe(0);
-      expect(readFileSync(join(shared, "SKILL.md"), "utf8")).toBe("shared copy\n");
-      expect(readFileSync(join(skills, "plannotator-review", "SKILL.md"), "utf8")).toContain("is_background: true");
-    }, QWEN_PS_TIMEOUT_MS);
-  }
-});
 
 // F7 (#2338): install.ps1 under PowerShell. A run stopped between the swap's
 // two moves left no plannotator.exe until the person reinstalled by hand. The
@@ -6500,7 +5434,7 @@ describe.skipIf(PS_SHELLS.length === 0)("install.ps1 always leaves a plannotator
       const kept = installDirWith({ "plannotator.exe": "current", "plannotator.exe.old": "aside" });
       expect(runPs1Region(shell, recovery(), { installDir: kept }).code).toBe(0);
       expect(readFileSync(join(kept, "plannotator.exe"), "utf8")).toBe("current");
-    }, QWEN_PS_TIMEOUT_MS);
+    }, PS_SHELL_TIMEOUT_MS);
 
     test(`install.ps1 (${name}): the swap puts the new binary in place and leaves no staged or aside copy`, () => {
       const dir = installDirWith({ "plannotator.exe": "old binary" });
@@ -6510,6 +5444,6 @@ describe.skipIf(PS_SHELLS.length === 0)("install.ps1 always leaves a plannotator
       expect(readFileSync(join(dir, "plannotator.exe"), "utf8")).toBe("new binary");
       expect(readdirSync(dir)).toEqual(["plannotator.exe"]);
       expect(existsSync(tmpFile)).toBe(false);
-    }, QWEN_PS_TIMEOUT_MS);
+    }, PS_SHELL_TIMEOUT_MS);
   }
 });
