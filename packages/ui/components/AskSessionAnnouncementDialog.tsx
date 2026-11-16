@@ -17,7 +17,7 @@ import type { AskSessionAgent } from '../utils/askSessionAnnouncement';
  * LAST in each app's first-run dialog chain; the Apps gate rendering through
  * askSessionAnnouncementEligible and useFirstRunAnnouncementWindow.
  *
- * The footage is hosted on plannotator.ai (`apps/marketing/public/assets/`),
+ * The footage is hosted on plannotator.ai,
  * not inlined, so the dialog has to look right without it: the poster stays up
  * while the video buffers, and if the media cannot load the frame keeps its
  * place and offers the X post instead.

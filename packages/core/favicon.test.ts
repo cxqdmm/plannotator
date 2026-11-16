@@ -26,7 +26,7 @@ import {
 
 describe("production favicon", () => {
   test("the tab icon is the studio's web/favicon.ico exactly: 16, 32 and 48 frames", () => {
-    // The same file plannotator.ai serves (apps/marketing/public/favicon.ico).
+    // The same file plannotator.ai serves.
     expect(createHash("sha256").update(FAVICON_ICO_BYTES).digest("hex")).toBe(
       "7402e8509ac4ab49194fa387ab0722766cfab5ab94230c798facfd0e97771c59",
     );

@@ -41,7 +41,7 @@ export const DECISION_POST_SECTION_START = (threadId: string) => `<!-- plannotat
 export const DECISION_POST_SECTION_END = "<!-- plannotator-decisions:end -->";
 
 /**
- * The banner, hosted on the marketing site (apps/marketing/public/assets/decisions/v1/): GitHub strips inline SVG, and
+ * The banner, hosted on plannotator.ai: GitHub strips inline SVG, and
  * the picture carries no thread text. A new look gets a new folder (v2), so a posted comment never changes under
  * its readers.
  */

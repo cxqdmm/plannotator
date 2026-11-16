@@ -235,7 +235,7 @@ Verify all builds succeed before proceeding.
 
    A pull request proves generation, schema/sentinel validation, database policy, Grype evaluation, least-privilege job wiring, and all report artifacts. GitHub OIDC issuance, publication to the artifact-attestation service, and final release-asset publication only run for a real eligible `v*` tag. For the first release after this control lands, complete this bounded tag-only verification before calling the rollout complete:
 
-   Before tagging that first release, update the canonical Mintlify page at `https://docs.plannotator.ai/open-source/start/installation#pin-or-verify-a-release` with the SBOM scope/limitations, Grype policy, download/checksum commands, and both predicate-verification commands from the README. The legacy Astro files under `apps/marketing/src/content/docs/` are redirect-only/deprecated copies and are not the public documentation source. Confirm the live Mintlify page contains the material; do not let its publication lag the shipped control.
+   Before tagging that first release, update the canonical Mintlify page at `https://docs.plannotator.ai/open-source/start/installation#pin-or-verify-a-release` with the SBOM scope/limitations, Grype policy, download/checksum commands, and both predicate-verification commands from the README. Confirm the live Mintlify page contains the material; do not let its publication lag the shipped control.
 
    ```bash
    tag=vX.Y.Z

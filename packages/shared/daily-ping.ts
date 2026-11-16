@@ -22,7 +22,7 @@
  *    retired `classic` included). Every tool's ping carries it; the server counts it only
  *    on the `first: 1` ping, on its own, never next to version, age or tool.
  * At most five pings a computer a day. No ID, no OS, nothing else. The server
- * adds 1 to that day's totals and keeps nothing else (apps/telemetry). It
+ * adds 1 to that day's totals and keeps nothing else. It
  * still accepts the four-key body older releases send.
  *
  * When a check sends (every gate, in order):

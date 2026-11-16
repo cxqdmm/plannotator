@@ -231,7 +231,6 @@ describe("Inbox guidance parity across harnesses", () => {
 
   test("the docs that quote the reminder quote it as agents get it", () => {
     const docs = (path: string) => readFileSync(join(root, path), "utf8");
-    expect(docs("apps/marketing/src/content/docs/reference/inbox.md")).toContain(`> ${INBOX_REMINDER_TEXT}\n`);
     // The inboxReminder entry under config-only settings.
     expect(docs("docs/agent-guides/environment.md")).toContain(`("${INBOX_REMINDER_TEXT}"`);
   });

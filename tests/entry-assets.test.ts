@@ -7,7 +7,7 @@ const root = resolve(import.meta.dir, '..');
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8');
 
 describe('review entry assets', () => {
-  test.each(['apps/portal/index.html', 'apps/hook/index.html', 'apps/review/index.html', 'apps/inbox/index.html', 'apps/inbox/surface.html'])(
+  test.each(['apps/hook/index.html', 'apps/review/index.html', 'apps/inbox/index.html', 'apps/inbox/surface.html'])(
     '%s has no externally hosted startup scripts or styles',
     (path) => {
       expect(read(path)).not.toMatch(
@@ -16,10 +16,7 @@ describe('review entry assets', () => {
     },
   );
 
-  // The portal mounts the same @plannotator/editor App as the hook, so it needs
-  // the identical shell: without it the mobile layout's safe-area tokens are
-  // inert and the document scrolls behind the app's own scroll ownership.
-  test.each(['apps/hook/index.html', 'apps/review/index.html', 'apps/portal/index.html', 'apps/inbox/index.html'])(
+  test.each(['apps/hook/index.html', 'apps/review/index.html', 'apps/inbox/index.html'])(
     '%s leaves scrolling to the visible-viewport application shell',
     (path) => {
       const html = read(path);
@@ -84,7 +81,7 @@ describe('review entry assets', () => {
   // Mermaid is LAZY in both apps by policy since Mermaid 12: the runtime (ELK
   // layout by default, ~1.8 MB more than 11) loads on the first diagram
   // through utils/mermaid's own import('mermaid'), so a plan with no diagram
-  // never pays for it in a chunked build (the share portal). Re-adding the
+  // never pays for it in a chunked build. Re-adding the
   // eager entry to either app would put the whole runtime back into that
   // entry chunk with no error anywhere; the review editor draws diagrams only
   // through the separately served engine (below).
@@ -251,8 +248,8 @@ describe('review entry assets', () => {
   //   count drops to zero while the presence markers stay. The Mermaid
   //   registration marker is asserted ABSENT from both bundles: since Mermaid
   //   12 the plan editor loads the runtime lazily by policy, and an eager
-  //   import creeping back in would only show up as a bigger portal entry
-  //   chunk. The review bundle carries no Mermaid and no Graphviz at all: its
+  //   import creeping back in would only show up as a bigger entry chunk. The
+  //   review bundle carries no Mermaid and no Graphviz at all: its
   //   diagrams come from the separately served engine files (see the import
   //   guard above, and the engine files checked below), so both presence
   //   markers are asserted absent there.
@@ -342,7 +339,6 @@ describe('review entry assets', () => {
     for (const config of [
       'apps/review/vite.config.ts',
       'apps/hook/vite.config.ts',
-      'apps/portal/vite.config.ts',
       'apps/inbox/vite.config.ts',
     ]) {
       expect(read(config)).toContain("'shiki/wasm': path.resolve(");
@@ -486,21 +482,7 @@ describe('review entry assets', () => {
   });
 });
 
-describe('marketing embeds', () => {
-  const youtubePosts = [
-    'apps/marketing/src/content/blog/local-diff-review-for-coding-agents.md',
-    'apps/marketing/src/content/blog/plan-diff-see-what-changed.md',
-    'apps/marketing/src/content/blog/plannotator-meets-pi.md',
-    'apps/marketing/src/content/blog/sharing-plans-with-your-team.md',
-    'apps/marketing/src/content/blog/welcome.md',
-  ];
-
-  test.each(youtubePosts)('%s uses YouTube privacy-enhanced embeds', (path) => {
-    const content = read(path);
-    expect(content).not.toContain('www.youtube.com/embed/');
-    expect(content).toContain('www.youtube-nocookie.com/embed/');
-  });
-
+describe('in-app embeds', () => {
   test('the in-app help dialog uses YouTube privacy-enhanced embeds', () => {
     const toolstrip = read('packages/ui/components/AnnotationToolstrip.tsx');
     expect(toolstrip).not.toContain('www.youtube.com/embed/');

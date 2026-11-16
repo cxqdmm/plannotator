@@ -1,6 +1,6 @@
 /**
  * Product feedback: the one client that sends what a person types about
- * Plannotator to the owner's feedback Worker (apps/feedback-service). The
+ * Plannotator to the owner's feedback Worker. The
  * Inbox's server (`POST /api/inbox/feedback`, packages/server/inbox-feedback.ts)
  * and `plannotator feedback` (apps/hook/server/feedback-command.ts) both send
  * through `sendProductFeedback`, so the backend is swapped in one place: the
@@ -14,9 +14,7 @@
  * ("Claude Code", "Codex"; `feedbackAgentNames`); nothing else (no thread
  * content, no session ids, no paths, no machine id).
  *
- * Browser-safe: no Node or Bun imports. The limits mirror the Worker's
- * (apps/feedback-service/core/validation.ts; its test/limits.test.ts keeps
- * them in step).
+ * Browser-safe: no Node or Bun imports. The limits mirror the Worker's.
  */
 
 /** The feedback Worker's one route. The owner's deploy; swap the backend here. */

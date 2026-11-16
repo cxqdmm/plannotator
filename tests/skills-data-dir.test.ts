@@ -29,7 +29,7 @@ const HARDCODED = /(?:~|\$HOME|\$\{HOME\}|%USERPROFILE%|\$env:USERPROFILE)[/\\]\
 function shippedFiles(): string[] {
   const listed = Bun.spawnSync({
     // `:(glob)`: `*` stops at a slash, so `apps/*/commands` is a host's
-    // command folder, not apps/marketing/src/content/docs/commands.
+    // command folder, not a nested docs folder of the same name.
     cmd: [
       "git", "ls-files", "-z", "--",
       ":(glob)apps/skills/**", ":(glob).agents/**",

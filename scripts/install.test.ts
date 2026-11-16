@@ -1329,8 +1329,6 @@ describe("install shared behavior", () => {
       // The repository map (with the extras install line) moved out of the
       // root AGENTS.md into the project guide.
       "docs/agent-guides/project-and-development.md",
-      "apps/marketing/src/content/docs/getting-started/installation.md",
-      "apps/marketing/src/content/docs/guides/claude-code.md",
     ];
     const command = "npx skills add backnotprop/plannotator/apps/skills/extra";
 

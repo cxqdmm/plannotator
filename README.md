@@ -177,19 +177,6 @@ Send a plan as a link. A teammate annotates it, and you import their feedback fo
 
 Small shares live in the link itself. Large ones are encrypted before upload and expire after 7 days. Anyone with the full link can read it. Turn sharing off with `PLANNOTATOR_SHARE=disabled`. [How sharing works](https://docs.plannotator.ai/open-source/workflows/sharing)
 
-<p align="center">
-  <a href="https://plannotator.ai/workspaces">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset=".github/assets/workspaces-dark.png" />
-      <img src=".github/assets/workspaces-light.png" alt="Plannotator Workspaces: several cursors working in one shared space" width="720" />
-    </picture>
-  </a>
-</p>
-
-<p align="center">
-  For teams: <a href="https://plannotator.ai/workspaces"><strong>join the Workspaces waitlist</strong></a>
-</p>
-
 ---
 
 ## Install
@@ -206,7 +193,7 @@ curl -fsSL https://plannotator.ai/install.sh | bash
 irm https://plannotator.ai/install.ps1 | iex
 ```
 
-The installer downloads the binary from GitHub Releases. A full install can also contact GitHub for release resolution and agent files, Ataraxy-Labs/sem for the optional `sem` sidecar, and npm for Pi, selected extra skills, or the managed agent-terminal runtime. Pinning `--version` skips only GitHub API release resolution, not the release download. See the [privacy policy](https://plannotator.ai/privacy) for the complete network boundaries.
+The installer downloads the binary from GitHub Releases. A full install can also contact GitHub for release resolution and agent files, Ataraxy-Labs/sem for the optional `sem` sidecar, and npm for selected extra skills or the managed agent-terminal runtime. Pinning `--version` skips only GitHub API release resolution, not the release download. See the [privacy policy](https://plannotator.ai/privacy) for the complete network boundaries.
 
 Want just the binary and nothing else? Pass `--minimal` (or export `PLANNOTATOR_MINIMAL=1`) to install only the `plannotator` binary to `~/.local/bin`, skipping every skill, hook, slash command, and per-agent config:
 
@@ -218,19 +205,11 @@ Then finish the step for your agent:
 
 | Agent | After the installer | Details |
 |---|---|---|
-| **Amp** | Copy [`plannotator.ts`](apps/amp-plugin/plannotator.ts) into `~/.config/amp/plugins/`, then `plugins: reload`. Workflows live in the command palette. | [README](apps/amp-plugin/README.md) |
 | **Claude Code** | `/plugin marketplace add backnotprop/plannotator`, then `/plugin install plannotator@plannotator`. Restart Claude Code. | [README](apps/hook/README.md) |
-| **Codex** | Nothing. Plan review is enabled automatically via Codex's experimental `Stop` hook (macOS/Linux/WSL; on native Windows, Codex hooks are experimental and the installer prints manual setup steps). `$plannotator-review`, `$plannotator-annotate`, and `$plannotator-last` skills included. | [README](apps/codex/README.md) |
-| **Copilot CLI** | `/plugin marketplace add backnotprop/plannotator`, then `/plugin install plannotator-copilot@plannotator`. Restart. Plan review activates in plan mode (`Shift+Tab`). | [README](apps/copilot/README.md) |
-| **DeepSeek Harness** | Add `@plannotator/dsh` on DSH's Plugins page, or run `dsh plugin --profile <profile> add @plannotator/dsh`. Plan review opens on `exit_plan_mode`. The plugin adds `/plannotator-review`, `/plannotator-annotate` and `/plannotator-last`, which open without blocking the session. | [README](apps/dsh-plugin/README.md) |
-| **Droid** | `droid plugin marketplace add https://github.com/backnotprop/plannotator`, then `droid plugin install plannotator@plannotator`. Commands only, no plan interception yet. | [README](apps/droid-plugin/README.md) |
-| **Gemini CLI** | Nothing. The hook, policy, and slash commands are configured automatically. Requires Gemini CLI 0.36.0+. | [README](apps/gemini/README.md) |
-| **Kiro CLI** | Nothing. Skills and an example agent are installed automatically. Try `kiro-cli chat --agent plannotator`. | [README](apps/kiro-cli/README.md) |
 | **OpenCode** | Add `"plugin": ["@plannotator/opencode@latest"]` to `opencode.json`. Restart OpenCode. | [README](apps/opencode-plugin/README.md) |
-| **Pi** | Skip the installer. Just `pi install npm:@plannotator/pi-extension`. Start Pi with `--plan`, or toggle with `/plannotator-plan-mode`. | [README](apps/pi-extension/README.md) |
 | **T3 Code** | For Claude threads in T3: run `plannotator t3 --help` and follow its two steps (sign in to T3 once, add the `--t3` MCP entry). Your Inbox replies then arrive in the thread as new turns. | [README](packages/t3-code/README.md) |
 
-**Updating:** run the installer again for the binary and slash commands. It also updates an installed Claude Code plugin when the `claude` command is on your PATH (opt out with `--skip-claude-plugin`); otherwise run `claude plugin marketplace update plannotator`, then `claude plugin update plannotator@plannotator`, then restart Claude Code (refreshing the marketplace alone does not update the plugin). Pi: `pi update --extensions` (a plain `pi update` updates only Pi).
+**Updating:** run the installer again for the binary and slash commands. It also updates an installed Claude Code plugin when the `claude` command is on your PATH (opt out with `--skip-claude-plugin`); otherwise run `claude plugin marketplace update plannotator`, then `claude plugin update plannotator@plannotator`, then restart Claude Code (refreshing the marketplace alone does not update the plugin).
 
 On Claude Code 2.1.287 or newer, plan review, code review and annotate don't make Claude wait: Claude ends its turn and your decision arrives later as a message. Set `PLANNOTATOR_CLAUDE_MOD=0` to go back to the classic flow.
 
@@ -384,8 +363,6 @@ You run /plannotator-review
 
 ## Integrations
 
-**VS Code**: Open plans in editor tabs, view diffs inline, add annotations from the editor gutter. Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=backnotprop.plannotator-webview).
-
 **Obsidian**: Auto-save approved plans to a vault with YAML frontmatter, tags from the plan title, and backlinks for graph connectivity. Configure in Plannotator's Settings panel.
 
 **Bear**: Save plans as Bear notes with nested tags and project metadata.
@@ -503,7 +480,7 @@ implementation architecture.
 | `PLANNOTATOR_BROWSER` | Custom browser to open plans in. `none` (also `false`, `0`, `off`, `no`, `true`, `1`, `:`) opens no browser at all; the session URL is always printed. |
 | `PLANNOTATOR_AI` | `disabled` to disable Ask AI, Review Agents, and Guided Review; the annotate agent terminal is separate |
 | `PLANNOTATOR_SHARE` | `disabled` to turn off URL sharing |
-| `PLANNOTATOR_SHARE_URL` | Custom base URL for share links (self-hosted portal) |
+| `PLANNOTATOR_SHARE_URL` | Custom base URL for share links |
 | `PLANNOTATOR_PASTE_URL` | Base URL of the paste service API |
 | `PLANNOTATOR_ORIGIN` | Override agent detection: `claude-code`, `amp`, `droid`, `opencode`, `codex`, `copilot-cli`, `gemini-cli`, `kiro-cli`, `pi` |
 | `PLANNOTATOR_JINA` | `0`/`false` to disable Jina Reader for URL annotation |
@@ -525,19 +502,15 @@ bun install
 
 bun run dev:hook       # Plan review server
 bun run dev:review     # Code review editor
-bun run dev:marketing  # Marketing site (plannotator.ai)
-bun run dev:vscode     # VS Code extension (watch mode)
 ```
 
 ### Build
 
 ```bash
-bun run build          # Main targets (hook + opencode + dsh)
+bun run build          # Main targets (review + hook + opencode)
 bun run build:hook     # Single-file HTML for the hook server
 bun run build:review   # Code review editor
 bun run build:opencode # OpenCode plugin
-bun run build:dsh      # DeepSeek Harness plugin
-bun run build:vscode   # VS Code extension
 ```
 
 Build order matters. The hook build copies pre-built HTML from `apps/review/dist/`. If you change UI code in `packages/ui/`, `packages/editor/`, or `packages/review-editor/`, rebuild the review app first:

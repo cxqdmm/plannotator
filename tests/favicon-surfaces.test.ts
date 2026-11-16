@@ -10,32 +10,6 @@ import { FACE_FAVICON_PNG_BYTES, FAVICON_ICO_BYTES, FAVICON_PNG_BYTES, YELLOW_FA
 // from the persisted style, so the response Content-Type is the truthful
 // declaration. A type="image/x-icon" would be a lie for Face users.
 const SERVED_FAVICON_LINK = '<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">';
-// The portal is a static site with no Plannotator server, so its favicon really
-// is always the Glass .ico the vite plugin emits and it keeps the typed hint.
-const STATIC_FAVICON_LINK =
-  '<link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="/favicon.ico">';
-// The marketing site serves the brand studio's web set as plain files, linked
-// with the studio's own head snippet (the .ico first, so non-retina tabs get
-// the hand-pixelled 16). It has no web manifest, so the manifest line is left out.
-const MARKETING_FAVICON_LINKS = [
-  '<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">',
-  '<link rel="icon" type="image/svg+xml" href="/favicon.svg">',
-  '<link rel="apple-touch-icon" href="/apple-touch-icon.png">',
-];
-// The studio's files, byte for byte. Never redrawn, resized or re-encoded here.
-const MARKETING_ICON_SHA256: Record<string, string> = {
-  "apps/marketing/public/favicon.ico":
-    "7402e8509ac4ab49194fa387ab0722766cfab5ab94230c798facfd0e97771c59",
-  "apps/marketing/public/favicon.svg":
-    "47cb128c12a479dd1f5d13fe56be141393b04c845e5a7fd6941538a951bd9fd6",
-  "apps/marketing/public/apple-touch-icon.png":
-    "5f5d84c3c72bf0acbcc6e634e037108754794ff9f9c8e3b596d0e7b7c088f4fb",
-  // Not linked from the head. Outside sites and caches still ask for
-  // https://plannotator.ai/favicon.png, so that URL keeps answering, now with
-  // the studio's web/icon-512.png.
-  "apps/marketing/public/favicon.png":
-    "801d533f995fa75efd4d3521fabeb90e98427a444b61f125d91a471c26745333",
-};
 
 interface PngStats {
   width: number;
@@ -139,39 +113,16 @@ describe("favicon surfaces", () => {
       expect(html).not.toContain('href="/favicon.png"');
     }
 
-    expect((await readRepoFile("apps/portal/index.html")).toString()).toContain(
-      STATIC_FAVICON_LINK,
-    );
-
     // Only the Inbox is installed as an app: its server answers the manifest
     // and the touch icon (packages/server/inbox-app-icons.ts).
     const inbox = (await readRepoFile("apps/inbox/index.html")).toString();
     expect(inbox).toContain('<link rel="manifest" href="/manifest.webmanifest">');
     expect(inbox).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png">');
-
-    for (const path of [
-      "apps/marketing/src/layouts/Base.astro",
-      "apps/marketing/public/tui-annotate/index.html",
-    ]) {
-      const html = (await readRepoFile(path)).toString();
-      for (const link of MARKETING_FAVICON_LINKS) expect(html).toContain(link);
-      expect(html).not.toContain("/favicon.png");
-    }
   });
 
-  test("the share portal emits its favicon from the shared application asset", async () => {
-    const portalConfig = (await readRepoFile("apps/portal/vite.config.ts")).toString();
-    expect(portalConfig).toContain("fileName: 'favicon.ico'");
-    expect(portalConfig).toContain("source: FAVICON_ICO_BYTES");
-    expect(portalConfig).toContain("fileName: 'favicon.png'");
-    expect(portalConfig).toContain("source: FAVICON_PNG_BYTES");
-  });
-
-  test("the apps' tab icon is the same .ico plannotator.ai serves, byte for byte", async () => {
+  test("the apps' tab icon is the studio's hand-pixelled .ico, byte for byte", () => {
     // The bug this pins: the apps used the 192px PWA icon, a full square the
-    // browser shrank, while plannotator.ai showed the hand-pixelled 16 and 32.
-    const marketing = await readRepoFile("apps/marketing/public/favicon.ico");
-    expect(Buffer.from(FAVICON_ICO_BYTES).equals(marketing)).toBe(true);
+    // browser shrank, while plannotator.ai shows the hand-pixelled 16 and 32.
     expect(createHash("sha256").update(FAVICON_ICO_BYTES).digest("hex")).toBe(
       "7402e8509ac4ab49194fa387ab0722766cfab5ab94230c798facfd0e97771c59",
     );
@@ -204,16 +155,5 @@ describe("favicon surfaces", () => {
       "8467d50dba314f3b72ab73ba37d406baabd8d74ed72529e853613442a8c65073",
     );
     expect(inspectPng(FACE_FAVICON_PNG_BYTES)).toMatchObject({ width: 64, height: 64 });
-  });
-
-  test("the marketing site ships the studio's web icon set unchanged", async () => {
-    for (const [path, sha256] of Object.entries(MARKETING_ICON_SHA256)) {
-      const bytes = await readRepoFile(path);
-      expect(createHash("sha256").update(bytes).digest("hex"), path).toBe(sha256);
-    }
-    const touch = inspectPng(await readRepoFile("apps/marketing/public/apple-touch-icon.png"));
-    expect(touch).toMatchObject({ width: 180, height: 180 });
-    const legacy = inspectPng(await readRepoFile("apps/marketing/public/favicon.png"));
-    expect(legacy).toMatchObject({ width: 512, height: 512 });
   });
 });

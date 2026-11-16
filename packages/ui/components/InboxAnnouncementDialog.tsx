@@ -26,7 +26,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dial
 /** The Inbox page on plannotator.ai. */
 export const INBOX_PAGE_URL = 'https://plannotator.ai/inbox';
 
-/** Where the marketing deploy publishes `apps/marketing/public/assets/`. */
+/** Where plannotator.ai serves its assets. */
 const MEDIA_BASE_URL = 'https://plannotator.ai/assets';
 
 export const INBOX_FILM = {

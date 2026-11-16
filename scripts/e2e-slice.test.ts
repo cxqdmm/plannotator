@@ -53,7 +53,7 @@ const RULES: SliceRules = {
     { name: 'shared', paths: ['packages/**', 'package.json'], fallback: true, smoke: ['app'] },
   ],
   smoke: { app: ['smoke-x.spec.ts'] },
-  noBrowser: [{ paths: ['docs/**', '**/*.md', 'apps/marketing/**'], why: 'docs' }],
+  noBrowser: [{ paths: ['docs/**', '**/*.md'], why: 'docs' }],
   quarantine: [],
   helperFanout: 2,
 };
@@ -228,8 +228,8 @@ describe('the slice: notices and skips', () => {
     expect(names(slice.chosen)).toEqual(['a-short', 'a-long']);
   });
 
-  test('docs, markdown and the marketing site select nothing and raise no notice', () => {
-    const slice = pick({ changed: ['docs/agent-guides/x.md', 'packages/a/README.md', 'apps/marketing/src/page.astro'] });
+  test('docs and markdown select nothing and raise no notice', () => {
+    const slice = pick({ changed: ['docs/agent-guides/x.md', 'packages/a/README.md'] });
     expect(slice.chosen).toEqual([]);
     expect(slice.unmatched).toEqual([]);
     expect(slice.dropped).toEqual([]);
@@ -286,7 +286,7 @@ describe('the real rules', () => {
     const slice = real(['packages/review-editor/App.tsx']);
     expect(slice.chosen.some((c) => c.spec === 'tests/e2e/review-sidebar.spec.ts')).toBe(true);
     expect(slice.unmatched).toEqual([]);
-    expect(real(['docs/agent-guides/inbox.md', 'README.md', 'apps/marketing/src/content/docs/x.md']).chosen).toEqual([]);
+    expect(real(['docs/agent-guides/inbox.md', 'README.md']).chosen).toEqual([]);
   });
 
   test("#3448's change set picks inbox-ended-session.spec.ts, the spec that caught its regression", () => {

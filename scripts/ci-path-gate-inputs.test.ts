@@ -106,7 +106,7 @@ function closure(entries: readonly string[]): string[] {
 }
 
 /** Paths in no gated job: a pattern widened to everything must still fail. */
-const UNRELATED = ['README.md', 'packages/inbox/App.tsx', 'apps/marketing/src/pages/index.astro'];
+const UNRELATED = ['README.md', 'packages/inbox/App.tsx', 'apps/relay/README.md'];
 
 describe('CI path gates cover the jobs they gate', () => {
   for (const gate of GATES) {

@@ -37,7 +37,7 @@ export interface SliceRule {
  * the compiled Bun binary).
  */
 export const SLICE_NO_BROWSER: { paths: string[]; why: string }[] = [
-  { paths: ['docs/**', '**/*.md', 'apps/marketing/**'], why: 'docs' },
+  { paths: ['docs/**', '**/*.md'], why: 'docs' },
   { paths: ['**/*.test.ts', '**/*.test.tsx', 'tests/dom-test-list.txt', 'tests/*.json'], why: 'unit and DOM tests' },
   { paths: ['tests/e2e/shard-times.json'], why: 'shard timing data' },
   { paths: ['apps/opencode-plugin/**'], why: 'the specs drive only the compiled Bun binary' },

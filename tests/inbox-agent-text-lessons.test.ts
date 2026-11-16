@@ -3,7 +3,7 @@
  * sentence is on every surface an agent reads it from, built from the real
  * sources the way agents get them. What regresses: a sentence dropped or
  * reworded on one copy (the mod's contract copy, the bundled tool list, the
- * MCP server's fields, `--help`, llms.txt), or the thumbs-up's "go" read into
+ * MCP server's fields, `--help`), or the thumbs-up's "go" read into
  * another reaction.
  *
  * Nothing here starts an Inbox, reads the real home or opens a browser: the
@@ -18,7 +18,6 @@ import { inboxAckLine as modAckLine, inboxAgentTool as modAgentTool, inboxWakeTe
 import { INBOX_DEFAULT_TOOLS } from "../apps/hook/hooks/mod/inbox-default-tools";
 import { createAgentEnvironmentFor } from "../packages/server/inbox-agents";
 import { formatInboxHelp } from "../apps/hook/server/inbox-help";
-import { buildLlmsInbox } from "../apps/marketing/src/lib/llms";
 
 const home = realpathSync(mkdtempSync(join(tmpdir(), "plannotator-agent-lessons-")));
 afterAll(() => rmSync(home, { recursive: true, force: true }));
@@ -52,7 +51,6 @@ const help = formatInboxHelp({
   platform: "linux",
   agentEnvironment: createAgentEnvironmentFor({ platform: "linux", homeDir: home, env: { HOME: home, PATH: "" } }),
 });
-const llms = buildLlmsInbox();
 
 /** Every copy of send_message's `body` an agent reads, and the guides that carry its rules. */
 const bodies: Record<string, string> = {
@@ -71,9 +69,9 @@ describe("the owner's lessons reach every copy agents read", () => {
     expect(missing(PROTOTYPE, bodies)).toEqual([]);
   });
 
-  test("the person's own idea, a part of the screen, what happens after a click, a real screenshot, a reread: every body and llms.txt", () => {
+  test("the person's own idea, a part of the screen, what happens after a click, a real screenshot, a reread: every body", () => {
     for (const sentence of [OWN_WORDS, SCREEN_PART, AFTER_CLICK, REAL_SCREEN, REREAD]) {
-      expect([sentence, missing(sentence, { ...bodies, "llms.txt Inbox page": llms })]).toEqual([sentence, []]);
+      expect([sentence, missing(sentence, bodies)]).toEqual([sentence, []]);
     }
   });
 
@@ -82,20 +80,19 @@ describe("the owner's lessons reach every copy agents read", () => {
     for (const [name, body] of fields) expect([name, body.trimEnd().endsWith(REREAD)]).toEqual([name, true]);
   });
 
-  test("ask only what the person would recognise: right after 'Ask only what you cannot decide alone' on the agent tool, and on the MCP body, --help and llms.txt", () => {
+  test("ask only what the person would recognise: right after 'Ask only what you cannot decide alone' on the agent tool, and on the MCP body and --help", () => {
     for (const [name, tool] of Object.entries(agentTools)) {
       expect([name, fieldsOf(tool).body!.description!.includes(`Ask only what you cannot decide alone, about 8 a round at most. ${RECOGNISE}`)]).toEqual([name, true]);
     }
-    expect(missing(RECOGNISE, { ...bodies, "llms.txt Inbox page": llms })).toEqual([]);
+    expect(missing(RECOGNISE, bodies)).toEqual([]);
   });
 
-  test("a new big issue gets its own thread: every `thread` field, --help and llms.txt", () => {
+  test("a new big issue gets its own thread: every `thread` field and --help", () => {
     const threads: Record<string, string> = {
       ...Object.fromEntries(Object.entries(agentTools).map(([name, tool]) => [`${name} thread`, fieldsOf(tool).thread!.description!])),
       "MCP send_message thread": fieldsOf(served("send_message")).thread!.description!,
       "MCP submit_guide thread": fieldsOf(served("submit_guide")).thread!.description!,
       "plannotator inbox --help": help,
-      "llms.txt Inbox page": llms,
     };
     expect(missing(NEW_ISSUE, threads)).toEqual([]);
   });
@@ -104,14 +101,14 @@ describe("the owner's lessons reach every copy agents read", () => {
     expect(missing(SEARCH_FIRST, { "MCP search": served("search").description, "plannotator inbox --help": help })).toEqual([]);
   });
 
-  test("an answer that is not a pick: the wake of a reply with answers (both contract copies), --help and llms.txt; never a reply without answers or a New message", () => {
+  test("an answer that is not a pick: the wake of a reply with answers (both contract copies) and --help; never a reply without answers or a New message", () => {
     const answered = { id: "msg_01REPLY", subject: "Retries", body: "Hmm, what about retrying twice?\n\n## Answers to your questions\n\n### Q1. Retry how?\n\nOther: what about retrying twice?", thread_id: "msg_01THREAD" };
     for (const wake of [inboxWakeText, modWakeText]) {
       expect(wake(answered, 0)).toContain(`\n\n${NOT_A_PICK}\n\n`);
       expect(wake({ ...answered, body: "Go with backoff." }, 0)).not.toContain(NOT_A_PICK);
       expect(wake({ ...answered, type: "message" }, 0)).not.toContain(NOT_A_PICK);
     }
-    expect(missing(NOT_A_PICK, { "plannotator inbox --help": help, "llms.txt Inbox page": llms })).toEqual([]);
+    expect(missing(NOT_A_PICK, { "plannotator inbox --help": help })).toEqual([]);
   });
 
   test("👍 Looks good is a go; no other reaction says so", () => {
