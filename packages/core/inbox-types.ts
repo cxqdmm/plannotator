@@ -3173,10 +3173,10 @@ export const INBOX_TOOL_COST: Readonly<Record<InboxToolCostHost, { bytes: number
   hermes: INBOX_TOOL_COST_NOW,
 };
 
-/** "about 9 KB, roughly 2,500 tokens" for a host's measured cost. */
+/** "约 9 KB，约 2,500 个 token" for a host's measured cost. */
 export function inboxToolCostText(host: InboxToolCostHost): string {
   const cost = INBOX_TOOL_COST[host];
-  return `about ${Math.round(cost.bytes / 1000)} KB, roughly ${cost.tokens.toLocaleString("en-US")} tokens`;
+  return `约 ${Math.round(cost.bytes / 1000)} KB，约 ${cost.tokens.toLocaleString("zh-CN")} 个 token`;
 }
 
 /** "Codex, Gemini CLI and Pi" for note agents. */

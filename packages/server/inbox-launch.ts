@@ -278,12 +278,12 @@ export function createInboxLaunch(options: {
   /** A refused listing's answer: the same words here and through a linked machine's forward. */
   const refusedListing = (refused: HomeFolderRefusal): Response =>
     refused === "hidden"
-      ? json({ error: "Hidden folders aren't listed.", code: "folder_hidden" }, 422)
+      ? json({ error: "不提供隐藏文件夹。", code: "folder_hidden" }, 422)
       : refused === "system"
-        ? json({ error: "System folders aren't listed.", code: "folder_system" }, 422)
+        ? json({ error: "不提供系统文件夹。", code: "folder_system" }, 422)
         : refused === "home_only"
-          ? json({ error: "Only folders inside the home folder.", code: "folder_outside_home" }, 422)
-          : json({ error: "That isn't a full path.", code: "folder_bad_path" }, 422);
+          ? json({ error: "只能选择用户主文件夹内的文件夹。", code: "folder_outside_home" }, 422)
+          : json({ error: "这不是完整的路径。", code: "folder_bad_path" }, 422);
   const slowAnswer = (name: string): Response => json({ error: `${name} isn't responding.`, code: "folder_slow", drive: name }, 504);
 
   /**
@@ -1188,7 +1188,7 @@ ${result.text}`);
   const homeFolders = async (req: Request, via: string, door: { platform: string; window: boolean } | null): Promise<Response> => {
     if (req.method !== "GET") return json({ error: "Use GET." }, 405);
     const window = door ? door.window : req.headers.get("sec-fetch-site") === "same-origin";
-    if (!window) return json({ error: "Folders are listed in the Inbox window only.", code: "window_only" }, 403);
+    if (!window) return json({ error: "文件夹列表只能从收件箱窗口获取。", code: "window_only" }, 403);
     const query = new URL(req.url).searchParams;
     const typed = query.get("path") ?? "~";
     let listed: HomeFolderListing | { refused: HomeFolderRefusal };
@@ -1210,9 +1210,9 @@ ${result.text}`);
   let choosing: Promise<string | null> | null = null;
   const chooseFolderRoute = async (req: Request, via: string, door: { platform: string; window: boolean } | null): Promise<Response> => {
     if (req.method !== "POST") return json({ error: "Use POST." }, 405);
-    if (options.platform !== "darwin") return json({ error: "Finder is on macOS only.", code: "unsupported" }, 404);
+    if (options.platform !== "darwin") return json({ error: "访达（Finder）仅在 macOS 上可用。", code: "unsupported" }, 404);
     if (door || via !== "local" || req.headers.get("sec-fetch-site") !== "same-origin") {
-      return json({ error: "Finder opens from this computer's own Inbox window only.", code: "window_only" }, 403);
+      return json({ error: "访达只能从这台计算机自己的收件箱窗口打开。", code: "window_only" }, 403);
     }
     const body = await options.readBody(req);
     if (checkServerSession(body, options.serverSession) === "mismatch") return json(serverSessionMismatchBody(INBOX_SERVER_SESSION_MISMATCH_ERROR), 409);
@@ -1223,7 +1223,7 @@ ${result.text}`);
       const path = await choosing;
       return json(path ? { path } : { cancelled: true });
     } catch {
-      return json({ error: "Finder couldn't be opened.", code: "finder_failed" }, 500);
+      return json({ error: "无法打开访达。", code: "finder_failed" }, 500);
     }
   };
 
@@ -1231,7 +1231,7 @@ ${result.text}`);
   const windowRead = (req: Request, via: string, door: { platform: string; window: boolean } | null): Response | null => {
     if (req.method !== "GET") return json({ error: "Use GET." }, 405);
     const window = door ? door.window : req.headers.get("sec-fetch-site") === "same-origin";
-    if (!window) return json({ error: "Folders are read in the Inbox window only.", code: "window_only" }, 403);
+    if (!window) return json({ error: "只能从收件箱窗口读取文件夹。", code: "window_only" }, 403);
     return null;
   };
 
@@ -1254,7 +1254,7 @@ ${result.text}`);
     if (refused) return refused;
     const query = new URL(req.url).searchParams;
     const repo = parseInboxGitUrl(query.get("url") ?? "");
-    if (!repo || repo.kind !== "repo") return json({ error: "Not a git repo's URL.", code: "validation_error" }, 422);
+    if (!repo || repo.kind !== "repo") return json({ error: "不是 git 仓库的 URL。", code: "validation_error" }, 422);
     const home = realOrSelf(options.homeDir);
     const typedInto = query.get("into");
     let into: string;
@@ -1284,7 +1284,7 @@ ${result.text}`);
     const refused = windowRead(req, via, door);
     if (refused) return refused;
     const repo = parseInboxGitUrl(new URL(req.url).searchParams.get("url") ?? "");
-    if (!repo || repo.kind !== "repo") return json({ error: "Not a git repo's URL.", code: "validation_error" }, 422);
+    if (!repo || repo.kind !== "repo") return json({ error: "不是 git 仓库的 URL。", code: "validation_error" }, 422);
     // Asked a moment ago (another window, the same URL typed again): that answer, with no git run.
     const known = reachKnown.get(repo.url);
     if (known && now() - known.at < CLONE_REACH_KEEP_MS) return json({ reach: known.reach });
@@ -1313,15 +1313,15 @@ ${result.text}`);
     door: { platform: string; window: boolean } | null = null,
   ): Promise<Response | null> => {
     if (path === "/api/inbox/launch/folders") {
-      if (!enabled()) return json({ error: "Launch is off.", code: "launch_off" }, 404);
+      if (!enabled()) return json({ error: "启动功能已关闭。", code: "launch_off" }, 404);
       return await homeFolders(req, via, door);
     }
     if (path === "/api/inbox/launch/choose-folder") {
-      if (!enabled()) return json({ error: "Launch is off.", code: "launch_off" }, 404);
+      if (!enabled()) return json({ error: "启动功能已关闭。", code: "launch_off" }, 404);
       return await chooseFolderRoute(req, via, door);
     }
     if (path === "/api/inbox/launch/clone" || path === "/api/inbox/launch/clone-check") {
-      if (!enabled()) return json({ error: "Launch is off.", code: "launch_off" }, 404);
+      if (!enabled()) return json({ error: "启动功能已关闭。", code: "launch_off" }, 404);
       return path.endsWith("check") ? await cloneCheck(req, via, door) : await cloneTargetRoute(req, via, door);
     }
     const match = /^\/api\/inbox\/launch\/(settings|lch_[0-9A-HJKMNP-TV-Z]{26})(?:\/(stop|open|delete|retry|trust))?$/.exec(path);
@@ -1341,7 +1341,7 @@ ${result.text}`);
     if (req.method !== "POST") return json({ error: "Use POST." }, 405);
     const body = await options.readBody(req);
     if (checkServerSession(body, options.serverSession) === "mismatch") return json(serverSessionMismatchBody(INBOX_SERVER_SESSION_MISMATCH_ERROR), 409);
-    const localOnly = () => json({ error: "Only from this computer.", code: "owner_only" }, 403);
+    const localOnly = () => json({ error: "只能从这台计算机发起。", code: "owner_only" }, 403);
     if (match[1] === "settings") {
       if (match[2]) return null;
       if ("enabled" in body) {
@@ -1353,7 +1353,7 @@ ${result.text}`);
         if (config().enabled !== body.enabled) throw new InboxError("config_not_saved", "config.json could not be saved; nothing changed.");
         return json({ launch: settingsState() });
       }
-      if (!enabled()) return json({ error: "Launch is off.", code: "launch_off" }, 404);
+      if (!enabled()) return json({ error: "启动功能已关闭。", code: "launch_off" }, 404);
       if ("scratch_dir" in body) {
         // Settings → Agents' "Scratch folders": a full path (`~/` is the person's home); empty or null is the default.
         const raw = body.scratch_dir;

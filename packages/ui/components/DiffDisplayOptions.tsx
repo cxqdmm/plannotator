@@ -43,7 +43,7 @@ const LINE_DIFF = [
   { value: 'word-alt' as const, label: '词级交替' },
   { value: 'word' as const, label: '按词' },
   { value: 'char' as const, label: '按字符' },
-  { value: 'none' as const, label: 'None' },
+  { value: 'none' as const, label: '无' },
 ];
 const MARK = 'w-3.5 h-3.5';
 const INDICATORS = [

@@ -301,7 +301,7 @@ export function ShapePage({ api, openEvents, win = window }: ShapePageProps) {
           <div className="shp-page-body">{body}</div>
         </section>
         {boardOpen && (
-          <section className="shp-page-board pn-shape" data-shape-layer={route.shape} aria-label="Shape">
+          <section className="shp-page-board pn-shape" data-shape-layer={route.shape} aria-label="图纸">
             <Suspense fallback={<div className="shp-page-loading" aria-busy="true" />}>
               <ShapeBoard
                 key={route.shape}

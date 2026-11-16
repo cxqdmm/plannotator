@@ -132,7 +132,7 @@ test("DeepSeek Harness through Plannotator's plugin: ready with the tool on, a s
 
 test('the cost the screen states is the measured one', () => {
   // The size is measured; tokens depend on the model, so the window says "roughly".
-  expect(inboxToolCostText('pi')).toBe(`about ${Math.round(INBOX_TOOL_COST.pi.bytes / 1000)} KB, roughly ${INBOX_TOOL_COST.pi.tokens.toLocaleString('en-US')} tokens`);
+  expect(inboxToolCostText('pi')).toBe(`约 ${Math.round(INBOX_TOOL_COST.pi.bytes / 1000)} KB，约 ${INBOX_TOOL_COST.pi.tokens.toLocaleString('zh-CN')} 个 token`);
   expect(INBOX_TOOL_COST.pi.tokens).toBeGreaterThan(0);
 });
 

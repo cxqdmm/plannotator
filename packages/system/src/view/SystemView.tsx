@@ -887,9 +887,9 @@ export function SystemView({
         {/* every chip says its sheet's kind in words: a code's first letter alone ("F" beside "Logical") named nothing,
             and F is also the fit key; two sheets of one kind add their codes; the current one takes the selected fill */}
         {vw === 'steps' && stepsModel ? (
-          <div className="sys-kind" aria-label="Steps">{rev?.steps?.title || 'Steps'}</div>
+          <div className="sys-kind" aria-label="步骤">{rev?.steps?.title || '步骤'}</div>
         ) : shownSheet && shownCodes.length > 1 ? (
-          <div className="sys-chips" role="group" aria-label="Sheets here">
+          <div className="sys-chips" role="group" aria-label="此处的图纸">
             {shownCodes.map((c, i) => {
               const sh = model.sheets[c]!;
               const on = c === shownCode;
@@ -901,21 +901,21 @@ export function SystemView({
             })}
           </div>
         ) : (
-          shownSheet && <div className="sys-kind" aria-label="Sheet kind">{kindLabel(shownSheet.kind)}</div>
+          shownSheet && <div className="sys-kind" aria-label="图纸类型">{kindLabel(shownSheet.kind)}</div>
         )}
         <div className="sys-tools">
           {two && onReading && vw !== 'steps' && (
-            <div className="sys-seg" role="radiogroup" aria-label="Reading">
+            <div className="sys-seg" role="radiogroup" aria-label="阅读方式">
               {(['simple', 'full'] as const).map((r) => (
                 <button key={r} type="button" role="radio" aria-checked={reading === r} className="sys-seg-o" data-on={reading === r ? '' : undefined} onClick={() => pressReading(r)}>
-                  {r === 'simple' ? 'Simple' : 'Full'}
+                  {r === 'simple' ? '简洁' : '完整'}
                 </button>
               ))}
             </div>
           )}
           {prNum != null && !plan && (
             onOpenDetails ? (
-              <button type="button" className="sys-pr sys-pr-b" title={prTitle || undefined} aria-label={`PR ${prNum}${prTitle ? `: ${prTitle}` : ''}, opens details`} onClick={() => onOpenDetails()}>
+              <button type="button" className="sys-pr sys-pr-b" title={prTitle || undefined} aria-label={`PR ${prNum}${prTitle ? `：${prTitle}` : ''}，打开详情`} onClick={() => onOpenDetails()}>
                 <span>PR {prNum}</span>{prState}
               </button>
             ) : (
@@ -1027,12 +1027,12 @@ export function SystemView({
   );
 }
 
-const STATE_WORD = { open: 'Open', merged: 'Merged', closed: 'Closed' } as const;
+const STATE_WORD = { open: '开放', merged: '已合并', closed: '已关闭' } as const;
 
 /** "3 added · 5 changed · 1 removed", each in its ink. */
 function Tally({ s }: { s: NonNullable<ReturnType<typeof changeSummary>> }) {
-  const bits = [s.added && ['added', `${s.added} added`], s.changed && ['changed', `${s.changed} changed`], s.removed && ['removed', `${s.removed} removed`]].filter((b): b is [string, string] => !!b);
-  if (!bits.length) return <span className="sys-tally">No drawn part changed</span>;
+  const bits = [s.added && ['added', `新增 ${s.added}`], s.changed && ['changed', `${s.changed} 个改动`], s.removed && ['removed', `移除 ${s.removed}`]].filter((b): b is [string, string] => !!b);
+  if (!bits.length) return <span className="sys-tally">绘制的部分没有变化</span>;
   return (
     <span className="sys-tally">
       {bits.map(([k, t], i) => <span key={k}>{i > 0 && <span className="sys-tally-sep"> · </span>}<span className={'sys-ink-' + k}>{t}</span></span>)}

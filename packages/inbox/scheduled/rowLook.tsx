@@ -52,7 +52,7 @@ export const rowLabel = (row: InboxListRow, title: string): string => marks.get(
 /** The sender's tile: the play mark in place of the agents' marks. */
 export function ScheduledTile() {
   return (
-    <span className="st-tile" role="img" aria-label="Routine" data-scheduled-tile="">
+    <span className="st-tile" role="img" aria-label="例行任务" data-scheduled-tile="">
       <Icon name="scheduled" size={12} />
     </span>
   );

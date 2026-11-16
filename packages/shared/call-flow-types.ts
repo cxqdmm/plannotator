@@ -296,7 +296,7 @@ export function parseCallDiffWorkerResult(value: unknown): ParsedCallDiffWorkerR
   if (truncatedTrees) {
     diagnostics.push({
       level: "warning",
-      message: `Showing the first ${MAX_TREES.toLocaleString("en-US")} of ${totalTreeCount.toLocaleString("en-US")} call trees; the rest were truncated to bound the result.`,
+      message: `只显示前 ${MAX_TREES.toLocaleString("zh-CN")} 个调用树，共 ${totalTreeCount.toLocaleString("zh-CN")} 个；其余为保证结果大小已被截断。`,
     });
   }
 

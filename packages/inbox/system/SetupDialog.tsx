@@ -237,7 +237,7 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
       onClose={() => (saving ? undefined : props.onClose())}
       className={`ib-sys${props.phone ? ' ib-sys-phone' : ''}`}
     >
-      <ol className="ib-sys-steps" aria-label="Steps" data-system-steps="">
+      <ol className="ib-sys-steps" aria-label="步骤" data-system-steps="">
         {STEPS.map((label, i) => (
           <li key={label} aria-current={i === step ? 'step' : undefined} data-done={i < step ? '' : undefined}>
             <span className="ib-sys-n" aria-hidden="true">
@@ -411,7 +411,7 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
               Looking for agents on this Mac…
             </p>
           ) : (
-            <div className="ib-sys-picks" role="radiogroup" aria-label="Agent" data-system-agents="">
+            <div className="ib-sys-picks" role="radiogroup" aria-label="agent" data-system-agents="">
               {agents.map((id) => (
                 <div key={id} className="ib-sys-agentrow" data-on={agent === id ? '' : undefined} data-system-agent={id}>
                   <label className="ib-sys-pick">

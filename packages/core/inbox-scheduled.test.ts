@@ -124,15 +124,15 @@ describe("the 15-minute rule", () => {
 });
 
 test("the presets in words", () => {
-  expect(inboxScheduleWords({ cron: "0 9 * * 1-5", tz: NY })).toBe("Every weekday at 9:00 AM");
-  expect(inboxScheduleWords({ cron: "0 17 * * 5", tz: NY })).toBe("Every week on Friday at 5:00 PM");
-  expect(inboxScheduleWords({ cron: "0 */2 * * *", tz: NY })).toBe("Every 2 hours, at minute 0");
-  expect(inboxScheduleWords({ at: "2026-11-20T17:00", tz: NY })).toBe("Once on Fri, Nov 20 at 5:00 PM");
-  expect(inboxScheduleWords(null)).toBe("Runs when you run it.");
+  expect(inboxScheduleWords({ cron: "0 9 * * 1-5", tz: NY })).toBe("每个工作日 9:00");
+  expect(inboxScheduleWords({ cron: "0 17 * * 5", tz: NY })).toBe("每周五 17:00");
+  expect(inboxScheduleWords({ cron: "0 */2 * * *", tz: NY })).toBe("每 2 小时，在第 0 分钟");
+  expect(inboxScheduleWords({ at: "2026-11-20T17:00", tz: NY })).toBe("一次，11 月 20 日（周五）17:00");
+  expect(inboxScheduleWords(null)).toBe("只在你手动运行时执行。");
 });
 
 test("a step that does not divide the hour or the day says what it does, never an untrue every", () => {
-  expect(inboxScheduleWords({ cron: "*/45 * * * *", tz: NY })).toBe("Every hour at :00 and :45");
-  expect(inboxScheduleWords({ cron: "*/20 * * * *", tz: NY })).toBe("Every 20 minutes");
-  expect(inboxScheduleWords({ cron: "0 */5 * * *", tz: NY })).toBe("On the schedule 0 */5 * * *");
+  expect(inboxScheduleWords({ cron: "*/45 * * * *", tz: NY })).toBe("每小时 :00 和 :45");
+  expect(inboxScheduleWords({ cron: "*/20 * * * *", tz: NY })).toBe("每 20 分钟");
+  expect(inboxScheduleWords({ cron: "0 */5 * * *", tz: NY })).toBe("按计划 0 */5 * * *");
 });

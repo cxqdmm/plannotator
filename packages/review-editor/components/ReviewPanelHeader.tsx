@@ -83,7 +83,7 @@ const GO_TO_FILE_KEYS_WIDTH = 210;
 const FOCUS =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-1 focus-visible:ring-offset-background';
 
-const formatCount = (count: number) => count.toLocaleString('en-US');
+const formatCount = (count: number) => count.toLocaleString('zh-CN');
 
 function relativeAge(ms: number): string {
   const seconds = Math.max(0, Math.round(ms / 1000));

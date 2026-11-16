@@ -146,11 +146,11 @@ function Card({ p, marks }: { p: Part; marks: string[] }) {
         <div className="sys-cap">{str(c.runtime)}</div>
       </div>
       <div className="sys-card-sec sys-t-phrase">
-        <div className="sys-sec-h">Entry points</div>
+        <div className="sys-sec-h">入口</div>
         {list(c.entry).map((r) => <div className="sys-route sys-mono" key={r} title={r}>{r}</div>)}
       </div>
       <div className="sys-card-sec sys-t-phrase">
-        <div className="sys-sec-h">Bindings</div>
+        <div className="sys-sec-h">绑定</div>
         {list(c.binds).map((b) => {
           const [k, ...rest] = b.split(' ');
           return <div className="sys-bind" key={b} title={b}><span className="sys-mono">{k}</span><span className="sys-bv">{rest.join(' ')}</span></div>;

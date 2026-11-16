@@ -1020,7 +1020,7 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
       <div className="space-y-2">
         <div>
           <div className="text-sm font-medium">更改指示器</div>
-          <div className="text-xs text-muted-foreground">Style of +/- markers in the gutter</div>
+          <div className="text-xs text-muted-foreground">行号栏中 +/- 标记的样式</div>
         </div>
         <SegmentedControl options={INDICATOR_OPTIONS} value={diffIndicators} onChange={(v) => configStore.set('diffIndicators', v)} />
       </div>
@@ -2813,7 +2813,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                           </div>
 
                           <div className="space-y-1.5">
-                            <label className="text-xs text-muted-foreground">Frontmatter (auto-generated)</label>
+                            <label className="text-xs text-muted-foreground">Frontmatter（自动生成）</label>
                             <pre className="px-3 py-2 bg-muted/50 rounded-lg text-[10px] font-mono text-muted-foreground overflow-x-auto">
 {`---
 created: ${new Date().toISOString().slice(0, 19)}Z

@@ -148,10 +148,10 @@ export function parseInboxPromptsChange(input: unknown): InboxPromptsChange {
   }
   const text = (value: unknown, field: string, max = INBOX_REMINDER_MAX_CHARS): string | null => {
     if (value === null) return null;
-    if (typeof value !== "string") return fail(`${field}: a string, or null to use the default.`, field);
+    if (typeof value !== "string") return fail(`${field}：应为字符串，或为 null 以使用默认值。`, field);
     if (value.trim() === "") return null;
     if (value.length > max) {
-      return fail(`${field}: at most ${max.toLocaleString("en-US")} characters (this one has ${value.length.toLocaleString("en-US")}).`, field);
+      return fail(`${field}：最多 ${max.toLocaleString("zh-CN")} 个字符（当前 ${value.length.toLocaleString("zh-CN")} 个）。`, field);
     }
     return value;
   };
@@ -170,7 +170,7 @@ export function parseInboxPromptsChange(input: unknown): InboxPromptsChange {
     if (!runtimes || Object.keys(runtimes).length === 0) fail("prompts.inbox.runtimes: { <claude-code|pi|opencode>: { reminder } }.", "prompts.inbox.runtimes");
     change.inbox.runtimes = {};
     for (const [host, entry] of Object.entries(runtimes!)) {
-      if (!(INBOX_PROMPT_HOSTS as readonly string[]).includes(host)) fail(`prompts.inbox.runtimes.${host}: not an agent (claude-code, pi, opencode).`, `prompts.inbox.runtimes.${host}`);
+      if (!(INBOX_PROMPT_HOSTS as readonly string[]).includes(host)) fail(`prompts.inbox.runtimes.${host}：不是可识别的 agent（claude-code、pi、opencode）。`, `prompts.inbox.runtimes.${host}`);
       const fields = record(entry);
       const keys = fields ? Object.keys(fields) : [];
       if (keys.length === 0 || keys.some((key) => key !== "reminder" && key !== "rules")) {

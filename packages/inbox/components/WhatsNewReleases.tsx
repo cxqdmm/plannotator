@@ -83,7 +83,7 @@ export function KnownLine({ row, loading }: { row: WhatsNewRelease | null; loadi
   }
   if (!loading) return <div className="ib-wn-tldr ib-wn-tldr-empty" aria-hidden="true" />;
   return (
-    <section className="ib-wn-tldr" aria-busy="true" aria-label="TL;DR">
+    <section className="ib-wn-tldr" aria-busy="true" aria-label="摘要">
       <h2>摘要</h2>
       {[64, 52, 58].map((w) => (
         <span key={w} className="ib-wn-sk" style={{ width: `${w}%` }} />

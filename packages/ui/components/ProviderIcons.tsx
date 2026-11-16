@@ -64,7 +64,7 @@ export const PROVIDER_META: Record<string, { label: string; icon: React.FC<{ cla
   'pi-sdk': { label: 'Pi', icon: PiIcon },
   'opencode-sdk': { label: 'OpenCode', icon: OpenCodeIcon },
   'qwen-sdk': { label: 'Qwen Code', icon: QwenIcon },
-  'session-bridge': { label: 'Ask this session', icon: SessionIcon },
+  'session-bridge': { label: '询问此会话', icon: SessionIcon },
 };
 
 /**

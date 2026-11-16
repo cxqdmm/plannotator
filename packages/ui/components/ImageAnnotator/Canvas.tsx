@@ -100,7 +100,7 @@ export const Canvas: React.FC<CanvasProps> = ({
       <img
         ref={imageRef}
         src={imageSrc}
-        alt="Annotate"
+        alt="标注"
         onLoad={handleImageLoad}
         className="max-w-[85vw] max-h-[70vh] rounded-lg"
         draggable={false}

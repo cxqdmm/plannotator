@@ -583,7 +583,7 @@ export function TourCoach({
     const sides = coach.target ? (SIDES[coach.target] ?? ['corner']) : ['corner'];
     if (!r || sides[0] === 'corner') {
       // Beside the sidebar, never over it (its Settings row stays in reach).
-      const side = document.querySelector('[data-tour] aside[aria-label="Inbox navigation"], .pn-inbox[data-tour] .ib-side')?.getBoundingClientRect();
+      const side = document.querySelector('[data-tour] aside[aria-label="收件箱导航"], .pn-inbox[data-tour] .ib-side')?.getBoundingClientRect();
       const left = side && side.width > 0 && side.right + m + w <= vw - m ? side.right + m : m;
       setPlace({ left, top: Math.max(bar + m, vh - h - 16), at: 'bottom' });
       return;

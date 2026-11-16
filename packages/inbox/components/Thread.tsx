@@ -5719,7 +5719,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                     {sending && <span className="ib-spin" aria-hidden="true" />}
                     {/* A phone: the round arrow; the word stays as the button's name. */}
                     {phone && <Icon name="arrowUp" size={20} className="ib-rsend-i" />}
-                    <span className="ib-rsend-w">Send</span>
+                    <span className="ib-rsend-w">发送</span>
                   </button>
                   )
                 }

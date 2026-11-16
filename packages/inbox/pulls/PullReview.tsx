@@ -838,11 +838,11 @@ function LayerReview({ model, modelError, stackId, layerKey, scope: asked, onLay
 
   if (!model || !stack || !layer) {
     return (
-      <section className={`ib-viewer ib-wlayer ib-review ib-prreview${phone ? '' : ' ib-prr-wide'}`} aria-label="Review" data-pull-review="">
+      <section className={`ib-viewer ib-wlayer ib-review ib-prreview${phone ? '' : ' ib-prr-wide'}`} aria-label="评审" data-pull-review="">
         <div className="ib-vhead">
           {!phone && <SidebarTrigger />}
           <Tip content="Reviews">
-            <button type="button" className="ib-back" onClick={onBack} aria-label="Reviews">
+            <button type="button" className="ib-back" onClick={onBack} aria-label="评审">
               <Icon name="back" size={15} />
             </button>
           </Tip>
@@ -943,7 +943,7 @@ function LayerReview({ model, modelError, stackId, layerKey, scope: asked, onLay
       <div className="ib-vhead">
         {!phone && <SidebarTrigger />}
         <Tip content="Reviews">
-          <button type="button" className="ib-back" onClick={onBack} aria-label="Reviews">
+          <button type="button" className="ib-back" onClick={onBack} aria-label="评审">
             <Icon name="back" size={15} />
           </button>
         </Tip>

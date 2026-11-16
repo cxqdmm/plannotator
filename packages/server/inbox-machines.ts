@@ -354,7 +354,7 @@ const FOLDERS_ROUTES = new Set(["launch/folders", "launch/clone", "launch/clone-
 /** A file a message names, read on another machine (approval "inbox-file-refs-open-viewer"): its view, its bytes. */
 const FILE_READ_ROUTE = /^open-in\//;
 /** A forwarded file read that is not a press in this Inbox's window. */
-export const INBOX_MACHINE_FILE_WINDOW_ONLY_BODY = { error: "A file on another machine opens from the Inbox window only.", code: "window_only" } as const;
+export const INBOX_MACHINE_FILE_WINDOW_ONLY_BODY = { error: "另一台计算机上的文件只能从收件箱窗口打开。", code: "window_only" } as const;
 
 /**
  * Whether a forwarded read of a file on another machine is refused. That machine hands the read to its own route as
@@ -771,7 +771,7 @@ export function createInboxMachines(context: InboxMachinesContext) {
    */
   const unlink = async (id: string) => {
     const record = links.get(id);
-    if (!record) throw new InboxError("machine_not_linked", "That machine is not linked.");
+    if (!record) throw new InboxError("machine_not_linked", "那台计算机尚未连接。");
     peers.get(id)?.stop();
     const told = await tellUnlink(openTransport(record.transport), record.token);
     forget(id, told ? "now" : "after_refusal");
@@ -812,24 +812,24 @@ export function createInboxMachines(context: InboxMachinesContext) {
 
   const forward = async (req: Request, url: URL, machine: string, route: string, via: "local" | "tailnet"): Promise<Response> => {
     const peer = peers.get(machine);
-    if (!peer) return json({ error: "That machine is not linked.", code: "machine_not_linked" }, 404);
+    if (!peer) return json({ error: "那台计算机尚未连接。", code: "machine_not_linked" }, 404);
     // The window's own stream carries other machines' records; a merged view is never asked of a machine.
     // A door route, nothing that could step out of it: no empty, `.` or `..` segment, no encoded dot, slash or backslash.
     const segments = route.split("/");
     if (/%2e|%2f|%5c|\\/i.test(route) || segments.some((segment) => segment === "" || segment === "." || segment === "..")) {
-      return json({ error: "Not a forwarded route.", code: "not_found" }, 404);
+      return json({ error: "不是可转发的路由。", code: "not_found" }, 404);
     }
     // Accounts go by `accountsOf` alone: a forward would pass the far answer as it came, past the owner's check, and
     // would hold a write such as a switch on disk. Nothing under `accounts/` either: a linked machine's switch is its own step.
     // `update` has its own route (`/api/inbox/machines/:id/update`), never a held forward.
     if (route === "events" || route === "pair" || route === "link-back" || route === "unlink" || route === "revoke" || safeDecode(segments[0]!) === "accounts" || safeDecode(route) === "update") {
-      return json({ error: "Not a forwarded route.", code: "not_found" }, 404);
+      return json({ error: "不是可转发的路由。", code: "not_found" }, 404);
     }
     // This machine's own thread, message, file or project never goes to a peer, whatever the window learned: a
     // linked machine that lists or names one of this Inbox's ids cannot take its reads or writes.
     const ownId = HELD_KINDS.has(segments[0]!) && segments[1] ? safeDecode(segments[1]) : null;
     if (ownId && context.holds(segments[0] as HeldKind, ownId)) {
-      return json({ error: "That is on this computer, not on another machine.", code: "id_is_local", id: ownId }, 409);
+      return json({ error: "它在当前这台计算机上，不在另一台计算机上。", code: "id_is_local", id: ownId }, 409);
     }
     const offline = () =>
       json({ error: `${links.get(machine)?.name ?? "That machine"} cannot be reached now.`, code: "machine_offline", machine: machinesView().find((m) => m.id === machine) }, 503);
@@ -840,7 +840,7 @@ export function createInboxMachines(context: InboxMachinesContext) {
       const headers = pick(req.headers, PASS_REQUEST);
       // Another machine's folder names ("Another folder on <machine>…"): the owner's window only, and said so to it.
       if (FOLDERS_ROUTES.has(route)) {
-        if (req.headers.get("sec-fetch-site") !== "same-origin") return json({ error: "Folders are listed in the Inbox window only.", code: "window_only" }, 403);
+        if (req.headers.get("sec-fetch-site") !== "same-origin") return json({ error: "文件夹列表只能从收件箱窗口获取。", code: "window_only" }, 403);
         headers[MACHINE_WINDOW_HEADER] = "1";
       }
       // A file a message names: only the window's read gets here (`forwardedFileReadRefusal`), said so to that machine.
@@ -859,7 +859,7 @@ export function createInboxMachines(context: InboxMachinesContext) {
     if (req.method !== "POST") return json({ error: "Use GET or POST." }, 405);
     // Rule 8's table decides, by route: a write it has not classified, or calls `local`, never reaches another machine.
     const kind = doorWriteKind(route);
-    if (!kind) return json({ error: "Not a forwarded route.", code: "not_found" }, 404);
+    if (!kind) return json({ error: "不是可转发的路由。", code: "not_found" }, 404);
     if (kind === "file") {
       // A file (an upload, a drawing): never held. It goes now, or not at all.
       if (peer.state !== "online") return offline();
@@ -932,7 +932,7 @@ export function createInboxMachines(context: InboxMachinesContext) {
     // A write that names this Inbox's thread, message, file or project in its body (a comment, a new message) is refused the same way.
     for (const [key, held] of BODY_IDS) {
       const id = body[key];
-      if (typeof id === "string" && id !== "" && context.holds(held, id)) return json({ error: "That is on this computer, not on another machine.", code: "id_is_local", id }, 409);
+      if (typeof id === "string" && id !== "" && context.holds(held, id)) return json({ error: "它在当前这台计算机上，不在另一台计算机上。", code: "id_is_local", id }, 409);
     }
     // This Inbox's page session means nothing to the other machine's Inbox, and its drafts stay on this computer.
     delete body.serverSession;
@@ -1028,7 +1028,7 @@ export function createInboxMachines(context: InboxMachinesContext) {
    */
   const accountsOf = async (machine: string, fresh: boolean, signal: AbortSignal): Promise<InboxMachineAccountsRead> => {
     const peer = peers.get(machine);
-    if (!peer) throw new InboxError("machine_not_linked", "That machine is not linked.");
+    if (!peer) throw new InboxError("machine_not_linked", "那台计算机尚未连接。");
     if (peer.state === "needs_update") return { state: "needs_update" };
     if (peer.state === "revoked") return { state: "unreachable" };
     if (peer.state === "offline") {
@@ -1090,11 +1090,11 @@ export function createInboxMachines(context: InboxMachinesContext) {
       const stale = staleTab(body);
       if (stale) return stale;
       const key = decodePathSegment(cancel[1]!);
-      if (key === null) return json({ error: "Bad request.", code: "bad_request" }, 400);
+      if (key === null) return json({ error: "请求无效。", code: "bad_request" }, 400);
       const held = outbox.get(key);
       if (held && startsAgentThere(held.route, held.body) && !isWindowRequest(req, body, context.serverSession)) return json(INBOX_MACHINE_WINDOW_ONLY_BODY, 403);
       const entry = outbox.cancel(key);
-      if (!entry) return json({ error: "No such write.", code: "not_found" }, 404);
+      if (!entry) return json({ error: "找不到这条写入。", code: "not_found" }, 404);
       if (entry.state !== "cancelled") {
         const name = links.get(entry.machine)?.name ?? entry.machine_name ?? "the other machine";
         return json({ error: `It already went to ${name}, so it can't be cancelled here.`, code: "outbox_already_sent", entry: outboxView(entry) }, 409);
@@ -1107,9 +1107,9 @@ export function createInboxMachines(context: InboxMachinesContext) {
       const stale = staleTab(await context.readBody(req));
       if (stale) return stale;
       const key = decodePathSegment(dismiss[1]!);
-      if (key === null) return json({ error: "Bad request.", code: "bad_request" }, 400);
+      if (key === null) return json({ error: "请求无效。", code: "bad_request" }, 400);
       const entry = outbox.dismiss(key);
-      if (!entry) return json({ error: "No such write.", code: "not_found" }, 404);
+      if (!entry) return json({ error: "找不到这条写入。", code: "not_found" }, 404);
       return json({ entry: outboxView(entry) });
     }
     // The window asked an agent on an older machine to update it (its New message went through the forward, as any
@@ -1121,7 +1121,7 @@ export function createInboxMachines(context: InboxMachinesContext) {
       const stale = staleTab(body);
       if (stale) return stale;
       const peer = peers.get(askedMatch[1]!);
-      if (!peer) return json({ error: "That machine is not linked.", code: "machine_not_linked" }, 404);
+      if (!peer) return json({ error: "那台计算机尚未连接。", code: "machine_not_linked" }, 404);
       const thread = typeof body.thread_id === "string" && /^[A-Za-z0-9_-]{1,100}$/.test(body.thread_id) ? body.thread_id : null;
       const agent = typeof body.agent === "string" ? body.agent.replace(/\s+/g, " ").trim().slice(0, 60) : "";
       peer.agentAsked = { from: peer.version, at: Date.now(), thread, agent: agent || "An agent" };
@@ -1135,7 +1135,7 @@ export function createInboxMachines(context: InboxMachinesContext) {
       if (req.method !== "GET" && req.method !== "POST") return json({ error: "Use GET or POST." }, 405);
       // Another site's page never gets here: the request guard and the tailnet listener refuse it, reads included.
       const peer = peers.get(updateMatch[1]!);
-      if (!peer) return json({ error: "That machine is not linked.", code: "machine_not_linked" }, 404);
+      if (!peer) return json({ error: "那台计算机尚未连接。", code: "machine_not_linked" }, 404);
       const name = links.get(peer.id)?.name ?? "That machine";
       if (peer.state !== "online") {
         peer.poke();
@@ -1205,10 +1205,10 @@ export function createInboxMachines(context: InboxMachinesContext) {
     if (path === "/api/inbox/control/machines/unlink") {
       const target = typeof body.machine === "string" ? body.machine.trim() : "";
       const record = links.list().find((l) => l.id === target || l.name.toLowerCase() === target.toLowerCase());
-      if (!record) throw new InboxError("machine_not_linked", `No linked machine named ${target || "(none)"}.`);
+      if (!record) throw new InboxError("machine_not_linked", `没有名为 ${target || "(none)"} 的已连接计算机。`);
       return json(await unlink(record.id));
     }
-    return json({ error: "Not found", code: "not_found" }, 404);
+    return json({ error: "未找到", code: "not_found" }, 404);
   };
 
   // ── The merged view (only with machines=1) ──

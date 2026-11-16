@@ -153,7 +153,7 @@ export const GoToFile: React.FC<GoToFileProps> = ({
   const scopeNote = !repoSupported
     ? '仅已更改文件：此评审没有可列出的仓库'
     : total != null
-      ? `${total.toLocaleString('en-US')} 个文件 · 已更改的文件有标记`
+      ? `${total.toLocaleString('zh-CN')} 个文件 · 已更改的文件有标记`
       : repo.status === 'unavailable' || repo.status === 'error'
         ? '仅已更改文件'
         : '正在列出仓库文件…';

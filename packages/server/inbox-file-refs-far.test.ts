@@ -102,7 +102,7 @@ describe("a file a message names, asked for by a linked machine", () => {
     const w = world().as({ window: false });
     for (const answer of [await w.view("docs/plan.md"), await w.raw(join(w.elsewhere, "shot.png")), await w.attach("docs/plan.md")]) {
       expect(answer.status).toBe(403);
-      expect(answer.body).toEqual({ error: "A file on another machine opens from the Inbox window only.", code: "window_only" });
+      expect(answer.body).toEqual({ error: "另一台计算机上的文件只能从收件箱窗口打开。", code: "window_only" });
     }
     expect(w.attachments()).toEqual([]);
   });

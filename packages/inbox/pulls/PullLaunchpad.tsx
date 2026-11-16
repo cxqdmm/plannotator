@@ -366,7 +366,7 @@ export function PullLaunchpad({
                 )}
               </Door>
             )}
-            {system && <Door kind="system" soon icon={<Icon name="cube" size={18} />} title="System" sub={<>这次改动在周围的服务、数据和负责人之间处于什么位置。来自 Workspaces。</>} />}
+            {system && <Door kind="system" soon icon={<Icon name="cube" size={18} />} title="系统" sub={<>这次改动在周围的服务、数据和负责人之间处于什么位置。来自 Workspaces。</>} />}
           </div>
 
           <h3 className="ib-lp-h">详情</h3>

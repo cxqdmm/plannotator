@@ -325,7 +325,7 @@ test.skipIf(!hasDom)('a tool the person turned off by name (config.json false) i
 
 test.skipIf(!hasDom)('the cost on the card: the measured size, and the tokens said as roughly', () => {
   const m = mount(SCENARIOS.typical());
-  expect(text(card(m.el).querySelector('p b'))).toMatch(/^about \d+ KB, roughly [\d,]+ tokens$/);
+  expect(text(card(m.el).querySelector('p b'))).toMatch(/^约 \d+ KB，约 [\d,]+ 个 token$/);
 });
 
 // Found by the first-run scenario matrix (a person's `plannotator inbox` on scratch computers).

@@ -120,7 +120,7 @@ function lengthOf(value: string): number {
 export function feedbackInputError(input: ProductFeedbackInput): string | null {
   const message = typeof input.message === "string" ? input.message.trim() : "";
   if (!message) return "Write your feedback first.";
-  if (lengthOf(message) > FEEDBACK_MESSAGE_MAX) return `Keep it under ${FEEDBACK_MESSAGE_MAX.toLocaleString("en-US")} characters.`;
+  if (lengthOf(message) > FEEDBACK_MESSAGE_MAX) return `请控制在 ${FEEDBACK_MESSAGE_MAX.toLocaleString("zh-CN")} 个字符以内。`;
   if (input.category != null && !(FEEDBACK_CATEGORIES as readonly string[]).includes(input.category)) {
     return `Category must be one of: ${FEEDBACK_CATEGORIES.join(", ")}.`;
   }

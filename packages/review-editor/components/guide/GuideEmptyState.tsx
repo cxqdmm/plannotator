@@ -498,7 +498,7 @@ export const GuideEmptyState: React.FC<GuideEmptyStateProps> = ({ capabilities, 
                   会叠加在内置的指南方法论之上，适用于你生成的每一份指南。下次仍会保留。
                   {instructions.length >= GUIDE_EXTRA_INSTRUCTIONS_MAX_CHARS - 1000 && (
                     <span data-guide-instructions-count="" className="ml-1 whitespace-nowrap tabular-nums">
-                      {instructions.length.toLocaleString('en-US')} / {GUIDE_EXTRA_INSTRUCTIONS_MAX_CHARS.toLocaleString('en-US')}
+                      {instructions.length.toLocaleString('zh-CN')} / {GUIDE_EXTRA_INSTRUCTIONS_MAX_CHARS.toLocaleString('zh-CN')}
                     </span>
                   )}
                 </p>

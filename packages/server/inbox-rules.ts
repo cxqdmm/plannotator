@@ -50,7 +50,7 @@ export function inboxRulesFitError(change: InboxPromptsChange, config: Plannotat
   const rules = inboxRulesModel(config, wakes);
   const check = (value: string | null | undefined, max: number, field: string) =>
     typeof value === "string" && value.trim().length > max
-      ? { field, message: `${field}: at most ${max.toLocaleString("en-US")} characters with the reminder it follows (this one has ${value.trim().length.toLocaleString("en-US")}).` }
+      ? { field, message: `${field}：连同其后的提醒最多 ${max.toLocaleString("zh-CN")} 个字符（当前 ${value.trim().length.toLocaleString("zh-CN")} 个）。` }
       : null;
   const shared = check(change.inbox?.rules, rules.room.shared, "prompts.inbox.rules");
   if (shared) return shared;
