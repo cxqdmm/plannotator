@@ -35,7 +35,7 @@ export interface ThreadSlotHost {
   fromCard: string | null;
   fileOpen: boolean;
   staleNotice: ReactNode;
-  /** The thread "Notify again" shows in, or null. */
+  /** The thread '再次通知' shows in, or null. */
   notifyAgainIn: string | null;
   notifications: ReturnType<typeof useInboxNotifications>;
   soundOn: boolean;

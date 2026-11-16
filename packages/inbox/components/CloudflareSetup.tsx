@@ -3,25 +3,25 @@ import { CloudflareRefusal, postCloudflare, type CloudflareStepId, type Cloudfla
 import { Icon, type IconName } from '../icons';
 
 const STEP_LABEL: Record<CloudflareStepId, string> = {
-  account: 'Your Cloudflare account and its one-time-code sign-in',
-  tunnel: 'The tunnel to this computer',
-  gate: 'The login gate, for your e-mail only',
-  address: 'The two addresses',
-  checks: 'Outside checks: nothing gets in without your sign-in',
+  account: '你的 Cloudflare 账户及其一次性验证码登录',
+  tunnel: '通往这台机器的隧道',
+  gate: '登录门禁，仅限你的电子邮箱',
+  address: '两个地址',
+  checks: '外部检查：不登录就什么都进不来',
 };
 
 const STEP_ICON: Record<string, { icon: IconName; word: string; cls: string }> = {
-  done: { icon: 'checkCircle', word: 'Done', cls: 'ok' },
-  running: { icon: 'refresh', word: 'Working', cls: 'later' },
-  pending: { icon: 'minus', word: 'Waiting', cls: 'later' },
-  failed: { icon: 'xCircle', word: 'Failed', cls: 'fail' },
+  done: { icon: 'checkCircle', word: '完成', cls: 'ok' },
+  running: { icon: 'refresh', word: '处理中', cls: 'later' },
+  pending: { icon: 'minus', word: '等待中', cls: 'later' },
+  failed: { icon: 'xCircle', word: '失败', cls: 'fail' },
 };
 
 export function CloudflareProgress({ job, onClose, onRetry }: { job: NonNullable<CloudflareView['job']>; onClose: () => void; onRetry: () => void }) {
   return (
     <div className="ib-flow" data-cloudflare-progress={job.running ? 'running' : job.failed ? 'failed' : 'done'}>
       <div className="ib-flow-head">
-        <h3>{job.failed ? 'Setup stopped' : job.running ? 'Setting up' : 'Set up'} {job.host ?? ''}</h3>
+        <h3>{job.failed ? '设置已停止' : job.running ? '正在设置' : '设置'} {job.host ?? ''}</h3>
       </div>
       <div className="ib-flow-body">
         <ul className="ib-checks" aria-live="polite">
@@ -44,18 +44,18 @@ export function CloudflareProgress({ job, onClose, onRetry }: { job: NonNullable
             <span>
               {STEP_LABEL[job.failed.step]}: {job.failed.message}{' '}
               {job.failed.leftover.length > 0
-                ? `Could not remove everything; delete in Cloudflare: ${job.failed.leftover.join(', ')}.`
-                : 'Nothing was left behind in Cloudflare.'}
+                ? `无法移除全部内容；请在 Cloudflare 中删除：${job.failed.leftover.join('、')}。`
+                : 'Cloudflare 中没有留下任何内容。'}
             </span>
           </div>
         )}
         {!job.running && job.failed && (
           <div className="ib-flow-f">
             <button type="button" className="ib-btn ib-pri" onClick={onRetry}>
-              Try again
+              重试
             </button>
             <button type="button" className="ib-btn ib-ghost" onClick={onClose}>
-              Close
+              关闭
             </button>
           </div>
         )}
@@ -84,7 +84,7 @@ export function CloudflareForm({ onStarted, onCancel }: { onStarted: (view: Clou
       setLabel(found.label);
       setZone(found.zones.length === 1 ? found.zones[0]!.name : '');
     } catch (failure) {
-      setError(failure instanceof CloudflareRefusal ? failure.message : 'Could not reach this Inbox.');
+      setError(failure instanceof CloudflareRefusal ? failure.message : '无法连接到此收件箱。');
     } finally {
       setBusy(false);
     }
@@ -100,7 +100,7 @@ export function CloudflareForm({ onStarted, onCancel }: { onStarted: (view: Clou
     try {
       onStarted(await postCloudflare('setup', { token: sent, email, zone, hostname: host, account }));
     } catch (failure) {
-      setError(failure instanceof CloudflareRefusal ? `${failure.message} Paste the token again to retry.` : 'Could not reach this Inbox.');
+      setError(failure instanceof CloudflareRefusal ? `${failure.message} 请再次粘贴 token 以重试。` : '无法连接到此收件箱。');
     } finally {
       setBusy(false);
     }
@@ -109,23 +109,23 @@ export function CloudflareForm({ onStarted, onCancel }: { onStarted: (view: Clou
   return (
     <form className="ib-flow" onSubmit={(event) => void submit(event)} data-cloudflare-form="">
       <div className="ib-flow-head">
-        <h3>Set up Cloudflare</h3>
+        <h3>设置 Cloudflare</h3>
       </div>
       <div className="ib-flow-body">
         <p className="ib-lead">
-          The token is used once and never saved.{' '}
+          token 仅使用一次，绝不会保存。{' '}
           <a href="https://developers.cloudflare.com/fundamentals/api/get-started/create-token/" target="_blank" rel="noreferrer">
-            Create one in Cloudflare
+            在 Cloudflare 中创建一个
           </a>{' '}
-          with edit rights for Tunnel, Access (apps, policies, identity providers) and DNS.
+          并授予 Tunnel、Access（应用、策略、身份提供商）和 DNS 的编辑权限。
         </p>
         <div className="ib-card">
           <div className="ib-prow">
             <span className="ib-txt">
               <label className="ib-l" htmlFor="ib-cf-email">
-                Who may sign in
+                谁可以登录
               </label>
-              <span className="ib-desc">Your e-mail. Only this address gets a sign-in code.</span>
+              <span className="ib-desc">你的电子邮箱。只有这个地址会收到登录验证码。</span>
             </span>
             <span className="ib-ctl ib-vkeyctl">
               <input id="ib-cf-email" className="ib-vkey" type="email" autoComplete="off" spellCheck={false} placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} />
@@ -134,15 +134,15 @@ export function CloudflareForm({ onStarted, onCancel }: { onStarted: (view: Clou
           <div className="ib-prow">
             <span className="ib-txt">
               <label className="ib-l" htmlFor="ib-cf-token">
-                API token
+                API 令牌
               </label>
-              <span className="ib-desc">Sent once to this Inbox, used for setup, then forgotten.</span>
+              <span className="ib-desc">仅发送到此收件箱一次，用于设置，随后即被遗忘。</span>
             </span>
             <span className="ib-ctl ib-vkeyctl">
               <input id="ib-cf-token" className="ib-vkey" type="password" autoComplete="new-password" spellCheck={false} value={token} onChange={(event) => setToken(event.target.value)} />
               {zones === null && (
                 <button type="button" className="ib-btn" disabled={busy || !token.trim()} onClick={() => void findZones()} data-cloudflare-zones="">
-                  Find domains
+                  查找域
                 </button>
               )}
             </span>
@@ -151,25 +151,25 @@ export function CloudflareForm({ onStarted, onCancel }: { onStarted: (view: Clou
             <div className="ib-prow">
               <span className="ib-txt">
                 <label className="ib-l" htmlFor="ib-cf-zone">
-                  Domain
+                  域名
                 </label>
                 <span className="ib-desc" data-cloudflare-names={host ?? ''}>
                   {host ? (
                     <>
-                      Inbox at <span className="ib-mono">{host}</span>
+                      收件箱位于 <span className="ib-mono">{host}</span>
                       <br />
-                      Sessions at <span className="ib-mono">{`${label}-s.${zone}`}</span>
+                      会话位于 <span className="ib-mono">{`${label}-s.${zone}`}</span>
                     </>
                   ) : zones.length === 0 ? (
-                    'This token sees no domain on Cloudflare.'
+                    '此 token 在 Cloudflare 上看不到任何域名。'
                   ) : (
-                    'Pick the domain to use.'
+                    '选择要使用的域名。'
                   )}
                 </span>
               </span>
               <span className="ib-ctl ib-vkeyctl">
                 <select id="ib-cf-zone" className="ib-vkey" value={zone} onChange={(event) => setZone(event.target.value)} disabled={zones.length === 0}>
-                  <option value="">Choose…</option>
+                  <option value="">请选择…</option>
                   {zones.map((z) => (
                     <option key={z.name} value={z.name}>
                       {z.name}
@@ -188,10 +188,10 @@ export function CloudflareForm({ onStarted, onCancel }: { onStarted: (view: Clou
         )}
         <div className="ib-flow-f">
           <button type="submit" className="ib-btn ib-pri" disabled={busy || !host || !email.trim() || !token.trim()} data-cloudflare-start="">
-            Set up
+            开始设置
           </button>
           <button type="button" className="ib-btn ib-ghost" onClick={onCancel}>
-            Cancel
+            取消
           </button>
         </div>
       </div>

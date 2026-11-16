@@ -73,23 +73,23 @@ export function NotificationAsk({
       <AskShell
         className="ib-askline ib-askquiet"
         icon="bell"
-        label="Desktop notifications"
+        label="桌面通知"
         data={{ 'data-notification-ask': kind }}
         actions={
           <>
             {onSettings && (
               <button type="button" className="ib-btn ib-ghost ib-sm" onClick={onSettings}>
-                How to allow
+                如何允许
               </button>
             )}
             <button type="button" className="ib-btn ib-ghost ib-sm" onClick={onNotNow}>
-              Hide
+              隐藏
             </button>
           </>
         }
       >
         <span className="ib-mut">
-          {browser === 'this browser' ? 'This browser' : browser} blocks notifications for {window.location.host}, so you get no notice when an agent {firstRun ? 'asks you its first question' : 'stops on you'}.
+          {browser === 'this browser' ? '此浏览器' : browser} 拦截了 {window.location.host} 的通知，因此 agent {firstRun ? '问你第一个问题时' : '停下来等你时'}，你不会收到提醒。
         </span>
       </AskShell>
     );
@@ -98,38 +98,38 @@ export function NotificationAsk({
     <AskShell
       className={kind === 'moved' ? 'ib-askline ib-askmoved' : 'ib-askline'}
       icon={kind === 'moved' ? 'warn' : 'bell'}
-      label="Desktop notifications"
+      label="桌面通知"
       data={{ 'data-notification-ask': kind }}
       actions={
         <>
           <button type="button" className="ib-btn ib-pri ib-sm" onClick={onTurnOn}>
-            {kind === 'moved' ? 'Allow' : 'Turn on'}
+            {kind === 'moved' ? '允许' : '开启'}
           </button>
           <button type="button" className="ib-btn ib-ghost ib-sm" onClick={onNotNow}>
-            Not now
+            暂时不要
           </button>
         </>
       }
     >
       {kind === 'ask' && firstRun ? (
         <>
-          <b>Get a desktop notice when the first question arrives.</b>{' '}
+          <b>收到第一个问题时获得桌面通知。</b>{' '}
           <span className="ib-mut">
-            Turn it on before you try it, so you hear from your agent while this tab is in the background. Your browser asks once.{soundOn && ' Sound is on.'}
+            先开启再试，这样此标签页在后台时也能收到 agent 的消息。浏览器只会询问一次。{soundOn && ' 声音已开启。'}
           </span>
         </>
       ) : kind === 'ask' ? (
         <>
-          <b>Get a desktop notice when an agent needs you.</b>{' '}
+          <b>agent 需要你时获得桌面通知。</b>{' '}
           <span className="ib-mut">
-            When an agent starts a thread or asks you something. Your browser asks once.{soundOn && ' Sound is on.'}
+            当 agent 发起会话或向你提问时。浏览器只会询问一次。{soundOn && ' 声音已开启。'}
           </span>
         </>
       ) : (
         <>
-          <b>Notifications are off at this address.</b>{' '}
+          <b>此地址的通知已关闭。</b>{' '}
           <span className="ib-mut">
-            You allowed them at {movedFrom ? addressOf(movedFrom) : 'another address'}; the Inbox is now at {window.location.host}. Allow them again. Reload or close any tab still open on the old address, so notices don't arrive twice.
+            你曾在 {movedFrom ? addressOf(movedFrom) : '另一个地址'} 允许通知；收件箱现在位于 {window.location.host}。请重新允许。请重新加载或关闭仍在旧地址打开的标签页，以免通知重复到达。
           </span>
         </>
       )}
@@ -147,19 +147,19 @@ export function TabSleptLine({ slept, onDismiss }: { slept: Exclude<TabSlept, nu
     <AskShell
       className="ib-askline ib-askquiet"
       icon="info"
-      label="Notifications paused"
+      label="通知已暂停"
       data={{ 'data-tab-slept': slept }}
       actions={
         <button type="button" className="ib-btn ib-ghost ib-sm" onClick={onDismiss}>
-          Got it
+          知道了
         </button>
       }
     >
       <span className="ib-mut">
         {slept === 'discarded'
-          ? 'Your browser closed this tab in the background to save memory, so it could not notify you meanwhile.'
-          : 'Your browser paused this tab in the background, so notices came late or not at all.'}
-        {chrome && ` To keep it running: Settings → Performance → "Always keep these sites active" → add ${window.location.hostname}.`}
+          ? '浏览器为节省内存关闭了后台的这个标签页，因此期间无法通知你。'
+          : '浏览器在后台暂停了这个标签页，因此通知来晚了或没有送达。'}
+        {chrome && ` 要保持它运行：设置 → 性能 → “始终保持这些网站处于活动状态” → 添加 ${window.location.hostname}。`}
       </span>
     </AskShell>
   );

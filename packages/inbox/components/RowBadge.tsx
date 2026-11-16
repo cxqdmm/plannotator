@@ -31,7 +31,7 @@
 import type { ReactElement, ReactNode } from 'react';
 import type { InboxListRow, InboxRowWait } from '@plannotator/core/inbox-types';
 import { INBOX_SECTIONS } from '@plannotator/core/inbox-types';
-import { formatCount, plural } from '../format';
+import { formatCount } from '../format';
 import { Icon } from '../icons';
 import { Tip } from './Tip';
 import { RowTip } from './RowTip';
@@ -43,8 +43,8 @@ export function rowHasBadge(row: InboxListRow): boolean {
 
 /** The card's title, and a wide row's words beside its marks: "Stopped", "Holds up 3". */
 export function badgeWords(row: InboxListRow): string | null {
-  if (row.section === 'stopped') return 'Stopped';
-  if (row.section === 'holding') return `Holds up ${row.questions.holds_up.length}`;
+  if (row.section === 'stopped') return '已停止';
+  if (row.section === 'holding') return `阻碍 ${row.questions.holds_up.length} 项`;
   return null;
 }
 
@@ -141,20 +141,20 @@ export function waitCardModel(row: InboxListRow): WaitCardModel | null {
 }
 
 /** The words for a stopped row that names no reason (an older Inbox, or a `Stopped:` the agent left empty). */
-export const STOPPED_FALLBACK = 'The agent cannot go on until you answer';
+export const STOPPED_FALLBACK = '需要你回答后 agent 才能继续';
 
 /** The card's words as one sentence each, for the row's `aria-describedby`: the row's name stays short. */
 export function badgeDescription(row: InboxListRow): string {
   const model = waitCardModel(row);
   if (!model) return '';
-  const all = (items: WaitItem[]) => items.map((i) => i.text).join('; ');
-  const more = model.more > 0 ? ` And ${model.more} more.` : '';
+  const all = (items: WaitItem[]) => items.map((i) => i.text).join('；');
+  const more = model.more > 0 ? `另有 ${model.more} 项。` : '';
   if (model.kind === 'stop') {
     const why = model.lead.length > 0 ? all(model.lead) : STOPPED_FALLBACK;
-    const also = model.also.length > 0 ? ` Also holds up: ${all(model.also)}.` : '';
-    return `Stopped: ${why}.${also}${more}`;
+    const also = model.also.length > 0 ? `另外阻碍：${all(model.also)}。` : '';
+    return `已停止：${why}。${also}${more}`;
   }
-  return `Holds up: ${all(model.lead)}.${more}`;
+  return `阻碍：${all(model.lead)}。${more}`;
 }
 
 /** Card A: the divided card. */
@@ -188,9 +188,9 @@ export function WaitCard({ row, agent, mark, time }: { row: InboxListRow; agent:
       </div>
       {model.kind === 'stop' && model.lead.length === 0 && line({ label: null, text: STOPPED_FALLBACK }, 'fallback')}
       {model.lead.map((item, i) => line(item, `l${i}`))}
-      {model.also.length > 0 && <div className="ib-wc-sub">Also holds up {model.alsoTotal}</div>}
+      {model.also.length > 0 && <div className="ib-wc-sub">另外阻碍 {model.alsoTotal} 项</div>}
       {model.also.map((item, i) => line(item, `a${i}`))}
-      {model.more > 0 && <div className="ib-wc-row ib-wc-more">+{model.more} more</div>}
+      {model.more > 0 && <div className="ib-wc-row ib-wc-more">另有 {model.more} 项</div>}
       <div className="ib-wc-foot">
         {mark}
         <span className="ib-wc-agent">{agent}</span>
@@ -216,7 +216,7 @@ export function shownCount(n: number): string {
 
 /** The action count's words, its accessible name and tooltip: "1 action to do", "2 actions to do". */
 export function actionCountWords(n: number): string {
-  return `${formatCount(n)} action${n === 1 ? '' : 's'} to do`;
+  return `${formatCount(n)} 个待办操作`;
 }
 
 /**
@@ -275,15 +275,15 @@ function stepHead(step: WaitStep): string | null {
 
 /** The question mark's words, its accessible name and tooltip: "3 questions", "Holding up work: 5 questions". */
 export function questionMarkWords(n: number, step: WaitStep): string {
-  const all = plural(n, 'question');
+  const all = `${formatCount(n)} 个问题`;
   const head = stepHead(step);
-  return head ? `${head}: ${all}` : all;
+  return head ? `${head}：${all}` : all;
 }
 
 /** The action box's words: "2 actions to do" (open, as before), "Stopped on you: 1 action item". */
 export function actionMarkWords(n: number, step: WaitStep): string {
   const head = stepHead(step);
-  return head ? `${head}: ${plural(n, 'action item')}` : actionCountWords(n);
+  return head ? `${head}：${formatCount(n)} 个操作项` : actionCountWords(n);
 }
 
 /** A mark's tooltip: the card on a filled mark (`card`; it opens with the row's keyboard focus through `open`), else its words. */

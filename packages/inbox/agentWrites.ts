@@ -33,7 +33,7 @@ export function agentWrites({ showToast, dismissToast, setShown, afterWrite, res
     try {
       done = await deleteAgentSession(launch.id, asked.machine, asked.threads.map((row) => row.thread_id), archive);
     } catch (cause) {
-      showToast(errorToast(cause, 'That did not work; try again.'));
+      showToast(errorToast(cause, '没有成功，请重试。'));
       return;
     }
     const archived = done.archived;
@@ -42,13 +42,13 @@ export function agentWrites({ showToast, dismissToast, setShown, afterWrite, res
       setShown((current) => (current ? archived.reduce((sections, id) => markHeldRowArchived(sections, id, at), current) : current));
     }
     await afterWrite(archived);
-    const kept = done.scratchKept ? 'its scratch folder was kept' : null;
-    const took = archived.length > 0 ? `Archived ${plural(archived.length, 'thread')}` : null;
+    const kept = done.scratchKept ? '已保留它的临时文件夹' : null;
+    const took = archived.length > 0 ? `已归档 ${plural(archived.length, '个会话', '个会话')}` : null;
     const snoozes = asked.threads.filter((row) => archived.includes(row.thread_id)).map((row) => [row.thread_id, row.snoozed] as const);
-    const failed = done.archiveError ? errorText(done.archiveError, 'That did not work; try again.') : null;
+    const failed = done.archiveError ? errorText(done.archiveError, '没有成功，请重试。') : null;
     showToast({
       icon: failed ? 'warn' : 'check',
-      lead: 'Session deleted',
+      lead: '会话已删除',
       ...(failed ? { detail: failed, wrap: true } : kept || took ? { detail: [kept, took].filter(Boolean).join(' · ') } : {}),
       ...(archived.length > 0
         ? {
@@ -57,13 +57,13 @@ export function agentWrites({ showToast, dismissToast, setShown, afterWrite, res
                 try {
                   for (const id of archived) await inboxApi.resolve(id, false);
                 } catch (cause) {
-                  showToast(errorToast(cause, 'That did not work; try again.'));
+                  showToast(errorToast(cause, '没有成功，请重试。'));
                   return;
                 }
                 for (const [id, snooze] of snoozes) await restoreSnooze(id, snooze);
                 await afterWrite(archived);
                 dismissToast();
-                say('Moved back.');
+                say('已移回。');
               })();
             },
           }
@@ -75,7 +75,7 @@ export function agentWrites({ showToast, dismissToast, setShown, afterWrite, res
     try {
       await inboxApi.launchStop(agent.launch.id, machine);
     } catch (cause) {
-      showToast(errorToast(cause, 'That did not work; try again.'));
+      showToast(errorToast(cause, '没有成功，请重试。'));
       return;
     }
     if (openThreadId() === agent.launch.thread_id) void refreshThread(agent.launch.thread_id);

@@ -43,7 +43,7 @@ function SwipeCard({ swipe, step }: { swipe: FileSwipe; step: AttachmentStep }) 
         )}
       </span>
       <span className="ib-swipecard-text">
-        <span className="ib-swipecard-dir">{next ? 'Next' : 'Previous'}</span>
+        <span className="ib-swipecard-dir">{next ? '下一个' : '上一个'}</span>
         <b className="ib-swipecard-nm">
           <FileName name={attachment.name} />
         </b>

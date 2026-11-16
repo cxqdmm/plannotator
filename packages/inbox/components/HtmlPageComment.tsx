@@ -141,7 +141,7 @@ export function useHtmlPageComment({ enabled, fileKey, threadId, name, viewer, t
     held.cancel();
     viewer.current?.applySharedAnnotations([annotation]);
     drop();
-    onDone('Comment saved.');
+    onDone('评论已保存。');
   };
 
   // Another file or version, or the card can no longer open (a linked page came over the file).
@@ -240,10 +240,10 @@ function HtmlCommentCard({
         {pin && (
           <>
             {/* Pressing one keeps focus in the field, so the keyboard stays up. */}
-            <button type="button" className="ib-fvb" onMouseDown={(event) => event.preventDefault()} onClick={() => onStep('parent')} aria-label="Comment on the element around it" data-html-comment-step="parent">
+            <button type="button" className="ib-fvb" onMouseDown={(event) => event.preventDefault()} onClick={() => onStep('parent')} aria-label="评论外层元素" data-html-comment-step="parent">
               <Icon name="arrowUp" size={18} />
             </button>
-            <button type="button" className="ib-fvb" onMouseDown={(event) => event.preventDefault()} onClick={() => onStep('child')} aria-label="Comment on the element inside it" data-html-comment-step="child">
+            <button type="button" className="ib-fvb" onMouseDown={(event) => event.preventDefault()} onClick={() => onStep('child')} aria-label="评论内层元素" data-html-comment-step="child">
               <Icon name="arrowDown" size={18} />
             </button>
           </>
@@ -261,15 +261,15 @@ function HtmlCommentCard({
               event.stopPropagation();
               onSubmit();
             }}
-            placeholder="Comment on this…"
-            ariaLabel={`Comment on ${name}: ${target}`}
-            destination="your comment"
+            placeholder="对此评论…"
+            ariaLabel={`评论 ${name}：${target}`}
+            destination="你的评论"
             tags={tags}
           />
         </div>
         <FullScreenCommentBin />
         <button type="button" className="ib-btn ib-pri ib-csave" onClick={onSubmit} disabled={saving || words.trim() === ''} data-html-comment-save="">
-          Comment
+          评论
         </button>
       </div>
     </div>
@@ -381,15 +381,15 @@ export function HtmlPageCommentRow({
               event.stopPropagation();
               void submit();
             }}
-            placeholder="Comment on this page…"
-            ariaLabel={`Comment on ${name}`}
-            destination="your comment"
+            placeholder="对此页面评论…"
+            ariaLabel={`评论 ${name}`}
+            destination="你的评论"
             tags={fieldTags}
           />
         </div>
         <FullScreenCommentBin />
         <button type="button" className="ib-btn ib-pri ib-csave" onClick={() => void submit()} disabled={saving || words.trim() === ''} data-html-page-comment-save="">
-          Comment
+          评论
         </button>
       </div>
     </div>

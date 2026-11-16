@@ -39,7 +39,7 @@ export function UnarchiveAction({ row, label, onUnarchive }: { row: InboxListRow
       }}
     >
       <Icon name="archive" size={15} />
-      Unarchive
+      取消归档
     </button>
   );
 }
@@ -63,7 +63,7 @@ export function ArchivedGroup(props: GroupProps) {
       data-section-id="archived"
       data-archived-group=""
       role="group"
-      aria-label="Archived"
+      aria-label="已归档"
       onFocus={(event) => {
         // The row itself, or its hover action beside it in the row's wrapper.
         const at = (event.target as HTMLElement).closest('[data-thread-id], [data-row]');
@@ -78,7 +78,7 @@ export function ArchivedGroup(props: GroupProps) {
           setOpen(!open);
         }}
       >
-        Archived
+        已归档
       </GroupBand>
       {open && (
         <InArchivedGroup.Provider value={true}>
@@ -141,7 +141,7 @@ function ArchivedRows({ host, renderRow, phone, onSearch, groupRef, focusedRow }
       )}
       {page && !partial && kept.length === 0 && (
         <p className="ib-arcg-line" data-archived-none="">
-          Nothing archived.
+          没有已归档的会话。
         </p>
       )}
       {failed !== null && (
@@ -160,16 +160,16 @@ function ArchivedRows({ host, renderRow, phone, onSearch, groupRef, focusedRow }
             setCount(Math.min(ARCHIVED_MOST, count + ARCHIVED_STEP));
           }}
         >
-          Show 20 more
+          再显示 20 个
         </button>
       )}
       {past && (
         <p className="ib-arcg-line" data-archived-past="">
-          Older ones are in{' '}
+          更早的会话在
           <button type="button" className="ib-arcg-search" onClick={(event) => onSearch?.(event.currentTarget)} disabled={!onSearch}>
-            Search
+            搜索
           </button>
-          .
+          中。
         </p>
       )}
     </>

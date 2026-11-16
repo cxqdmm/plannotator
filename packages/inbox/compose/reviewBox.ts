@@ -57,7 +57,7 @@ export interface ReviewBoxPull {
 
 const labelOf = (stack: InboxPullStack, open: readonly InboxPull[]): string => {
   if (open.length <= 1) return open[0] ? inboxPullLabel(open[0]) : inboxPullLabel(stack.layers[stack.layers.length - 1]!);
-  return `${inboxPullLabel(open[0]!)} to ${inboxPullLabel(open[open.length - 1]!)}`;
+  return `${inboxPullLabel(open[0]!)} 至 ${inboxPullLabel(open[open.length - 1]!)}`;
 };
 
 /** One row's stacks as the picker lists them: not reviewed first, then the ones already in a review. */
@@ -111,11 +111,11 @@ export function reviewLinkStack(pull: InboxPull): InboxPullStack {
 
 /** The line under the Link field: how it was read, or why it wasn't. */
 export function reviewLinkWords(link: InboxReviewLinkAnswer): string {
-  if (link.ok) return `Read with ${link.cli}, signed in to ${link.pull.host}`;
-  if (link.reason === 'unreadable') return `${link.cli} couldn't read it. Check the link, and that ${link.cli} is signed in to ${link.host}.`;
-  if (link.reason === 'bitbucket') return "Bitbucket links aren't supported yet.";
-  if (link.reason === 'failed') return "Couldn't check that link. Try again.";
-  return link.reason === 'host' ? "Plannotator can't read that host yet." : "That isn't a pull request link.";
+  if (link.ok) return `已用 ${link.cli} 读取，已登录 ${link.pull.host}`;
+  if (link.reason === 'unreadable') return `${link.cli} 无法读取。请检查链接，并确认 ${link.cli} 已登录 ${link.host}。`;
+  if (link.reason === 'bitbucket') return '尚不支持 Bitbucket 链接。';
+  if (link.reason === 'failed') return '无法检查该链接，请重试。';
+  return link.reason === 'host' ? 'Plannotator 尚无法读取该主机。' : '这不是 PR 链接。';
 }
 
 const CHANGES_WORDS: Record<InboxReviewChanges, string> = {
@@ -141,10 +141,10 @@ export function walkthroughMessage(words: string): string {
 
 /** The thread's suggested name: "Review web-app: uncommitted on main". */
 export function localReviewName(changes: InboxReviewChanges, project: string | null, branch: string | null, base: string | null): string {
-  const what = changes === 'uncommitted' ? 'uncommitted' : changes === 'last' ? 'last commit' : 'whole branch';
-  const on = branch ? (changes === 'branch' && base ? ` ${branch} against ${base}` : ` on ${branch}`) : '';
+  const what = changes === 'uncommitted' ? '未提交' : changes === 'last' ? '最近一次 commit' : '整个分支';
+  const on = branch ? (changes === 'branch' && base ? ` ${branch}（基于 ${base}）` : ` 基于 ${branch}`) : '';
   const named = changes === 'branch' && on ? on.trim() : `${what}${on}`;
-  return project ? `Review ${project}: ${named}` : `Review: ${named}`;
+  return project ? `评审 ${project}：${named}` : `评审：${named}`;
 }
 
 /** Who To names when the box opens: the current project's agent, the one last sent to, any live one; else a new session. */

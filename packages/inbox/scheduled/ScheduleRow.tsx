@@ -12,15 +12,15 @@ import { nextRunLine } from './words';
 export type ScheduleKind = 'hourly' | 'daily' | 'weekdays' | 'weekly' | 'once' | 'custom' | 'none';
 
 const KINDS: { id: ScheduleKind; item: string; shown: string }[] = [
-  { id: 'hourly', item: 'Hourly', shown: 'Every hour' },
-  { id: 'daily', item: 'Daily', shown: 'Every day' },
-  { id: 'weekdays', item: 'Weekdays', shown: 'Every weekday' },
-  { id: 'weekly', item: 'Weekly', shown: 'Every week' },
-  { id: 'once', item: 'Once', shown: 'Once' },
-  { id: 'custom', item: 'Custom', shown: 'Custom' },
-  { id: 'none', item: 'No schedule', shown: 'No schedule' },
+  { id: 'hourly', item: '每小时', shown: '每小时' },
+  { id: 'daily', item: '每天', shown: '每天' },
+  { id: 'weekdays', item: '工作日', shown: '每个工作日' },
+  { id: 'weekly', item: '每周', shown: '每周一次' },
+  { id: 'once', item: '一次', shown: '一次' },
+  { id: 'custom', item: '自定义', shown: '自定义' },
+  { id: 'none', item: '无计划', shown: '无计划' },
 ];
-const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 const two = (n: number) => String(n).padStart(2, '0');
 
 export const localZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -74,14 +74,14 @@ function KindMenu({ kind, onKind }: { kind: ScheduleKind; onKind: (kind: Schedul
   const shown = KINDS.find((k) => k.id === kind)!;
   return (
     <Menu.Root modal={false}>
-      <Menu.Trigger ref={anchor} className="st-pick" aria-label={`Schedule: ${shown.shown}. Change`} data-schedule-kind={kind}>
+      <Menu.Trigger ref={anchor} className="st-pick" aria-label={`计划：${shown.shown}。更改`} data-schedule-kind={kind}>
         {shown.shown}
         <Icon name="chevD" size={12} />
       </Menu.Trigger>
       <Menu.Portal container={portal ?? undefined}>
         {sheet && <Menu.Backdrop className="ib-pm-scrim" />}
         <Menu.Positioner className="ib-pm-pos" side="bottom" align="start" sideOffset={4} data-phone={sheet ? '' : undefined}>
-          <Menu.Popup className="ib-pm st-kinds" aria-label="Schedule">
+          <Menu.Popup className="ib-pm st-kinds" aria-label="计划">
             <Menu.RadioGroup value={kind} onValueChange={(next: ScheduleKind) => next !== kind && onKind(next)}>
               {KINDS.map((k) => (
                 <div key={k.id} role="presentation">
@@ -116,7 +116,7 @@ export function ScheduleRow({ schedule, preview, onChange }: { schedule: InboxSc
   };
   const zones = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [tz];
   const refused = preview?.refused ?? null;
-  const time = <input type="time" className="st-pick st-time" aria-label="Time" value={timeValue(parts.hour, parts.minute)} onChange={(event) => onTime(event.target.value)} />;
+  const time = <input type="time" className="st-pick st-time" aria-label="时间" value={timeValue(parts.hour, parts.minute)} onChange={(event) => onTime(event.target.value)} />;
   return (
     <>
       <div className="st-sched" aria-invalid={refused ? true : undefined} aria-describedby={refused ? 'st-sched-err' : undefined} data-schedule-row="">
@@ -133,8 +133,8 @@ export function ScheduleRow({ schedule, preview, onChange }: { schedule: InboxSc
         />
         {parts.kind === 'hourly' && (
           <>
-            <span className="st-w">at</span>
-            <select className="st-pick" aria-label="Minute" value={parts.minute} onChange={(event) => set({ minute: Number(event.target.value) })}>
+            <span className="st-w">于</span>
+            <select className="st-pick" aria-label="分钟" value={parts.minute} onChange={(event) => set({ minute: Number(event.target.value) })}>
               {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => (
                 <option key={m} value={m}>
                   :{two(m)}
@@ -145,8 +145,8 @@ export function ScheduleRow({ schedule, preview, onChange }: { schedule: InboxSc
         )}
         {parts.kind === 'weekly' && (
           <>
-            <span className="st-w">on</span>
-            <select className="st-pick" aria-label="Day" value={parts.day} onChange={(event) => set({ day: Number(event.target.value) })}>
+            <span className="st-w">于</span>
+            <select className="st-pick" aria-label="星期" value={parts.day} onChange={(event) => set({ day: Number(event.target.value) })}>
               {WEEKDAYS.map((name, i) => (
                 <option key={name} value={i}>
                   {name}
@@ -157,20 +157,20 @@ export function ScheduleRow({ schedule, preview, onChange }: { schedule: InboxSc
         )}
         {parts.kind === 'once' && (
           <>
-            <span className="st-w">on</span>
-            <input type="date" className="st-pick" aria-label="Date" value={parts.date} onChange={(event) => event.target.value && set({ date: event.target.value })} />
+            <span className="st-w">于</span>
+            <input type="date" className="st-pick" aria-label="日期" value={parts.date} onChange={(event) => event.target.value && set({ date: event.target.value })} />
           </>
         )}
         {(parts.kind === 'daily' || parts.kind === 'weekdays' || parts.kind === 'weekly' || parts.kind === 'once') && (
           <>
-            <span className="st-w">at</span>
+            <span className="st-w">于</span>
             {time}
           </>
         )}
         {parts.kind === 'custom' && (
           <input
             className="st-pick st-cron"
-            aria-label="Cron"
+            aria-label="Cron 表达式"
             spellCheck={false}
             value={cron}
             onChange={(event) => setCron(event.target.value)}
@@ -179,11 +179,11 @@ export function ScheduleRow({ schedule, preview, onChange }: { schedule: InboxSc
           />
         )}
         {parts.kind === 'none' ? (
-          <span className="st-w">Runs when you run it.</span>
+          <span className="st-w">仅在你手动运行时运行。</span>
         ) : (
           <label className="st-tz">
             <span>{preview?.tz_short ?? tz}</span>
-            <select aria-label="Time zone" value={tz} onChange={(event) => schedule && onChange({ ...schedule, tz: event.target.value })}>
+            <select aria-label="时区" value={tz} onChange={(event) => schedule && onChange({ ...schedule, tz: event.target.value })}>
               {zones.map((zone) => (
                 <option key={zone} value={zone}>
                   {zone}

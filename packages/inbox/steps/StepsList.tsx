@@ -15,7 +15,7 @@ export function StepsList({ list, onWaiting, now }: { list: InboxStepsWire; onWa
       {list.steps.map((step, index) => {
         const meta = stepMeta(step, now);
         return (
-          <li key={`${index}:${step.step}`} className="ib-st-row" data-step-status={step.status} aria-label={`${step.step}, ${STEP_STATUS_WORDS[step.status]}${step.note && step.status !== 'done' ? `: ${step.note}` : ''}`}>
+          <li key={`${index}:${step.step}`} className="ib-st-row" data-step-status={step.status} aria-label={`${step.step}，${STEP_STATUS_WORDS[step.status]}${step.note && step.status !== 'done' ? `：${step.note}` : ''}`}>
             <span className="ib-st-gl">
               <StepGlyph status={step.status} />
             </span>
@@ -36,11 +36,11 @@ export function StepsList({ list, onWaiting, now }: { list: InboxStepsWire; onWa
             {meta?.kind === 'waiting' &&
               (onWaiting ? (
                 <button type="button" className="ib-st-m ib-st-jump" data-steps-waiting="" onClick={onWaiting}>
-                  Waiting on you
+                  等你处理
                   <Icon name="chevR" size={12} />
                 </button>
               ) : (
-                <span className="ib-st-m ib-st-wait">Waiting on you</span>
+                <span className="ib-st-m ib-st-wait">等你处理</span>
               ))}
           </li>
         );
@@ -81,7 +81,7 @@ export function StepsHead({
       <Label className="ib-st-lbl" id={headingId} title={named ? label : undefined} dir="auto">
         {label}
       </Label>
-      <span className="ib-st-plan" aria-label={`${done} of ${total} done`}>
+      <span className="ib-st-plan" aria-label={`${total} 步中已完成 ${done} 步`}>
         <StepsPie done={done} total={total} size={12} />
         <span className="ib-st-num" aria-hidden="true">
           {text}
@@ -89,7 +89,7 @@ export function StepsHead({
       </span>
       {asOf && (
         <span className="ib-st-asof" data-steps-as-of="">
-          as of {asOf}
+          截至 {asOf}
         </span>
       )}
       <span className="ib-st-grow" />
@@ -121,7 +121,7 @@ export function StepsLists({
     <>
       {lists.map((list, index) => (
         <section key={list.id} className={`ib-st-group ${presenceClass(list.presence)}`} data-steps-group={list.agent.session ?? ''} data-presence={list.presence} aria-label={stepsName(labels[index]!, list)}>
-          <StepsHead list={list} label={lists.length > 1 ? labels[index]! : 'Checklist'} named={lists.length > 1} now={now} heading={heading}>
+          <StepsHead list={list} label={lists.length > 1 ? labels[index]! : '清单'} named={lists.length > 1} now={now} heading={heading}>
             {index === 0 ? headExtra : null}
           </StepsHead>
           <StepsList list={list} onWaiting={onWaiting?.(list) ?? null} now={now} />

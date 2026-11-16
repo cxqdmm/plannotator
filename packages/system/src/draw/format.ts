@@ -1,21 +1,20 @@
 // Words and numbers the drawing prints from data, in one place.
 
 export const KIND: Record<string, string> = {
-  conceptual: 'Conceptual',
-  logical: 'Logical',
-  deployment: 'Deployment',
-  service: 'Service sheet',
-  flow: 'Data flow',
-  algorithm: 'Algorithm',
-  landscape: 'Landscape',
+  conceptual: '概念图',
+  logical: '逻辑图',
+  deployment: '部署图',
+  service: '服务表',
+  flow: '数据流',
+  algorithm: '算法图',
+  landscape: '全景图',
 };
 /** A sheet kind the drawing does not know is still a kind: "threat model" reads "Threat model". */
-export const kindLabel = (k: string) => KIND[k] ?? (k ? k.charAt(0).toUpperCase() + k.slice(1) : 'Sheet');
+export const kindLabel = (k: string) => KIND[k] ?? (k || '图纸');
 
-const nf = new Intl.NumberFormat('en-US');
-const pr = new Intl.PluralRules('en');
-/** "1 sheet", "8 sheets", "1,284 parts". */
-export const plural = (n: number, one: string, many = one + 's') => `${nf.format(n)} ${pr.select(n) === 'one' ? one : many}`;
+const nf = new Intl.NumberFormat('zh-CN');
+/** "1 张图纸", "1,284 个部分". */
+export const plural = (n: number, one: string, _many = one) => `${nf.format(n)} ${one}`;
 
 /** Middle truncation: routes and hostnames differ at the end, so keep the head and the tail. */
 export function middle(text: string | null | undefined, max = 34): string {

@@ -8,10 +8,10 @@ import { inboxApi } from '../api';
  * "7 sheets", "Drawing 2 of 7" (the drawing phase, sheet by sheet), or "Needs a redraw" (a drawing that does not read).
  */
 export function systemStateWords(row: Pick<SystemProjectRow, 'state' | 'sheets' | 'wanted'>): string {
-  if (row.state === 'none') return 'Not drawn yet';
-  if (row.state === 'drawing') return `Drawing ${row.sheets} of ${row.sheets + row.wanted}`;
-  if (row.state === 'broken') return 'Needs a redraw';
-  return plural(row.sheets, 'sheet');
+  if (row.state === 'none') return '尚未绘制';
+  if (row.state === 'drawing') return `正在绘制 ${row.sheets} / ${row.sheets + row.wanted}`;
+  if (row.state === 'broken') return '需要重绘';
+  return plural(row.sheets, '张图', '张图');
 }
 
 export interface SystemProjectsState {
@@ -41,7 +41,7 @@ export function useSystemProjects(on: boolean): SystemProjectsState {
       })
       .catch((cause: unknown) => {
         if (n !== asked.current) return;
-        setError(cause instanceof Error ? cause.message : 'The projects could not be read.');
+        setError(cause instanceof Error ? cause.message : '无法读取项目。');
       });
   }, [on]);
   useEffect(() => {

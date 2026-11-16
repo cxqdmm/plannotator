@@ -24,7 +24,7 @@ export async function readJson<T>(response: Response): Promise<T> {
     throw new InboxApiError(
       response.status,
       typeof body.code === 'string' ? body.code : 'error',
-      typeof body.error === 'string' ? body.error : `The Inbox answered ${response.status}.`,
+      typeof body.error === 'string' ? body.error : `收件箱返回了 ${response.status}。`,
       typeof body.field === 'string' ? body.field : null,
       typeof body.retry_at === 'number' ? body.retry_at : null,
       typeof body.thread_id === 'string' ? body.thread_id : null,

@@ -27,7 +27,7 @@ import type { InboxAuthor, InboxListRow, InboxMessage, InboxNotifyReach, InboxSe
 import { inboxQuestionWaitsForList } from '@plannotator/core/inbox-questions';
 import { INBOX_TURN_FAILED_WORDS } from '@plannotator/core/inbox-run-line';
 import { inboxApi, type InboxEvent, type ListModel, type NotificationSettings } from './api';
-import { agentName, plural } from './format';
+import { agentName } from './format';
 import { pageInFront } from './sound';
 import { inboxEventsServedBy } from './sharedEvents';
 import { signalNotificationClick } from './history';
@@ -77,13 +77,13 @@ export function threadNotificationText(input: {
   const asks = input.asks ?? true;
   const what =
     input.section === 'stopped'
-      ? 'stopped on you'
+      ? '已停下，等你处理'
       : asks || input.section === 'holding' || input.section === 'waiting'
-        ? 'is waiting on you'
+        ? '在等你'
         : input.failed
           ? INBOX_TURN_FAILED_WORDS
-          : 'started a thread';
-  return { title: `${input.project}: ${input.agent} ${what}`, body: input.subject };
+          : '发起了新会话';
+  return { title: `${input.project}：${input.agent} ${what}`, body: input.subject };
 }
 
 /**
@@ -93,9 +93,9 @@ export function threadNotificationText(input: {
  */
 export function burstNotificationText(projects: readonly string[], options: { waiting?: boolean } = {}): { title: string; body: string } {
   const distinct = [...new Set(projects)];
-  const where = distinct.length === 1 ? distinct[0]! : plural(distinct.length, 'project');
-  const what = options.waiting === false ? 'new' : 'waiting';
-  return { title: `${projects.length} ${what} in ${where}`, body: distinct.join(', ') };
+  const where = distinct.length === 1 ? distinct[0]! : `${distinct.length} 个项目`;
+  const what = options.waiting === false ? '条新消息' : '条等待处理';
+  return { title: `${where}：${projects.length} ${what}`, body: distinct.join('、') };
 }
 
 /** In front, notices this close together are one burst; away, a burst lasts until the tab is back. */
@@ -543,7 +543,7 @@ export function useInboxNotifications(options: {
       text = threadNotificationText({
         project: row?.project.name ?? 'Plannotator Inbox',
         agent: agentName(item.author),
-        subject: row?.subject ?? '(no subject)',
+        subject: row?.subject ?? '(无主题)',
         section: row?.section ?? null,
         asks: burst.current.get(item.threadId)?.asks ?? item.asks,
         failed: item.failed === true,
@@ -693,8 +693,8 @@ export function useInboxNotifications(options: {
       return 'not-allowed';
     }
     try {
-      const notification = new Notification('Plannotator Inbox: test notification', {
-        ...inboxNotificationOptions({ body: `Notifications from ${window.location.host} reach you.` }),
+      const notification = new Notification('Plannotator Inbox：测试通知', {
+        ...inboxNotificationOptions({ body: `来自 ${window.location.host} 的通知可以送达。` }),
         tag: TEST_NOTIFICATION_TAG,
       } as InboxNotificationOptions);
       notification.onclick = () => {

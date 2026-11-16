@@ -20,12 +20,12 @@ export function projectWrites({ showToast, dismissToast, refreshList, say, lates
     try {
       await inboxApi.renameProject(projectId, name);
     } catch (cause) {
-      showToast(errorToast(cause, 'The name did not change.'));
+      showToast(errorToast(cause, '名称未更改。'));
       return false;
     }
     await refreshList(false);
     const now = latestRef.current?.projects.find((p) => p.id === projectId)?.name;
-    say(name === null ? `Name reset${now ? ` to ${now}` : ''}.` : `Renamed to ${name}.`);
+    say(name === null ? `名称已重置${now ? `为 ${now}` : ''}。` : `已重命名为 ${name}。`);
     return true;
   };
 
@@ -33,10 +33,10 @@ export function projectWrites({ showToast, dismissToast, refreshList, say, lates
     try {
       await keepAgentName(agent, name);
     } catch (cause) {
-      showToast(errorToast(cause, 'The name did not change.'));
+      showToast(errorToast(cause, '名称未更改。'));
       return cause instanceof InboxHeldError;
     }
-    say(name === null ? `Name reset${own ? ` to ${own}` : ''}.` : `Renamed to ${name}.`);
+    say(name === null ? `名称已重置${own ? `为 ${own}` : ''}。` : `已重命名为 ${name}。`);
     return true;
   };
 
@@ -49,7 +49,7 @@ export function projectWrites({ showToast, dismissToast, refreshList, say, lates
       }
       await inboxApi.setProjectPicture(projectId, read.picture);
     } catch (cause) {
-      showToast(errorToast(cause, 'The picture did not change.'));
+      showToast(errorToast(cause, '图片未更改。'));
       return false;
     }
     await refreshList(false);
@@ -71,12 +71,12 @@ export function projectWrites({ showToast, dismissToast, refreshList, say, lates
     };
     const { done, failed } = await write(pairs.map((pair) => ({ project: pair.from, into: pair.into })));
     await refreshList(false);
-    const failure = failed === null ? null : failed instanceof Error ? failed.message : 'The projects did not change.';
+    const failure = failed === null ? null : failed instanceof Error ? failed.message : '项目未更改。';
     if (done.length === 0) {
-      showToast(errorToast(failed, 'The projects did not change.'));
+      showToast(errorToast(failed, '项目未更改。'));
       return failure;
     }
-    const lead = done.length === 1 ? `Combined into ${pairs[0]!.intoName}` : `Combined ${formatCount(done.length)} projects`;
+    const lead = done.length === 1 ? `已合并到 ${pairs[0]!.intoName}` : `已合并 ${formatCount(done.length)} 个项目`;
     const undo = done.map((step) => ({ project: step.project, into: null }));
     showToast({
       icon: 'check',
@@ -86,15 +86,15 @@ export function projectWrites({ showToast, dismissToast, refreshList, say, lates
           const back = await write(undo);
           await refreshList(false);
           if (back.failed !== null) {
-            showToast(errorToast(back.failed, 'The projects did not change.'));
+            showToast(errorToast(back.failed, '项目未更改。'));
             return;
           }
           dismissToast();
-          say('Combine undone.');
+          say('已撤销合并。');
         })();
       },
     });
-    say(`${lead}.`);
+    say(`${lead}。`);
     return failure;
   };
   return { renameProject, renameAgent, setProjectPicture, combineProjects };

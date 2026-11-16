@@ -219,7 +219,7 @@ export function useShowMe({
   // problem (the session is blocked…). A window that is not streaming it (a reload) has no chat: when the Inbox no
   // longer runs the turn and kept nothing, it is the Ask window's "No answer arrived."
   const boxEnded = !!box?.turn && showMeEnded(boxTurn, { running: boxRunning, busy: !!boxBusy });
-  const boxFailed = boxEnded ? ((boxTurn && agent && askTurnNote(boxTurn, agent)) ?? boxResponse?.error ?? (boxTurn && live.current?.turn !== box?.turn ? 'No answer arrived.' : null)) : null;
+  const boxFailed = boxEnded ? ((boxTurn && agent && askTurnNote(boxTurn, agent)) ?? boxResponse?.error ?? (boxTurn && live.current?.turn !== box?.turn ? '未收到回答。' : null)) : null;
   // The box goes back to its words, with the note, ready to send again.
   useEffect(() => {
     if (!boxFailed) return;
@@ -309,12 +309,12 @@ export function useShowMe({
       } else {
         // Nobody to ask: the box stays as it was written, to send when the agent is back.
         setBox((current) => (current ? { ...current, turn: null } : current));
-        setProblem('No answer arrived.');
+        setProblem('未收到回答。');
       }
       reload();
     } catch (cause) {
       setBox((current) => (current?.turn === turnId ? { ...current, turn: null } : current));
-      setProblem(errorText(cause, 'That question did not go through. Try again.'));
+      setProblem(errorText(cause, '问题未能发送，请重试。'));
     } finally {
       setPosting(false);
     }
@@ -389,7 +389,7 @@ export function useShowMe({
       try {
         await inboxApi.askStop(threadId, turn);
       } catch (cause) {
-        setProblem(errorText(cause, 'That Stop did not go through. Try again.'));
+        setProblem(errorText(cause, '停止未能生效，请重试。'));
         return;
       }
     }

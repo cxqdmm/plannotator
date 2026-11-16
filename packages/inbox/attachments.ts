@@ -560,7 +560,7 @@ export function exportFileLabel(
   if (sameRef.length === 0) return `${label} (image in ${whose} ${minute ? `${minute} ` : ''}message)`;
   const secondsOf = (iso: string) => {
     const date = new Date(iso);
-    return Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+    return Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString('zh-CN', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
   };
   const second = secondsOf(attachment.sent_at);
   const tied = sameRef.filter((o) => secondsOf(o.sent_at) === second);

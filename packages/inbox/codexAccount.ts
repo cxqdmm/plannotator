@@ -38,16 +38,16 @@ export function codexResetText(at: string | null, now = new Date()): string | nu
 
 export function codexAccountLine(account: InboxCodexAccount | null, now = new Date()): CodexAccountLine | null {
   if (!account) return null;
-  if (account.state === 'signed_out') return { value: 'Not signed in', limits: null, signIn: true };
+  if (account.state === 'signed_out') return { value: '未登录', limits: null, signIn: true };
   if (account.state !== 'signed_in') return null;
-  if (account.kind === 'api_key') return { value: 'API key', limits: null, signIn: false };
-  if (account.kind === 'other') return { value: 'Signed in', limits: null, signIn: false };
+  if (account.kind === 'api_key') return { value: 'API 密钥', limits: null, signIn: false };
+  if (account.kind === 'other') return { value: '已登录', limits: null, signIn: false };
   const limits = account.limits ?? [];
   const parts = limits.map((limit, i) => `${codexLimitLabel(limit, i)} ${limit.used_percent}%`);
   const near = limits.map((limit, i) => ({ limit, i })).filter(({ limit }) => limit.used_percent >= CODEX_LIMIT_NEAR);
   for (const { limit, i } of near) {
     const resets = codexResetText(limit.resets_at, now);
-    if (resets) parts.push(`${codexLimitLabel(limit, i)} resets ${resets}`);
+    if (resets) parts.push(`${codexLimitLabel(limit, i)} 重置于 ${resets}`);
   }
   return { value: account.plan ?? 'ChatGPT', limits: parts.length > 0 ? parts.join(' · ') : null, signIn: false };
 }

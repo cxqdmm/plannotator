@@ -29,7 +29,7 @@ export function takeTheirWords(host: DraftTakesHost, threadId: string, draft: In
     host.filesSaved.current = pastedSignature(saved);
     replyDraft.boxTook(threadId, saved.map((file) => file.upload_id));
   }
-  host.announce('This reply changed in another window.');
+  host.announce('此回复已在另一个窗口中更改。');
   return 'took';
 }
 
@@ -45,7 +45,7 @@ export function takeMergedFiles(host: DraftTakesHost, threadId: string, draft: I
   if (now.length !== want.size || now.some((id) => !want.has(id))) {
     const inDraft = new Set((draft.files ?? []).map((file) => file.upload_id));
     const pastesGone = replyFiles.draftFiles(text).filter((file) => file.pasted && !want.has(file.upload_id) && !fresh.includes(file.upload_id)).length;
-    if (pastesGone > 0) host.announce(pastesGone === 1 ? 'A pasted text was sent or removed on another device.' : `${pastesGone} pasted texts were sent or removed on another device.`);
+    if (pastesGone > 0) host.announce(pastesGone === 1 ? '一段粘贴的文本已在另一台设备上被发送或移除。' : `${pastesGone} 段粘贴的文本已在另一台设备上被发送或移除。`);
     host.takeDraftFiles((draft.files ?? []).filter((file) => want.has(file.upload_id)), text, 'replace', [...wanted.filter((id) => !inDraft.has(id)), ...fresh]);
   }
   const saved = replyFiles.draftFiles().filter((file) => !fresh.includes(file.upload_id));

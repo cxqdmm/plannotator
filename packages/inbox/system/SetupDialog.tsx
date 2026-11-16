@@ -22,7 +22,7 @@ import { tildePath } from '../format';
 import { Modal } from '../components/Updates';
 import { systemFirstDrawPrompt } from './firstDraw';
 
-const STEPS = ['Project', 'What to read', 'Keep it current'] as const;
+const STEPS = ['项目', '要读取的内容', '保持更新'] as const;
 
 export interface SystemSetupDialogProps {
   phone: boolean;
@@ -88,7 +88,7 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
         setProjects(answer.projects);
         setChosen((current) => current ?? answer.projects.find((p) => p.id === props.startProject)?.id ?? answer.projects[0]?.id ?? null);
       },
-      (cause) => setLoadError(cause instanceof Error && cause.message ? cause.message : 'The projects could not be read.'),
+      (cause) => setLoadError(cause instanceof Error && cause.message ? cause.message : '无法读取项目。'),
     );
   };
   useEffect(read, []);
@@ -214,7 +214,7 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
       if (copied && !(await copied)) {
         // Saved, not copied: the dialog stays, so the next press copies it.
         setSaving(false);
-        setSaveError('Your choices are saved, but the prompt could not be copied. Press Copy prompt again.');
+        setSaveError('你的选择已保存，但提示词未能复制。请再按一次“复制提示词”。');
         return;
       }
       if (copied) props.onCopied(project, setup);
@@ -222,12 +222,12 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
       props.onClose();
     } catch (cause) {
       setSaving(false);
-      setSaveError(cause instanceof Error && cause.message ? cause.message : 'The setup could not be saved.');
+      setSaveError(cause instanceof Error && cause.message ? cause.message : '设置未能保存。');
     }
   };
 
   const titleId = `ib-sys-t-${uid}`;
-  const heading = step === 0 ? 'Set up System' : step === 1 ? 'What should the agent read?' : 'Who keeps it current?';
+  const heading = step === 0 ? '设置系统' : step === 1 ? 'agent 应该读取什么？' : '由谁来保持更新？';
 
   return (
     <Modal
@@ -253,24 +253,24 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
 
       {step === 0 && (
         <>
-          <p className="ib-sub">Pick the project to draw. One drawing per project.</p>
+          <p className="ib-sub">选择要绘制的项目。每个项目一张图。</p>
           {loadError ? (
             <div className="ib-callout ib-err ib-sys-msg" role="alert">
               <Icon name="warn" />
               <span>
                 {loadError}{' '}
                 <button type="button" className="ib-lnk" onClick={read}>
-                  Try again
+                  重试
                 </button>
               </span>
             </div>
           ) : projects === null ? (
             <p className="ib-quietline" aria-busy="true">
-              Looking for projects on this Mac…
+              正在查找这台 Mac 上的项目…
             </p>
           ) : projects.length === 0 ? (
             <p className="ib-quietline" data-system-none="">
-              No project here has a git remote yet. A project shows here once an agent writes to the Inbox from a git repository on this Mac.
+              这里还没有带 git remote 的项目。当 agent 从这台 Mac 上的 git 仓库向收件箱写入后，项目会出现在这里。
             </p>
           ) : (
             <div className="ib-sys-picks" role="radiogroup" aria-labelledby={titleId}>
@@ -284,7 +284,7 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
                   </span>
                   <span className="ib-sys-ok">
                     <Icon name="check" size={13} />
-                    found on this Mac
+                    在这台 Mac 上找到
                   </span>
                 </label>
               ))}
@@ -295,19 +295,19 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
 
       {step === 1 && project && (
         <>
-          <p className="ib-sub">Code and docs for {project.name}. Every part it draws names the file it came from.</p>
+          <p className="ib-sub">{project.name} 的代码和文档。绘制的每一部分都会标明来源文件。</p>
           <p className="ib-sys-fl" id={`ib-sys-r-${uid}`}>
-            Repos
+            仓库
           </p>
           <ul ref={reposRef} className="ib-sys-chips" aria-labelledby={`ib-sys-r-${uid}`} data-system-repos="">
             <li className="ib-sys-chip" data-system-own="">
               <span className="ib-sys-mono">{systemRepoLabel(project.repo, ownHost)}</span>
-              <span className="ib-sys-from">this project's repo</span>
+              <span className="ib-sys-from">此项目的仓库</span>
             </li>
             {repos.map((repo, index) => (
               <li key={repo} className="ib-sys-chip" data-system-repo={repo}>
                 <span className="ib-sys-mono">{systemRepoLabel(repo, ownHost)}</span>
-                <button type="button" className="ib-sys-x" aria-label={`Remove ${systemRepoLabel(repo, ownHost)}`} onClick={() => removeRepo(index)}>
+                <button type="button" className="ib-sys-x" aria-label={`移除 ${systemRepoLabel(repo, ownHost)}`} onClick={() => removeRepo(index)}>
                   <Icon name="x" size={12} />
                 </button>
               </li>
@@ -316,7 +316,7 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
               <li>
                 <button type="button" ref={addRepoRef} className="ib-sys-chip ib-sys-add" onClick={() => setRepoDraft('')} data-system-add-repo="">
                   <Icon name="plus" size={12} />
-                  Add a repo
+                  添加仓库
                 </button>
               </li>
             )}
@@ -330,8 +330,8 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
                 spellCheck={false}
                 autoCapitalize="off"
                 autoComplete="off"
-                aria-label="Repo"
-                placeholder="owner/name or the repo's URL"
+                aria-label="仓库"
+                placeholder="owner/name 或仓库 URL"
                 value={repoDraft}
                 aria-invalid={repoError ? true : undefined}
                 aria-errormessage={repoError ? `ib-sys-re-${uid}` : undefined}
@@ -342,7 +342,7 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
                 data-system-repo-input=""
               />
               <button type="submit" className="ib-btn">
-                Add
+                添加
               </button>
             </form>
           )}
@@ -353,14 +353,14 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
           )}
 
           <p className="ib-sys-fl ib-sys-fl2" id={`ib-sys-d-${uid}`}>
-            Doc sites
+            文档站点
           </p>
           {docs.length > 0 && (
             <ul ref={docsRef} className="ib-sys-chips" aria-labelledby={`ib-sys-d-${uid}`} data-system-docs="">
               {docs.map((doc, index) => (
                 <li key={doc} className="ib-sys-chip" data-system-doc={doc}>
                   <span className="ib-sys-mono">{systemDocLabel(doc)}</span>
-                  <button type="button" className="ib-sys-x" aria-label={`Remove ${systemDocLabel(doc)}`} onClick={() => removeDoc(index)}>
+                  <button type="button" className="ib-sys-x" aria-label={`移除 ${systemDocLabel(doc)}`} onClick={() => removeDoc(index)}>
                     <Icon name="x" size={12} />
                   </button>
                 </li>
@@ -376,8 +376,8 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
               spellCheck={false}
               autoCapitalize="off"
               autoComplete="off"
-              aria-label="Doc site"
-              placeholder="Paste a URL"
+              aria-label="文档站点"
+              placeholder="粘贴 URL"
               value={docDraft}
               aria-invalid={docError ? true : undefined}
               aria-errormessage={docError ? `ib-sys-de-${uid}` : undefined}
@@ -388,7 +388,7 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
               data-system-doc-input=""
             />
             <button type="submit" className="ib-btn">
-              Add
+              添加
             </button>
           </form>
           {docError && (
@@ -403,7 +403,7 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
         <>
           <p className="ib-sub" data-system-how={canLaunch ? 'launch' : 'prompt'}>
             {canLaunch
-              ? 'The agent you pick runs the drawing phase now, on this Mac, and every redraw after it.'
+              ? '你选择的 agent 现在会在这台 Mac 上执行绘制，之后每次重绘也由它完成。'
               : `The Inbox can't start ${SYSTEM_AGENT_NAMES[agent]} yet. Copy the prompt and paste it into ${SYSTEM_AGENT_NAMES[agent]} in ${project.name}. Redraws use ${SYSTEM_AGENT_NAMES[agent]} too.`}
           </p>
           {agents === null ? (
@@ -425,14 +425,14 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
                           <label key={option.id ?? 'default'} className="ib-seg-o" data-on={model === option.id ? '' : undefined} data-system-model={option.id ?? ''}>
                             <input type="radio" name={`ib-sys-m-${uid}`} checked={model === option.id} onChange={() => setModel(option.id)} />
                             {option.name}
-                            {option.recommended && <span className="ib-sys-rec">Recommended</span>}
+                            {option.recommended && <span className="ib-sys-rec">推荐</span>}
                           </label>
                         ))}
                       </span>
                       <small>
-                        A free check looks at main every 15 minutes and wakes the agent only when something changed.
+                        免费检查每 15 分钟查看一次 main，只在有变化时唤醒 agent。
                       </small>
-                      <span className="ib-sys-cost">Cost: your own agent's usage, only when main changed.</span>
+                      <span className="ib-sys-cost">费用：仅当 main 有变化时，消耗你自己 agent 的用量。</span>
                     </div>
                   )}
                 </div>
@@ -451,24 +451,24 @@ export function SystemSetupDialog(props: SystemSetupDialogProps) {
       <div className="ib-acts-row ib-sys-acts">
         {step > 0 && (
           <button type="button" className="ib-btn ib-left" onClick={() => setStep(step - 1)} disabled={saving} data-system-back="">
-            Back
+            返回
           </button>
         )}
         <button type="button" className="ib-btn" onClick={props.onClose} disabled={saving} data-system-cancel="">
-          Cancel
+          取消
         </button>
         {step < 2 ? (
           <button type="button" className="ib-btn ib-pri" onClick={next} disabled={step === 0 && !project} data-system-next="">
-            Next
+            下一步
           </button>
         ) : canLaunch ? (
           <button type="button" className="ib-btn ib-pri" onClick={() => void finish()} aria-disabled={saving || undefined} data-system-draw="">
-            {saving ? 'Saving…' : 'Draw it'}
+            {saving ? '正在保存…' : '开始绘制'}
           </button>
         ) : (
           <button type="button" className="ib-btn ib-pri" onClick={() => void finish()} disabled={agents === null} aria-disabled={saving || undefined} data-system-copy="">
             <Icon name="copy" />
-            {saving ? 'Saving…' : 'Copy prompt'}
+            {saving ? '正在保存…' : '复制提示词'}
           </button>
         )}
       </div>

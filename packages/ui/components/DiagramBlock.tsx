@@ -333,7 +333,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
               <svg className="w-4 h-4 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              <span className="text-xs text-destructive font-medium">{label} Error</span>
+              <span className="text-xs text-destructive font-medium">{label} 错误</span>
               {state.error.runtimeUnavailable && (
                 <button
                   type="button"
@@ -341,7 +341,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
                   className="ml-auto rounded-md border border-destructive/30 px-2 py-0.5 text-xs text-destructive hover:bg-destructive/10"
                   title="重试加载图表渲染器"
                 >
-                  Retry
+                  重试
                 </button>
               )}
             </div>

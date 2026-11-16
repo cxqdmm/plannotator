@@ -42,13 +42,13 @@ export function CopyFileButton({ text, name, sent, announce }: CopyFileButtonPro
   const copy = async () => {
     const ok = await copyTextToClipboard(text);
     if (current.current !== text) return;
-    announce(ok ? `Copied ${name}.` : `${name} was not copied. Select the code and copy it instead.`);
+    announce(ok ? `已复制 ${name}。` : `未能复制 ${name}。请选中代码后手动复制。`);
     setState(ok ? 'copied' : 'failed');
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setState('idle'), COPY_FILE_FEEDBACK_MS);
   };
 
-  const tip = state === 'copied' ? 'Copied' : sent ? `Copy the text of ${name} as it was sent` : `Copy the text of ${name}`;
+  const tip = state === 'copied' ? '已复制' : sent ? `复制 ${name} 发送时的原文` : `复制 ${name} 的文本`;
   return (
     <Tip content={tip}>
       <button
@@ -58,7 +58,7 @@ export function CopyFileButton({ text, name, sent, announce }: CopyFileButtonPro
         data-copy-file={state}
       >
         <Icon name={state === 'copied' ? 'check' : 'copy'} size={14} />
-        <span>{state === 'copied' ? 'Copied' : state === 'failed' ? 'Not copied' : 'Copy file'}</span>
+        <span>{state === 'copied' ? '已复制' : state === 'failed' ? '未复制' : '复制文件'}</span>
       </button>
     </Tip>
   );

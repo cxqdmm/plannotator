@@ -39,7 +39,7 @@ export function AckPill({
         </span>
         {reaction ? reaction.label ? ` ${reaction.label}` : <span className="ib-sr">{reactionSpeech(reaction)}</span> : ` ${ack.label}`}
       </span>
-      <Tip content={line.state === 'delivered' && ack.delivered_at ? `You marked it ${fullTime(ack.at)}; delivered ${fullTime(ack.delivered_at)}` : fullTime(ack.at)}>
+      <Tip content={line.state === 'delivered' && ack.delivered_at ? `你在 ${fullTime(ack.at)} 标记；已于 ${fullTime(ack.delivered_at)} 送达` : fullTime(ack.at)}>
         <span className="ib-ackwhen">{line.text}</span>
       </Tip>
     </p>

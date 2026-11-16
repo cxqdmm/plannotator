@@ -44,7 +44,7 @@ export function shapeGridItem(s: InboxShapeSummary): ShapeGridItem {
 export function ShapePebbleButton({ shape, open, onToggle }: { shape: InboxShapeSummary; open: boolean; onToggle: () => void }) {
   const tip = (
     <span className="ib-shape-tip">
-      <b>Shape</b> v{shape.latest} · {shape.drawing ? 'drawing now' : `${shapeAgo(shape.updated)} ago`.replace('now ago', 'just now')}
+      <b>Shape</b> v{shape.latest} · {shape.drawing ? '正在绘制' : shapeAgo(shape.updated) === '刚刚' ? '刚刚' : `${shapeAgo(shape.updated)}前`}
     </span>
   );
   return (
@@ -52,7 +52,7 @@ export function ShapePebbleButton({ shape, open, onToggle }: { shape: InboxShape
       <button
         type="button"
         className={`ib-iconbtn ib-shapebtn${open ? ' ib-on' : ''}`}
-        aria-label={`Shape, v${shape.latest}${shape.changed ? ', changed since you looked' : ''}`}
+        aria-label={`Shape，v${shape.latest}${shape.changed ? '，自上次查看后已更改' : ''}`}
         aria-pressed={open}
         onClick={onToggle}
         data-shape-pebble={shape.id}
@@ -208,7 +208,7 @@ export function ShapeThreadTab({ thread, flash, openInFiles = false }: { thread:
       {thread.messages.map((m) => (
         <article key={m.id} className={`ib-shape-msg${flash === m.id ? ' shp-flash' : ''}`} data-shape-message={m.id}>
           <div className="ib-shape-who">
-            <b>{m.author.kind === 'person' ? 'You' : agentName(m.author)}</b>
+            <b>{m.author.kind === 'person' ? '你' : agentName(m.author)}</b>
             <span>{whenTime(m.created_at)}</span>
           </div>
           <MessageBody message={m} projectRoot={thread.project.root} openInFiles={openInFiles} repo={thread.project.repo ?? null} readOnly answers={NO_ANSWERS} onPick={noop} footerFor={noFooter} onOpenAttachment={noop} />
@@ -236,7 +236,7 @@ export function ShapeGridPage({ shapes, onOpen }: { shapes: InboxShapeSummary[] 
         <span className="ib-bsp" />
         <label className="ib-shape-find">
           <Icon name="search" size={16} />
-          <input type="search" placeholder="Find by title or project" aria-label="Find by title or project" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input type="search" placeholder="按标题或项目查找" aria-label="按标题或项目查找" value={query} onChange={(e) => setQuery(e.target.value)} />
         </label>
       </div>
       <div className="ib-shape-gridwrap">

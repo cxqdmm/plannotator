@@ -6,11 +6,11 @@ export function EndedActions({ sendElsewhere, onArchive }: { sendElsewhere: (() 
       {sendElsewhere && (
         <button type="button" className="ib-btn" data-ended-send="" onClick={sendElsewhere}>
           <Icon name="forward" size={15} />
-          Send to another session
+          发送到另一个会话
         </button>
       )}
       <button type="button" className="ib-btn" data-ended-archive="" onClick={onArchive}>
-        Archive
+        归档
       </button>
     </div>
   );

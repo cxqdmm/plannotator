@@ -86,7 +86,7 @@ function originNow(message: Pick<InboxMessageWire, 'id' | 'author' | 'created_at
   const fromPerson = message.author.kind === 'person';
   return {
     messageId: message.id,
-    sender: fromPerson ? 'You' : agentName(message.author),
+    sender: fromPerson ? '你' : agentName(message.author),
     sentAt: whenTime(message.created_at),
     at: message.created_at,
     fromPerson,
@@ -139,7 +139,7 @@ export function threadArtifacts(
     for (const attachment of list) {
       if (placed.has(attachment.id)) continue;
       placed.add(attachment.id);
-      out.push({ type: 'file', messageId: attachment.message_id, sender: 'the agent', sentAt: whenTime(attachment.sent_at), at: attachment.sent_at, fromPerson: false, host: null, attachment, inline, alsoIds: [] });
+      out.push({ type: 'file', messageId: attachment.message_id, sender: 'agent', sentAt: whenTime(attachment.sent_at), at: attachment.sent_at, fromPerson: false, host: null, attachment, inline, alsoIds: [] });
     }
   }
   return out;

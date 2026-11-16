@@ -36,15 +36,15 @@ import { preloadFile } from '@pierre/diffs/ssr';
 // What every dev sees when running `bun run dev:hook` without any flag.
 // Matches the pre-branch demo content; kept identical so the project's
 // default demo story doesn't change.
-const PLAN_V1_DEFAULT = `# Implementation Plan: Real-time Collaboration
+const PLAN_V1_DEFAULT = `# 实施计划：实时协作
 
-## Overview
-Add real-time collaboration features to the editor using WebSocket connections.
+## 概述
+使用 WebSocket 连接为编辑器添加实时协作功能。
 
-## Phase 1: Infrastructure
+## 第一阶段：基础设施
 
-### WebSocket Server
-Set up a WebSocket server to handle concurrent connections:
+### WebSocket 服务器
+搭建一个处理并发连接的 WebSocket 服务器：
 
 \`\`\`typescript
 const server = new WebSocketServer({ port: 8080 });
@@ -59,12 +59,12 @@ server.on('connection', (socket) => {
 });
 \`\`\`
 
-### Client Connection
-- Establish persistent connection on document load
-- Implement reconnection logic with exponential backoff
-- Handle offline state gracefully
+### 客户端连接
+- 文档加载时建立持久连接
+- 实现带指数退避的重连逻辑
+- 优雅处理离线状态
 
-### Database Schema
+### 数据库 Schema
 
 \`\`\`sql
 CREATE TABLE documents (
@@ -75,35 +75,35 @@ CREATE TABLE documents (
 );
 \`\`\`
 
-## Phase 2: Operational Transforms
+## 第二阶段：操作变换
 
-> The key insight is that we need to transform operations against concurrent operations to maintain consistency.
+> 关键洞察是：需要针对并发操作变换操作，才能保持一致性。
 
-Key requirements:
-- Transform insert against insert
-- Transform insert against delete
-- Transform delete against delete
+关键要求：
+- 插入对插入的变换
+- 插入对删除的变换
+- 删除对删除的变换
 
-## Pre-launch Checklist
+## 发布前检查清单
 
-- [ ] Infrastructure ready
-  - [ ] WebSocket server deployed
-  - [ ] Database migrations applied
-- [ ] Security audit complete
-- [ ] Documentation updated
+- [ ] 基础设施就绪
+  - [ ] WebSocket 服务器已部署
+  - [ ] 数据库迁移已应用
+- [ ] 安全审计完成
+- [ ] 文档已更新
 
 ---
 
-**Target:** Ship MVP in next sprint
+**目标：** 下个冲刺发布 MVP
 `;
 
-const PLAN_V2_DEFAULT = `# Implementation Plan: Real-time Collaboration
+const PLAN_V2_DEFAULT = `# 实施计划：实时协作
 
-## Context
+## 背景
 
-This proposal introduces real-time collaborative editing to the Plannotator editor, letting reviewers annotate the same plan simultaneously with sub-second visibility of each other's cursors and edits. We are targeting **early-access concurrency** for up to 25 active collaborators per document, with end-to-end edit-to-visible latency under 300ms at the 95th percentile. The implementation uses operational transforms running on a dedicated Node.js gateway that speaks \`Socket.IO\` to clients and \`REST\` to the storage tier. See [the technical design doc](https://docs.example.com/realtime-v1) for the full rationale and rollout plan.
+本提案为 Plannotator 编辑器引入实时协作编辑，让多位评审者可以同时标注同一份计划，并以亚秒级延迟看到彼此的光标和编辑。我们的目标是**早期访问级并发**：每份文档最多 25 位活跃协作者，端到端「编辑到可见」延迟在 95 分位下低于 300ms。实现采用操作变换，运行在专用的 Node.js 网关上；网关对客户端使用 \`Socket.IO\`，对存储层使用 \`REST\`。完整理由和发布计划见[技术设计文档](https://docs.example.com/realtime-v1)。
 
-Runtime parameters for phase one:
+第一阶段的运行时参数：
 
 \`\`\`typescript
 export const COLLAB_CONFIG = {
@@ -114,13 +114,13 @@ export const COLLAB_CONFIG = {
 } as const;
 \`\`\`
 
-## Overview
-Add real-time collaboration features to the editor using WebSocket connections and operational transforms.
+## 概述
+使用 WebSocket 连接和操作变换为编辑器添加实时协作功能。
 
-## Phase 1: Infrastructure
+## 第一阶段：基础设施
 
-### WebSocket Server
-Set up a WebSocket server to handle concurrent connections:
+### WebSocket 服务器
+搭建一个处理并发连接的 WebSocket 服务器：
 
 \`\`\`typescript
 const server = new WebSocketServer({ port: 8080 });
@@ -135,18 +135,18 @@ server.on('connection', (socket, request) => {
 });
 \`\`\`
 
-### Client Connection
-- Establish persistent connection on document load
-  - Initialize WebSocket with authentication token
-  - Set up heartbeat ping/pong every 30 seconds
-- Implement reconnection logic with exponential backoff
-  - Start with 1 second delay
-  - Double delay on each retry (max 30 seconds)
-- Handle offline state gracefully
-  - Queue local changes in IndexedDB
-  - Show offline indicator in UI
+### 客户端连接
+- 文档加载时建立持久连接
+  - 使用认证令牌初始化 WebSocket
+  - 每 30 秒发送一次心跳 ping/pong
+- 实现带指数退避的重连逻辑
+  - 初始延迟 1 秒
+  - 每次重试延迟翻倍（最长 30 秒）
+- 优雅处理离线状态
+  - 将本地更改排队到 IndexedDB
+  - 在界面中显示离线指示
 
-### Database Schema
+### 数据库 Schema
 
 \`\`\`sql
 CREATE TABLE documents (
@@ -169,45 +169,45 @@ CREATE TABLE collaborators (
 CREATE INDEX idx_collaborators_document ON collaborators(document_id);
 \`\`\`
 
-## Phase 2: Operational Transforms
+## 第二阶段：操作变换
 
-> The key insight is that we need to transform operations against concurrent operations to maintain consistency.
+> 关键洞察是：需要针对并发操作变换操作，才能保持一致性。
 
-Key requirements:
-- Transform insert against insert
-  - Same position: use user ID for deterministic ordering
-  - Different positions: adjust offset of later operation
-- Transform insert against delete
-  - Insert before delete: no change needed
-  - Insert inside deleted range: special handling required
-- Transform delete against delete
-  - Non-overlapping: adjust positions
-  - Overlapping: merge or split operations
-- Maintain cursor positions across transforms
+关键要求：
+- 插入对插入的变换
+  - 相同位置：用用户 ID 做确定性排序
+  - 不同位置：调整较后操作的偏移量
+- 插入对删除的变换
+  - 删除之前插入：无需改动
+  - 在删除范围内插入：需要特殊处理
+- 删除对删除的变换
+  - 不重叠：调整位置
+  - 重叠：合并或拆分操作
+- 在变换之间保持光标位置
 
-## Phase 3: UI Updates
+## 第三阶段：界面更新
 
-1. Show collaborator cursors in real-time
-2. Display presence indicators
-3. Add conflict resolution UI
-4. Implement undo/redo stack per user
+1. 实时显示协作者光标
+2. 显示在线状态指示
+3. 添加冲突解决界面
+4. 为每位用户实现撤销/重做栈
 
-## Pre-launch Checklist
+## 发布前检查清单
 
-- [ ] Infrastructure ready
-  - [x] WebSocket server deployed
-  - [x] Database migrations applied
-  - [ ] Load balancer configured
-- [ ] Security audit complete
-  - [x] Authentication flow reviewed
-  - [ ] Rate limiting implemented
-- [x] Documentation updated
+- [ ] 基础设施就绪
+  - [x] WebSocket 服务器已部署
+  - [x] 数据库迁移已应用
+  - [ ] 负载均衡器已配置
+- [ ] 安全审计完成
+  - [x] 认证流程已评审
+  - [ ] 限流已实现
+- [x] 文档已更新
 
 ---
 
-## Appendix: Diagrams
+## 附录：图表
 
-### Architecture
+### 架构
 
 \`\`\`mermaid
 flowchart LR
@@ -226,7 +226,7 @@ flowchart LR
 
 ---
 
-**Target:** Ship MVP in next sprint
+**目标：** 下个冲刺发布 MVP
 `;
 
 // ─── V1: earliest rough draft (diff-test mode) ────────────────────────────

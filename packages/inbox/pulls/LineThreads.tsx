@@ -57,7 +57,7 @@ function When({ at }: { at: string }) {
   if (!at || Number.isNaN(Date.parse(at))) return null;
   const now = Date.now();
   const short = relativeTime(at, now);
-  return <span className="ib-lt-at" aria-label={relativeWords(at, now)}>{/^\d+[mhd]$/.test(short) ? `${short} ago` : short}</span>;
+  return <span className="ib-lt-at" aria-label={relativeWords(at, now)}>{/^\d+[mhd]$/.test(short) ? `${short} 前` : short}</span>;
 }
 
 function Who({ comment }: { comment: InboxPullDetailComment }) {
@@ -67,7 +67,7 @@ function Who({ comment }: { comment: InboxPullDetailComment }) {
       <Tip cut content={name}>
         <b className="ib-lt-name">{shortName(name)}</b>
       </Tip>
-      {comment.bot && <span className="ib-lt-quiet">bot</span>}
+      {comment.bot && <span className="ib-lt-quiet">机器人</span>}
     </>
   );
 }
@@ -94,7 +94,7 @@ function Words({ comment, layer, memory, headSha }: { comment: InboxPullDetailCo
       </div>
       {(tall || all) && (
         <button type="button" className="ib-lt-more" aria-expanded={all} onClick={() => setAll(!all)}>
-          {all ? 'Show less' : 'Show all'}
+          {all ? '收起' : '查看全部'}
         </button>
       )}
     </>
@@ -115,7 +115,7 @@ function OneComment({ comment, layer, memory, headSha, link }: { comment: InboxP
         </div>
         {comment.hidden !== undefined && !shown ? (
           <button type="button" className="ib-lt-more" onClick={() => setShown(true)} data-pull-thread-hidden={comment.hidden}>
-            {`Hidden on ${forge}${comment.hidden ? ` as ${comment.hidden.replace(/-/g, ' ')}` : ''}. Show`}
+            {`在 ${forge} 上已隐藏${comment.hidden ? `（${comment.hidden.replace(/-/g, ' ')}）` : ''}。显示`}
           </button>
         ) : (
           <Words comment={comment} layer={layer} memory={memory} headSha={headSha} />
@@ -127,8 +127,8 @@ function OneComment({ comment, layer, memory, headSha, link }: { comment: InboxP
 
 const WHERE_WORDS: Record<PlacedThread['where'], string | null> = {
   line: null,
-  outdated: 'Outdated: a later push changed its lines',
-  elsewhere: 'On a line this diff does not show',
+  outdated: '已过时：之后的推送改动了这些行',
+  elsewhere: '位于此 Diff 未显示的行上',
 };
 
 /** A folded thread's one line: who started it, their first words, how many, and why it is folded. */
@@ -137,14 +137,14 @@ function FoldedWords({ thread, layer }: { thread: InboxPullThread; layer: InboxP
   const first = thread.comments[0]!;
   const count = thread.comments.length;
   const why = foldedWhy(thread);
-  const whyWord = why === 'resolved' ? 'Resolved' : why === 'bot' ? 'Bots only' : null;
+  const whyWord = why === 'resolved' ? '已解决' : why === 'bot' ? '仅机器人' : null;
   return (
     <>
       <Face login={first.author} host={layer.host} size={20} bot={first.bot} />
       <b className="ib-lt-name">{shortName(first.author || DELETED)}</b>
-      {first.bot && <span className="ib-lt-quiet">bot</span>}
-      <span className="ib-lt-line">{first.hidden !== undefined ? `Hidden on ${forge}` : firstLine(first.body)}</span>
-      {count > 1 && <span className="ib-lt-quiet ib-lt-n" aria-label={`${count} comments`}>{count}</span>}
+      {first.bot && <span className="ib-lt-quiet">机器人</span>}
+      <span className="ib-lt-line">{first.hidden !== undefined ? `在 ${forge} 上已隐藏` : firstLine(first.body)}</span>
+      {count > 1 && <span className="ib-lt-quiet ib-lt-n" aria-label={`${count} 条评论`}>{count}</span>}
       {whyWord && <span className="ib-lt-quiet" data-pull-thread-why="">{whyWord}</span>}
     </>
   );
@@ -157,8 +157,8 @@ function ThreadComments({ thread, layer, memory, headSha }: { thread: InboxPullT
   const first = thread.comments[0]!;
   const { shown, between } = shownComments(thread.comments, whole);
   const link = first.url ? (
-    <Tip content={`Open on ${forge}`}>
-      <a className="ib-lt-open" href={first.url} target="_blank" rel="noreferrer noopener" aria-label={`Open this thread on ${forge}`}>
+    <Tip content={`在 ${forge} 上打开`}>
+      <a className="ib-lt-open" href={first.url} target="_blank" rel="noreferrer noopener" aria-label={`在 ${forge} 上打开这个会话`}>
         <Icon name="external" size={13} />
       </a>
     </Tip>
@@ -170,7 +170,7 @@ function ThreadComments({ thread, layer, memory, headSha }: { thread: InboxPullT
           <OneComment comment={comment} layer={layer} memory={memory} headSha={headSha} link={index === 0 ? link : undefined} />
           {between > 0 && index === 0 && (
             <button type="button" className="ib-lt-between" onClick={() => setWhole(true)} data-pull-thread-between={between}>
-              {between} more
+              还有 {between} 条
             </button>
           )}
         </div>
@@ -184,9 +184,9 @@ export function LineThread({ placed, layer, memory, headSha }: { placed: PlacedT
   const { thread, where } = placed;
   const why = foldedWhy(thread);
   const [open, setOpen] = useRemembered(memory, `open:${thread.id}`, why === null);
-  const whyWord = why === 'resolved' ? 'Resolved' : why === 'bot' ? 'Bots only' : null;
+  const whyWord = why === 'resolved' ? '已解决' : why === 'bot' ? '仅机器人' : null;
   const whereWords = WHERE_WORDS[where];
-  const span = thread.start_line !== null && thread.line !== null && where === 'line' ? `Lines ${thread.start_line}–${thread.line}` : null;
+  const span = thread.start_line !== null && thread.line !== null && where === 'line' ? `第 ${thread.start_line}–${thread.line} 行` : null;
   const common = { 'data-pull-thread': thread.id, 'data-pull-thread-where': where, 'data-voice': why === 'bot' ? 'bot' : 'person' };
   if (!open) {
     return (
@@ -206,7 +206,7 @@ export function LineThread({ placed, layer, memory, headSha }: { placed: PlacedT
               {whyWord}
             </button>
           )}
-          {whereWords ? <span>{whereWords}</span> : thread.outdated ? <span>Outdated</span> : null}
+          {whereWords ? <span>{whereWords}</span> : thread.outdated ? <span>已过时</span> : null}
           {span && <span>{span}</span>}
         </div>
       )}
@@ -237,7 +237,7 @@ export function FileThread({ thread, layer, memory, headSha, open, phone = false
   const on = (
     <>
       <Icon name="comment" size={13} />
-      <span className="ib-ft-on">On this file</span>
+      <span className="ib-ft-on">关于此文件</span>
       <span className="ib-ft-dot" aria-hidden="true">·</span>
     </>
   );
@@ -256,8 +256,8 @@ export function FileThread({ thread, layer, memory, headSha, open, phone = false
       <button type="button" className="ib-ft-top" aria-expanded onClick={() => setOpen(false)} data-pull-thread-refold="">
         <Icon name="chevD" size={13} />
         {on}
-        <span className="ib-ft-n">{count === 1 ? '1 comment' : `${count} comments`}</span>
-        {why && <span className="ib-lt-quiet" data-pull-thread-why="">{why === 'resolved' ? 'Resolved' : 'Bots only'}</span>}
+        <span className="ib-ft-n">{count === 1 ? '1 条评论' : `${count} 条评论`}</span>
+        {why && <span className="ib-lt-quiet" data-pull-thread-why="">{why === 'resolved' ? '已解决' : '仅机器人'}</span>}
       </button>
       <div className="ib-ft-body">
         <ThreadComments thread={thread} layer={layer} memory={memory} headSha={headSha} />

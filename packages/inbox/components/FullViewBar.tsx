@@ -148,9 +148,8 @@ function Tip({ text, note, keys, phone, passEscape, children }: { text: string; 
   );
 }
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 /** What the live region says when the tools gather. */
-const HIDDEN_SAYING = 'Tools hidden. They are in the bottom right corner.';
+const HIDDEN_SAYING = '工具已隐藏，位于右下角。';
 /**
  * What floats over a file in full screen and gathers into the corner control (inbox.css): this toolbar, the composer
  * or its pill, an image's size bar and its "Your marked-up copy" chip, a text file's toolstrip, its Contents button
@@ -211,7 +210,7 @@ export const FullViewBar = forwardRef<FullViewBarHandle, FullViewBarProps>(funct
       toggle: () => {
         // Focus in anything that gathers (the toolbar, a button of the card, the size bar) goes to the corner control, never to the body.
         if (stateRef.current === 'pinned') setRef.current('tucked', focusGathers() ? 'handle' : null, HIDDEN_SAYING);
-        else setRef.current('pinned', null, 'Tools shown.');
+        else setRef.current('pinned', null, '工具已显示。');
       },
       hide: () => setRef.current('tucked', 'handle', HIDDEN_SAYING),
     }),
@@ -243,7 +242,7 @@ export const FullViewBar = forwardRef<FullViewBarHandle, FullViewBarProps>(funct
     if (count > lastCount.current && !drawerOpen) setBump((n) => n + 1);
     lastCount.current = count;
   }, [count, drawerOpen]);
-  const handleLabel = `Show tools${props.commentDraft ? ', comment not sent' : ''}${props.draft ? ', reply draft' : ''}${count ? `, ${plural(count, 'comment')}` : ''}${props.changed ? ', file changed since sent' : ''}`;
+  const handleLabel = `显示工具${props.commentDraft ? '，有未发送的评论' : ''}${props.draft ? '，有回复草稿' : ''}${count ? `，${count} 条评论` : ''}${props.changed ? '，文件在发送后已更改' : ''}`;
   const iconSize = phone ? 18 : 15;
 
   // The way out of full screen names where it goes, "Side by side" (a pick: remembered); on a phone or a stacked window it is Back to the thread.
@@ -251,16 +250,16 @@ export const FullViewBar = forwardRef<FullViewBarHandle, FullViewBarProps>(funct
   const leaveButton = (
     // F is named once, on the control that does what it does (approved hint placement): here where full screen came
     // from beside the thread (F goes back there, saving nothing); on × where × closes the file.
-    <Tip text={exit ? 'Side by side' : 'Back to the thread'} note={exit ? 'The file beside the thread; files open this way until you choose again' : undefined} keys={exit && !props.exitCloses ? FULL_KEYS : null} phone={phone}>
+    <Tip text={exit ? '并排显示' : '返回会话'} note={exit ? '文件与会话并排；在你再次选择前，文件都会这样打开' : undefined} keys={exit && !props.exitCloses ? FULL_KEYS : null} phone={phone}>
       <button
         type="button"
         className={`ib-fvb ib-fvexit${exit ? ' ib-fvside' : ''}`}
         onClick={props.leave.onLeave}
-        aria-label={exit ? 'Side by side' : 'Back to the thread'}
+        aria-label={exit ? '并排显示' : '返回会话'}
         data-full-view-exit={props.leave.kind}
       >
         <Icon name={exit ? 'sideBySide' : 'chevL'} size={exit ? iconSize : phone ? 20 : 16} />
-        {exit && <span>Side by side</span>}
+        {exit && <span>并排显示</span>}
       </button>
     </Tip>
   );
@@ -271,12 +270,12 @@ export const FullViewBar = forwardRef<FullViewBarHandle, FullViewBarProps>(funct
       data-full-view-dock=""
       data-bar={state}
     >
-      <HoverTip content="Show tools">
+      <HoverTip content="显示工具">
         <button
           type="button"
           ref={handleRef}
           className="ib-fvhandle"
-          onClick={() => set('pinned', 'bar', 'Tools shown.')}
+          onClick={() => set('pinned', 'bar', '工具已显示。')}
           aria-controls={barId}
           aria-expanded={state !== 'tucked'}
           aria-label={handleLabel}
@@ -286,7 +285,7 @@ export const FullViewBar = forwardRef<FullViewBarHandle, FullViewBarProps>(funct
             <Icon name="chevsU" size={phone ? 18 : 14} />
             {props.commentDraft && <span className="ib-fvhandle-cdot" aria-hidden="true" data-full-view-comment-dot="" />}
           </span>
-          {props.draft && <span className="ib-fvhandle-w">Draft</span>}
+          {props.draft && <span className="ib-fvhandle-w">草稿</span>}
           {count > 0 && (
             <span key={bump} className={`ib-fvhandle-n${bump ? ' ib-bump' : ''}`}>
               <Icon name="comment" size={phone ? 14 : 12} />
@@ -301,18 +300,18 @@ export const FullViewBar = forwardRef<FullViewBarHandle, FullViewBarProps>(funct
         id={barId}
         className={`ib-fvbar${phone ? ' ib-fvbar-phone' : ''}`}
         role="toolbar"
-        aria-label="Full screen"
+        aria-label="全屏"
         data-full-view-bar=""
       >
         {props.leave.kind === 'back' && leaveButton}
         {props.onToggleArmed && (
-          <Tip text={props.armed ? `Annotate: click an element or select text to comment; links open (${modKey}-click one to comment on it). Esc to interact` : 'Interact: clicks reach the page. Click to annotate'} phone={phone}>
+          <Tip text={props.armed ? `标注：点击元素或选中文字以评论；链接会打开（按住 ${modKey} 点击可对其评论）。按 Esc 进入交互模式` : '交互：点击会作用于页面。点击以标注'} phone={phone}>
             <button
               type="button"
               className={`ib-fvb${props.armed ? ' ib-on' : ''}`}
               onClick={props.onToggleArmed}
               aria-pressed={props.armed}
-              aria-label={props.armed ? 'Annotate mode' : 'Interact mode'}
+              aria-label={props.armed ? '标注模式' : '交互模式'}
               data-full-view-pen=""
             >
               <Icon name="pen" size={phone ? 18 : 16} />
@@ -321,7 +320,7 @@ export const FullViewBar = forwardRef<FullViewBarHandle, FullViewBarProps>(funct
         )}
         {props.reuse}
         {comments && (
-          <Tip text={comments.open ? 'Close the comments' : 'Comments'} phone={phone}>
+          <Tip text={comments.open ? '关闭评论' : '评论'} phone={phone}>
             <button
               type="button"
               ref={comments.buttonRef}
@@ -357,8 +356,8 @@ export const FullViewBar = forwardRef<FullViewBarHandle, FullViewBarProps>(funct
               // A phone's pill: its name starts with the text it shows (WCAG 2.5.3, Label in Name), then says it in words.
               aria-label={
                 phone
-                  ? `${position.index + 1}/${position.total}: ${position.noun ?? 'file'} ${position.index + 1} of ${position.total}, ${position.name}. Show every file`
-                  : `${position.index + 1} of ${position.total}, ${position.name}. Show every file in this thread`
+                  ? `${position.index + 1}/${position.total}：${(position.noun ?? 'file') === 'option' ? '选项' : '文件'} ${position.index + 1} 个，共 ${position.total} 个，${position.name}。显示所有文件`
+                  : `${position.index + 1}/${position.total}，${position.name}。显示此会话中的所有文件`
               }
               onClick={() => position.onOpenChange(!position.open)}
               onKeyDown={(event) => {
@@ -388,12 +387,12 @@ export const FullViewBar = forwardRef<FullViewBarHandle, FullViewBarProps>(funct
         {props.leave.kind === 'exit' && leaveButton}
         {props.onExitFull && props.leave.kind === 'exit' && !phone && (
           // Its tooltip says Esc, so one Esc on it leaves (the tooltip does not keep that press).
-          <Tip text={props.exitCloses ? 'Back to the thread' : 'Exit full screen'} keys={props.exitCloses ? [EXIT_KEYS, FULL_KEYS] : EXIT_KEYS} phone={phone} passEscape>
+          <Tip text={props.exitCloses ? '返回会话' : '退出全屏'} keys={props.exitCloses ? [EXIT_KEYS, FULL_KEYS] : EXIT_KEYS} phone={phone} passEscape>
             <button
               type="button"
               className="ib-fvb"
               onClick={props.onExitFull}
-              aria-label={props.exitCloses ? 'Back to the thread' : 'Exit full screen'}
+              aria-label={props.exitCloses ? '返回会话' : '退出全屏'}
               aria-keyshortcuts={exitKeys}
               data-full-view-close=""
             >
@@ -401,14 +400,14 @@ export const FullViewBar = forwardRef<FullViewBarHandle, FullViewBarProps>(funct
             </button>
           </Tip>
         )}
-        <Tip text="Hide tools" note="Into the bottom right corner" keys={props.chord ? TOOLS_KEYS : null} phone={phone}>
+        <Tip text="隐藏工具" note="收进右下角" keys={props.chord ? TOOLS_KEYS : null} phone={phone}>
           <button
             type="button"
             ref={hideRef}
             className="ib-fvb ib-fvhide"
             onClick={() => set('tucked', 'handle', HIDDEN_SAYING)}
-            aria-label="Hide tools"
-            aria-description={props.chord ? `Shortcut: ${formatShortcutBindingText(props.chord)}` : undefined}
+            aria-label="隐藏工具"
+            aria-description={props.chord ? `快捷键：${formatShortcutBindingText(props.chord)}` : undefined}
             data-full-view-hide="hide"
           >
             <Icon name="chevsR" size={iconSize} />

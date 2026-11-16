@@ -156,11 +156,11 @@ test('a card message names the card; a message key replays the same words and no
 test('history reads like the mock: short refs, and a Start in the card’s own thread says so', () => {
   expect(shortRef('acme/widgets#2018')).toBe('#2018');
   expect(shortRef('g/p!7')).toBe('!7');
-  expect(historyWords({ at: 'x', by: CLAUDE, kind: 'linked_ref', ref: 'acme/widgets#2018', ref_kind: 'pr' })).toMatchObject({ before: 'Linked ', bold: '#2018', after: '' });
-  expect(historyWords({ at: 'x', by: PERSON, kind: 'sent', to: CLAUDE, thread_id: 'msg_1', existing_thread: true }).after).toBe(' in the card’s thread');
-  expect(historyWords({ at: 'x', by: PERSON, kind: 'sent', to: CLAUDE, thread_id: 'msg_1', existing_thread: false }).after).toBe(' in a new thread');
+  expect(historyWords({ at: 'x', by: CLAUDE, kind: 'linked_ref', ref: 'acme/widgets#2018', ref_kind: 'pr' })).toMatchObject({ before: '已关联 ', bold: '#2018', after: '' });
+  expect(historyWords({ at: 'x', by: PERSON, kind: 'sent', to: CLAUDE, thread_id: 'msg_1', existing_thread: true }).after).toBe('，在卡片会话中');
+  expect(historyWords({ at: 'x', by: PERSON, kind: 'sent', to: CLAUDE, thread_id: 'msg_1', existing_thread: false }).after).toBe('，在新会话中');
   // The Inbox's own move to Done says so, naming the PRs that merged.
-  expect(historyWords({ at: 'x', by: PERSON, kind: 'auto_shipped', prs: ['https://github.com/acme/widgets/pull/12'] })).toMatchObject({ before: 'Done automatically: ', bold: '#12', after: ' merged' });
+  expect(historyWords({ at: 'x', by: PERSON, kind: 'auto_shipped', prs: ['https://github.com/acme/widgets/pull/12'] })).toMatchObject({ before: '自动完成：', bold: '#12', after: ' 已合并' });
   expect(historyWords({ at: 'x', by: PERSON, kind: 'auto_shipped', prs: ['https://github.com/acme/widgets/pull/12', 'https://gitlab.com/g/p/-/merge_requests/3'] }).bold).toBe('#12, !3');
 });
 
@@ -191,12 +191,12 @@ test('a card’s right-click menu: Open thread when linked, the Move menu’s wo
   // The words and order are the approved ones (approval "inbox-board-card-menu", layout A), pinned on purpose:
   // the same as the opened card's Move menu, so a drift in either place fails here.
   expect(menuWords(cardMenuItems(card('x', { column: 'in_progress' }), 'msg_1'))).toEqual([
-    ['Open thread'],
+    ['打开会话'],
     ['Backlog', 'Todo', 'In progress*', 'In review'],
     ['Done'],
-    ['Cancel…'],
+    ['取消…'],
   ]);
-  expect(cardMenuItems(card('x', { column: 'in_progress' }), 'msg_1')[0]).toEqual([{ kind: 'thread', threadId: 'msg_1', label: 'Open thread' }]);
+  expect(cardMenuItems(card('x', { column: 'in_progress' }), 'msg_1')[0]).toEqual([{ kind: 'thread', threadId: 'msg_1', label: '打开会话' }]);
   // No linked thread: no Open thread (the click opens the card).
   expect(menuWords(cardMenuItems(card('x'), null))[0]).toEqual(['Backlog*', 'Todo', 'In progress', 'In review']);
   // A card in Done (the Done page): the same menu, Done checked.
@@ -208,8 +208,8 @@ test('a card’s right-click menu: Open thread when linked, the Move menu’s wo
 test('the toast after a menu move: only when the card leaves the lanes, and its Undo puts it back where it was', () => {
   const building = card('x', { title: 'Slack bridge', column: 'in_progress' });
   // Done: Undo moves it back to the lane it came from (a restore is only for a cancelled card).
-  expect(cardMenuToast(building, { ...building, column: 'done' })).toEqual({ lead: 'Done', detail: '“Slack bridge”', undo: { op: 'move', column: 'in_progress' } });
-  expect(cardMenuToast(building, { ...building, column: 'dropped', aside_from: 'in_progress' })).toEqual({ lead: 'Cancelled', detail: '“Slack bridge”', undo: { op: 'restore' } });
+  expect(cardMenuToast(building, { ...building, column: 'done' })).toEqual({ lead: '已完成', detail: '“Slack bridge”', undo: { op: 'move', column: 'in_progress' } });
+  expect(cardMenuToast(building, { ...building, column: 'dropped', aside_from: 'in_progress' })).toEqual({ lead: '已取消', detail: '“Slack bridge”', undo: { op: 'restore' } });
   // A done card cancelled: Undo restores it to Done (the store kept it as where it was).
   const shipped = card('z', { column: 'done' });
   expect(cardMenuToast(shipped, { ...shipped, column: 'dropped', aside_from: 'done' })?.undo).toEqual({ op: 'restore' });
@@ -234,17 +234,17 @@ test('a toast’s Undo runs only while the card is still where the menu put it',
 
 test('the age is short on the card and whole words for a screen reader', () => {
   const now = Date.parse('2026-10-22T10:00:00.000Z');
-  expect(cardAge('2026-10-22T09:59:40.000Z', now).short).toBe('now');
-  expect(cardAge('2026-10-22T09:55:00.000Z', now).short).toBe('5m ago');
-  expect(cardAge('2026-10-20T10:00:00.000Z', now)).toMatchObject({ short: '2d ago' });
+  expect(cardAge('2026-10-22T09:59:40.000Z', now).short).toBe('刚刚');
+  expect(cardAge('2026-10-22T09:55:00.000Z', now).short).toBe('5 分钟前');
+  expect(cardAge('2026-10-20T10:00:00.000Z', now)).toMatchObject({ short: '2 天前' });
   expect(cardAge('not a date', now)).toEqual({ short: '', long: '' });
 });
 
 test('a link’s live state reads like the hover card: Merged with its day, Open, Not planned', () => {
   expect(refState({ state: 'merged', kind: 'pull', closedAt: '2026-10-20T10:00:00.000Z' })).toMatchObject({ tone: 'merged' });
-  expect(refState({ state: 'merged', kind: 'pull', closedAt: '2026-10-20T10:00:00.000Z' }).label).toStartWith('Merged');
-  expect(refState({ state: 'open', kind: 'issue', closedAt: null })).toEqual({ label: 'Open', tone: 'open' });
-  expect(refState({ state: 'not_planned', kind: 'issue', closedAt: null } as never).label).toStartWith('Not planned');
+  expect(refState({ state: 'merged', kind: 'pull', closedAt: '2026-10-20T10:00:00.000Z' }).label).toStartWith('已合并');
+  expect(refState({ state: 'open', kind: 'issue', closedAt: null })).toEqual({ label: '开放', tone: 'open' });
+  expect(refState({ state: 'not_planned', kind: 'issue', closedAt: null } as never).label).toStartWith('未计划');
 });
 
 test('"You: …" goes to the thread where the person makes the call: the sent thread, else the latest, else none', () => {
@@ -267,7 +267,7 @@ test('"You: …" goes to the thread where the person makes the call: the sent th
   // No thread: none (the card opens instead).
   expect(youThread(card('e'), rowOf)).toBeNull();
   // The link's name holds its visible words as shown, case and all (WCAG 2.5.3: a voice user says what they see).
-  for (const you of ['Merge #14', 'PR #14: look', 'Pick one of three dialogs']) expect(youLinkLabel(you).startsWith(`You: ${you}`)).toBe(true);
+  for (const you of ['Merge #14', 'PR #14: look', 'Pick one of three dialogs']) expect(youLinkLabel(you).startsWith(`你：${you}`)).toBe(true);
 });
 
 test("the project filter keeps only that project's cards, in every column; none keeps every card", () => {
@@ -373,7 +373,7 @@ test('New card starts in the filtered initiative, never in "No initiative"', () 
 test('the history names the initiative a card was put in, and says when it was cleared', () => {
   const names = (id: string) => (id === SHAPE ? 'Shape' : null);
   const set = historyWords({ at: '2026-11-04T10:00:00.000Z', by: PERSON, kind: 'initiative', initiative: SHAPE }, names);
-  expect(`${set.before}${set.bold}${set.after}`).toBe('Tag: Shape by you');
+  expect(`${set.before}${set.bold}${set.after}`).toBe('标签：Shape（你）');
   const cleared = historyWords({ at: '2026-11-04T10:00:00.000Z', by: PERSON, kind: 'initiative', initiative: null }, names);
-  expect(`${cleared.before}${cleared.bold ?? ''}${cleared.after}`).toBe('Tag cleared by you');
+  expect(`${cleared.before}${cleared.bold ?? ''}${cleared.after}`).toBe('标签已清除（你）');
 });

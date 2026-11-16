@@ -23,7 +23,7 @@ export const SERVER_SESSION_FIELD = "serverSession";
 export const SERVER_SESSION_MISMATCH_CODE = "session_mismatch";
 
 export const SERVER_SESSION_MISMATCH_ERROR =
-  "This review was replaced by a newer Plannotator session on the same address. Reload the page to see what is open now; nothing was submitted.";
+  "这次评审已被同一地址上更新版本的 Plannotator 会话取代。请重新加载页面查看当前打开的内容；没有提交任何内容。";
 
 /** A fresh nonce for one server process: 16 random bytes as hex. */
 export function createServerSessionNonce(): string {
@@ -51,7 +51,7 @@ export function checkServerSession(body: unknown, expected: string): "ok" | "mis
  * review, and a refused write (a pick, a Send, a setting) saved nothing.
  */
 export const INBOX_SERVER_SESSION_MISMATCH_ERROR =
-  "This Inbox page is out of date: a newer Plannotator Inbox runs on the same address. Reload the page to see it; nothing was saved.";
+  "这个收件箱页面已过期：同一地址上运行着更新版本的 Plannotator 收件箱。请重新加载页面查看；没有保存任何内容。";
 
 /**
  * The JSON body a server answers a mismatch with (status 409). `error`

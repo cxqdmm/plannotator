@@ -56,11 +56,11 @@ export function openInMenuFor(
 ): OpenInMenu {
   const policy = inboxOpenInPolicy(file, platform);
   const items: OpenInItem[] = [];
-  if (policy.browser && browserPage) items.push({ kind: 'browser', id: 'browser', label: 'Browser', href: browserPage });
+  if (policy.browser && browserPage) items.push({ kind: 'browser', id: 'browser', label: '浏览器', href: browserPage });
   if (policy.editors) {
     for (const app of detected) if (app.kind === 'editor') items.push({ kind: 'app', id: app.id, label: app.label, icon: app.icon });
   }
-  if (policy.systemDefault) items.push({ kind: 'default', id: INBOX_OPEN_IN_DEFAULT_APP, label: 'Default app' });
+  if (policy.systemDefault) items.push({ kind: 'default', id: INBOX_OPEN_IN_DEFAULT_APP, label: '默认应用' });
   const reveal = detected.find((app) => app.kind === 'file-manager');
   if (reveal) items.push({ kind: 'app', id: reveal.id, label: reveal.label, icon: reveal.icon });
 

@@ -41,6 +41,6 @@ export function buildInboxShortcutRegistry(extras: InboxShortcutExtras): Shortcu
 export const inboxSurface: ShortcutSurface = {
   slug: 'inbox',
   title: 'Plannotator Inbox',
-  description: 'Keys in the Inbox window: everywhere, the list, a thread, and an open file.',
+  description: '收件箱窗口中的按键：全局、列表、会话，以及打开的文件。',
   registry: inboxShortcutRegistry,
 };

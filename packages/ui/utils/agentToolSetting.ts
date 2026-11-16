@@ -66,7 +66,7 @@ export async function saveAgentToolSetting(
       body: JSON.stringify({ agentTool: value }),
     });
   } catch {
-    throw new Error('Could not reach Plannotator. Nothing was changed.');
+    throw new Error('无法连接到 Plannotator，未做任何更改。');
   }
   if (response.ok) return;
   let detail = '';

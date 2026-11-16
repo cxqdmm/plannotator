@@ -90,11 +90,11 @@ function Quote({ children }: { children: ReactNode }) {
  * the person said, says nothing more (an answer still says when it came); nothing at all is no part.
  */
 function noteByParts(note: ContextNote): ReactNode[] {
-  if (note.writer === 'guide') return [<>{note.agent ?? 'The agent'}, in its review</>];
-  if (note.writer === 'risk') return note.rule ? [<>your rule <Quote>{note.rule}</Quote></>] : [];
+  if (note.writer === 'guide') return [<>{note.agent ?? '该 agent'} 在其评审中</>];
+  if (note.writer === 'risk') return note.rule ? [<>你的规则 <Quote>{note.rule}</Quote></>] : [];
   if (note.writer === 'thread') {
     const time = noteTime(note.at);
-    return [...(note.asked ? [<>you asked <Quote>{note.asked}</Quote></>] : []), ...(time ? [time] : [])];
+    return [...(note.asked ? [<>你询问了 <Quote>{note.asked}</Quote></>] : []), ...(time ? [time] : [])];
   }
   return note.picture ? [<><Quote>{note.picture.title}</Quote>, {note.picture.part}</>] : [];
 }
@@ -158,7 +158,7 @@ function NoteHead({ note, open }: { note: ContextNote; open: boolean }) {
       <b>{writerWord(note)}</b>
       {note.writer === 'risk' && (
         <span className="ib-risk ib-ctxn-risk" data-risk="high">
-          High
+          高
         </span>
       )}
       {open && <NoteByInline note={note} />}
@@ -174,12 +174,12 @@ function NoteActions({ note, api }: { note: ContextNote; api: NotesApi }) {
         <span>{stale}</span>
         {note.writer === 'thread' && api.onAskAgain && (
           <button type="button" className="ib-btn ib-ctxn-act" onClick={() => api.onAskAgain?.(note)} data-context-note-ask-again="">
-            Ask again
+            再次询问
           </button>
         )}
         {note.writer === 'picture' && api.onOpenPicture && (
           <button type="button" className="ib-ctxn-link" onClick={() => api.onOpenPicture?.(note)} data-context-note-open-picture="">
-            Open the picture
+            打开图片
           </button>
         )}
       </div>
@@ -189,7 +189,7 @@ function NoteActions({ note, api }: { note: ContextNote; api: NotesApi }) {
     return (
       <div className="ib-ctxn-acts">
         <button type="button" className="ib-ctxn-link" onClick={() => api.onOpenPicture?.(note)} data-context-note-open-picture="">
-          Open the picture
+          打开图片
         </button>
       </div>
     );
@@ -220,7 +220,7 @@ export function ContextNoteRow({ id }: { id: string }) {
         <NoteHead note={note} open={open} />
         {!open && (
           <span className="ib-ctxn-first" dir="auto">
-            {note.stale ? 'Changed since · ' : ''}
+            {note.stale ? '此后已更改 · ' : ''}
             {note.text}
           </span>
         )}
@@ -250,9 +250,9 @@ export function ContextNoteChip({ file, lines, onOpen }: { file: string; lines: 
   const body = (
     <>
       <span>
-        On <span className="ib-ctxn-chip-f">{name}</span> {lines}
+        在 <span className="ib-ctxn-chip-f">{name}</span> {lines}
       </span>
-      {onOpen && <span className="ib-ctxn-chip-go">· Open in the review</span>}
+      {onOpen && <span className="ib-ctxn-chip-go">· 在评审中打开</span>}
     </>
   );
   return onOpen ? (

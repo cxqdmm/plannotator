@@ -20,8 +20,8 @@ import { chooseDiffOption } from '../diffOptions';
 import { Tip } from './Tip';
 
 const CHOICES: { id: InboxDiffStyle; label: string; tip: string }[] = [
-  { id: 'split', label: 'Split', tip: 'Split: old and new side by side. Also code review.' },
-  { id: 'unified', label: 'Unified', tip: 'Unified: old and new in one column. Also code review.' },
+  { id: 'split', label: '分屏', tip: '分屏：新旧内容并排显示。代码评审中同样生效。' },
+  { id: 'unified', label: '统一', tip: '统一：新旧内容合并为一栏。代码评审中同样生效。' },
 ];
 
 /**
@@ -52,7 +52,7 @@ const MARKS: Record<InboxDiffStyle, React.ReactElement> = {
 export function DiffStyleSwitch({
   icons = false,
   name = 'ib-diff-style',
-  label = 'Diff layout',
+  label = 'Diff 布局',
 }: {
   icons?: boolean;
   name?: string;

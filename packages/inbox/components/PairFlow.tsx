@@ -25,7 +25,7 @@ const PAIRED_POLL_MS = 2000;
 function QrCode({ link }: { link: string }) {
   const path = useMemo(() => qrModules(link), [link]);
   return (
-    <svg className="ib-qr" viewBox={`-2 -2 ${path.size + 4} ${path.size + 4}`} role="img" aria-label="Pairing QR code" data-pair-qr="" shapeRendering="crispEdges">
+    <svg className="ib-qr" viewBox={`-2 -2 ${path.size + 4} ${path.size + 4}`} role="img" aria-label="配对二维码" data-pair-qr="" shapeRendering="crispEdges">
       <rect x={-2} y={-2} width={path.size + 4} height={path.size + 4} fill="#fff" />
       <path d={path.d} fill="#000" />
     </svg>
@@ -38,10 +38,10 @@ function countdown(ms: number): string {
 }
 
 const CHECK_ICON: Record<CheckLine['status'], { icon: IconName; word: string }> = {
-  ok: { icon: 'checkCircle', word: 'Ready' },
-  warn: { icon: 'excl', word: 'Warning' },
-  fail: { icon: 'xCircle', word: 'Problem' },
-  later: { icon: 'minus', word: 'Not checked yet' },
+  ok: { icon: 'checkCircle', word: '就绪' },
+  warn: { icon: 'excl', word: '警告' },
+  fail: { icon: 'xCircle', word: '问题' },
+  later: { icon: 'minus', word: '尚未检查' },
 };
 
 function Checks({ lines }: { lines: CheckLine[] }) {
@@ -51,7 +51,7 @@ function Checks({ lines }: { lines: CheckLine[] }) {
         <li key={line.text} className={`ib-ck-${line.status}`} data-check={line.status}>
           <Icon name={CHECK_ICON[line.status].icon} size={14} />
           <span>
-            <span className="ib-sr">{CHECK_ICON[line.status].word}: </span>
+            <span className="ib-sr">{CHECK_ICON[line.status].word}：</span>
             {line.text}
             {line.fix && <span className="ib-fix">{line.fix}</span>}
           </span>
@@ -162,7 +162,7 @@ export function PairFlow({ lan, tailnet, busy, error, onSwitchLan, onSwitchTailn
       setNow(Date.now());
       setStep('scan');
     } catch (cause) {
-      setFlowError(cause instanceof Error ? cause.message : 'No pairing code was made.');
+      setFlowError(cause instanceof Error ? cause.message : '未能生成配对码。');
     } finally {
       makingRef.current = false;
       setMaking(false);
@@ -213,9 +213,9 @@ export function PairFlow({ lan, tailnet, busy, error, onSwitchLan, onSwitchTailn
   const neitherWorks = checks !== null && !gateOpen && hasFailure(wifiLines) && hasFailure(tailscaleLines);
 
   const steps: { id: Step; label: string }[] = [
-    { id: 'reach', label: 'How it reaches' },
-    { id: 'scan', label: 'Scan' },
-    { id: 'paired', label: 'Paired' },
+    { id: 'reach', label: '连接方式' },
+    { id: 'scan', label: '扫描' },
+    { id: 'paired', label: '已配对' },
   ];
   const stepIndex = steps.findIndex((s) => s.id === step);
 
@@ -227,7 +227,7 @@ export function PairFlow({ lan, tailnet, busy, error, onSwitchLan, onSwitchTailn
     const failing = hasFailure(lines);
     const address = state?.address ?? null;
     const working = isOn && address !== null && !state?.error;
-    const title = isWifi ? 'This Wi-Fi' : 'Tailscale';
+    const title = isWifi ? '此 Wi-Fi' : 'Tailscale';
     // A switch changes what the checks can see (the mapping on 8443, the listener): read them again after it.
     const switchWay = async (next: boolean) => {
       await (isWifi ? onSwitchLan : onSwitchTailnet)(next);
@@ -240,16 +240,16 @@ export function PairFlow({ lan, tailnet, busy, error, onSwitchLan, onSwitchTailn
           <span className="ib-txt">
             <b id={`ib-way-${kind}`}>{title}</b>
             <span className="ib-why">
-              {isWifi ? 'Works while your phone is on the same Wi-Fi as this computer.' : 'Works from anywhere your phone has Tailscale on, at home or away.'}
+              {isWifi ? '手机与此电脑处于同一 Wi-Fi 时可用。' : '只要手机开着 Tailscale，在家或在外都可用。'}
             </span>
           </span>
         </div>
         <div className="ib-way-sec">
-          <h5>This computer</h5>
-          {checks ? <Checks lines={lines} /> : <p className="ib-mut">{checksError ? `The checks did not load: ${checksError}` : 'Checking…'}</p>}
+          <h5>此电脑</h5>
+          {checks ? <Checks lines={lines} /> : <p className="ib-mut">{checksError ? `检查未能加载：${checksError}` : '正在检查…'}</p>}
         </div>
         <div className="ib-way-sec">
-          <h5>Your phone needs</h5>
+          <h5>你的手机需要</h5>
           <Needs items={isWifi ? wifiPhoneNeeds(network) : tailscalePhoneNeeds(login)} />
         </div>
         <div className="ib-way-f">
@@ -258,36 +258,36 @@ export function PairFlow({ lan, tailnet, busy, error, onSwitchLan, onSwitchTailn
               <span className={`ib-chip ${working ? 'ib-chip-on' : 'ib-chip-err'}`} data-way-state={working ? 'on' : 'not-working'}>
                 {working ? (
                   <>
-                    <Icon name="check" size={12} /> On
+                    <Icon name="check" size={12} /> 已开启
                   </>
                 ) : (
-                  'Not working'
+                  '未生效'
                 )}
               </span>
               <Tip content={working ? address : null} when={(trigger) => isTextCut(trigger) || isTextCut(trigger.querySelector('code'))}>
                 <span className={`ib-way-addr${working ? '' : ' ib-way-err'}`}>
-                  {working ? <code>{address}</code> : (state?.error ?? 'Not reachable yet')}
+                  {working ? <code>{address}</code> : (state?.error ?? '尚不可达')}
                 </span>
               </Tip>
               <span className="ib-way-btns">
-                <button type="button" className="ib-btn ib-sm ib-ghost" disabled={busy} onClick={() => void switchWay(false)} aria-label={`Turn off ${title}`}>
-                  Turn off
+                <button type="button" className="ib-btn ib-sm ib-ghost" disabled={busy} onClick={() => void switchWay(false)} aria-label={`关闭 ${title}`}>
+                  关闭
                 </button>
               </span>
             </>
           ) : (
             <>
               <span className="ib-way-addr">
-                {failing ? 'Fix the item above, or turn it on anyway.' : isWifi ? 'Opens an encrypted listener on this network' : 'Publishes the Inbox for phones on your tailnet only'}
+                {failing ? '修复以上项目，或仍然开启。' : isWifi ? '在此网络上开启加密监听' : '只在你的 tailnet 上为手机发布收件箱'}
               </span>
               <span className="ib-way-btns">
                 {failing && (
                   <button type="button" className="ib-btn ib-sm" disabled={checking} onClick={() => (onRefreshWays(), void runChecks(true))} data-check-again="">
-                    <Icon name="refresh" size={14} /> Check again
+                    <Icon name="refresh" size={14} /> 重新检查
                   </button>
                 )}
-                <button type="button" className="ib-btn ib-sm ib-pri" disabled={busy} onClick={() => void switchWay(true)} aria-label={`Turn on ${title}`} data-turn-on={kind}>
-                  Turn on
+                <button type="button" className="ib-btn ib-sm ib-pri" disabled={busy} onClick={() => void switchWay(true)} aria-label={`开启 ${title}`} data-turn-on={kind}>
+                  开启
                 </button>
               </span>
             </>
@@ -308,15 +308,15 @@ export function PairFlow({ lan, tailnet, busy, error, onSwitchLan, onSwitchTailn
   return (
     <div className="ib-flow" data-pair-flow="" data-pair-step={step}>
       <div className="ib-flow-head">
-        <h3>Pair a phone</h3>
-        <ol className="ib-steps" aria-label="Steps">
+        <h3>配对手机</h3>
+        <ol className="ib-steps" aria-label="步骤">
           {steps.map((s, i) => (
             <li key={s.id} aria-current={i === stepIndex ? 'step' : undefined} className={i < stepIndex ? 'ib-done' : undefined}>
               <span className="ib-n" aria-hidden="true">
                 {i < stepIndex ? <Icon name="check" size={11} /> : i + 1}
               </span>
               {s.label}
-              {i < stepIndex && <span className="ib-sr"> (done)</span>}
+              {i < stepIndex && <span className="ib-sr">（已完成）</span>}
             </li>
           ))}
         </ol>
@@ -325,11 +325,10 @@ export function PairFlow({ lan, tailnet, busy, error, onSwitchLan, onSwitchTailn
         {step === 'reach' && (
           <>
             <h4 ref={heading} tabIndex={-1}>
-              How will your phone reach this computer?
+              你的手机如何连接这台电脑？
             </h4>
             <p className="ib-lead">
-              The code you scan carries this computer&apos;s address, so turn on at least one way first. You can turn on both: the phone uses
-              whichever works where it is.
+              你扫描的码包含这台电脑的地址，因此请先开启至少一种方式。两种都可以开启：手机会使用在当时可用的那一种。
             </p>
             <div className="ib-ways">
               {wayCard('wifi')}
@@ -344,17 +343,17 @@ export function PairFlow({ lan, tailnet, busy, error, onSwitchLan, onSwitchTailn
               <div className="ib-callout ib-err" data-neither-works="">
                 <Icon name="xCircle" />
                 <span>
-                  <b>Neither way works from this computer yet.</b> Fix one of the items above, then Check again. The code shows once a way is on.
+                  <b>这两种方式目前都无法从这台电脑工作。</b>修复以上一项，然后重新检查。开启一种方式后就会显示配对码。
                 </span>
               </div>
             )}
             <div className="ib-flow-f">
               <span className="ib-hint" role="status" data-pair-hint={needWay ? 'need-way' : on.wifi || on.tailscale ? 'ready' : 'none'}>
-                {needWay ? 'Turn on This Wi-Fi or Tailscale above first: the code carries the address your phone uses.' : continueHint(on, network)}
+                {needWay ? '请先在上方开启此 Wi-Fi 或 Tailscale：配对码包含你手机使用的地址。' : continueHint(on, network)}
               </span>
               <span className="ib-right">
                 <button type="button" className="ib-btn ib-ghost" onClick={() => onClose(false)}>
-                  Cancel
+                  取消
                 </button>
                 <button
                   type="button"
@@ -363,13 +362,13 @@ export function PairFlow({ lan, tailnet, busy, error, onSwitchLan, onSwitchTailn
                   data-show-code=""
                   onClick={showCode}
                 >
-                  {gateOpen ? 'Continue to the code' : 'Show the code'}
+                  {gateOpen ? '继续获取配对码' : '显示配对码'}
                 </button>
               </span>
             </div>
             {flowError && <div className="ib-error">{flowError}</div>}
             <p className="ib-later">
-              <Icon name="globe" size={14} /> Away from home without Tailscale (through Plannotator&apos;s relay) is not available yet.
+              <Icon name="globe" size={14} /> 在外且没有 Tailscale 时（通过 Plannotator 的中继）暂不可用。
             </p>
           </>
         )}
@@ -379,36 +378,36 @@ export function PairFlow({ lan, tailnet, busy, error, onSwitchLan, onSwitchTailn
             <div className="ib-scan" data-pair-offer="" data-expired={expired ? 'true' : 'false'}>
               <div className={`ib-qr-wrap${expired ? ' ib-stale' : ''}`}>
                 <QrCode link={offer.link} />
-                {expired && <span className="ib-qr-over">{replaced ? 'This code was replaced' : 'This code expired'}</span>}
+                {expired && <span className="ib-qr-over">{replaced ? '此码已被替换' : '此码已过期'}</span>}
               </div>
               <div className="ib-scan-t">
                 <h4 ref={heading} tabIndex={-1}>
-                  Scan with Plannotator on your iPhone
+                  用 iPhone 上的 Plannotator 扫描
                 </h4>
                 {expired ? (
                   <p data-pair-closed={replaced ? 'replaced' : closedByTries ? 'tries' : 'expired'}>
                     {replaced
-                      ? 'Another window made a newer code, so this one no longer pairs. Make a new code here, or scan the one in that window.'
+                      ? '另一个窗口生成了更新的码，因此此码已无法配对。请在此生成新码，或扫描那个窗口中的码。'
                       : closedByTries
-                        ? 'The code closed after five wrong tries. Make a new code to try again.'
+                        ? '五次错误尝试后配对码已关闭。请生成新码重试。'
                         : seenNothing
-                          ? 'Make a new code to try again. Check the list below first.'
-                          : 'Make a new code to try again.'}
+                          ? '请生成新码重试。先检查下面的列表。'
+                          : '请生成新码重试。'}
                   </p>
                 ) : tailnetAddress ? (
                   <>
-                    <p>Or enter the code in the app:</p>
-                    <div className="ib-pair-code" data-pair-code={offer.offer.code} aria-label={`Pairing code ${offer.offer.code.split('').join(' ')}`}>
+                    <p>或在 app 中输入配对码：</p>
+                    <div className="ib-pair-code" data-pair-code={offer.offer.code} aria-label={`配对码 ${offer.offer.code.split('').join(' ')}`}>
                       {offer.offer.code.slice(0, 3)} {offer.offer.code.slice(3)}
                     </div>
                   </>
                 ) : lanAddress ? (
-                  <p data-pair-scan-only="">Over Wi-Fi the phone pairs by scanning only.</p>
+                  <p data-pair-scan-only="">通过 Wi-Fi 时，手机只能通过扫描配对。</p>
                 ) : null}
                 <div className="ib-reach">
                   {lanAddress && (
                     <span data-pair-address="wifi">
-                      <Icon name="wifi" size={14} /> This Wi-Fi <code>{offer.addresses.lan}</code>
+                      <Icon name="wifi" size={14} /> 此 Wi-Fi <code>{offer.addresses.lan}</code>
                     </span>
                   )}
                   {tailnetAddress && (
@@ -417,36 +416,35 @@ export function PairFlow({ lan, tailnet, busy, error, onSwitchLan, onSwitchTailn
                     </span>
                   )}
                   <button type="button" className="ib-lnk" onClick={() => setStep('reach')} data-pair-change="">
-                    Change
+                    更改
                   </button>
                 </div>
                 {offer.reachable === false && (
                   <div className="ib-callout ib-warn" data-pair-unreachable="">
                     <Icon name="warn" />
                     <span>
-                      <b>This code carries no address your phone can reach yet.</b> {lan?.error ?? tailnet?.error ?? 'The way you turned on is not working.'} Change how it
-                      reaches this computer, then make a new code.
+                      <b>此码尚未包含你手机可访问的地址。</b> {lan?.error ?? tailnet?.error ?? '你开启的方式未生效。'} 更改它连接这台电脑的方式，然后生成新码。
                     </span>
                   </div>
                 )}
                 {/* Only with an address to reach: never the heading over an empty list. */}
                 {!expired && (lanAddress || tailnetAddress) && (
                   <div className="ib-before">
-                    <h5>Before you scan, on your phone</h5>
+                    <h5>扫描前，请在手机上确认</h5>
                     <ul className="ib-checks">
                       {lanAddress && (
                         <li className="ib-ck-need">
                           <Icon name="wifi" size={14} />
                           <span>
-                            Your iPhone is on {network ? `“${network}”` : 'the same Wi-Fi as this computer'}
-                            {tailnetAddress ? ', or' : '.'}
+                            你的 iPhone 已连接到 {network ? `“${network}”` : '与此电脑相同的 Wi-Fi'}
+                            {tailnetAddress ? '，或者' : '。'}
                           </span>
                         </li>
                       )}
                       {tailnetAddress && (
                         <li className="ib-ck-need">
                           <TailscaleMark size={14} />
-                          <span>Tailscale is on, signed in to the same tailnet{login ? ` (${login})` : ''}.</span>
+                          <span>Tailscale 已开启，并登录到同一个 tailnet{login ? `（${login}）` : ''}。</span>
                         </li>
                       )}
                     </ul>
@@ -464,19 +462,19 @@ export function PairFlow({ lan, tailnet, busy, error, onSwitchLan, onSwitchTailn
                 </div>
                 <div className="ib-wait">
                   {expired ? (
-                    <span>{replaced ? 'Replaced by a newer code.' : closedByTries ? 'Closed after five wrong tries.' : 'Expired after 10 minutes.'}</span>
+                    <span>{replaced ? '已被更新的码替换。' : closedByTries ? '五次错误尝试后已关闭。' : '10 分钟后已过期。'}</span>
                   ) : (
                     <>
                       <span className="ib-spin" aria-hidden="true" />
-                      <span data-pair-left="">Waiting for your phone · expires in {countdown(left)}</span>
+                      <span data-pair-left="">正在等待你的手机 · {countdown(left)} 后过期</span>
                     </>
                   )}
                   <span className="ib-right">
                     <button type="button" className={`ib-btn ${expired ? 'ib-pri' : ''}`} aria-disabled={making} onClick={() => !making && void makeCode()} data-pair-new="">
-                      New code
+                      新配对码
                     </button>
                     <button type="button" className="ib-btn ib-ghost" onClick={() => onClose(false)}>
-                      Cancel
+                      取消
                     </button>
                   </span>
                 </div>
@@ -486,7 +484,7 @@ export function PairFlow({ lan, tailnet, busy, error, onSwitchLan, onSwitchTailn
             {seenNothing && (
               <div className="ib-trouble" data-pair-trouble="">
                 <h5>
-                  <Icon name="excl" size={15} /> No phone reached this computer while the code showed
+                  <Icon name="excl" size={15} /> 配对码显示期间没有手机连接到此电脑
                 </h5>
                 <ol>
                   {troubleshooting({ wifi: lanAddress !== null, tailscale: tailnetAddress !== null }, network, login).map((item) => (
@@ -507,17 +505,17 @@ export function PairFlow({ lan, tailnet, busy, error, onSwitchLan, onSwitchTailn
             </span>
             <div>
               <h4 ref={heading} tabIndex={-1}>
-                Paired with {paired.name}
+                已与 {paired.name} 配对
               </h4>
               <p>
                 {paired.via === 'tailnet'
-                  ? 'It reached this computer over Tailscale, at home or away.'
+                  ? '它通过 Tailscale 连接到这台电脑，在家或在外都行。'
                   : paired.via === 'wifi'
-                    ? `It reached this computer on ${network ? `“${network}”` : 'this Wi-Fi'}.${on.tailscale ? ' Away from home it uses Tailscale.' : ' It answers only on this Wi-Fi: turn on Tailscale to reach the Inbox away from home.'}`
-                    : 'It reached this computer on its own address.'}
+                    ? `它通过 ${network ? `“${network}”` : '这个 Wi-Fi'} 连接到这台电脑。${on.tailscale ? '在外时会使用 Tailscale。' : '它只在这个 Wi-Fi 上响应：开启 Tailscale 后就能在外访问收件箱。'}`
+                    : '它通过自己的地址连接到这台电脑。'}
               </p>
               <button type="button" className="ib-btn ib-pri" onClick={() => onClose(true)} data-pair-finish="">
-                Done
+                完成
               </button>
             </div>
           </div>

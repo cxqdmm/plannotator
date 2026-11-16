@@ -26,33 +26,33 @@ export function isTable(name: string): boolean {
 /** The type under a tile's name: "PNG image", "Markdown", "TypeScript", "CSV table", "PDF · 3 pages", "TGZ file". */
 export function wallTypeLabel(row: Pick<InboxArtifactRow, 'attachment'>, pages: number | null = null): string {
   const attachment = row.attachment;
-  if (!attachment) return 'Guided review';
+  if (!attachment) return '引导式评审';
   const kind = readInboxAttachmentKind(attachment.kind);
   const ext = extOf(attachment.name);
   const upper = ext ? ext.toUpperCase() : '';
   switch (kind) {
     case 'image':
-      return upper ? `${upper} image` : 'Image';
+      return upper ? `${upper} 图片` : '图片';
     case 'video':
-      return upper ? `${upper} video` : 'Video';
+      return upper ? `${upper} 视频` : '视频';
     case 'audio':
-      return upper ? `${upper} audio` : 'Audio';
+      return upper ? `${upper} 音频` : '音频';
     case 'html':
-      return 'HTML page';
+      return 'HTML 页面';
     case 'markdown':
       return 'Markdown';
     case 'mermaid':
-      return 'Mermaid diagram';
+      return 'Mermaid 图表';
     case 'graphviz':
-      return 'Graphviz diagram';
+      return 'Graphviz 图表';
     case 'pdf':
-      return pages ? `PDF · ${plural(pages, 'page')}` : 'PDF';
+      return pages ? `PDF · ${plural(pages, '页', '页')}` : 'PDF';
     case 'code':
-      return LANGUAGES[ext] ?? (upper || 'Code');
+      return LANGUAGES[ext] ?? (upper || '代码');
     case 'text':
-      return isTable(attachment.name) ? `${upper} table` : 'Text';
+      return isTable(attachment.name) ? `${upper} 表格` : '文本';
     default:
-      return upper ? `${upper} file` : 'File';
+      return upper ? `${upper} 文件` : '文件';
   }
 }
 

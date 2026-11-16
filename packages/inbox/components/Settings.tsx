@@ -84,7 +84,7 @@ export interface SettingsPageProps {
   onToggleTool: (host: AgentToolHost, next: boolean) => void;
   /** Settings → Capabilities → Experimental: decision mode's switch. Absent (or an Inbox that reports no experimental features): no Experimental group. */
   onToggleExperimental?: (next: boolean) => void;
-  /** Settings → General: "Open Plannotator at plannotator.localhost" (#2184). Absent: no row. */
+  /** Settings → General: "在 plannotator.localhost 打开 Plannotator" (#2184). Absent: no row. */
   onToggleCookieHost?: (next: boolean) => void;
   /** `#settings/experimental` (an old link): Capabilities scrolls to its Experimental group and focuses its heading. */
   landOnExperimental?: boolean;
@@ -183,7 +183,7 @@ export interface SettingsPageProps {
 }
 
 /**
- * "Open Plannotator at plannotator.localhost" (#2184), the switch plan review,
+ * "在 plannotator.localhost 打开 Plannotator" (#2184), the switch plan review,
  * code review and annotate show in their Settings too: config.json
  * `urlHost: "plannotator.localhost"`. Locked (with the reason) while
  * PLANNOTATOR_URL_HOST is set or config.json holds another `urlHost`, which it
@@ -195,12 +195,12 @@ function CookieHostGroup({ cookieHost, remote, onToggle }: { cookieHost: InboxCo
   const state = cookieHost.env !== null ? 'locked-env' : cookieHost.url_host !== null ? 'locked-url-host' : cookieHost.on ? 'on' : 'off';
   return (
     <section className="ib-sgroup" data-settings-cookie-host={state} aria-labelledby="ib-g-browser">
-      <h2 id="ib-g-browser">{remote ? 'The computer’s browser' : 'This browser'}</h2>
+      <h2 id="ib-g-browser">{remote ? '计算机上的浏览器' : '此浏览器'}</h2>
       <div className="ib-card">
         <div className="ib-prow">
           <span className="ib-txt">
             <span className="ib-l" id="ib-cookie-host-label">
-              Open Plannotator at plannotator.localhost
+              在 plannotator.localhost 打开 Plannotator
             </span>
             <span className="ib-desc">{cookieHostDescription({ on: cookieHost.on, env: cookieHost.env ?? undefined, urlHost: cookieHost.url_host ?? undefined }, { inbox: true })}</span>
           </span>
@@ -214,9 +214,9 @@ function CookieHostGroup({ cookieHost, remote, onToggle }: { cookieHost: InboxCo
 }
 
 const THEME_CHOICES = [
-  { id: 'light', label: 'Light', icon: 'sun' },
-  { id: 'dark', label: 'Dark', icon: 'moon' },
-  { id: 'system', label: 'Match system', icon: 'system' },
+  { id: 'light', label: '浅色', icon: 'sun' },
+  { id: 'dark', label: '深色', icon: 'moon' },
+  { id: 'system', label: '跟随系统', icon: 'system' },
 ] as const;
 
 /**
@@ -269,17 +269,17 @@ function GeneralSection({
       {updateRow}
       {onTakeTour && (
         <section className="ib-sgroup" data-settings-tour="" aria-labelledby="ib-g-start">
-          <h2 id="ib-g-start">Getting started</h2>
+          <h2 id="ib-g-start">开始使用</h2>
           <div className="ib-card">
             <div className="ib-prow">
               <span className="ib-txt">
-                <span className="ib-l">Tour</span>
-                <span className="ib-desc">See how the Inbox works through real threads from building Plannotator · 2 min</span>
+                <span className="ib-l">导览</span>
+                <span className="ib-desc">通过构建 Plannotator 过程中的真实会话来了解收件箱如何运作 · 2 分钟</span>
               </span>
               <span className="ib-ctl">
                 <button type="button" className="ib-btn" onClick={onTakeTour} data-settings-take-tour="">
                   <Icon name="play" size={14} />
-                  Take the tour
+                  开始导览
                 </button>
               </span>
             </div>
@@ -287,15 +287,15 @@ function GeneralSection({
         </section>
       )}
       <section className="ib-sgroup" data-settings-theme={mode} aria-labelledby="ib-g-appearance">
-        <h2 id="ib-g-appearance">Appearance</h2>
+        <h2 id="ib-g-appearance">外观</h2>
         <div className="ib-card">
           <div className="ib-prow">
             <span className="ib-txt">
               <span className="ib-l" id="ib-theme-label">
-                Theme
+                主题
               </span>
               <span className="ib-desc">
-                Also plan review, code review and annotate.
+                也用于计划评审、代码评审和标注。
               </span>
             </span>
             <span className="ib-ctl">
@@ -313,9 +313,9 @@ function GeneralSection({
           <div className="ib-prow" data-settings-text-size={textSize}>
             <span className="ib-txt">
               <span className="ib-l" id="ib-text-size-label">
-                Text size
+                文字大小
               </span>
-              <span className="ib-desc">{textSize === 14 ? 'The default. Applies to the whole Inbox.' : 'Applies to the whole Inbox; 14 is the default.'}</span>
+              <span className="ib-desc">{textSize === 14 ? '默认值，应用于整个收件箱。' : '应用于整个收件箱；默认值为 14。'}</span>
             </span>
             <span className="ib-ctl">
               <span className="ib-seg" role="radiogroup" aria-labelledby="ib-text-size-label">
@@ -339,9 +339,9 @@ function GeneralSection({
           <div className="ib-prow" data-settings-sidebar="">
             <span className="ib-txt">
               <span className="ib-l" id="ib-sidebar-label">
-                Sidebar
+                侧边栏
               </span>
-              <span className="ib-desc">What shows, and where. Also from a right-click on the sidebar.</span>
+              <span className="ib-desc">显示哪些内容以及显示在哪里。也可以右键点击侧边栏。</span>
             </span>
             <span className="ib-ctl">
               <button
@@ -352,7 +352,7 @@ function GeneralSection({
                 onClick={(event) => openSidebarCustomizer(event.currentTarget)}
                 data-settings-customize-sidebar=""
               >
-                Customize…
+                自定义…
               </button>
             </span>
           </div>
@@ -361,9 +361,9 @@ function GeneralSection({
             <div className="ib-prow" data-settings-favicon={favicon}>
               <span className="ib-txt">
                 <span className="ib-l" id="ib-favicon-label">
-                  Favicon
+                  网站图标
                 </span>
-                <span className="ib-desc">The icon on this tab and on the installed app. Also plan review, code review and annotate.</span>
+                <span className="ib-desc">此标签页和已安装应用上的图标。也用于计划评审、代码评审和标注。</span>
               </span>
               <span className="ib-ctl">
                 <span className="ib-seg" role="radiogroup" aria-labelledby="ib-favicon-label">
@@ -388,21 +388,21 @@ function GeneralSection({
       </section>
       <KeyboardSettings />
       <section className="ib-sgroup" data-settings-notifications="" aria-labelledby="ib-g-attention">
-        <h2 id="ib-g-attention">When an agent asks you</h2>
+        <h2 id="ib-g-attention">当 agent 询问你时</h2>
         <div className="ib-card">
           <div className="ib-prow">
             <span className="ib-txt">
               <span className="ib-l" id="ib-notify-label">
-                Desktop notifications
+                桌面通知
               </span>
               <span className="ib-desc" data-notify-status={status} aria-live="polite">
-                {notifyStatusText(status, browser)} ({address}) · new threads and questions
+                {notifyStatusText(status, browser)} （{address}）· 新会话和问题
               </span>
             </span>
             <span className="ib-ctl">
               {status === 'not-allowed' && settings.notifications.enabled && (
                 <button type="button" className="ib-btn ib-pri ib-sm" data-notify-allow="" onClick={() => onToggleNotifications(true)}>
-                  Allow
+                  允许
                 </button>
               )}
               <Switch
@@ -417,22 +417,22 @@ function GeneralSection({
             <div className="ib-callout ib-warn ib-in-card" data-notifications-blocked="">
               <Icon name="warn" />
               <span>
-                <b>Blocked in {browser} for {address}.</b> {blockedSteps(browser, address)}
+                <b>在 {browser} 中，{address} 已被阻止。</b> {blockedSteps(browser, address)}
               </span>
             </div>
           )}
           {status === 'on' && (
             <div className="ib-prow" data-notify-test="">
               <span className="ib-txt">
-                <span className="ib-l">Test notification</span>
+                <span className="ib-l">测试通知</span>
                 <span className="ib-desc" aria-live="polite">
                   {tested === 'sent'
                     ? testMissHint(browser, isMac())
                     : tested === 'failed'
-                      ? 'The browser would not show it. Reload this page and try again.'
+                      ? '浏览器未能显示通知。请重新加载此页面后再试。'
                       : tested === 'not-allowed'
-                        ? `Not allowed in ${browser} for this address any more.`
-                        : `${browser} can say it allows notifications while your system hides them: send one to see.`}
+                        ? `${browser} 已不再允许此地址显示通知。`
+                        : `${browser} 可能显示已允许通知，而你的系统却将其隐藏：发送一条看看。`}
                 </span>
               </span>
               <span className="ib-ctl">
@@ -443,7 +443,7 @@ function GeneralSection({
                   disabled={!onTestNotification}
                   onClick={() => void onTestNotification?.().then(setTested)}
                 >
-                  Send a test notification
+                  发送测试通知
                 </button>
               </span>
             </div>
@@ -451,8 +451,8 @@ function GeneralSection({
           {reachLine && (
             <div className="ib-prow" data-notify-reach={reachLine.yes ? 'yes' : 'no'}>
               <span className="ib-txt">
-                <span className="ib-l">Notifications reach you</span>
-                <span className="ib-desc">{reachLine.text} With no Inbox tab open, nothing can notify you.</span>
+                <span className="ib-l">通知能送达你</span>
+                <span className="ib-desc">{reachLine.text} 没有打开收件箱标签页时，任何通知都无法送达。</span>
               </span>
             </div>
           )}
@@ -463,9 +463,9 @@ function GeneralSection({
             <div className="ib-prow" data-settings-mark-read-warning="">
               <span className="ib-txt">
                 <span className="ib-l" id="ib-mark-read-warning-label">
-                  Warn before Mark read sets questions aside
+                  标记为已读会将问题搁置时发出警告
                 </span>
-                <span className="ib-desc">Asks first when marking read would close open questions and tell the agent not to wait on them.</span>
+                <span className="ib-desc">当标记为已读会关闭未回答的问题并告诉 agent 不必等待时，先询问你。</span>
               </span>
               <span className="ib-ctl">
                 <Switch on={settings.mark_read_warning.on} labelledBy="ib-mark-read-warning-label" onClick={() => onToggleMarkReadWarning(!settings.mark_read_warning!.on)} />
@@ -475,7 +475,7 @@ function GeneralSection({
         </div>
         <div className="ib-note">
           <Icon name="info" />
-          Notifications are allowed per address, so a browser on another device asks once there.
+          通知按地址分别授权，因此另一台设备上的浏览器会在那里再询问一次。
         </div>
       </section>
       {settings.cookie_host && onToggleCookieHost && <CookieHostGroup cookieHost={settings.cookie_host} remote={settings.via === 'tailnet'} onToggle={onToggleCookieHost} />}
@@ -576,16 +576,16 @@ function CapabilitiesSection({
   return (
     <>
       {(boardRow || stepsRow || scheduledRow || codeReviewRow || shapeRow) && (
-        <section className="ib-sgroup" data-settings-capabilities="" aria-label="Capabilities">
+        <section className="ib-sgroup" data-settings-capabilities="" aria-label="功能">
           <div className="ib-card">
             {boardRow && (
               <div className="ib-prow" data-settings-board="">
                 <span className="ib-txt">
                   <span className="ib-l" id="ib-board-label">
-                    Board
+                    看板
                   </span>
                   <span className="ib-desc">
-                    A page of the work in flight, one card per piece, that your agents keep current. Off, there is no Board page and agents are not offered cards; every card is kept. Agents pick this up in their next session.
+                    把正在进行的工作放在一个页面上，每项工作一张卡片，由你的 agent 保持更新。关闭后不显示看板页面，也不会向 agent 提供卡片；所有卡片都会保留。agent 会在下一次会话中获知此设置。
                   </span>
                 </span>
                 <span className="ib-ctl">
@@ -597,10 +597,10 @@ function CapabilitiesSection({
               <div className="ib-prow" data-settings-steps="">
                 <span className="ib-txt">
                   <span className="ib-l" id="ib-steps-label">
-                    Checklist
+                    清单
                   </span>
                   <span className="ib-desc">
-                    Your agents' plan for the work in a thread as a checklist, one step per line, under a button at the thread's foot. Off, agents are not offered a checklist and none shows; every checklist is kept. Agents pick this up in their next session.
+                    把 agent 在会话中的工作计划显示为清单，一步一行，位于会话底部按钮之下。关闭后不会向 agent 提供清单，也不显示任何清单；所有清单都会保留。agent 会在下一次会话中获知此设置。
                   </span>
                 </span>
                 <span className="ib-ctl">
@@ -613,10 +613,10 @@ function CapabilitiesSection({
               <div className="ib-prow" data-settings-code-review="">
                 <span className="ib-txt">
                   <span className="ib-l" id="ib-code-review-label">
-                    Code review
+                    代码评审
                   </span>
                   <span className="ib-desc">
-                    Review your agents' code changes and your pull requests from GitHub and GitLab: type / in a reply to ask for a review, then approve it, send feedback to the agent, or post it on the pull request. Off, agents are not offered reviews and the review skills leave the / list; guided reviews and <code>plannotator review</code> work as before either way. Agents pick this up in their next session.
+                    评审 agent 的代码改动以及来自 GitHub 和 GitLab 的拉取请求：在回复中输入 / 请求评审，然后通过评审、把反馈发送给 agent，或发布到拉取请求上。关闭后不会向 agent 提供评审，评审技能也会从 / 列表中移除；引导式评审和 <code>plannotator review</code> 仍照常工作。agent 会在下一次会话中获知此设置。
                   </span>
                 </span>
                 <span className="ib-ctl">
@@ -628,9 +628,9 @@ function CapabilitiesSection({
               <div className="ib-prow" data-settings-chapter-diagrams="">
                 <span className="ib-txt">
                   <span className="ib-l" id="ib-chapter-diagrams-label">
-                    Chapter diagrams
+                    章节图
                   </span>
-                  <span className="ib-desc">Agents may add a diagram above a chapter's code.</span>
+                  <span className="ib-desc">agent 可以在章节代码上方添加图表。</span>
                 </span>
                 <span className="ib-ctl">
                   <Switch on={chapterDiagrams.on} labelledBy="ib-chapter-diagrams-label" onClick={() => onToggleChapterDiagrams(!chapterDiagrams.on)} />
@@ -642,16 +642,16 @@ function CapabilitiesSection({
                 <div className="ib-sysrow-top">
                   <span className="ib-txt">
                     <span className="ib-l" id="ib-system-label">
-                      System
+                      系统
                     </span>
-                    <span className="ib-desc">A drawing of each project's system, kept current by an agent when main moves. Shows while Code review is on. Off, none of it shows; every drawing is kept. Yours alone.</span>
+                    <span className="ib-desc">每个项目系统的图示，由 agent 在 main 分支变动时保持更新。仅在代码评审开启时显示。关闭后完全不显示；所有图示都会保留。仅你自己可见。</span>
                   </span>
                   <span className="ib-ctl">
                     <Switch on={system.on} labelledBy="ib-system-label" onClick={() => onToggleSystem(!system.on)} />
                   </span>
                 </div>
                 {system.on && systemProjects && systemProjects.length > 0 && (
-                  <ul className="ib-sysrow-list" aria-label="Projects" data-settings-system-projects="">
+                  <ul className="ib-sysrow-list" aria-label="项目" data-settings-system-projects="">
                     {systemProjects.map((project) => (
                       <li key={project.id} className="ib-sysrow-p" data-settings-system-project={project.id}>
                         <span className="ib-sysrow-n" dir="auto">
@@ -659,8 +659,8 @@ function CapabilitiesSection({
                         </span>
                         <span className="ib-sysrow-s">{systemStateWords(project)}</span>
                         {project.repo && (
-                          <button type="button" className="ib-btn" onClick={() => openSystemSetup(project.id)} aria-label={`Set up ${project.name}`} data-settings-system-setup={project.id}>
-                            Set up
+                          <button type="button" className="ib-btn" onClick={() => openSystemSetup(project.id)} aria-label={`设置 ${project.name}`} data-settings-system-setup={project.id}>
+                            设置
                           </button>
                         )}
                       </li>
@@ -673,10 +673,10 @@ function CapabilitiesSection({
               <div className="ib-prow" data-settings-shape="">
                 <span className="ib-txt">
                   <span className="ib-l" id="ib-shape-label">
-                    Shape
+                    图形
                   </span>
                   <span className="ib-desc">
-                    Boards your agents draw and keep current: a picture of the work you can point at to change or ask. Type /shape in a reply to ask for one; it opens from the thread's header. Off, agents are not offered boards and none shows; every board is kept.
+                    由 agent 绘制并保持更新的画板：一幅可以指向、用来修改或提问的工作图景。在回复中输入 /shape 请求生成；可从会话标题栏打开。关闭后不会向 agent 提供画板，也不显示任何画板；所有画板都会保留。
                   </span>
                 </span>
                 <span className="ib-ctl">
@@ -690,20 +690,20 @@ function CapabilitiesSection({
       {(decisionRow || broRow || floatRow) && (
         <section className="ib-sgroup" data-settings-experimental="" aria-labelledby="ib-g-experimental">
           <h2 id="ib-g-experimental" ref={experimentalHeading} tabIndex={-1}>
-            Experimental
+            实验性功能
           </h2>
-          <p>Features still being tried. Each stays off until you turn it on.</p>
+          <p>仍在试验中的功能。每项在你开启前都保持关闭。</p>
           <div className="ib-card">
             {decisionRow && (
               <div className="ib-prow" data-settings-decision-mode="">
                 <span className="ib-txt">
                   <span className="ib-l" id="ib-decision-mode-label">
-                    Decision mode
+                    决定模式
                   </span>
                   <span className="ib-desc">
                     {experimental.decision_mode.env !== null
-                      ? `PLANNOTATOR_EXPERIMENTAL turns it ${experimental.decision_mode.env ? 'on' : 'off'}.`
-                      : 'Answer what agents ask in a thread one decision at a time, from its open questions; each agent gets one reply.'}
+                      ? `PLANNOTATOR_EXPERIMENTAL 将其${experimental.decision_mode.env ? '开启' : '关闭'}。`
+                      : '在会话中逐个决定地回答 agent 的问题，从会话的未回答事项入手；每个 agent 会收到一条回复。'}
                   </span>
                 </span>
                 <span className="ib-ctl">
@@ -720,10 +720,10 @@ function CapabilitiesSection({
               <div className="ib-prow" data-settings-bro="">
                 <span className="ib-txt">
                   <span className="ib-l" id="ib-bro-label">
-                    Bro mode
+                    Bro 模式
                   </span>
                   <span className="ib-desc">
-                    Agents write to your Inbox in plain words. Applies to new agent sessions. In open Claude Code sessions, run <code>/reload-plugins plannotator</code>.
+                    agent 会用平实的语言向你的收件箱写入内容。适用于新的 agent 会话。在已打开的 Claude Code 会话中，运行 <code>/reload-plugins plannotator</code>。
                   </span>
                 </span>
                 <span className="ib-ctl">
@@ -735,9 +735,9 @@ function CapabilitiesSection({
               <div className="ib-prow" data-settings-float-drafts="">
                 <span className="ib-txt">
                   <span className="ib-l" id="ib-float-drafts-label">
-                    Float reply drafts
+                    浮动回复草稿
                   </span>
-                  <span className="ib-desc">Keep an unsent reply in a small window in the corner when you leave its thread.</span>
+                  <span className="ib-desc">离开某个会话时，把未发送的回复保留在角落里的小窗口中。</span>
                 </span>
                 <span className="ib-ctl">
                   <Switch on={floatDrafts.on} labelledBy="ib-float-drafts-label" onClick={() => onToggleFloatDrafts(!floatDrafts.on)} />
@@ -773,7 +773,7 @@ function AgentsSection({
   if (agents && onAgents) {
     return (
       <>
-        <section className="ib-sgroup" aria-label="Agents">
+        <section className="ib-sgroup" aria-label="agent">
           <AgentsSettings model={agents} onModel={onAgents} context={context} launch={settings.launch ?? null} />
         </section>
       </>
@@ -783,15 +783,15 @@ function AgentsSection({
   return (
     <>
       <section className="ib-sgroup" aria-labelledby="ib-g-tool">
-        <h2 id="ib-g-tool">The Inbox in your agent&apos;s tools</h2>
+        <h2 id="ib-g-tool">agent 工具中的收件箱</h2>
         <p>
-          Lets an agent send, read and wait for replies from its own tool list. Pi, OpenCode, DeepSeek Harness and Cline send every tool&apos;s definition with each request, so they start off. OpenClaw and
-          Hermes Agent start off too, until you turn them on here or <code>plannotator inbox</code> does.
+          让 agent 通过自己的工具列表发送、读取并等待回复。Pi、OpenCode、DeepSeek Harness 和 Cline 会在每次请求中发送所有工具定义，因此默认关闭。OpenClaw 和
+          Hermes Agent 也默认关闭，直到你在这里开启，或由 <code>plannotator inbox</code> 开启。
         </p>
         {env !== null && (
           <div className="ib-callout" data-tool-locked="">
             <Icon name="lock" />
-            <span>PLANNOTATOR_INBOX_TOOL is set in this Inbox&apos;s environment, so every host is {env ? 'on' : 'off'}.</span>
+            <span>此收件箱的环境中设置了 PLANNOTATOR_INBOX_TOOL，因此所有 host 均为{env ? '开启' : '关闭'}。</span>
           </div>
         )}
         <div className="ib-card">
@@ -804,7 +804,7 @@ function AgentsSection({
                   <span className="ib-l">{name}</span>
                 </span>
                 <span className="ib-ctl">
-                  <Switch on={on} label={`The Inbox tool in ${name}`} disabled={env !== null} onClick={() => onToggleTool(host, !on)} />
+                  <Switch on={on} label={`${name} 中的收件箱工具`} disabled={env !== null} onClick={() => onToggleTool(host, !on)} />
                 </span>
               </div>
             );
@@ -813,13 +813,13 @@ function AgentsSection({
         {env === null && (
           <div className="ib-note">
             <Icon name="info" />
-            Applies to the next session; for DeepSeek Harness, it applies when DeepSeek Harness next starts, and for OpenClaw from its next message. Sessions already running keep what they started with.
+            应用于下一个会话；对 DeepSeek Harness 来说，会在其下次启动时生效，对 OpenClaw 来说则从下一条消息起生效。已在运行的会话保持启动时的设置。
           </div>
         )}
       </section>
       <section className="ib-sgroup" aria-labelledby="ib-g-connect">
-        <h2 id="ib-g-connect">Connect an agent</h2>
-        <p>Agents on this computer reach the Inbox at 127.0.0.1, and it keeps its port between runs when it can.</p>
+        <h2 id="ib-g-connect">连接 agent</h2>
+        <p>这台计算机上的 agent 通过 127.0.0.1 访问收件箱；收件箱会尽可能在多次运行之间保持同一端口。</p>
         <div className="ib-card ib-card-pad">{context && <ConnectPicker harnesses={HARNESSES} initial="other" context={context} compact />}</div>
       </section>
     </>
@@ -832,7 +832,7 @@ function AgentsSection({
  * removes the project's messages and files from the Inbox). A first click asks "Delete? Click again" for a few
  * seconds, a second one deletes. Nothing is undone once deleted, so one stray click never removes a project.
  */
-const DELETE_LABEL = 'Delete from Inbox';
+const DELETE_LABEL = '从收件箱删除';
 
 function DeleteLink({ what, onDelete }: { what: string; onDelete: () => Promise<void> }) {
   const [state, setState] = useState<'idle' | 'confirm' | 'busy'>('idle');
@@ -846,7 +846,7 @@ function DeleteLink({ what, onDelete }: { what: string; onDelete: () => Promise<
       type="button"
       className={`ib-del-l${state === 'confirm' ? ' ib-confirm' : ''}`}
       disabled={state === 'busy'}
-      aria-label={state === 'confirm' ? `${DELETE_LABEL}: ${what} (click again to delete)` : `${DELETE_LABEL}: ${what}`}
+      aria-label={state === 'confirm' ? `${DELETE_LABEL}：${what}（再次点击以删除）` : `${DELETE_LABEL}：${what}`}
       onClick={() => {
         if (state === 'idle') return setState('confirm');
         if (state !== 'confirm') return;
@@ -854,7 +854,7 @@ function DeleteLink({ what, onDelete }: { what: string; onDelete: () => Promise<
         onDelete().finally(() => setState('idle'));
       }}
     >
-      {state === 'confirm' ? 'Delete? Click again' : DELETE_LABEL}
+      {state === 'confirm' ? '删除？再次点击' : DELETE_LABEL}
     </button>
   );
 }
@@ -884,10 +884,10 @@ function StoreTable({
                   <Icon name={isOpen ? 'chevD' : 'chevR'} size={13} /> {project.name}
                 </button>
                 {/* Each folder keeps its own size and Delete: a project's Delete never reaches a combined project's threads. */}
-                {project.combined_into && <div className="ib-store-note">In {project.combined_into}</div>}
-                {project.combined && <div className="ib-store-note">Deleting it leaves {project.combined.join(', ')}, as {project.combined.length === 1 ? 'its own project' : 'their own projects'}</div>}
+                {project.combined_into && <div className="ib-store-note">在 {project.combined_into} 中</div>}
+                {project.combined && <div className="ib-store-note">删除后仍保留 {project.combined.join('、')}，作为{project.combined.length === 1 ? '它自己的项目' : '它们各自的项目'}</div>}
               </td>
-              <td className="ib-n ib-n-threads">{plural(project.threads.length, 'thread')}</td>
+              <td className="ib-n ib-n-threads">{plural(project.threads.length, '个会话', '个会话')}</td>
               <td className="ib-n">{formatBytes(project.bytes)}</td>
               <td className="ib-a">
                 <DeleteLink what={project.name} onDelete={() => onDeleteProject(project.id)} />
@@ -896,11 +896,11 @@ function StoreTable({
             ...(isOpen
               ? project.threads.map((thread) => (
                   <tr key={thread.thread_id} className="ib-sub" data-store-thread={thread.thread_id}>
-                    <td>{thread.subject ?? '(no subject)'}</td>
+                    <td>{thread.subject ?? '（无主题）'}</td>
                     <td className="ib-n ib-n-threads" />
                     <td className="ib-n">{formatBytes(thread.bytes)}</td>
                     <td className="ib-a">
-                      <DeleteLink what={thread.subject ?? 'this thread'} onDelete={() => onDeleteThread(thread.thread_id)} />
+                      <DeleteLink what={thread.subject ?? '此会话'} onDelete={() => onDeleteThread(thread.thread_id)} />
                     </td>
                   </tr>
                 ))
@@ -911,10 +911,10 @@ function StoreTable({
           <tr>
             <td>
               <button type="button" className="ib-fold" onClick={() => setShowAll(true)}>
-                <Icon name="chevR" size={13} /> {plural(rest.length, 'more project')}
+                <Icon name="chevR" size={13} /> {plural(rest.length, '个更多项目', '个更多项目')}
               </button>
             </td>
-            <td className="ib-n ib-n-threads">{plural(rest.reduce((n, p) => n + p.threads.length, 0), 'thread')}</td>
+            <td className="ib-n ib-n-threads">{plural(rest.reduce((n, p) => n + p.threads.length, 0), '个会话', '个会话')}</td>
             <td className="ib-n">{formatBytes(rest.reduce((n, p) => n + p.bytes, 0))}</td>
             <td className="ib-a" />
           </tr>
@@ -925,21 +925,21 @@ function StoreTable({
 }
 
 const LEDE: Record<SettingsSection, string> = {
-  general: 'How the Inbox looks, and how it gets your attention.',
+  general: '收件箱的外观，以及它如何引起你的注意。',
   // Rows draws its own lede, with Undo and Reset beside it (RowsSettings.tsx).
   rows: '',
-  agents: "How each agent on this computer reaches the Inbox and learns when to use it. A change applies to that agent's next session; sessions already running keep what they started with.",
-  'cloud-agents': 'An agent in the cloud or on a server, such as a Claude Code routine, Grok Bot, Muse, Hermes Agent or OpenClaw, that reads and writes across this Inbox.',
+  agents: '这台计算机上的每个 agent 如何接入收件箱，并获知何时使用它。更改会应用于该 agent 的下一个会话；已在运行的会话保持启动时的设置。',
+  'cloud-agents': '云端或服务器上的 agent，例如 Claude Code 例程、Grok Bot、Muse、Hermes Agent 或 OpenClaw，它们会读写整个收件箱。',
   accounts: '',
-  prompts: "What Plannotator tells your agents. A change applies to each agent's next session.",
-  devices: 'Your phone, and browsers on your other devices.',
-  machines: 'Your other computers with Plannotator. Each keeps its own Inbox; this one shows their threads too.',
-  voice: 'Speak a reply instead of typing it.',
-  archived: 'Threads you archived stay out of the list. Unarchive one to put it back and open it.',
+  prompts: 'Plannotator 向你的 agent 传达的内容。更改会应用于每个 agent 的下一个会话。',
+  devices: '你的手机，以及其他设备上的浏览器。',
+  machines: '你安装了 Plannotator 的其他计算机。每台都保有自己的收件箱；这台也会显示它们的会话。',
+  voice: '用语音说出回复，而不是打字。',
+  archived: '你归档的会话会留在列表之外。取消归档即可放回并打开。',
   storage: '',
-  about: 'The version, and how Plannotator keeps itself up to date.',
-  capabilities: 'What the Inbox does beyond your messages. Each switch turns a whole feature on or off.',
-  activity: 'Your threads hour by hour: one row per thread in the order they began, a mark for each hour with messages. Under it, the decisions you made.',
+  about: '版本信息，以及 Plannotator 如何保持自身更新。',
+  capabilities: '收件箱在你的消息之外还能做什么。每个开关控制一整个功能的开启或关闭。',
+  activity: '你的会话按小时排列：每个会话一行，按开始顺序；有消息的小时带一个标记。下方是你做过的决定。',
 };
 
 /**
@@ -1072,8 +1072,8 @@ export function SettingsPage(props: SettingsPageProps) {
   );
   /** The phone's list of sections, in its groups: settings (Capabilities last of them), then your data and Plannotator. */
   const phoneGroups: { label: string; ids: SettingsSection[] }[] = [
-    { label: 'Settings', ids: sections.filter((id) => SETTINGS_SECTIONS.indexOf(id) <= SETTINGS_SECTIONS.indexOf('capabilities')) },
-    { label: 'Your data and Plannotator', ids: sections.filter((id) => id === 'activity' || id === 'archived' || id === 'storage' || id === 'about') },
+    { label: '设置', ids: sections.filter((id) => SETTINGS_SECTIONS.indexOf(id) <= SETTINGS_SECTIONS.indexOf('capabilities')) },
+    { label: '你的数据与 Plannotator', ids: sections.filter((id) => id === 'activity' || id === 'archived' || id === 'storage' || id === 'about') },
   ].filter((group) => group.ids.length > 0);
 
   const devicesDot = devicesNeedAttention(phonesOn ? phones : null, settings?.tailscale);
@@ -1088,11 +1088,11 @@ export function SettingsPage(props: SettingsPageProps) {
   const badge = (id: SettingsSection): ReactNode => {
     if (id === 'archived' && archivedTotal) return <span className="ib-scount">{formatCount(archivedTotal)}</span>;
     if (id === 'about' && aboutDot)
-      return <span className="ib-dot" aria-label={aboutDot === 'check-failing' ? 'Checking for updates is failing' : 'A new version is available'} role="img" />;
-    if (id === 'devices' && devicesDot) return <span className="ib-dot ib-warn" aria-label="Something here is not working" role="img" />;
+      return <span className="ib-dot" aria-label={aboutDot === 'check-failing' ? '检查更新失败' : '有可用的新版本'} role="img" />;
+    if (id === 'devices' && devicesDot) return <span className="ib-dot ib-warn" aria-label="这里有东西无法正常工作" role="img" />;
     if (id === 'machines' && linkedMachines.some((machine) => machine.state === 'needs_update' || machine.state === 'revoked'))
-      return <span className="ib-dot ib-warn" aria-label="A machine needs attention" role="img" data-machines-dot="" />;
-    if (id === 'agents' && agentsNeedRestart(props.agents)) return <span className="ib-dot ib-warn" aria-label="Sessions need a reload" role="img" data-agents-dot="" />;
+      return <span className="ib-dot ib-warn" aria-label="有计算机需要处理" role="img" data-machines-dot="" />;
+    if (id === 'agents' && agentsNeedRestart(props.agents)) return <span className="ib-dot ib-warn" aria-label="会话需要重新加载" role="img" data-agents-dot="" />;
     return null;
   };
 
@@ -1101,7 +1101,7 @@ export function SettingsPage(props: SettingsPageProps) {
     if (!settings) return '';
     switch (id) {
       case 'general': {
-        const modeLabel = mode === 'system' ? 'Match system' : mode === 'light' ? 'Light' : 'Dark';
+        const modeLabel = mode === 'system' ? '跟随系统' : mode === 'light' ? '浅色' : '深色';
         // The palette on screen, unless both halves are still the default one.
         const shownPalette = palettes.pair[palettes.shown];
         const defaults = palettes.pair.light === DEFAULT_COLOR_THEME && palettes.pair.dark === DEFAULT_COLOR_THEME;
@@ -1110,13 +1110,13 @@ export function SettingsPage(props: SettingsPageProps) {
       case 'agents': {
         if (props.agents) {
           const connected = props.agents.agents.filter((row) => row.detected && row.reach.on).map((row) => row.label);
-          return connected.length === 0 ? 'None' : connected.length === 1 ? connected[0]! : `${connected.length} agents`;
+          return connected.length === 0 ? '无' : connected.length === 1 ? connected[0]! : `${connected.length} 个 agent`;
         }
         const on = TOOL_HOSTS.filter(({ host }) => settings.inbox_tool.hosts[host]).map(({ name }) => name);
-        return on.length === 0 ? 'Off' : on.length === 1 ? on[0]! : `${on.length} agents`;
+        return on.length === 0 ? '关闭' : on.length === 1 ? on[0]! : `${on.length} 个 agent`;
       }
       case 'cloud-agents':
-        return cloud.count > 0 ? plural(cloud.count, 'agent') : '';
+        return cloud.count > 0 ? plural(cloud.count, '个 agent', '个 agent') : '';
       case 'rows':
         return rowsSummary(look);
       case 'accounts':
@@ -1124,10 +1124,10 @@ export function SettingsPage(props: SettingsPageProps) {
       case 'prompts':
         return settings.prompts ? promptsSummary(settings.prompts) : '';
       case 'devices':
-        if (phonesOn && phones.devices && phones.devices.length > 0) return plural(phones.devices.length, 'phone');
-        return settings.tailscale?.on ? 'Over your tailnet' : '';
+        if (phonesOn && phones.devices && phones.devices.length > 0) return plural(phones.devices.length, '台手机', '台手机');
+        return settings.tailscale?.on ? '通过你的 tailnet' : '';
       case 'machines':
-        return linkedMachines.length > 0 ? plural(linkedMachines.length, 'machine') : '';
+        return linkedMachines.length > 0 ? plural(linkedMachines.length, '台计算机', '台计算机') : '';
       case 'archived':
         return archivedTotal ? formatCount(archivedTotal) : '';
       case 'storage':
@@ -1138,11 +1138,11 @@ export function SettingsPage(props: SettingsPageProps) {
       case 'about':
         return settings.version;
       case 'voice':
-        return !voice?.on ? 'Off' : voice.engine === 'api' ? 'API key' : 'Codex login';
+        return !voice?.on ? '关闭' : voice.engine === 'api' ? 'API 密钥' : 'Codex 登录';
       case 'capabilities': {
         // What is on, by name: "Off", "Board", "Decision mode", or "2 on".
-        const on = [board?.on ? 'Board' : null, steps?.on ? 'Checklist' : null, codeReview?.on ? 'Code review' : null, experimental?.decision_mode.on ? 'Decision mode' : null].filter((name): name is string => name !== null);
-        return on.length === 0 ? 'Off' : on.length === 1 ? on[0]! : `${on.length} on`;
+        const on = [board?.on ? '看板' : null, steps?.on ? '清单' : null, codeReview?.on ? '代码评审' : null, experimental?.decision_mode.on ? '决定模式' : null].filter((name): name is string => name !== null);
+        return on.length === 0 ? '关闭' : on.length === 1 ? on[0]! : `已开启 ${on.length} 项`;
       }
     }
   };
@@ -1184,7 +1184,7 @@ export function SettingsPage(props: SettingsPageProps) {
         ) : (
           <div className="ib-card ib-sempty">
             <Icon name="prompt" />
-            This Inbox is older than Settings → Prompts. Restart it to update.
+            此收件箱早于“设置 → 提示词”。请重启它来更新。
           </div>
         );
         break;
@@ -1208,26 +1208,26 @@ export function SettingsPage(props: SettingsPageProps) {
         body = archived ?? (
           <div className="ib-card ib-sempty">
             <Icon name="archive" />
-            Archived threads are listed here.
+            已归档的会话会列在这里。
           </div>
         );
         break;
       case 'storage':
         body = (
           <section className="ib-sgroup" aria-labelledby="ib-g-store">
-            <h2 id="ib-g-store">By project</h2>
-            <p>Deleting removes a thread or project's messages and files from the Inbox. Your code is never touched. Delete asks twice and can't be undone.</p>
+            <h2 id="ib-g-store">按项目</h2>
+            <p>删除会将会话或项目的消息和文件从收件箱中移除。你的代码绝不会被改动。删除会询问两次，且无法撤销。</p>
             {!store ? (
               <div className="ib-card ib-store-wait" data-store-wait="" aria-busy={props.storeError ? undefined : true}>
                 {props.storeError ? (
                   <span className="ib-store-wait-t" role="alert" data-store-error="">
-                    The sizes could not be read. {props.storeError}{' '}
+                    无法读取大小。{props.storeError}{' '}
                     <button type="button" className="ib-lnk" onClick={() => props.onReadStore?.()}>
-                      Try again
+                      重试
                     </button>
                   </span>
                 ) : (
-                  storeSlow && <span className="ib-store-wait-t">Counting what is stored…</span>
+                  storeSlow && <span className="ib-store-wait-t">正在统计已存储的内容…</span>
                 )}
               </div>
             ) : store.projects.length > 0 ? (
@@ -1237,7 +1237,7 @@ export function SettingsPage(props: SettingsPageProps) {
             ) : (
               <div className={storeFade ? `ib-card ib-sempty ${storeFade}` : 'ib-card ib-sempty'}>
                 <Icon name="disk" />
-                Nothing stored yet.
+                尚未存储任何内容。
               </div>
             )}
           </section>
@@ -1289,7 +1289,7 @@ export function SettingsPage(props: SettingsPageProps) {
           ) : (
             <div className="ib-card ib-sempty" data-settings-capabilities-none="">
               <Icon name="puzzle" />
-              This Inbox is older than Settings → Capabilities. Restart it to update.
+              此收件箱早于“设置 → 功能”。请重启它来更新。
             </div>
           );
         break;
@@ -1306,10 +1306,10 @@ export function SettingsPage(props: SettingsPageProps) {
         ) : (
           <span className="ib-store-bar" data-store-bar="" aria-hidden="true" />
         )}{' '}
-        in {tildePath(store?.dir ?? settings.store_dir ?? settings.store?.dir ?? '', settings.home)}: messages, attached files as they were sent, and annotations.
+        位于 {tildePath(store?.dir ?? settings.store_dir ?? settings.store?.dir ?? '', settings.home)}：消息、按发送时原样保存的附件，以及标注。
       </p>
     ) : section === 'devices' && settings && !phonesOn ? (
-      <p className="ib-lede">Open this Inbox from your phone, tablet or another computer.</p>
+      <p className="ib-lede">从你的手机、平板或另一台计算机打开此收件箱。</p>
     ) : section && LEDE[section] ? (
       <p className="ib-lede">{LEDE[section]}</p>
     ) : null;
@@ -1319,7 +1319,7 @@ export function SettingsPage(props: SettingsPageProps) {
       <div className="ib-plist" data-settings-list="" ref={list}>
         <div className="ib-plist-h">
           <SidebarTrigger />
-          <h1>Settings</h1>
+          <h1>设置</h1>
         </div>
         {phoneGroups.map((group) => (
           <ul className="ib-card" key={group.label} aria-label={group.label}>
@@ -1346,7 +1346,7 @@ export function SettingsPage(props: SettingsPageProps) {
         {phone && (
           <div className="ib-sphead">
             <a href="#settings" className="ib-pback" onClick={go(null)}>
-              <Icon name="chevL" /> Settings
+              <Icon name="chevL" /> 设置
             </a>
           </div>
         )}
@@ -1367,7 +1367,7 @@ export function SettingsPage(props: SettingsPageProps) {
           </div>
         ) : (
           <h1 ref={heading} tabIndex={-1}>
-            {section ? SETTINGS_SECTION_LABEL[section] : 'General'}
+            {section ? SETTINGS_SECTION_LABEL[section] : '通用'}
           </h1>
         )}
         {loadFailed ? (
@@ -1397,18 +1397,18 @@ export function SettingsPage(props: SettingsPageProps) {
     );
 
   return (
-    <div className="ib-spage ib-sframe" aria-label="Settings">
+    <div className="ib-spage ib-sframe" aria-label="设置">
       <div className="ib-sframe-in">
         {!phone && (
           <button type="button" className="ib-sback" onClick={onBack} data-settings-back="">
-            <Icon name="back" size={15} /> Inbox
+            <Icon name="back" size={15} /> 收件箱
           </button>
         )}
         <div className="ib-scols">
           {!phone && (
-            <nav className="ib-snav" aria-label="Settings sections">
+            <nav className="ib-snav" aria-label="设置分区">
               <div className="ib-eyebrow" aria-hidden="true">
-                Settings
+                设置
               </div>
               <ul>
                 {sections.map((id) => (
@@ -1435,9 +1435,9 @@ function LoadError({ error, onRetry }: { error: string | null; onRetry?: () => v
     <div className="ib-callout ib-err" role="alert" data-settings-load-error="">
       <Icon name="xCircle" />
       <span>
-        <b>Settings did not load.</b> {error} It may have stopped: run <code>plannotator inbox</code>, then{' '}
+        <b>设置未能加载。</b> {error} 它可能已停止：请运行 <code>plannotator inbox</code>，然后{' '}
         <button type="button" className="ib-lnk" onClick={onRetry}>
-          Try again
+          重试
         </button>
         .
       </span>

@@ -80,7 +80,7 @@ async function readAnswer(response: Response, onText: (text: string) => void): P
       }
       if (msg.type === 'text_delta' && typeof msg.delta === 'string') text += msg.delta;
       else if (msg.type === 'text' && typeof msg.text === 'string') text = msg.text;
-      else if (msg.type === 'error') throw new Error(msg.error ?? msg.message ?? 'The session could not answer.');
+      else if (msg.type === 'error') throw new Error(msg.error ?? msg.message ?? '会话无法回答。');
       else continue;
       onText(text);
     }

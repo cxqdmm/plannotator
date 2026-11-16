@@ -22,7 +22,7 @@ export function CloudWakeRow({ agent, onModel }: { agent: InboxCloudAgentView; o
   const [open, setOpen] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
   if (agent.preset === 'muse') {
-    return <CloudLine k="Wake address" v="Not needed: it checks for your messages itself." data={{ 'data-cloud-checks-itself': '' }} />;
+    return <CloudLine k="唤醒地址" v="无需设置：它会自行检查你的消息。" data={{ 'data-cloud-checks-itself': '' }} />;
   }
   if (agent.wake) return <TestLine agent={agent} onModel={onModel} />;
   if (open) {
@@ -38,9 +38,9 @@ export function CloudWakeRow({ agent, onModel }: { agent: InboxCloudAgentView; o
     );
   }
   return (
-    <CloudLine k="Wake address" v="Not set. Add it so it starts when you write to it." data={{ 'data-cloud-wake-offer': '' }}>
+    <CloudLine k="唤醒地址" v="未设置。添加后，它会在你给它写消息时启动。" data={{ 'data-cloud-wake-offer': '' }}>
       <button ref={opener} type="button" className="ib-btn" onClick={() => setOpen(true)} data-cloud-wake-open="">
-        Add wake address
+        添加唤醒地址
       </button>
     </CloudLine>
   );
@@ -69,10 +69,10 @@ function WakeForm({ agent, onModel, onCancel }: { agent: InboxCloudAgentView; on
   };
   return (
     <div className="ib-cl-wake" data-cloud-wake-form="">
-      <span className="ib-cl-k">Wake address</span>
+      <span className="ib-cl-k">唤醒地址</span>
       <p className="ib-cl-p">{hint.where}</p>
       <label className="ib-mfield">
-        <span className="ib-l">Webhook address</span>
+        <span className="ib-l">Webhook 地址</span>
         <input ref={first} type="url" className="ib-fbk-contact ib-mono" placeholder={hint.url} spellCheck={false} autoComplete="off" value={url} readOnly={busy} onChange={(event) => setUrl(event.target.value)} onKeyDown={noEnter} data-cloud-url="" />
       </label>
       <label className="ib-mfield">
@@ -87,10 +87,10 @@ function WakeForm({ agent, onModel, onCancel }: { agent: InboxCloudAgentView; on
       )}
       <div className="ib-mform-f">
         <button type="button" className="ib-btn ib-ghost" disabled={busy} onClick={onCancel}>
-          Cancel
+          取消
         </button>
         <button type="button" className={`ib-btn ib-pri${ready ? '' : ' ib-dim'}`} aria-disabled={!ready} onClick={save} data-cloud-wake-save="">
-          {busy ? 'Saving…' : 'Save'}
+          {busy ? '正在保存…' : '保存'}
         </button>
       </div>
     </div>
@@ -113,12 +113,12 @@ function TestLine({ agent, onModel }: { agent: InboxCloudAgentView; onModel: OnM
   const result = (
     <span className={`ib-cl-said${state.test?.started ? ' ib-cl-ok' : said ? ' ib-cl-bad' : ''}`} role="status" data-cloud-test-result={state.test ? (state.test.started ? 'started' : 'not-started') : undefined}>
       {said && <Icon name={state.test?.started ? 'check' : 'xCircle'} size={14} />}
-      {said ?? 'Set. It starts when you write to it.'}
+      {said ?? '已设置。你给它写消息时它就会启动。'}
       {state.test?.run_url && (
         <>
           {' '}
           <a href={state.test.run_url} target="_blank" rel="noreferrer noopener">
-            Open the run
+            打开这次运行
           </a>
         </>
       )}
@@ -127,7 +127,7 @@ function TestLine({ agent, onModel }: { agent: InboxCloudAgentView; onModel: OnM
   return (
     <CloudLine k="Wake address" v={result}>
       <button type="button" className="ib-btn" disabled={state.busy} onClick={run} data-cloud-test="">
-        {state.busy ? 'Sending…' : 'Send a test'}
+        {state.busy ? '正在发送…' : '发送测试'}
       </button>
     </CloudLine>
   );
@@ -141,13 +141,13 @@ export function CloudNewKey({ agent, onModel }: { agent: InboxCloudAgentView; on
   return (
     <div className="ib-cl-wake" data-cloud-new-key="">
       <span className="ib-cl-warn">
-        <Icon name="warn" size={14} /> The routine refused this key. Paste the new key.
+        <Icon name="warn" size={14} /> 例行任务拒绝了这个密钥。请粘贴新密钥。
       </span>
       <div className="ib-cl-inline">
         <input
           type="password"
           className="ib-fbk-contact ib-mono"
-          aria-label={`New key for ${agent.name}`}
+          aria-label={`${agent.name} 的新密钥`}
           placeholder={wakeHintOf(agent.preset).key}
           autoComplete="off"
           spellCheck={false}
@@ -172,7 +172,7 @@ export function CloudNewKey({ agent, onModel }: { agent: InboxCloudAgentView; on
               });
           }}
         >
-          Save key
+          保存密钥
         </button>
       </div>
       {error && <span className="ib-cl-said ib-cl-bad">{error}</span>}

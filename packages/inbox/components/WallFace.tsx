@@ -132,7 +132,7 @@ function PdfPage({ name, pages }: { name: string; pages: number | null }) {
         <b className="ib-wf-pdf-name" dir="auto">
           {name.replace(/\.pdf$/i, '')}
         </b>
-        {pages !== null && <span className="ib-wf-pdf-pages">{plural(pages, 'page')}</span>}
+        {pages !== null && <span className="ib-wf-pdf-pages">{plural(pages, '页', '页')}</span>}
       </span>
     </span>
   );

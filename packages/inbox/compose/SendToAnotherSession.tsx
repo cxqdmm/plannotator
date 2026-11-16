@@ -113,7 +113,7 @@ export function SendToAnotherSession({
         focusAfterMove(messageId);
         return;
       }
-      setError(cause instanceof InboxApiError ? cause.message : 'It was not moved; try again.');
+      setError(cause instanceof InboxApiError ? cause.message : '未移动成功，请重试。');
       void onReload();
     } finally {
       setBusy(false);
@@ -128,7 +128,7 @@ export function SendToAnotherSession({
       {!open && (
         <button type="button" ref={openRef} className="ib-btn ib-sm" aria-expanded={false} onClick={() => setOpen(true)} data-readdress-open="">
           <Icon name="forward" size={14} />
-          Send to another session
+          发送到另一个会话
         </button>
       )}
       {open && (
@@ -148,15 +148,15 @@ export function SendToAnotherSession({
           }}
         >
           <fieldset className="ib-route">
-            <legend>Send it to another session</legend>
+            <legend>将其发送到另一个会话</legend>
             {others.length === 0 ? (
               <p className="ib-why">
                 {stuck
-                  ? `No other session is running in ${project}. It waits here until you send it to one.`
-                  : `No other session is running in ${project}. It waits here; a resumed session still gets it.`}
+                  ? `${project} 中没有其他会话在运行。它会在这里等待，直到你将其发送到某个会话。`
+                  : `${project} 中没有其他会话在运行。它会在这里等待；恢复的会话仍会收到它。`}
               </p>
             ) : (
-              <div className="ib-gl">Live sessions in {project}</div>
+              <div className="ib-gl">{project} 中的活跃会话</div>
             )}
             {others.map((session) => (
               <label className="ib-opt" key={session.session} data-readdress-session={session.session}>
@@ -207,16 +207,16 @@ export function SendToAnotherSession({
                 {chosen.label ? (
                   // One flex item, so the button's gap does not open between "Send to" and the label.
                   <span>
-                    Send to {agentFirst(chosen.label, chosen.host)}
+                    发送给 {agentFirst(chosen.label, chosen.host)}
                     <bdi>{shortLabel(chosen.label, SEND_LABEL_MAX)}</bdi>
                   </span>
                 ) : (
-                  <>Send to {hostLabel(chosen.host)}</>
+                  <>发送给 {hostLabel(chosen.host)}</>
                 )}
               </button>
             )}
             <button type="button" className="ib-btn ib-ghost" onClick={close}>
-              Cancel
+              取消
             </button>
           </div>
         </form>

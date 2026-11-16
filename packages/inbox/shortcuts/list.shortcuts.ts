@@ -8,25 +8,25 @@ import { defineShortcutScope } from '@plannotator/ui/shortcuts';
  */
 export const inboxListShortcuts = defineShortcutScope({
   id: 'inbox-list',
-  title: 'List',
+  title: '列表',
   lettersByCode: true,
   shortcuts: {
-    next: { description: 'Next thread', bindings: ['ArrowDown'], section: 'List', preventDefault: true, displayOrder: 0 },
-    previous: { description: 'Previous thread', bindings: ['ArrowUp'], section: 'List', preventDefault: true, displayOrder: 1 },
-    first: { description: 'First thread', bindings: ['Home'], section: 'List', preventDefault: true, displayOrder: 2 },
-    last: { description: 'Last thread', bindings: ['End'], section: 'List', preventDefault: true, displayOrder: 3 },
+    next: { description: '下一个会话', bindings: ['ArrowDown'], section: '列表', preventDefault: true, displayOrder: 0 },
+    previous: { description: '上一个会话', bindings: ['ArrowUp'], section: '列表', preventDefault: true, displayOrder: 1 },
+    first: { description: '第一个会话', bindings: ['Home'], section: '列表', preventDefault: true, displayOrder: 2 },
+    last: { description: '最后一个会话', bindings: ['End'], section: '列表', preventDefault: true, displayOrder: 3 },
     open: {
       // The row is a button: Enter is its own (listed for the map).
-      description: 'Open the thread',
+      description: '打开会话',
       bindings: ['Enter'],
-      section: 'List',
+      section: '列表',
       displayOrder: 4,
     },
     rowMenu: {
       // RowMenu.tsx takes it on a focused row, and the Board's CardMenu.tsx on a focused card (the context-menu key too).
-      description: 'Row or card menu',
+      description: '行或卡片菜单',
       bindings: ['Shift+F10'],
-      section: 'List',
+      section: '列表',
       displayOrder: 7,
     },
   },

@@ -5,8 +5,8 @@ import { EarlierCommentsList } from './EarlierCommentsList';
 
 /** The comments button's name, for a screen reader: today's when there are no earlier comments, and never a zero beside them. */
 export function commentsLabel(count: number, earlier: number): string {
-  if (earlier === 0) return `Comments, ${count}`;
-  return count === 0 ? `Comments, ${earlier} earlier` : `Comments, ${count}, ${earlier} earlier`;
+  if (earlier === 0) return `评论，${count}`;
+  return count === 0 ? `评论，早先 ${earlier} 条` : `评论，${count}，早先 ${earlier} 条`;
 }
 
 /**
@@ -54,7 +54,7 @@ export function EarlierSection({ replies, count, current, inAllFiles, shown }: {
     <section ref={sectionRef} className="ib-earlier" data-after={current > 0 || inAllFiles ? '' : undefined} data-earlier-section="">
       <button type="button" className="ib-earlier-row" aria-expanded={open} onClick={toggle} data-earlier-row="">
         <Icon name="chevD" />
-        <span>{inAllFiles ? 'Earlier on this file' : 'Earlier'}</span>
+        <span>{inAllFiles ? '此文件早先的评论' : '早先'}</span>
         <span className="ib-earlier-n">{count}</span>
       </button>
       {open && shown && <EarlierCommentsList replies={replies} />}

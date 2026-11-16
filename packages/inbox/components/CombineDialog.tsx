@@ -10,7 +10,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import type { InboxCombineAgent, InboxCombineRecord, InboxListRow } from '@plannotator/core/inbox-types';
 import { INBOX_COMBINE_WORDS_MAX, inboxCombineAgentApart, inboxCombineAgentLabel, inboxTidyWords } from '@plannotator/core/inbox-types';
-import { formatCount, plural, whenTime } from '@plannotator/core/inbox-format';
+import { formatCount, whenTime } from '@plannotator/core/inbox-format';
 import { combineApi } from '../combineApi';
 import { PressKeys } from '../pressKeys';
 import { HostMark } from '../icons';
@@ -24,15 +24,15 @@ const NO_MACHINES: MachinesModel = { self: null, all: [], linked: [], names: new
 /** Why nobody can be asked about these threads, or null when their machine can be. */
 export function combineBlocked(rows: readonly InboxListRow[], machines: MachinesModel): string | null {
   const held = [...new Set(rows.map((row) => rowMachine(row, machines)))];
-  const nameOf = (id: string | null) => (id === null ? (machines.all.find((m) => m.self)?.name ?? 'this computer') : (machines.names.get(id) ?? 'another machine'));
+  const nameOf = (id: string | null) => (id === null ? (machines.all.find((m) => m.self)?.name ?? '这台计算机') : (machines.names.get(id) ?? '另一台计算机'));
   if (held.length > 1) {
     const names = held.map(nameOf);
-    return `These threads are on ${names.length === 2 ? 'two' : names.length} machines, ${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}. An agent reads only the threads on its own machine: pick threads from one machine to combine them.`;
+    return `这些会话位于 ${names.length} 台计算机上：${names.slice(0, -1).join('、')} 和 ${names[names.length - 1]}。agent 只能读取自己所在计算机上的会话：请选择同一台计算机上的会话再合并。`;
   }
   const machine = held[0] ?? null;
   const view = machine ? machines.linked.find((m) => m.id === machine) : null;
-  if (machine && (!view || isAway(view))) return `${nameOf(machine)} can’t be asked now: it is away.`;
-  if (machine && !(view!.marks ?? []).includes('combine')) return `${nameOf(machine)} runs an older Plannotator: update it to combine its threads.`;
+  if (machine && (!view || isAway(view))) return `${nameOf(machine)} 现在无法响应：它已离线。`;
+  if (machine && !(view!.marks ?? []).includes('combine')) return `${nameOf(machine)} 运行的是较旧版本的 Plannotator：请更新后再合并它的会话。`;
   return null;
 }
 
@@ -62,7 +62,7 @@ export function CombineDialog({ rows, machines = NO_MACHINES, onClose, onStarted
         setAgents(plan.agents ?? []);
         setWho((current) => current ?? plan.agents?.[0]?.session ?? null);
       })
-      .catch((cause) => live && (setAgents([]), setError(cause instanceof Error ? cause.message : 'Who can be asked could not be read.')));
+      .catch((cause) => live && (setAgents([]), setError(cause instanceof Error ? cause.message : '无法读取可以响应的 agent。')));
     return () => {
       live = false;
     };
@@ -95,16 +95,16 @@ export function CombineDialog({ rows, machines = NO_MACHINES, onClose, onStarted
       keys.failed(null, cause);
       pressed.current = false;
       setSending(false);
-      setError(cause instanceof Error ? cause.message : 'The Combine did not start.');
+      setError(cause instanceof Error ? cause.message : '合并未能启动。');
     }
   };
   // Cancel takes the focus: Combine is greyed until the agents are read, and a focused field would open a phone's keyboard.
   return (
     <Modal labelledBy={`${id}-title`} describedBy={`${id}-lede`} testId="combine" onClose={onClose} ownKeys className="ib-cmb" initialFocus=".ib-btn">
       <div className="ib-dlg-in">
-        <h2 id={`${id}-title`}>Combine {plural(n, 'thread')}</h2>
+        <h2 id={`${id}-title`}>合并 {n} 个会话</h2>
         <p className="ib-sub" id={`${id}-lede`}>
-          One agent reads them and starts one new thread with where everything stands. Once it arrives, these go to the archive.
+          一个 agent 会读取这些会话，并新建一个会话来汇总当前进展。新会话到达后，这些会话将归档。
         </p>
         {blocked ? (
           <p className="ib-cmb-why" role="note">
@@ -113,9 +113,9 @@ export function CombineDialog({ rows, machines = NO_MACHINES, onClose, onStarted
         ) : (
           <>
             <fieldset className="ib-cmb-who">
-              <legend>Who writes it</legend>
-              {agents === null && <p className="ib-cmb-why">Finding the agents of these threads…</p>}
-              {agents?.length === 0 && !error && <p className="ib-cmb-why">No agent that wrote in these threads is running. Combine needs one to read them and write the new thread.</p>}
+              <legend>由谁撰写</legend>
+              {agents === null && <p className="ib-cmb-why">正在查找这些会话的 agent…</p>}
+              {agents?.length === 0 && !error && <p className="ib-cmb-why">在这些会话中写过的 agent 都没有在运行。合并需要一个 agent 来读取它们并撰写新会话。</p>}
               <div className="ib-cmb-list" data-all={shown === agents?.length && (agents?.length ?? 0) > FIRST ? '' : undefined} onKeyDown={onArrow}>
               {agents?.slice(0, shown).map((agent) => (
                 <label key={agent.session} className="ib-cmb-opt" data-on={agent.session === who ? '' : undefined} data-combine-agent={agent.session}>
@@ -124,7 +124,7 @@ export function CombineDialog({ rows, machines = NO_MACHINES, onClose, onStarted
                   <span className="ib-cmb-nm">
                     <b dir="auto">{nameOf(agent)}</b>
                     <small>
-                      {agent.threads} of these
+                      其中 {agent.threads} 个
                       {inboxCombineAgentApart(agent, agents, (iso) => whenTime(iso)).map((part) => ` · ${part}`).join('')}
                       {machineName ? ` · ${machineName}` : ''}
                     </small>
@@ -138,17 +138,17 @@ export function CombineDialog({ rows, machines = NO_MACHINES, onClose, onStarted
                     focusAgent(agents[shown]!.session);
                     setShown(agents.length);
                   }} data-combine-more="">
-                  Show {formatCount(agents.length - shown)} more
+                  再显示 {formatCount(agents.length - shown)} 个
                 </button>
               )}
             </fieldset>
             <label className="ib-cmb-lbl" htmlFor={`${id}-words`}>
-              What should it be about? (optional)
+              想让它聚焦什么？（可选）
             </label>
-            <textarea id={`${id}-words`} className="ib-cmb-words" rows={3} maxLength={INBOX_COMBINE_WORDS_MAX} placeholder="For example: just the billing release work, drop the CSV details" value={words} onChange={(event) => setWords(event.target.value)} data-combine-words="" />
+            <textarea id={`${id}-words`} className="ib-cmb-words" rows={3} maxLength={INBOX_COMBINE_WORDS_MAX} placeholder="例如：只要计费发布相关的工作，去掉 CSV 的细节" value={words} onChange={(event) => setWords(event.target.value)} data-combine-words="" />
             {chosen && (
               <p className="ib-cmb-what">
-                <b dir="auto">{nameOf(chosen)}</b> gets one prompt with the {plural(n, 'thread')}. Open questions are asked again in the new thread. Undo brings the {formatCount(n)} back.
+                <b dir="auto">{nameOf(chosen)}</b> 会收到一个包含 {n} 个会话的提示词。未解决的问题会在新会话中再次提出。撤销可以恢复这 {formatCount(n)} 个会话。
               </p>
             )}
           </>
@@ -160,10 +160,10 @@ export function CombineDialog({ rows, machines = NO_MACHINES, onClose, onStarted
         )}
         <div className="ib-cmb-btns">
           <button type="button" className="ib-btn" onClick={onClose} data-combine-cancel="">
-            Cancel
+            取消
           </button>
           <button type="button" className="ib-btn ib-pri" disabled={!chosen || sending || !!blocked} onClick={() => void combine()} data-combine-go="">
-            Combine
+            合并
           </button>
         </div>
       </div>

@@ -11,11 +11,11 @@ export function leftoverWords(earlier: UnconfirmedSend, now: { comments: readonl
   const picks = now.picks.filter((id) => !earlier.picks.includes(id)).length;
   const files = now.uploads.filter((id) => !earlier.uploads.includes(id)).length;
   const parts = [
-    comments > 0 ? `${comments} comment${comments === 1 ? '' : 's'}` : null,
-    picks > 0 ? `${picks} pick${picks === 1 ? '' : 's'}` : null,
-    files > 0 ? `${files} file${files === 1 ? '' : 's'}` : null,
+    comments > 0 ? `${comments} 条评论` : null,
+    picks > 0 ? `${picks} 个选择` : null,
+    files > 0 ? `${files} 个文件` : null,
   ].filter((part): part is string => part !== null);
   if (parts.length === 0) return null;
-  const list = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`;
-  return `Your reply went. Not sent yet: ${list}. Press Send to send ${parts.length === 1 && !list.endsWith('s') ? 'it' : 'them'}.`;
+  const list = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join('、')}和${parts.at(-1)}`;
+  return `回复已发送。尚未发送：${list}。按“发送”即可发送。`;
 }

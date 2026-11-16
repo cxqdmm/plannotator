@@ -188,11 +188,11 @@ export function AudioScrub({
       className="ib-audwave"
       role="slider"
       tabIndex={0}
-      aria-label={`Seek in ${name}`}
+      aria-label={`在 ${name} 中拖动定位`}
       aria-valuemin={0}
       aria-valuemax={span ? Math.round(span) : 0}
       aria-valuenow={Math.round(current)}
-      aria-valuetext={span ? `${formatInboxVideoTime(current)} of ${formatInboxVideoTime(span)}` : formatInboxVideoTime(current)}
+      aria-valuetext={span ? `${formatInboxVideoTime(current)}，共 ${formatInboxVideoTime(span)}` : formatInboxVideoTime(current)}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={stop}

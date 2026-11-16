@@ -35,17 +35,17 @@ interface ExampleRow {
 }
 
 const WAITING: readonly ExampleRow[] = [
-  { project: 'plannotator', title: 'Review the inbox header change', preview: 'Two layouts to pick from, both in the thread', questions: 1, time: '2:41 PM', logo: plannotatorLogo },
-  { project: 'bun', title: 'Bump the test runner timeout', preview: 'bun test hits 5 s on the slow CI runners', questions: 1, time: '2:17 PM', logo: bunLogo },
-  { project: 'supabase', title: 'Add a row-level policy example', preview: 'Which table should the example use?', questions: 1, time: '1:58 PM', logo: supabaseLogo },
+  { project: 'plannotator', title: '评审收件箱页头改动', preview: '两种布局可选，都在会话里', questions: 1, time: '下午 2:41', logo: plannotatorLogo },
+  { project: 'bun', title: '调高测试运行器的超时', preview: '在较慢的 CI 运行器上 bun test 会达到 5 秒', questions: 1, time: '下午 2:17', logo: bunLogo },
+  { project: 'supabase', title: '添加行级策略示例', preview: '这个示例该用哪张表？', questions: 1, time: '下午 1:58', logo: supabaseLogo },
 ];
 const NEW: readonly ExampleRow[] = [
-  { project: 'vite', title: 'Bump the dev server to 6.1', preview: 'Two plugins need a new peer range', time: '1:12 PM', logo: viteLogo },
-  { project: 'compose', title: 'Fix the volume mount order', preview: 'Named volumes now mount before binds', time: '12:46 PM', logo: dockerLogo },
-  { project: 'zed', title: 'Speed up the project search', preview: 'Search over 40k files drops from 1.9 s to 0.4 s', time: '11:30 AM', logo: zedLogo },
-  { project: 'transformers', title: 'Update the tokenizer docs', preview: 'The fast tokenizer page had the old flags', time: '10:05 AM', logo: huggingfaceLogo },
-  { project: 'redis', title: 'Tidy the eviction settings', preview: 'maxmemory-policy moves next to maxmemory', time: '9:48 AM', logo: redisLogo },
-  { project: 'next.js', title: 'Fix the image loader cache key', preview: 'Width was missing from the key', time: '9:20 AM', logo: vercelLogo },
+  { project: 'vite', title: '把开发服务器升到 6.1', preview: '有两个插件需要新的 peer 范围', time: '下午 1:12', logo: viteLogo },
+  { project: 'compose', title: '修正卷的挂载顺序', preview: '命名卷现在先于绑定挂载', time: '下午 12:46', logo: dockerLogo },
+  { project: 'zed', title: '加快项目搜索', preview: '搜索 4 万个文件从 1.9 秒降到 0.4 秒', time: '上午 11:30', logo: zedLogo },
+  { project: 'transformers', title: '更新分词器文档', preview: '快速分词器页面用的是旧参数', time: '上午 10:05', logo: huggingfaceLogo },
+  { project: 'redis', title: '整理淘汰设置', preview: 'maxmemory-policy 移到 maxmemory 旁边', time: '上午 9:48', logo: redisLogo },
+  { project: 'next.js', title: '修正图片加载器的缓存键', preview: '缓存键里少了宽度', time: '上午 9:20', logo: vercelLogo },
 ];
 /** The sidebar's projects, in the order the Inbox lists them; `waiting`: threads waiting on you. Two have no logo. */
 const PROJECTS: readonly { name: string; waiting?: number; logo?: string }[] = [
@@ -64,8 +64,8 @@ const PROJECTS: readonly { name: string; waiting?: number; logo?: string }[] = [
 
 /** The notes look's two invented threads (approval round 3: "Spring newsletter", waiting; "Trip plan: Lisbon", done). */
 const NOTES: readonly { title: string; preview: string; time: string; status: 'waiting' | 'done' }[] = [
-  { title: 'Spring newsletter', preview: 'The intro still runs long. Should I cut the second story, or move it to the end?', time: '3:12 PM', status: 'waiting' },
-  { title: 'Trip plan: Lisbon', preview: 'Flights and the flat are booked. The day-by-day list is pinned in the thread.', time: '11:05 AM', status: 'done' },
+  { title: '春季简报', preview: '开头的导语还是太长。第二篇故事是删掉，还是挪到结尾？', time: '下午 3:12', status: 'waiting' },
+  { title: '旅行计划：里斯本', preview: '机票和公寓都订好了。逐日行程已置顶在会话里。', time: '上午 11:05', status: 'done' },
 ];
 
 /** The ids the marks' hues are keyed on (the production rule: the hue from the id). */
@@ -138,7 +138,7 @@ export function RowsIntroWindow({ scene, moving }: { scene: RowsIntroScene; movi
         <div className="ib-rl-search">
           <span className="ib-rl-box">
             <Icon name="search" size={16} />
-            Search
+            搜索
             <ShortcutHint scope={inboxSearchShortcuts} action="openSearch" className="ib-kbd ib-rl-kbd" />
           </span>
           <span className="ib-rl-new">
@@ -147,11 +147,11 @@ export function RowsIntroWindow({ scene, moving }: { scene: RowsIntroScene; movi
         </div>
         <div className="ib-rl-nav">
           <Icon name="inbox" size={17} />
-          Inbox<span className="ib-rl-n">{waiting}</span>
+          收件箱<span className="ib-rl-n">{waiting}</span>
         </div>
         <div className="ib-rl-phead">
           <Icon name="folder" size={17} />
-          Projects
+          项目
         </div>
         {PROJECTS.map((project, j) => (
           <div className="ib-rl-prow" key={project.name}>
@@ -164,18 +164,18 @@ export function RowsIntroWindow({ scene, moving }: { scene: RowsIntroScene; movi
       <div className="ib-rl-lp">
         <div className="ib-rl-lhead">
           <Icon name="panelsHide" size={18} />
-          <span className="ib-rl-h">Inbox</span>
+          <span className="ib-rl-h">收件箱</span>
           <Icon name="dots" size={18} />
         </div>
         <div className="ib-rl-lbody">
           <div className="ib-rl-band">
-            Waiting on you <span className="ib-rl-n">{waiting}</span>
+            等你处理 <span className="ib-rl-n">{waiting}</span>
           </div>
           {WAITING.map((row, i) => (
             <Row key={row.title} row={row} i={i} />
           ))}
           <div className="ib-rl-band">
-            New since you looked <span className="ib-rl-n">{NEW.length}</span>
+            自你上次查看后更新 <span className="ib-rl-n">{NEW.length}</span>
           </div>
           {NEW.map((row, i) => (
             <Row key={row.title} row={row} i={i + WAITING.length} />

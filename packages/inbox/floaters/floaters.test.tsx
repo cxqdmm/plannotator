@@ -281,7 +281,7 @@ test('Send from a floating draft posts to that thread’s message and clears its
   await until(() => fake.posts.some((p) => p.path.endsWith('/threads/thr_b/draft/delete')), 'the discard');
   expect(fake.drafts.has('thr_b')).toBe(false);
   expect(floating()).toEqual([]);
-  expect(toasts.at(-1)!.lead).toBe('Reply discarded');
+  expect(toasts.at(-1)!.lead).toBe('回复已丢弃');
   await until(() => document.querySelector('[data-rf-corner]') === null, 'the corner to go');
 });
 
@@ -293,7 +293,7 @@ test('a draft whose thread holds picks hands its Send to the thread and posts no
   await act(async () => root!.render(<Harness start={null} rows={[row('thr_p', 2)]} ask={fakeAsk()} />));
   await until(() => card('thr_p') !== null, 'the corner');
   act(() => card('thr_p')!.click());
-  await until(() => document.querySelector('[data-rf-box="thr_p"] [data-rf-send]')?.textContent === 'Open to send', 'Open to send');
+  await until(() => document.querySelector('[data-rf-box="thr_p"] [data-rf-send]')?.textContent === '打开以发送', 'Open to send');
   act(() => document.querySelector<HTMLElement>('[data-rf-box="thr_p"] [data-rf-send]')!.click());
   await wait(100);
   expect(opened).toEqual(['thr_p']);
@@ -332,7 +332,7 @@ test('the corner never lists Ask’s chat, only the drafts, and Ask’s own menu
   await until(() => document.querySelector('[data-ask-menu] [data-ask-chat]') !== null, 'the menu');
   const menu = document.querySelector('[data-ask-menu]')!;
   expect(menu.textContent).not.toContain('Subject thr_a');
-  expect(menu.textContent).not.toContain('Draft');
+  expect(menu.textContent).not.toContain('草稿');
   expect([...menu.querySelectorAll('[role="menuitem"]')].every((item) => item.hasAttribute('data-ask-chat'))).toBe(true);
 });
 
@@ -462,7 +462,7 @@ test('emptying the words to rewrite them keeps the window open; Escape does not 
   typeInto(field('thr_a')!, '');
   await until(() => !fake.drafts.has('thr_a'), 'the draft gone again');
   act(() => setRows([]));
-  act(() => document.querySelector<HTMLElement>('[data-rf-box="thr_a"] [aria-label="Minimize"]')!.click());
+  act(() => document.querySelector<HTMLElement>('[data-rf-box="thr_a"] [aria-label="最小化"]')!.click());
   await until(() => floating().length === 0, 'the float entry to go');
   expect(box('thr_a')).toBeNull();
 });
@@ -472,8 +472,8 @@ test('Undo after Discard brings back the words and the files; a refused Undo say
   const kept = { upload_id: 'up_9', name: 'trace.log', size: 12, kind: 'file', sha256: 'x', created_at: T0 } as unknown as NonNullable<InboxReplyDraft['files']>[number];
   await openFloating('thr_b', 'See the trace for the second charge', [kept]);
   act(() => document.querySelector<HTMLElement>('[data-rf-box="thr_b"] [data-rf-discard]')!.click());
-  await until(() => toasts.some((t) => t.lead === 'Reply discarded'), 'the discard toast');
-  const undo = toasts.find((t) => t.lead === 'Reply discarded')!.onUndo!;
+  await until(() => toasts.some((t) => t.lead === '回复已丢弃'), 'the discard toast');
+  const undo = toasts.find((t) => t.lead === '回复已丢弃')!.onUndo!;
   const before = fake.posts.length;
   act(() => undo());
   await until(() => fake.posts.slice(before).some((p) => p.path.endsWith('/threads/thr_b/draft')), 'the restore');
@@ -485,7 +485,7 @@ test('Undo after Discard brings back the words and the files; a refused Undo say
   // Refused (another window wrote a draft meanwhile): a toast says it, nothing is thrown away quietly.
   fake.refuseSaves = true;
   act(() => undo());
-  await until(() => toasts.some((t) => t.icon === 'warn' && t.lead === 'The reply could not be restored.'), 'the refused toast');
+  await until(() => toasts.some((t) => t.icon === 'warn' && t.lead === '无法恢复该回复。'), 'the refused toast');
 });
 
 test('the bin is off while a Send is on its way', async () => {

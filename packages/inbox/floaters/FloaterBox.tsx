@@ -165,7 +165,7 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
     if (textRef.current !== was) return 'differs';
     setText(saved.body);
     textRef.current = saved.body;
-    setSaid('This reply changed in another window.');
+    setSaid('这条回复已在另一个窗口中更改。');
     return 'took';
   };
   takeFiles.current = (id, saved, wanted) => {
@@ -196,7 +196,7 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
     if (firstLatest.current === null) firstLatest.current = latest.id;
     else if (firstLatest.current !== latest.id && latest.author.kind === 'agent') {
       setFresh(true);
-      setSaid(`${latest.author.name ?? 'The agent'} wrote in this thread.`);
+      setSaid(`${latest.author.name ?? 'agent'} 在会话中发言了。`);
     }
   }, [latest?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -217,7 +217,7 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
           }
           setText(answer.draft.body);
           textRef.current = answer.draft.body;
-          setSaid('This reply changed in another window.');
+          setSaid('这条回复已在另一个窗口中更改。');
         });
       }),
     // `draft`'s functions are stable.
@@ -226,7 +226,7 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
   );
 
   const agent = latest?.author.kind === 'agent' ? latest.author : row.author;
-  const agentLabel = agent?.kind === 'agent' ? (agent.name ?? 'the agent') : 'the agent';
+  const agentLabel = agent?.kind === 'agent' ? (agent.name ?? 'agent') : 'agent';
   const here = sendsHere(thread, row, draft.draft?.recipients);
   const skillFilter = useMemo(() => inboxSkillFilter(false), []);
   const [sending, setSending] = useState(false);
@@ -241,11 +241,11 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
       return;
     }
     if (!hasSomething) {
-      setError('Write a reply first.');
+      setError('请先写一条回复。');
       return;
     }
     if (files.uploading) {
-      setError('Wait for the files to finish uploading.');
+      setError('请等文件上传完成。');
       return;
     }
     setSending(true);
@@ -297,7 +297,7 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
     } catch (cause) {
       if (claimed) draft.release();
       if (textRef.current.trim() !== '') draft.save(textRef.current, files.draftFiles(textRef.current));
-      setError(errorText(cause, 'That did not send. Your words are still here.'));
+      setError(errorText(cause, '没有发送成功。你的文字仍然在这里。'));
     } finally {
       ends();
       setSending(false);
@@ -342,14 +342,14 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
       <Icon name="reply" size={phone ? 18 : 15} />
       <Tip content={whole}>
         <span className="ib-rf-name" dir="auto">
-          Reply to {name}
+          回复 {name}
         </span>
       </Tip>
     </span>
   );
   const openThread = (
-    <Tip content="Open the thread">
-      <button type="button" className="ib-rf-ic" aria-label="Open the thread" onClick={onOpenThread} data-rf-open-thread="">
+    <Tip content="打开会话">
+      <button type="button" className="ib-rf-ic" aria-label="打开会话" onClick={onOpenThread} data-rf-open-thread="">
         <Icon name="arrowUpRight" size={phone ? 18 : 15} />
       </button>
     </Tip>
@@ -376,10 +376,10 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
   const sendAria = useShortcutAria({ scope: inboxThreadShortcuts, action: 'send' });
   const sendButton = (
     // No ⌘↵ on Send: the key is named to assistive technology only (approval "inbox-send-no-shortcut-hint").
-    <Tip content={here ? '' : 'Open the thread to send'}>
+    <Tip content={here ? '' : '打开会话以发送'}>
       <button type="button" className="ib-btn ib-pri ib-rsend" onClick={() => void send()} disabled={sending || voice.busy} aria-keyshortcuts={here ? sendAria : undefined} data-rf-send="">
         {sending && <span className="ib-spin" aria-hidden="true" />}
-        <span className="ib-rsend-w">{here ? 'Send' : 'Open to send'}</span>
+        <span className="ib-rsend-w">{here ? '发送' : '打开以发送'}</span>
       </button>
     </Tip>
   );
@@ -403,7 +403,7 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
           <span className={peekOpen ? 'ib-rf-peekwhole' : 'ib-rf-peekline'} id={peekId} dir="auto">
             {peek}
           </span>
-          {questions > 0 && !peekOpen && <span className="ib-rf-asks">{questions === 1 ? '1 question' : `${questions} questions`}</span>}
+          {questions > 0 && !peekOpen && <span className="ib-rf-asks">{questions === 1 ? '1 个问题' : `${questions} 个问题`}</span>}
         </button>
       )}
       {draft.conflict !== null && (
@@ -447,10 +447,10 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
             voiceNoteGlide
             value={text}
             onChange={change}
-            placeholder="Write a reply. Type / for a skill"
-            ariaLabel={`Reply to ${agentLabel}`}
+            placeholder="写一条回复。输入 / 使用技能"
+            ariaLabel={`回复 ${agentLabel}`}
             ariaDescribedBy={draft.conflict !== null ? conflictId : undefined}
-            destination="your reply"
+            destination="你的回复"
             skillFilter={skillFilter}
           />
           {files.files.length > 0 && (
@@ -461,7 +461,7 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
         </div>
         {!here && (
           <p className="ib-rf-rides" data-rf-rides="">
-            {carries === 0 ? 'This reply is sent from its thread' : carries === 1 ? '1 pick waits in the thread' : `${carries} picks and comments wait in the thread`}
+            {carries === 0 ? '这条回复会从其会话中发送' : carries === 1 ? '有 1 项选择在会话中等待' : `有 ${carries} 项选择与评论在会话中等待`}
           </p>
         )}
         {error && (
@@ -484,8 +484,8 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
           send={sendButton}
           clip={<AttachFilesButton className="ib-rclip" iconSize={phone ? 20 : 16} phone={phone} inputData="data-rf-attach" onFiles={(list) => files.add(list)} />}
           skills={
-            <Tip content="Skills (or type / in the reply)">
-              <button type="button" className="ib-ricon" aria-label="Skills" data-rf-skills="" onClick={openSkills}>
+            <Tip content="技能（或在回复中输入 /）">
+              <button type="button" className="ib-ricon" aria-label="技能" data-rf-skills="" onClick={openSkills}>
                 <Icon name="cube" size={phone ? 20 : 16} />
               </button>
             </Tip>
@@ -496,11 +496,11 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
           chips={null}
           summary={null}
           pill={null}
-          hint={noSkills ? 'No skills are installed' : null}
+          hint={noSkills ? '未安装任何技能' : null}
           discard={
             phone ? null : (
-              <Tip content="Discard this draft">
-                <button type="button" className="ib-ricon ib-rdiscard" aria-label="Discard draft" onClick={discard} disabled={sending} data-rf-discard="">
+              <Tip content="丢弃此草稿">
+                <button type="button" className="ib-ricon ib-rdiscard" aria-label="丢弃草稿" onClick={discard} disabled={sending} data-rf-discard="">
                   <Icon name="trash" size={16} />
                 </button>
               </Tip>
@@ -511,7 +511,7 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
       {drop.over && (
         <div className="ib-rf-drop" aria-hidden="true">
           <Icon name="clip" size={18} />
-          Drop to attach
+          拖放以附加
         </div>
       )}
       <div className="ib-sr" role="status">
@@ -519,7 +519,7 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
       </div>
     </>
   );
-  const label = `Reply to ${agentLabel}: ${row.subject ?? name}`;
+  const label = `回复 ${agentLabel}：${row.subject ?? name}`;
 
   if (!phone) {
     return (
@@ -543,7 +543,7 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
         )}
         onMinimize={onMinimize}
         onClose={onPutAway}
-        labels={{ close: 'Stop floating. It stays in Drafts.' }}
+        labels={{ close: '停止悬浮。它会留在草稿中。' }}
       >
         {() => (
           <div className="ib-rf-framebody" onKeyDown={onKey}>
@@ -568,7 +568,7 @@ export function FloaterBox({ row, phone, frame, takeFocus, onMinimize, onPutAway
       onKeyDown={onKey}
     >
       <div className="ib-rf-head">
-        <button type="button" className="ib-rf-ic" aria-label="Minimize" onClick={onMinimize} data-rf-minimize="">
+        <button type="button" className="ib-rf-ic" aria-label="最小化" onClick={onMinimize} data-rf-minimize="">
           <Icon name="chevD" size={18} />
         </button>
         {title}

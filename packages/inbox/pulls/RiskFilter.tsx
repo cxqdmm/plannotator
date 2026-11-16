@@ -16,8 +16,8 @@ export function RiskFilter({ value, rulesSet, phone, onChange, onRules }: { valu
       <Menu.Root open={open} onOpenChange={setOpen} modal={false}>
         <Menu.Trigger ref={trigger} className="ib-bpf-btn" data-pulls-risk-chip="">
           <span className="ib-bpf-l">
-            <span className="ib-sr">Risk: </span>
-            {value === 'all' ? 'Risk' : riskFilterWords[value]}
+            <span className="ib-sr">风险：</span>
+            {value === 'all' ? '风险' : riskFilterWords[value]}
           </span>
           <Icon name="chevD" size={13} />
         </Menu.Trigger>
@@ -25,11 +25,11 @@ export function RiskFilter({ value, rulesSet, phone, onChange, onRules }: { valu
           {phone && <Menu.Backdrop className="ib-pm-scrim" />}
           <Menu.Positioner className="ib-pm-pos" side="bottom" align="end" sideOffset={4} data-phone={phone ? '' : undefined}>
             {/* The way back is keyboard's alone: after a click or a tap, no ring stays on the chip. */}
-            <Menu.Popup className="ib-pm ib-bpf-menu" aria-label="Risk" finalFocus={(closeType) => closeType === 'keyboard'} data-pulls-risk-menu="">
+            <Menu.Popup className="ib-pm ib-bpf-menu" aria-label="风险" finalFocus={(closeType) => closeType === 'keyboard'} data-pulls-risk-menu="">
               {rulesSet && (
                 <>
                   <div className="ib-pm-title" aria-hidden="true">
-                    Risk
+                    风险
                   </div>
                   <Menu.RadioGroup value={value} onValueChange={(next: RiskFilterValue) => onChange(next)}>
                     {OPTIONS.map((option) => (
@@ -42,8 +42,8 @@ export function RiskFilter({ value, rulesSet, phone, onChange, onRules }: { valu
                   <Menu.Separator className="ib-pm-sep" />
                 </>
               )}
-              <Menu.Item className="ib-pmi" label="No slop zone rules" onClick={onRules} data-pulls-risk-rules="">
-                <span className="ib-pmi-l">No slop zone rules…</span>
+              <Menu.Item className="ib-pmi" label="低质代码规则" onClick={onRules} data-pulls-risk-rules="">
+                <span className="ib-pmi-l">低质代码规则…</span>
               </Menu.Item>
             </Menu.Popup>
           </Menu.Positioner>

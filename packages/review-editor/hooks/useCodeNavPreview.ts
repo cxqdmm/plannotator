@@ -25,21 +25,21 @@ function formatMegabytes(bytes: number): string {
 export function codeNavPreviewErrorMessage(body: CodeNavFileError | null): string {
   switch (body?.reason) {
     case 'too-large': {
-      if (body.size == null || body.maxBytes == null) return 'This file is too large to preview.';
+      if (body.size == null || body.maxBytes == null) return '文件过大，无法预览。';
       const size = formatMegabytes(body.size);
       const limit = formatMegabytes(body.maxBytes);
       // A file just over the limit rounds to the limit itself ("5 MB; the
       // limit is 5 MB"), so say "just over" instead of two equal numbers.
       return size === limit
-        ? `This file is too large to preview (just over the ${limit} limit).`
-        : `This file is too large to preview (${size}; the limit is ${limit}).`;
+        ? `文件过大，无法预览（刚超过 ${limit} 的上限）。`
+        : `文件过大，无法预览（${size}；上限为 ${limit}）。`;
     }
     case 'not-a-file':
-      return 'This path is not a regular file, so it cannot be previewed.';
+      return '该路径不是普通文件，无法预览。';
     case 'not-found':
-      return 'This file was not found.';
+      return '未找到该文件。';
     default:
-      return 'This file could not be previewed.';
+      return '无法预览该文件。';
   }
 }
 

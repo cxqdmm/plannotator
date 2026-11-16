@@ -52,13 +52,13 @@ export function CloudAgentCard({
           <span className="ib-l">{agent.name}</span>
           <span className="ib-desc">
             {INBOX_CLOUD_PRESET_NAMES[agent.preset]}
-            {agent.project ? <> · new threads go in {agent.project.name}</> : null}
+            {agent.project ? <> · 新会话会发送到 {agent.project.name}</> : null}
           </span>
           {!fresh && <CloudStatus agent={agent} />}
         </span>
         <span className="ib-ctl">
-          <button type="button" className="ib-del-l" disabled={busy !== null} aria-label={`Remove ${agent.name}`} data-cloud-remove="" onClick={remove}>
-            Remove
+          <button type="button" className="ib-del-l" disabled={busy !== null} aria-label={`移除 ${agent.name}`} data-cloud-remove="" onClick={remove}>
+            移除
           </button>
         </span>
       </div>
@@ -68,9 +68,9 @@ export function CloudAgentCard({
         <div className="ib-cl-more">
           {agent.key_rejected_at && agent.preset !== 'muse' && <CloudNewKey agent={agent} onModel={onModel} />}
           <CloudWakeRow agent={agent} onModel={onModel} />
-          <CloudLine k="Pairing" v="A new one stops the old one working." data={{ 'data-cloud-pairing-row': '' }}>
+          <CloudLine k="配对" v="新的配对会让旧的失效。" data={{ 'data-cloud-pairing-row': '' }}>
             <button type="button" className="ib-btn" disabled={busy !== null} onClick={newPairing} data-cloud-new-pairing="">
-              {busy === 'pairing' ? 'Making…' : 'New pairing'}
+              {busy === 'pairing' ? '正在生成…' : '新建配对'}
             </button>
           </CloudLine>
         </div>

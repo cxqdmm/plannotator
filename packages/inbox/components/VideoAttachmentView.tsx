@@ -305,7 +305,7 @@ export const VideoAttachmentView = forwardRef<VideoAttachmentViewHandle, {
         image = { path: kept.path, name: videoFrameName(attachment.name, time) };
       } catch (cause) {
         // The comment still goes; only the frame is missing.
-        onError(cause instanceof InboxApiError ? `The frame was not kept: ${cause.message}` : 'The frame was not kept; the comment was saved without it.');
+        onError(cause instanceof InboxApiError ? `未能保存画面：${cause.message}` : '未能保存画面，评论已在不带画面的情况下保存。');
       }
     }
     const ok = await sendRow(videoCommentAnnotation({ id: newId(), name: attachment.name, time, text: markupWords(text, markup !== null), frame: image }));
@@ -316,7 +316,7 @@ export const VideoAttachmentView = forwardRef<VideoAttachmentViewHandle, {
   const openMarkup = async () => {
     const grabbed = frame ?? (await pin());
     if (grabbed) setAnnotating(true);
-    else onError('This frame could not be grabbed to draw on.');
+    else onError('无法截取此画面进行绘制。');
   };
 
   if (failed) {
@@ -329,13 +329,13 @@ export const VideoAttachmentView = forwardRef<VideoAttachmentViewHandle, {
           <span className="ib-att-text">
             <FileName name={attachment.name} className="ib-nm" wrap />
             <span className="ib-kd">
-              {formatBytes(attachment.current?.size ?? attachment.size)}. This {audio ? 'recording' : 'video'}&rsquo;s format can&rsquo;t play here; download it to open it.
+              {formatBytes(attachment.current?.size ?? attachment.size)}。此{audio ? '录音' : '视频'}的格式无法在此播放；请下载后在别处打开。
             </span>
           </span>
           {source.writes && (
             <a className="ib-btn ib-pri" href={source.downloadUrl(attachment, version)} download={attachment.name}>
               <Icon name="download" size={14} />
-              Download
+              下载
             </a>
           )}
         </div>
@@ -346,12 +346,12 @@ export const VideoAttachmentView = forwardRef<VideoAttachmentViewHandle, {
   // The moment: following the film, or pinned while a comment is written (then a click goes back to it).
   const chip =
     pinned !== null ? (
-      <Tip content={`The comment is pinned at ${formatInboxVideoTime(pinned)}; go back to it`}>
+      <Tip content={`评论已固定在 ${formatInboxVideoTime(pinned)}；返回该时刻`}>
         <button
           type="button"
           className="ib-vtime"
           onClick={() => seek(pinned)}
-          aria-label={`Pinned at ${formatInboxVideoTime(pinned)}, go back to it`}
+          aria-label={`固定在 ${formatInboxVideoTime(pinned)}，返回该时刻`}
           data-video-time=""
           data-pinned=""
         >
@@ -374,7 +374,7 @@ export const VideoAttachmentView = forwardRef<VideoAttachmentViewHandle, {
       ) : (
         (markup || frame) && (
           // `ib-markup` on a drawing: the pane (unsavedComposers) knows a drawing not yet commented.
-          <Tip content={markup ? 'Your marked-up frame rides this comment' : `The frame at ${formatInboxVideoTime(shownTime)} rides this comment`}>
+          <Tip content={markup ? '你的标记画面会随此评论一起发送' : `${formatInboxVideoTime(shownTime)} 的画面会随此评论一起发送`}>
             <span className={`ib-vframe${markup ? ' ib-markup' : ''}`} data-video-frame="">
               <img src={markup ? getImageSrc(markup.path) : frame!.url} alt="" />
               {markup && (
@@ -391,8 +391,8 @@ export const VideoAttachmentView = forwardRef<VideoAttachmentViewHandle, {
         className="ib-ta"
         rows={1}
         value={text}
-        placeholder={kept ? 'Note (optional)' : `Comment at ${formatInboxVideoTime(shownTime)}…`}
-        aria-label={kept ? `A note with your drawing at ${formatInboxVideoTime(kept.time)}` : `Comment on ${attachment.name} at ${formatInboxVideoTime(shownTime)}`}
+        placeholder={kept ? '备注（可选）' : `在 ${formatInboxVideoTime(shownTime)} 处评论…`}
+        aria-label={kept ? `关于 ${formatInboxVideoTime(kept.time)} 处你画的内容的备注` : `评论 ${attachment.name}，时间 ${formatInboxVideoTime(shownTime)}`}
         onChange={(event) => {
           const value = event.target.value;
           setText(value);
@@ -419,23 +419,23 @@ export const VideoAttachmentView = forwardRef<VideoAttachmentViewHandle, {
         }}
       />
       {!audio && (
-        <Tip content="Draw on this frame (pen, arrow, circle)">
-          <button type="button" className="ib-btn ib-cbtn" onClick={() => void openMarkup()} data-markup-open="" aria-label={markup || kept ? 'Redraw' : 'Mark up'}>
+        <Tip content="在此画面上绘制（画笔、箭头、圆圈）">
+          <button type="button" className="ib-btn ib-cbtn" onClick={() => void openMarkup()} data-markup-open="" aria-label={markup || kept ? '重画' : '标记'}>
             <Icon name="pen" size={15} />
             <span className="ib-cbtn-l" aria-hidden="true">
-              {markup || kept ? 'Redraw' : 'Mark up'}
+              {markup || kept ? '重画' : '标记'}
             </span>
           </button>
         </Tip>
       )}
       {phone && !fullComposer && (
         <button type="button" className="ib-btn ib-ccancel" onClick={reset} data-video-cancel="">
-          Cancel
+          取消
         </button>
       )}
       <FullScreenCommentBin />
       <button type="button" className="ib-btn ib-pri ib-csave" onClick={() => void submit()} disabled={!canSave} data-video-comment-save="">
-        {kept ? 'Add note' : 'Comment'}
+        {kept ? '添加备注' : '评论'}
       </button>
     </div>
   );
@@ -508,13 +508,13 @@ export const VideoAttachmentView = forwardRef<VideoAttachmentViewHandle, {
     <div className="ib-vmeta" data-video-meta="">
       <span>{meta}</span>
       <span className="ib-sp" />
-      <span>{plural(sorted.length, 'comment')}</span>
+      <span>{plural(sorted.length, '条评论', '条评论')}</span>
     </div>
   );
 
   // One dot per comment at its moment (a click seeks there and selects it), the comment being written, the playhead.
   const rail = (
-    <div className="ib-vrail" role="group" aria-label="Comments on the timeline" data-video-rail="">
+    <div className="ib-vrail" role="group" aria-label="时间轴上的评论" data-video-rail="">
       {span !== null &&
         sorted.map((annotation) => {
           const time = readInboxVideoTime(annotation)!;
@@ -528,7 +528,7 @@ export const VideoAttachmentView = forwardRef<VideoAttachmentViewHandle, {
                   seek(time);
                   onSelect(annotation.id);
                 }}
-                aria-label={`Go to the comment at ${formatInboxVideoTime(time)}`}
+                aria-label={`跳到 ${formatInboxVideoTime(time)} 处的评论`}
                 data-video-dot={annotation.id}
               />
             </Tip>
@@ -573,7 +573,7 @@ export const VideoAttachmentView = forwardRef<VideoAttachmentViewHandle, {
         <span className="ib-audmeta">{[inboxAttachmentKindLabel(attachment.kind, attachment.name, attachment.media_type), phone ? '' : meta].filter(Boolean).join(' · ')}</span>
       </div>
       <div className="ib-audrow">
-        <button type="button" className="ib-audplay" onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'} data-audio-play={playing ? 'playing' : 'paused'}>
+        <button type="button" className="ib-audplay" onClick={togglePlay} aria-label={playing ? '暂停' : '播放'} data-audio-play={playing ? 'playing' : 'paused'}>
           <Icon name={playing ? 'pause' : 'play'} size={18} />
         </button>
         <div className="ib-audtrack">
@@ -612,7 +612,7 @@ export const VideoAttachmentView = forwardRef<VideoAttachmentViewHandle, {
         {stageBody}
         {phone && sorted.length > 0 && (
           <div className="ib-vlist" data-video-list="">
-            <div className="ib-vlbl">Comments</div>
+            <div className="ib-vlbl">评论</div>
             {sorted.map((annotation) => {
               const time = readInboxVideoTime(annotation)!;
               const image = annotation.images?.[0];
@@ -664,7 +664,7 @@ export const VideoAttachmentView = forwardRef<VideoAttachmentViewHandle, {
             }}
             data-video-compose=""
           >
-            Comment at {formatInboxVideoTime(current)}
+            在 {formatInboxVideoTime(current)} 处评论
           </button>
         </div>
       )}
@@ -686,7 +686,7 @@ export const VideoAttachmentView = forwardRef<VideoAttachmentViewHandle, {
               const keptFile = await source.keepMarkup(blob);
               await addDrawing({ path: keptFile.path, name: `${videoFrameName(attachment.name, kept?.time ?? pinned ?? current)}, marked up` });
             } catch (cause) {
-              onError(cause instanceof InboxApiError ? cause.message : 'The drawing was not kept.');
+              onError(cause instanceof InboxApiError ? cause.message : '未能保存画作。');
             }
           }}
         />

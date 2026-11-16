@@ -28,7 +28,7 @@ const EMPTY = new Set<string>();
 /** The width the corner card draws a picture at before it scales it down: about the board's. */
 const CORNER_DRAWN_WIDTH = 960;
 
-const linesWord = (lines: readonly [number, number]) => `${lines[0] === lines[1] ? 'line' : 'lines'} ${inboxReviewLines(lines)}`;
+const linesWord = (lines: readonly [number, number]) => `第 ${inboxReviewLines(lines)} 行`;
 
 function Place({ place }: { place: ShowMePlace }) {
   return (
@@ -41,7 +41,7 @@ function Place({ place }: { place: ShowMePlace }) {
           {place.lines && ` · ${linesWord(place.lines)}`}
         </>
       ) : (
-        'The whole review'
+        '整个评审'
       )}
     </div>
   );
@@ -73,14 +73,14 @@ export function ShowMeBox({
   }, [box?.place.file, box?.place.lines?.[0], box?.place.lines?.[1]]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!box || agent === null) return null;
   return (
-    <section className="ib-sm-box" aria-label="Show me" data-over-board={box.place.part ? '' : undefined} data-show-me-box={box.turn ? (state.drawing ? 'drawing' : state.busy ? 'busy' : 'done') : 'compose'} {...LAYER}>
+    <section className="ib-sm-box" aria-label="给我看" data-over-board={box.place.part ? '' : undefined} data-show-me-box={box.turn ? (state.drawing ? 'drawing' : state.busy ? 'busy' : 'done') : 'compose'} {...LAYER}>
       <div className="ib-sm-h">
         <Pebble alive={false} size={18} className="ib-sm-peb" />
-        <b>Show me</b>
-        <span className="ib-sm-by">· {agent} draws it</span>
+        <b>给我看</b>
+        <span className="ib-sm-by">· 由 {agent} 绘制</span>
         <span className="ib-sp" />
-        <Tip content="Close">
-          <button type="button" className="ib-iconbtn ib-sm-x" onClick={onClose} aria-label="Close Show me">
+        <Tip content="关闭">
+          <button type="button" className="ib-iconbtn ib-sm-x" onClick={onClose} aria-label="关闭“给我看”">
             <Icon name="x" />
           </button>
         </Tip>
@@ -94,15 +94,15 @@ export function ShowMeBox({
               className="ib-sm-field"
               value={box.words}
               onChange={(event) => onWords(event.target.value)}
-              aria-label="What the picture should show"
+              aria-label="图片应展示的内容"
               rows={3}
               maxLength={600}
             />
-            <div className="ib-sm-fine">Optional: what the picture should show.</div>
+            <div className="ib-sm-fine">可选：说明图片应展示的内容。</div>
             <div className="ib-sm-acts">
               <button type="button" className="ib-btn ib-pri ib-sm-send" onClick={onSend} disabled={state.posting} data-show-me-send="">
                 <Pebble alive={false} size={15} className="ib-sm-peb" />
-                Show me
+                给我看
               </button>
             </div>
           </>
@@ -115,25 +115,25 @@ export function ShowMeBox({
                   <Pebble alive reshaping size={20} className="ib-sm-peb" />
                   <span>
                     {state.waiting === 'waiting' ? (
-                      `Waiting for ${agent} to finish…`
+                      `正在等待 ${agent} 完成…`
                     ) : state.waiting === 'interrupting' ? (
-                      `Interrupting ${agent}…`
+                      `正在中断 ${agent}…`
                     ) : (
                       <>
-                        <b>{agent} is drawing it.</b> {box.place.part ? 'It opens here when it’s ready.' : 'It opens over the review when it’s ready.'}
+                        <b>{agent} 正在绘制。</b>{box.place.part ? '准备好后会在这里打开。' : '准备好后会在评审上方打开。'}
                       </>
                     )}
                   </span>
                 </div>
                 <div>
                   <button type="button" className="ib-btn ib-sm-quiet" onClick={onStop} data-show-me-stop="">
-                    Stop
+                    停止
                   </button>
                 </div>
               </>
             ) : state.busy ? (
               <div className="ib-ask-note" data-ask-note="busy">
-                <p>{agent} is working on something else.</p>
+                <p>{agent} 正在处理其他任务。</p>
                 <SessionAskActions response={state.busy} onAction={onBusy} />
               </div>
             ) : state.answerOnly ? (
@@ -199,18 +199,18 @@ export function ShowMeCorner({
     return () => observer.disconnect();
   }, [shape]);
   return (
-    <section className="ib-sm-pip" aria-label={`Shape: ${title}`} data-show-me-corner={shape} {...LAYER}>
+    <section className="ib-sm-pip" aria-label={`Shape：${title}`} data-show-me-corner={shape} {...LAYER}>
       <div className="ib-sm-pip-h">
         <Pebble alive={false} size={14} className="ib-sm-peb" />
         <b>{title}</b>
         <span className="ib-sp" />
-        <Tip content="Grow">
-          <button type="button" className="ib-iconbtn ib-sm" onClick={onGrow} aria-label="Grow the board">
+        <Tip content="放大">
+          <button type="button" className="ib-iconbtn ib-sm" onClick={onGrow} aria-label="放大看板">
             <Icon name="expand" size={15} />
           </button>
         </Tip>
-        <Tip content="Close">
-          <button type="button" className="ib-iconbtn ib-sm" onClick={onClose} aria-label="Close the board">
+        <Tip content="关闭">
+          <button type="button" className="ib-iconbtn ib-sm" onClick={onClose} aria-label="关闭看板">
             <Icon name="x" size={15} />
           </button>
         </Tip>
@@ -228,10 +228,10 @@ export function ShowMeCorner({
           <b>{part.name}</b> <span>· {baseName(part.file)}{part.lines ? ` ${linesWord(part.lines)}` : ''}</span>
           {!part.lines && (
             <div className="ib-sm-pip-n" data-show-me-changed="">
-              This code changed after the picture was drawn.
+              这张图绘制后，此代码已更改。
               {onAgain && (
                 <button type="button" className="ib-btn" onClick={onAgain} data-show-me-again="">
-                  Show me again
+                  再给我看一次
                 </button>
               )}
             </div>

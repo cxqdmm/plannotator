@@ -119,7 +119,7 @@ export function ListFilterButton({ source, phone }: { source: ListFilterSource; 
   const projects = useMemo(() => {
     const seen = new Map<string, string>();
     for (const row of rows) if (!seen.has(row.project.id)) seen.set(row.project.id, names.get(row.project.id) ?? row.project.name);
-    for (const id of source.filter.projects) if (!seen.has(id)) seen.set(id, names.get(id) ?? 'Project');
+    for (const id of source.filter.projects) if (!seen.has(id)) seen.set(id, names.get(id) ?? '项目');
     return [...seen].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true }));
   }, [rows, names, source.filter.projects]);
   const agents = useMemo(() => {
@@ -140,13 +140,13 @@ export function ListFilterButton({ source, phone }: { source: ListFilterSource; 
   const showAgents = agents.length > 1;
   const set = (next: Partial<ListFilter>) => onChange({ ...source.filter, ...next });
   const custom = filter.updated !== null && typeof filter.updated !== 'string' ? filter.updated : null;
-  const name = count > 0 ? `Filter, ${count} active` : 'Filter';
+  const name = count > 0 ? `筛选，${count} 项生效` : '筛选';
 
   // Offered once a thread here has a PR, and while a pick of it is remembered (so it can be unticked).
   const pulls = source.filter.pulls.length > 0 || rows.some((row) => rowPullStates(row).length > 0);
   const tagGroup = tags.length > 0 && (
     <Menu.Group data-list-filter-group="tags">
-      <Menu.GroupLabel className="ib-pm-glabel">Tag</Menu.GroupLabel>
+      <Menu.GroupLabel className="ib-pm-glabel">标签</Menu.GroupLabel>
       {tags.map((tag) => (
         <CheckRow
           key={tag.id}
@@ -162,7 +162,7 @@ export function ListFilterButton({ source, phone }: { source: ListFilterSource; 
   );
   const projectGroup = showProjects && (
     <Menu.Group>
-      <Menu.GroupLabel className="ib-pm-glabel">Project</Menu.GroupLabel>
+      <Menu.GroupLabel className="ib-pm-glabel">项目</Menu.GroupLabel>
       {projects.map((p) => (
         <CheckRow
           key={p.id}
@@ -180,7 +180,7 @@ export function ListFilterButton({ source, phone }: { source: ListFilterSource; 
   return (
     <>
       <Menu.Root open={open} onOpenChange={setOpen} modal={phone}>
-        <Tip content={count > 0 ? `Filter · ${count} active` : 'Filter'}>
+        <Tip content={count > 0 ? `筛选 · ${count} 项生效` : '筛选'}>
           <Menu.Trigger ref={trigger} className="ib-lflt" aria-label={name} data-set={count > 0 ? '' : undefined} data-list-filter="">
             <span className="ib-lflt-g ib-cnt-host">
               <FilterGlyph size={phone ? 20 : 16} />
@@ -192,12 +192,12 @@ export function ListFilterButton({ source, phone }: { source: ListFilterSource; 
           {phone && <Menu.Backdrop className="ib-pm-scrim" />}
           <Menu.Positioner className="ib-pm-pos" side="bottom" align="end" sideOffset={6} data-phone={phone ? '' : undefined}>
             {/* The order (the owner, 2026-11-08): what the sidebar cannot do first, Project last (the sidebar has its own). Not seen first: what every row shows, bold or not. */}
-            <Menu.Popup className="ib-pm ib-pc-menu ib-lflt-menu" aria-label="Filter" data-list-filter-menu="">
+            <Menu.Popup className="ib-pm ib-pc-menu ib-lflt-menu" aria-label="筛选" data-list-filter-menu="">
               <div className="ib-pm-title" aria-hidden="true">
-                Filter
+                筛选
               </div>
               <CheckRow
-                label="Not seen"
+                label="未读"
                 on={filter.notSeen}
                 count={countWhere(rows, filter, now, 'notSeen', rowNotSeen, tagsOf)}
                 onToggle={() => set({ notSeen: !source.filter.notSeen })}
@@ -206,7 +206,7 @@ export function ListFilterButton({ source, phone }: { source: ListFilterSource; 
               />
               <Menu.Separator className="ib-pm-sep" />
               <Menu.Group data-list-filter-group="updated">
-                <Menu.GroupLabel className="ib-pm-glabel">Updated</Menu.GroupLabel>
+                <Menu.GroupLabel className="ib-pm-glabel">更新时间</Menu.GroupLabel>
                 {UPDATED_OPTIONS.map((o) => (
                   <CheckRow
                     key={o.value}
@@ -220,7 +220,7 @@ export function ListFilterButton({ source, phone }: { source: ListFilterSource; 
                 ))}
                 <Menu.Item
                   className="ib-pmi"
-                  label="Custom range"
+                  label="自定义范围"
                   onClick={() => {
                     setOpen(false);
                     requestAnimationFrame(() => setRangeOpen(true));
@@ -229,7 +229,7 @@ export function ListFilterButton({ source, phone }: { source: ListFilterSource; 
                   data-list-filter-updated="range"
                 >
                   <Icon name="clock" />
-                  <span className="ib-pmi-l">{custom ? rangeWords(custom) : 'Custom range…'}</span>
+                  <span className="ib-pmi-l">{custom ? rangeWords(custom) : '自定义范围…'}</span>
                   {custom && <span className="ib-pmi-n">{formatCount(countWhere(rows, filter, now, 'updated', inSpan(custom, now), tagsOf))}</span>}
                   {tick(custom !== null)}
                 </Menu.Item>
@@ -238,7 +238,7 @@ export function ListFilterButton({ source, phone }: { source: ListFilterSource; 
                 <>
                   <Menu.Separator className="ib-pm-sep" />
                   <Menu.Group data-list-filter-group="agents">
-                    <Menu.GroupLabel className="ib-pm-glabel">Agent</Menu.GroupLabel>
+                    <Menu.GroupLabel className="ib-pm-glabel">agent</Menu.GroupLabel>
                     {agents.map((a) => (
                       <CheckRow
                         key={a.name}
@@ -261,7 +261,7 @@ export function ListFilterButton({ source, phone }: { source: ListFilterSource; 
                 <>
                   <Menu.Separator className="ib-pm-sep" />
                   <Menu.Group data-list-filter-group="pulls">
-                    <Menu.GroupLabel className="ib-pm-glabel">Pull request</Menu.GroupLabel>
+                    <Menu.GroupLabel className="ib-pm-glabel">PR</Menu.GroupLabel>
                     {PULL_OPTIONS.map((o) => (
                       <CheckRow
                         key={o.value}
@@ -293,7 +293,7 @@ export function ListFilterButton({ source, phone }: { source: ListFilterSource; 
                   <Menu.Separator className="ib-pm-sep" />
                   <Menu.Item className="ib-pmi" onClick={() => onChange(clearedFrom(source.filter, scoped, tagScoped))} data-list-filter-clear="">
                     <Icon name="x" />
-                    <span className="ib-pmi-l">Clear filters</span>
+                    <span className="ib-pmi-l">清除筛选</span>
                   </Menu.Item>
                 </>
               )}
@@ -349,7 +349,7 @@ function RangePanel({
       <Popover.Portal container={portal ?? undefined}>
         {phone && <Popover.Backdrop className="ib-pm-scrim" />}
         <Popover.Positioner className="ib-tidy-pos" anchor={anchor} side="bottom" align="end" sideOffset={6} data-phone={phone ? '' : undefined}>
-          <Popover.Popup className="ib-tidy ib-lflt-range" aria-label="Custom range" finalFocus={anchor} data-list-filter-range="">
+          <Popover.Popup className="ib-tidy ib-lflt-range" aria-label="自定义范围" finalFocus={anchor} data-list-filter-range="">
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -358,23 +358,23 @@ function RangePanel({
                 onOpenChange(false);
               }}
             >
-              <div className="ib-lflt-range-h">Updated between</div>
+              <div className="ib-lflt-range-h">更新时间范围</div>
               <div className="ib-lflt-range-days">
                 <label>
-                  <span>From</span>
+                  <span>从</span>
                   <input type="date" value={from} max={to || today} onChange={(e) => setFrom(e.target.value)} required data-list-filter-from="" />
                 </label>
                 <label>
-                  <span>To</span>
+                  <span>到</span>
                   <input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} required data-list-filter-to="" />
                 </label>
               </div>
               <div className="ib-lflt-range-act">
                 <button type="button" className="ib-btn ib-ghost" onClick={() => onOpenChange(false)}>
-                  Cancel
+                  取消
                 </button>
                 <button type="submit" className="ib-btn ib-pri" disabled={!ok} data-list-filter-apply="">
-                  Apply
+                  应用
                 </button>
               </div>
             </form>
@@ -389,7 +389,7 @@ function RangePanel({
 export function ListFilterEmpty({ onClear }: { onClear: () => void }) {
   return (
     <div className="ib-empty-list ib-lflt-empty" data-list-filter-empty="">
-      <b>No threads match</b>
+      <b>没有匹配的会话</b>
       <button
         type="button"
         className="ib-btn"
@@ -400,7 +400,7 @@ export function ListFilterEmpty({ onClear }: { onClear: () => void }) {
         }}
         data-list-filter-empty-clear=""
       >
-        Clear filters
+        清除筛选
       </button>
     </div>
   );

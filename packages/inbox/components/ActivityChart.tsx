@@ -75,8 +75,8 @@ const REFRESH_AFTER_MS = 1500;
 
 const hourLabel = (ms: number) => new Date(ms).toLocaleTimeString(undefined, { hour: 'numeric' });
 const dateLabel = (ms: number) => new Date(ms).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-const plural = (n: number, word: string) => `${n.toLocaleString()} ${word}${n === 1 ? '' : 's'}`;
-const rangeWords = (range: ActivityRange) => (range === 1 ? 'today' : range === 7 ? 'this week' : `in the last ${range} days`);
+const plural = (n: number, word: string) => `${n.toLocaleString()} ${word}`;
+const rangeWords = (range: ActivityRange) => (range === 1 ? '今天' : range === 7 ? '本周' : `最近 ${range} 天`);
 
 interface TipFacts {
   name: string;
@@ -92,7 +92,7 @@ function factsOf(row: ActivityRow, k: number, fromMs: number, days: readonly Act
   const hour = row.hours[k]!;
   const start = fromMs + hour * HOUR_MS;
   return {
-    name: row.name?.trim() || 'Untitled thread',
+    name: row.name?.trim() || '未命名会话',
     hour: `${hourLabel(start)}–${hourLabel(start + HOUR_MS)}, ${dateLabel(start)}`,
     count: row.counts[k]!,
     dayCount: activityDayCount(row, hour, days).count,
@@ -275,15 +275,15 @@ function ActivityPlot({ size, rows, days, model, look, width, height, onOpen }: 
             {facts.name}
           </div>
           <div className="ib-activity-tip-v">
-            <b>{plural(facts.count, 'message')}</b> {facts.hour}
+            <b>{plural(facts.count, '条消息')}</b> {facts.hour}
           </div>
           <div className="ib-activity-tip-v">
-            <b>{plural(facts.dayCount, 'message')}</b> that day
+            当天 <b>{plural(facts.dayCount, '条消息')}</b>
           </div>
           <div className="ib-activity-tip-m">
-            Started {facts.started}, last message {facts.last}, {plural(facts.total, 'message')} in all
+            开始于 {facts.started}，最后一条消息 {facts.last}，共 {plural(facts.total, '条消息')}
           </div>
-          {pointerKind.current !== 'mouse' && <div className="ib-activity-tip-m">Tap again to open</div>}
+          {pointerKind.current !== 'mouse' && <div className="ib-activity-tip-m">再次轻点即可打开</div>}
         </div>
       )}
     </div>
@@ -303,7 +303,7 @@ function ActivityKey({ look }: { look: ActivityLook }) {
           ),
         )}
       </svg>
-      <span>10+ messages an hour</span>
+      <span>每小时 10+ 条消息</span>
     </div>
   );
 }
@@ -373,41 +373,41 @@ export function ActivityChart({ projects, names, project: startProject, phone, r
   const days = useMemo(() => (model ? activityDays(new Date(model.from), new Date(model.to)) : []), [model]);
   const total = useMemo(() => rows.reduce((sum, row) => sum + row.counts.reduce((a, b) => a + b, 0), 0), [rows]);
   const shownProject = read?.project ?? null;
-  const where = shownProject ? (names.get(shownProject) ?? 'this project') : 'every project';
-  const summary = read && rows.length > 0 ? `${plural(rows.length, 'thread')}, ${plural(total, 'message')} ${rangeWords(read.range)}` : '';
+  const where = shownProject ? (names.get(shownProject) ?? '此项目') : '所有项目';
+  const summary = read && rows.length > 0 ? `${rangeWords(read.range)}：${plural(rows.length, '个会话')}，${plural(total, '条消息')}` : '';
   const inkStyle = ink ? (activityInkStyle(ink) as CSSProperties) : undefined;
 
   // An empty answer names the way out it has: a longer range (the full screen offers it) or another project, or
   // coming back later (the owner's words, 2026-11-08).
   const longest = phone ? 7 : ACTIVITY_RANGES[ACTIVITY_RANGES.length - 1]!;
-  const ways = [read && read.range < longest ? 'a longer range' : null, projects.length > 1 || shownProject ? 'another project' : null].filter(Boolean).join(' or ');
+  const ways = [read && read.range < longest ? '更长的时间范围' : null, projects.length > 1 || shownProject ? '其他项目' : null].filter(Boolean).join(' 或 ');
   const emptyNote = (inFull: boolean) =>
     read &&
     rows.length === 0 && (
       <p className="ib-activity-note" data-activity-empty="">
-        No messages {shownProject ? `in ${where} ` : ''}
-        {rangeWords(read.range)}.{ways && (inFull ? ` Try ${ways}.` : ` Expand to try ${ways}.`)}{ways ? ' Or come back later once you’ve gotten some work done.' : ' Come back later once you’ve gotten some work done.'}
+        {shownProject ? `${where} ` : ''}
+        {rangeWords(read.range)}没有消息。{ways && (inFull ? `试试${ways}。` : `展开后可以试试${ways}。`)}{ways ? '或者等完成一些工作后再回来看看。' : '等完成一些工作后再回来看看。'}
       </p>
     );
   const empty = emptyNote(false);
   const failed = error && (
     <p className="ib-activity-note" role="alert">
-      Activity could not be read. {error}{' '}
+      无法读取活动记录。{error}{' '}
       <button type="button" className="ib-lnk" onClick={() => setReads((n) => n + 1)}>
-        Try again
+        重试
       </button>
     </p>
   );
 
   return (
-    <section ref={section} className="ib-sgroup ib-activity" data-activity="" data-activity-look={look} aria-label="Activity" style={inkStyle} data-activity-ink={ink?.ink}>
+    <section ref={section} className="ib-sgroup ib-activity" data-activity="" data-activity-look={look} aria-label="活动" style={inkStyle} data-activity-ink={ink?.ink}>
       <div className="ib-activity-bar">
         <span className="ib-activity-sum" data-activity-summary="">
-          {summary && (shownProject ? `${where}: ${summary}` : summary)}
+          {summary && (shownProject ? `${where}：${summary}` : summary)}
         </span>
         <button type="button" className="ib-btn ib-activity-expand" data-activity-expand="" onClick={() => setOpen(true)} disabled={!model && !error}>
           <Icon name="expand" size={14} />
-          Expand
+          展开
         </button>
       </div>
       <div className="ib-activity-box" ref={previewBox}>
@@ -415,7 +415,7 @@ export function ActivityChart({ projects, names, project: startProject, phone, r
           empty ||
           (model && previewSize.width > 0 ? (
             // The whole preview opens the full screen; Expand above is the same, for a keyboard or a screen reader.
-            <div className="ib-activity-preview" data-activity-preview="" onClick={() => setOpen(true)} title="Open full screen">
+            <div className="ib-activity-preview" data-activity-preview="" onClick={() => setOpen(true)} title="打开全屏">
               <ActivityPlot size="preview" rows={rows} days={days} model={model} look={look} width={previewSize.width} />
             </div>
           ) : (
@@ -477,8 +477,8 @@ function ActivityFull({ onClose, inkStyle, look, phone, range, onRange, project,
     <Modal labelledBy="ib-activity-title" onClose={onClose} testId="activity" ownKeys initialFocus="[data-activity-close]" className="ib-activity-lb">
       <div className="ib-activity ib-activity-full" style={inkStyle} data-activity-look={look}>
         <div className="ib-activity-lbhead">
-          <h2 id="ib-activity-title">Activity</h2>
-          <span className="ib-seg" role="radiogroup" aria-label="Range">
+          <h2 id="ib-activity-title">活动</h2>
+          <span className="ib-seg" role="radiogroup" aria-label="范围">
             {ACTIVITY_RANGES.filter((days) => !phone || days <= 7).map((days) => (
               <label key={days} className="ib-seg-o" data-on={range === days ? '' : undefined}>
                 <input type="radio" name="ib-activity-range" value={days} checked={range === days} onChange={() => onRange(days)} />
@@ -488,7 +488,7 @@ function ActivityFull({ onClose, inkStyle, look, phone, range, onRange, project,
           </span>
           {projects.length > 1 && <ProjectFilter projects={projects} names={names} value={project} phone={phone} onChange={onProject} />}
           <span className="ib-activity-sum">{summary}</span>
-          <button type="button" className="ib-btn ib-ghost ib-icon ib-activity-close" aria-label="Close" data-activity-close="" onClick={onClose}>
+          <button type="button" className="ib-btn ib-ghost ib-icon ib-activity-close" aria-label="关闭" data-activity-close="" onClick={onClose}>
             <Icon name="x" size={16} />
           </button>
         </div>

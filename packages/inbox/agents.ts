@@ -94,8 +94,8 @@ export function notesAddedParts(notes: readonly InboxNoteAutoAdd[]): {
 } {
   const names = notes.map((note) => ({ agent: note.agent, label: INBOX_AGENT_LABELS[note.agent], path: note.path }));
   return names.length === 1
-    ? { before: 'Added the Inbox note to ', names, after: "'s instructions", files: names[0]!.path }
-    : { before: 'Added the Inbox note to the instructions of ', names, after: '', files: names.map((name) => `${name.label}: ${name.path}`).join('; ') };
+    ? { before: '已将收件箱说明添加到 ', names, after: ' 的指令中', files: names[0]!.path }
+    : { before: '已将收件箱说明添加到这些 agent 的指令中：', names, after: '', files: names.map((name) => `${name.label}：${name.path}`).join('；') };
 }
 
 /** The band's lines (option A of the approved dialog): what was connected, who needs a person, what failed, whose entry is someone else's. */
@@ -117,15 +117,15 @@ export function bandLines(report: InboxConnectReport): BandLines {
   const label = (id: InboxAgentId) => INBOX_AGENT_LABELS[id];
   const manual = [...new Set((report.manual_why ?? []).map((m) => m.agent))];
   return {
-    connected: report.added.length > 0 ? `Connected ${joinNames(report.added.map(label))} to the Inbox${report.first ? '' : ' (new on this computer)'}.` : null,
+    connected: report.added.length > 0 ? `已将 ${joinNames(report.added.map(label))} 连接到收件箱${report.first ? '' : '（这台计算机上新增）'}。` : null,
     trusted: report.trusted?.length
-      ? `Plannotator can now send your replies straight into any running ${joinNames(report.trusted.map(label))} session, without it asking you first. Turn this off in Settings → Agents.`
+      ? `Plannotator 现在可以把你的回复直接发送到任何正在运行的 ${joinNames(report.trusted.map(label))} 会话，无需先询问你。可在“设置 → agent”中关闭。`
       : null,
     granted: (report.granted ?? []).map((grant) => ({ agent: grant.agent, text: inboxGrantText(grant) })),
-    trustFailed: (report.trust_failed ?? []).map((f) => ({ agent: f.agent, text: `${label(f.agent)} won't get your replies by itself: ${sentence(tidyReason(f.reason))}` })),
-    byHand: manual.length > 0 ? `${joinNames(manual.map(label))} ${manual.length === 1 ? 'needs' : 'need'} connecting yourself:` : null,
-    failed: report.failed.map((f) => ({ agent: f.agent, text: `Couldn't connect ${label(f.agent)}: ${sentence(tidyReason(f.reason))}` })),
-    foreign: report.foreign.map((f) => ({ agent: f.agent, text: `${label(f.agent)} has its own plannotator-inbox entry${f.path ? ` in ${f.path}` : ''}; Plannotator left it alone.` })),
+    trustFailed: (report.trust_failed ?? []).map((f) => ({ agent: f.agent, text: `${label(f.agent)} 不会自行收到你的回复：${sentence(tidyReason(f.reason))}` })),
+    byHand: manual.length > 0 ? `${joinNames(manual.map(label))} 需要你手动连接：` : null,
+    failed: report.failed.map((f) => ({ agent: f.agent, text: `无法连接 ${label(f.agent)}：${sentence(tidyReason(f.reason))}` })),
+    foreign: report.foreign.map((f) => ({ agent: f.agent, text: `${label(f.agent)} 有自己的 plannotator-inbox 条目${f.path ? `（在 ${f.path}）` : ''}；Plannotator 没有改动它。` })),
     elsewhere: (report.elsewhere ?? []).map((moved) => ({ agent: moved.agent, text: inboxElsewhereText(moved) })),
   };
 }
@@ -152,24 +152,24 @@ export function tidyReason(reason: string): string {
 
 /** A clause ended with one full stop (none added after ".", "!" or "?"). */
 export function sentence(text: string): string {
-  return /[.!?]$/.test(text) ? text : `${text}.`;
+  return /[。！？.!?]$/.test(text) ? text : `${text}。`;
 }
 
 /** "Codex", "Codex and Gemini CLI", "Codex, Gemini CLI and Claude Code". */
 export function joinNames(names: readonly string[]): string {
   if (names.length <= 1) return names.join('');
-  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  return names.join('、');
 }
 
 /** Who the primary names: up to three agents by name, "N agents" for four or more. */
 export function whoLabel(names: readonly string[]): string {
-  return names.length > 3 ? `${names.length} agents` : joinNames(names);
+  return names.length > 3 ? `${names.length} 个 agent` : joinNames(names);
 }
 
 /** The primary button: it names who it adds to; with nothing ticked it closes without adding. Never disabled. */
 export function primaryAction(names: readonly string[]): { label: string; add: boolean } {
-  if (names.length === 0) return { label: "Don't add a note", add: false };
-  return { label: `Add to ${whoLabel(names)}`, add: true };
+  if (names.length === 0) return { label: '不添加说明', add: false };
+  return { label: `添加到 ${whoLabel(names)}`, add: true };
 }
 
 /** Where Cursor keeps its global rules (in the app, not a file). */
@@ -200,7 +200,7 @@ export function noteWithoutMarkers(text: string): string {
 export function notePrimaryAction(picked: readonly Pick<InboxAgentRow, 'label' | 'note'>[]): { label: string; add: boolean } {
   const written = picked.filter((row) => !noteCopiedByHand(row)).map((row) => row.label);
   if (written.length > 0) return primaryAction(written);
-  if (picked.length > 0) return { label: 'Show the note to copy', add: true };
+  if (picked.length > 0) return { label: '显示要复制的说明', add: true };
   return primaryAction([]);
 }
 
@@ -210,10 +210,10 @@ export function defaultPicks(rows: readonly InboxAgentRow[]): Record<string, boo
 }
 
 /** What a note result shows in its row. */
-export function noteResultLabel(result: { ok: true; action: string } | { ok: false }): 'Created' | 'Added' | 'Copy yourself' | 'Not added' {
-  if (!result.ok) return 'Not added';
-  if (result.action === 'manual') return 'Copy yourself';
-  return result.action === 'created' ? 'Created' : 'Added';
+export function noteResultLabel(result: { ok: true; action: string } | { ok: false }): '已创建' | '已添加' | '自行复制' | '未添加' {
+  if (!result.ok) return '未添加';
+  if (result.action === 'manual') return '自行复制';
+  return result.action === 'created' ? '已创建' : '已添加';
 }
 
 /**

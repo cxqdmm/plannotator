@@ -189,7 +189,7 @@ describe.skipIf(!hasDom)('the funnel', () => {
     expect(el.querySelectorAll('.ib-lhead [data-list-filter]')).toHaveLength(1);
     expect(headerWords(el)).toBe('Inbox');
     expect(badge()).toBeNull();
-    expect(funnel().getAttribute('aria-label')).toBe('Filter');
+    expect(funnel().getAttribute('aria-label')).toBe('筛选');
     expect(getComputedStyle(funnel()).color).toBe('rgb(9, 9, 9)');
   });
 
@@ -204,7 +204,7 @@ describe.skipIf(!hasDom)('the funnel', () => {
     await click($('[data-list-filter-agent="Codex"]')!);
     expect(rowIds(el)).toEqual(['w-web', 'n-web']);
     expect(badge()).toBe('4');
-    expect(funnel().getAttribute('aria-label')).toBe('Filter, 4 active');
+    expect(funnel().getAttribute('aria-label')).toBe('筛选，4 项生效');
     expect(headerWords(el)).toBe('Inbox4');
     // A pick that empties a group takes its band away.
     await click($('[data-list-filter-project="prj_web"]')!);
@@ -227,7 +227,7 @@ describe.skipIf(!hasDom)('the funnel', () => {
     render();
     expect(badge()).toBe('9+');
     expect(funnel().querySelector('[data-list-filter-count]')!.hasAttribute('data-wide')).toBe(true);
-    expect(funnel().getAttribute('aria-label')).toBe('Filter, 10 active');
+    expect(funnel().getAttribute('aria-label')).toBe('筛选，10 项生效');
   });
 
   test('Clear filters in the menu drops every pick, the count, the colour and the cookie', async () => {
@@ -282,7 +282,7 @@ describe.skipIf(!hasDom)('the funnel', () => {
       (n) => (n.hasAttribute('data-list-filter-not-seen') ? 'notSeen' : (n.getAttribute('data-list-filter-group') ?? 'projects')),
     );
     expect([...new Set(groups)]).toEqual(['notSeen', 'updated', 'agents', 'pulls', 'projects']);
-    expect([...document.querySelectorAll('[data-list-filter-pull]')].map((n) => n.textContent?.replace(/\d+$/, ''))).toEqual(['Open', 'Draft', 'Merged', 'Closed', 'Has a PR', 'No PR']);
+    expect([...document.querySelectorAll('[data-list-filter-pull]')].map((n) => n.textContent?.replace(/\d+$/, ''))).toEqual(['打开', '草稿', '已合并', '已关闭', '有 PR', '无 PR']);
     expect($('[data-list-filter-pull="open"] .ib-pmi-n')?.textContent).toBe('2');
     await click($('[data-list-filter-pull="open"]')!);
     expect(rowIds(el)).toEqual(['w-billing', 'n-web']);
@@ -299,7 +299,7 @@ describe.skipIf(!hasDom)('the funnel', () => {
     });
     const el = render();
     await press(funnel());
-    expect([...document.querySelectorAll('[data-list-filter-not-seen]')].map((n) => n.textContent)).toEqual(['Not seen2']);
+    expect([...document.querySelectorAll('[data-list-filter-not-seen]')].map((n) => n.textContent)).toEqual(['未读2']);
     await click($('[data-list-filter-not-seen]')!);
     expect(rowIds(el)).toEqual(['w-billing', 'n-web']);
     expect(badge()).toBe('1');
@@ -318,7 +318,7 @@ describe.skipIf(!hasDom)('the funnel', () => {
     stored.set(LIST_FILTER_COOKIE, JSON.stringify({ projects: [], updated: null, agents: [], pulls: ['open'] }));
     const el = rerender();
     expect(badge()).toBe('1');
-    expect(el.textContent).toContain('No threads match');
+    expect(el.textContent).toContain('没有匹配的会话');
     await press(funnel());
     await click($('[data-list-filter-pull="open"]')!);
     expect(rowIds(el)).toEqual(['w-billing', 'w-web', 'n-web', 'n-docs-old']);

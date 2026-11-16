@@ -183,7 +183,7 @@ function allFilesGuide(snapshot: GuideSnapshot, files: readonly { path: string; 
     title: snapshot.guide.title,
     intent: '',
     // Under a top bar whose switch says All files: no heading of its own (the pane's CSS draws one column, no card).
-    sections: [{ title: threadHeading ? '' : asItIs ? 'Every file' : 'Every changed file', overview: threadHeading ? '' : asItIs ? 'In the order they were sent.' : 'In the order of the diff.', diffs: files.map((file) => ({ file: file.path })) }],
+    sections: [{ title: threadHeading ? '' : asItIs ? '每个文件' : '每个更改的文件', overview: threadHeading ? '' : asItIs ? '按发送顺序。' : '按 Diff 顺序。', diffs: files.map((file) => ({ file: file.path })) }],
     unplacedFiles: [],
     reviewed: [false],
   };
@@ -540,7 +540,7 @@ function Reader({
       ...(revealFile ? { revealFile } : {}),
       ...(phone || asItIs || hostDiffControls ? {} : { renderSectionTab }),
       // A walkthrough's chapter can be words alone: nothing is missing, so it says that and not "out of date".
-      ...(asItIs && { renderSectionEmpty: () => <p className="ib-rv-nocode" data-section-no-code="">No code in this chapter.</p> }),
+      ...(asItIs && { renderSectionEmpty: () => <p className="ib-rv-nocode" data-section-no-code="">此章节中没有代码。</p> }),
       renderOverviewDiagram: drawOverviewDiagram,
       renderChapterDiagram: drawChapterDiagram,
       ...(chapterDiagramsFolded ? { chapterDiagramsFolded: true } : {}),

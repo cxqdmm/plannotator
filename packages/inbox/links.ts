@@ -131,7 +131,7 @@ export function attachmentDisplayPath(attachment: Pick<LinkableAttachment, 'path
 
 /** The tooltip of a link that opens an attachment: its path in the project, so a match by bare name shows which file. */
 export function openAttachmentTitle(displayPath: string): string {
-  return `Open ${displayPath} beside the thread`;
+  return `在会话旁打开 ${displayPath}`;
 }
 
 /**
@@ -149,7 +149,7 @@ export function attachmentDeepLink(threadId: string, attachmentId: string, versi
 }
 
 /** The tooltip of a local link that names no attachment of the message. */
-export const NOT_ATTACHED_TITLE = 'Not attached to this message';
+export const NOT_ATTACHED_TITLE = '未附加到这条消息';
 
 /** Where this window is: its origin, and the addresses this Inbox advertises (rowMenu.ts `threadLink`, the tailnet's). */
 export interface InboxHere {

@@ -39,7 +39,7 @@ export function NewPill({ count, onJump, onDrawn }: { count: CountStore; onJump:
   return (
     <button type="button" className="ib-npill" data-new-pill="" data-off={n > 0 ? undefined : ''} tabIndex={n > 0 ? 0 : -1} aria-hidden={n === 0} onClick={() => onJump(true)}>
       <Icon name="arrowDown" size={15} />
-      {Math.max(1, n)} new
+      {Math.max(1, n)} 条新消息
     </button>
   );
 }

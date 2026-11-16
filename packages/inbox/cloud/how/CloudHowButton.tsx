@@ -8,7 +8,7 @@ export function CloudHowButton() {
     <>
       <button type="button" className="ib-btn ib-ghost ib-sm ib-chow-open" aria-haspopup="dialog" onClick={() => setOpen(true)} data-cloud-how="">
         <Icon name="question" size={14} />
-        How does this work?
+        这是如何工作的？
       </button>
       {open && <CloudHowDialog onClose={() => setOpen(false)} />}
     </>

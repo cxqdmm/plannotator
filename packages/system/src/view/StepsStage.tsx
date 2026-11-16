@@ -20,7 +20,7 @@ export function StepsStage({ model, epoch }: { model: SystemModel; epoch: number
   // the whole sequence when it fits, else the width, never past 1:1
   const k = Math.min(1, kw, Math.max(size.h ? (size.h - 24) / L.h : kw, kw * 0.7));
   return (
-    <div ref={ref} className="sys-steps" role="region" aria-label={`${L.title}: ${plural(n, 'step')}`} tabIndex={0} data-sheet={STEPS_CODE}>
+    <div ref={ref} className="sys-steps" role="region" aria-label={`${L.title}：${plural(n, '步')}`} tabIndex={0} data-sheet={STEPS_CODE}>
       {k > 0 && (
         <div className="sys-steps-sheet" style={{ width: Math.ceil(L.w * k), height: Math.ceil(L.h * k) }}>
           <div className="sys-scaled" style={{ transform: `scale(${k})` }}>

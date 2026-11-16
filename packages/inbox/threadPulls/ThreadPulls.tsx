@@ -316,10 +316,10 @@ function ReviewLine({ link, onOpen, of }: { link: PullReviewLink; onOpen: (link:
       <span className="ib-prpop-rv-ic" aria-hidden="true">
         <Icon name="questionBubble" size={14} />
       </span>
-      <span className="ib-prpop-rv-w">Open review thread</span>
+      <span className="ib-prpop-rv-w">打开评审会话</span>
       {link.kind === 'thread' && link.agent && (
         <span className="ib-prpop-rv-with">
-          {' · with'}
+          {' · 由 '}
           <HostMark host={link.agent.host} /> <span className="ib-prpop-rv-n">{link.agent.name}</span>
         </span>
       )}
@@ -346,7 +346,7 @@ function PullRow({ pull, oneRepo, onRemove, onPost: offeredPost, review }: { pul
             <span className={`ib-prpop-st ib-prpop-st-${pull.state}`}>{pullStateWord(pull.state)}</span>
             {!oneRepo && <span> · {pull.repo.split('/').at(-1)}</span>}
             {extras.map((word) => (
-              <span key={word} className={word === 'checks failing' ? 'ib-prpop-bad' : undefined}>
+              <span key={word} className={word === '检查失败' ? 'ib-prpop-bad' : undefined}>
                 {' · '}
                 {word}
               </span>
@@ -355,12 +355,12 @@ function PullRow({ pull, oneRepo, onRemove, onPost: offeredPost, review }: { pul
         </span>
       </a>
       {onPost && (
-        <button type="button" className="ib-prpop-tbtn ib-prpop-post" aria-label={`Post decisions on ${pull.ref}`} data-pr-post={pull.ref} onClick={() => onPost(pull.ref)}>
-          Post decisions
+        <button type="button" className="ib-prpop-tbtn ib-prpop-post" aria-label={`在 ${pull.ref} 上发布决定`} data-pr-post={pull.ref} onClick={() => onPost(pull.ref)}>
+          发布决定
         </button>
       )}
       {onRemove && (
-        <button type="button" className="ib-prpop-rm" aria-label={`Remove ${pull.ref} from this thread`} data-pr-remove={pull.ref} onClick={() => onRemove(pull)}>
+        <button type="button" className="ib-prpop-rm" aria-label={`从会话中移除 ${pull.ref}`} data-pr-remove={pull.ref} onClick={() => onRemove(pull)}>
           <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M4 4l8 8M12 4l-8 8" />
           </svg>
@@ -374,7 +374,7 @@ function PullRow({ pull, oneRepo, onRemove, onPost: offeredPost, review }: { pul
 /** "GitHub and GitLab", "GitHub, GitLab, and Bitbucket": the forges in the order the specs list them. */
 function forgeNames(forges: readonly InboxThreadPullWire['platform'][]): string {
   const names = (Object.keys(FORGE_SPECS) as InboxThreadPullWire['platform'][]).filter((p) => forges.includes(p)).map((p) => FORGE_SPECS[p].name);
-  return names.length > 2 ? `${names.slice(0, -1).join(', ')}, and ${names.at(-1)}` : names.join(' and ');
+  return names.length > 2 ? `${names.slice(0, -1).join('、')} 和 ${names.at(-1)}` : names.join(' 和 ');
 }
 
 /** Several PRs: each stack base first and joined, then the others (no heading) in the order they were added. */
@@ -392,8 +392,8 @@ function PullsList({ answer, onRemove, onPost, review }: { answer: InboxThreadPu
       {answer.groups.map((group, index) => (
         // The thread's other PRs follow the stacks under the divider, with no heading (the owner, 2026-11-08: "it's
         // intuitive already"); only a stack is named.
-        <section key={`${group.kind}-${index}`} className="ib-prpop-group" data-pr-group={group.kind} aria-label={group.kind === 'stack' ? `Stack of ${group.pulls.length}` : undefined}>
-          {!only && group.kind === 'stack' && <div className="ib-prpop-gh">Stack of {group.pulls.length}</div>}
+        <section key={`${group.kind}-${index}`} className="ib-prpop-group" data-pr-group={group.kind} aria-label={group.kind === 'stack' ? `堆叠共 ${group.pulls.length} 层` : undefined}>
+          {!only && group.kind === 'stack' && <div className="ib-prpop-gh">堆叠共 {group.pulls.length} 层</div>}
           <ol className={`ib-prpop-rows${group.kind === 'stack' ? ' ib-prpop-stack' : ''}`}>
             {group.pulls.flatMap((key) => byKey.get(key) ?? []).map((pull) => (
               <PullRow key={pull.pull} pull={pull} oneRepo={head.oneRepo} onRemove={onRemove} onPost={onPost} review={review} />
@@ -429,7 +429,7 @@ export function PullsCard({ threadId, answer, failed = false, onAnswer, sheet, o
       onAnswer(next);
       return next;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message.replace(/^validation_error:\s*/, '') : 'That did not save. Try again.');
+      setError(cause instanceof Error ? cause.message.replace(/^validation_error:\s*/, '') : '没有保存成功，请重试。');
       return null;
     } finally {
       setBusy(false);
@@ -467,7 +467,7 @@ export function PullsCard({ threadId, answer, failed = false, onAnswer, sheet, o
           <PullsList answer={answer!} onRemove={(pull) => void remove(pull)} onPost={onPost} review={review} />
         </div>
       ) : answer ? (
-        <div className="ib-prpop-empty">No pull requests on this thread.</div>
+        <div className="ib-prpop-empty">这个会话中没有 PR。</div>
       ) : failed ? (
         // The read got no answer: said plainly, never "Loading…" for ever. Hovering again reads again.
         <div className="ib-prpop-empty" role="status" data-pr-failed="">
@@ -475,18 +475,18 @@ export function PullsCard({ threadId, answer, failed = false, onAnswer, sheet, o
         </div>
       ) : (
         <div className="ib-prpop-empty" aria-busy="true">
-          Loading…
+          加载中…
         </div>
       )}
       <div className="ib-prpop-edit" data-pr-edit="">
         {pulls.length === 1 && onPost && canPostDecisionsOn(pulls[0]!) && (
-          <button type="button" className="ib-prpop-tbtn ib-prpop-post1" aria-label={`Post decisions on ${pulls[0]!.ref}`} data-pr-post={pulls[0]!.ref} onClick={() => onPost(pulls[0]!.ref)}>
-            Post decisions
+          <button type="button" className="ib-prpop-tbtn ib-prpop-post1" aria-label={`在 ${pulls[0]!.ref} 上发布决定`} data-pr-post={pulls[0]!.ref} onClick={() => onPost(pulls[0]!.ref)}>
+            发布决定
           </button>
         )}
         {removed && (
           <div className="ib-prpop-undo" role="status" data-pr-removed={removed.ref}>
-            <span className="min-w-0 flex-1 truncate">Removed {removed.ref}</span>
+            <span className="min-w-0 flex-1 truncate">已移除 {removed.ref}</span>
             <button
               type="button"
               className="ib-prpop-tbtn"
@@ -498,7 +498,7 @@ export function PullsCard({ threadId, answer, failed = false, onAnswer, sheet, o
               }
               data-pr-undo=""
             >
-              Undo
+              撤销
             </button>
           </div>
         )}
@@ -517,8 +517,8 @@ export function PullsCard({ threadId, answer, failed = false, onAnswer, sheet, o
               setText(e.target.value);
               setError(null);
             }}
-            placeholder="Add a PR: owner/repo#123 or its link"
-            aria-label="Add a pull request to this thread"
+            placeholder="添加 PR：owner/repo#123 或其链接"
+            aria-label="向这个会话添加 PR"
             aria-invalid={error ? true : undefined}
             spellCheck={false}
             autoCapitalize="off"
@@ -526,7 +526,7 @@ export function PullsCard({ threadId, answer, failed = false, onAnswer, sheet, o
             data-pr-add-input=""
           />
           <button type="submit" className="ib-prpop-tbtn" disabled={busy || text.trim() === ''} data-pr-add="">
-            Add
+            添加
           </button>
         </form>
         {error && (
@@ -536,12 +536,12 @@ export function PullsCard({ threadId, answer, failed = false, onAnswer, sheet, o
         )}
         {pulls.length === 1 && (
           <button type="button" className="ib-prpop-tbtn ib-prpop-rm1" disabled={busy} onClick={() => void remove(pulls[0]!)} data-pr-remove={pulls[0]!.ref}>
-            Remove {pulls[0]!.ref} from this thread
+            从会话中移除 {pulls[0]!.ref}
           </button>
         )}
         {sheet && (
           <button type="button" className="ib-prpop-close" onClick={onClose}>
-            Close
+            关闭
           </button>
         )}
       </div>
@@ -616,7 +616,7 @@ export function ThreadPullsButton({ threadId, summary, adding = false, onAddingD
   // No PRs: no button, unless the ⋯ menu asked to add one (the card opens on it, at the button's place).
   if (!shown && !open && !adding) return null;
   const headline = answer ? pullHeadline(answer) : null;
-  const words = shown ? pullsMarkWords(shown, headline?.label ?? labelOfKey(shown.headline.key)) : 'Pull requests';
+  const words = shown ? pullsMarkWords(shown, headline?.label ?? labelOfKey(shown.headline.key)) : 'PR';
   return (
     <>
       <button

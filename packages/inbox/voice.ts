@@ -73,7 +73,7 @@ export async function checkVoiceStatus(fresh = false): Promise<void> {
 
 /** The name of the computer that does the work. */
 export function voiceWhere(current: InboxVoiceSettings | null): string {
-  return current?.computer ?? 'this computer';
+  return current?.computer ?? '这台计算机';
 }
 
 export type VoiceBlock = 'nomic' | 'notready';

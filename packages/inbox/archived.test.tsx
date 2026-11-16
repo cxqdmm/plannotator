@@ -191,7 +191,7 @@ async function archiveItem(el: HTMLElement): Promise<HTMLElement> {
 test.skipIf(!hasDom)('Settings says when nothing is archived', async () => {
   const el = await renderApp('#settings/archived');
   await until(() => el.querySelector('[data-archived-empty]') !== null, 'the empty Archived block');
-  expect(el.querySelector('[data-settings-archived]')?.textContent).toContain('Nothing archived.');
+  expect(el.querySelector('[data-settings-archived]')?.textContent).toContain('没有已归档的会话。');
   expect(el.querySelector('[data-archived-project]')).toBeNull();
 });
 
@@ -220,13 +220,13 @@ test.skipIf(!hasDom)('archive the open thread: its row stays until the person le
   expect(row.textContent).toContain('Which search index should the docs use?');
   expect(row.textContent).toContain('Archived today');
   expect(row.querySelector('.ib-d')?.textContent).toMatch(/· 1 message$/);
-  expect(el.querySelector('[data-archived-count]')?.textContent).toBe('1 archived thread');
+  expect(el.querySelector('[data-archived-count]')?.textContent).toBe('1 个已归档会话');
 
-  act(() => button(row, 'Unarchive').click());
+  act(() => button(row, '取消归档').click());
   await until(() => window.location.hash === `#thread=${world.waiting}`, 'the thread opened');
   await until(() => listRow(el, world.waiting) !== null, 'the row back in the list');
   await until(() => el.querySelector('section.ib-pane [data-thread-more]') !== null && !(el.textContent?.includes('Archived. The next message from') ?? false), 'the thread open, not archived');
-  expect(el.querySelector('[data-inbox-toast]')?.textContent).toContain('Back in your Inbox');
+  expect(el.querySelector('[data-inbox-toast]')?.textContent).toContain('已回到收件箱');
   const archived = JSON.parse((await loopback('/api/inbox/threads/archived')).text) as { total: number };
   expect(archived.total).toBe(0);
 });
@@ -284,7 +284,7 @@ test.skipIf(!hasDom)('several projects: rows grouped under a header per project 
     await until(() => el.querySelectorAll('[data-archived-thread]').length === 3, 'three archived rows');
     const block = el.querySelector('[data-settings-archived]')!;
     expect(block.querySelector('select')).toBeNull();
-    expect(el.querySelector('[data-archived-count]')?.textContent).toBe('3 archived threads');
+    expect(el.querySelector('[data-archived-count]')?.textContent).toBe('3 个已归档会话');
     const groups = [...block.querySelectorAll('[data-archived-group]')];
     // The project archived most recently first, each with its own rows in order.
     expect(groups.map((g) => g.getAttribute('data-archived-group'))).toEqual([a.project, b.project]);

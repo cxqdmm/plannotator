@@ -47,14 +47,14 @@ const AGENTS = ['agent', 'agents', 'claude', 'claude code', 'session', 'sessions
 export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   {
     id: 'list-moves',
-    answer: 'the list holds still now',
+    answer: '列表不会再自动移动了',
     fixedIn: '0.28.52',
-    action: { kind: 'simple-list', label: 'Use Simple list' },
-    link: { label: 'What changed in 0.28.52', href: `${RELEASE}v0.28.52` },
+    action: { kind: 'simple-list', label: '使用简洁列表' },
+    link: { label: '0.28.52 有哪些变化', href: `${RELEASE}v0.28.52` },
     faq: {
-      question: 'The list moves while I’m reading it',
+      question: '我阅读时列表会移动',
       answer:
-        'Fixed in 0.28.52. New messages wait behind “N new · Show” at the top of the list, so rows only move when you ask. The row you open stays where it is. Want no groups at all? Use Simple list: one list, newest first.',
+        '已在 0.28.52 修复。新消息会停在列表顶部的“N 条新消息 · 显示”后面，只有你主动查看时行才会移动。你打开的那一行会留在原处。完全不想要分组？请使用简洁列表：一个列表，最新的在最前。',
     },
     match: {
       phrases: ['list moves', 'list jumps', 'rows jump', 'threads jump', 'keeps reordering'],
@@ -66,11 +66,11 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'simple-list',
-    answer: 'Simple list: one list, newest first',
-    action: { kind: 'simple-list', label: 'Use Simple list' },
+    answer: '简洁列表：一个列表，最新的在最前',
+    action: { kind: 'simple-list', label: '使用简洁列表' },
     faq: {
-      question: 'Can I have one plain list instead of groups?',
-      answer: 'Yes. ⋮ above the list → View → Simple list. Same rows and badges, newest first. Smart groups stay one click away.',
+      question: '能不能不用分组，只要一个普通列表？',
+      answer: '可以。列表上方的 ⋮ → 视图 → 简洁列表。行和标记都一样，最新的在最前。智能分组仍只需一次点击。',
     },
     match: {
       phrases: ['simple list', 'plain list', 'flat list', 'chronological', 'sort by date', 'sort by newest', 'newest first', 'sort by time', 'like email', 'like gmail', 'like an email'],
@@ -82,12 +82,12 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'rows',
-    answer: 'Choose how rows look: Minimal, Balanced or Detailed',
-    action: { kind: 'settings-rows', label: 'Open Settings → Rows' },
+    answer: '选择行的外观：极简、均衡或详细',
+    action: { kind: 'settings-rows', label: '打开设置 → 行' },
     faq: {
-      question: 'Rows show too much, or too little',
+      question: '行显示的内容太多或太少',
       answer:
-        'Settings → Rows has three looks, Minimal, Balanced and Detailed, and you can fine-tune density, the preview and the time. Your choice follows you to every browser.',
+        '设置 → 行里有三种外观：极简、均衡和详细，你还可以微调密度、预览和时间。你的选择会同步到每个浏览器。',
     },
     feature: 'Settings, Rows',
     match: {
@@ -100,11 +100,11 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'done',
-    answer: 'Archive a thread from its ⋯ menu',
-    link: { label: 'Inbox docs', href: `${DOCS}#what-you-see` },
+    answer: '从会话的 ⋯ 菜单归档',
+    link: { label: '收件箱文档', href: `${DOCS}#what-you-see` },
     faq: {
-      question: 'How do I mark a thread done?',
-      answer: 'Archive it from the thread’s ⋯ menu. It comes back by itself if the agent writes again, and Unarchive reopens it.',
+      question: '怎样把会话标记为完成？',
+      answer: '从会话的 ⋯ 菜单归档。如果 agent 再次写信，它会自动回来；取消归档即可重新打开。',
     },
     feature: 'Archive',
     match: {
@@ -117,11 +117,11 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'phone',
-    answer: 'Use the Inbox on your phone, over your tailnet',
-    action: { kind: 'settings-devices', label: 'Open Settings → Remote devices' },
+    answer: '通过你的 tailnet 在手机上使用收件箱',
+    action: { kind: 'settings-devices', label: '打开设置 → 远程设备' },
     faq: {
-      question: 'Can I use the Inbox on my phone?',
-      answer: 'Yes, over your tailnet: open the address from Settings → Remote devices on your phone.',
+      question: '我能在手机上使用收件箱吗？',
+      answer: '可以，通过你的 tailnet：在手机上打开设置 → 远程设备中的地址。',
     },
     feature: 'Over your tailnet',
     match: {
@@ -130,9 +130,9 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'start-agents',
-    answer: 'New message can start Claude Code or Pi for you',
-    action: { kind: 'settings-agents', label: 'Open Settings → Agents' },
-    link: { label: 'What changed in 0.28.52', href: `${RELEASE}v0.28.52` },
+    answer: '新建消息可以替你启动 Claude Code 或 Pi',
+    action: { kind: 'settings-agents', label: '打开设置 → agent' },
+    link: { label: '0.28.52 有哪些变化', href: `${RELEASE}v0.28.52` },
     match: {
       whenBroken: true,
       phrases: [
@@ -144,8 +144,8 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'notifications',
-    answer: 'Turn on notifications and a sound, and test them',
-    action: { kind: 'settings-general', label: 'Open Settings → General' },
+    answer: '开启通知和声音，并测试它们',
+    action: { kind: 'settings-general', label: '打开设置 → 通用' },
     match: {
       whenBroken: true,
       phrases: ['notification', 'notifications', 'notify me', 'get notified', 'alert me', 'play a sound', 'a sound when', 'ping me', 'desktop alert', 'desktop alerts'],
@@ -153,8 +153,8 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'theme',
-    answer: 'Choose light or dark, the text size and the colors',
-    action: { kind: 'settings-general', label: 'Open Settings → General' },
+    answer: '选择浅色或深色、文字大小和颜色',
+    action: { kind: 'settings-general', label: '打开设置 → 通用' },
     feature: 'Settings, Appearance',
     match: {
       phrases: [
@@ -165,8 +165,8 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'keys',
-    answer: 'Single-key shortcuts can be turned off',
-    action: { kind: 'settings-general', label: 'Open Settings → General' },
+    answer: '单键快捷键可以关闭',
+    action: { kind: 'settings-general', label: '打开设置 → 通用' },
     match: {
       phrases: ['single key shortcuts', 'single letter shortcuts', 'turn off shortcuts', 'disable shortcuts', 'turn off keyboard shortcuts', 'disable keyboard shortcuts', 'turn off the shortcuts'],
       near: [
@@ -177,9 +177,9 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'bro-mode',
-    answer: 'Bro mode has agents write to you in plain words',
+    answer: 'Bro 模式让 agent 用平实的语言给你写信',
     experimental: true,
-    action: { kind: 'settings-experimental', label: 'Open Settings → Capabilities' },
+    action: { kind: 'settings-experimental', label: '打开设置 → 功能' },
     match: {
       phrases: ['bro mode', 'plain english', 'plain language', 'plain words', 'explain like', 'eli5', 'too much jargon', 'less jargon', 'talk like a human'],
       near: [
@@ -190,8 +190,8 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'voice',
-    answer: 'Talk instead of typing: turn on Voice',
-    action: { kind: 'settings-voice', label: 'Open Settings → Voice' },
+    answer: '用说的代替打字：开启语音',
+    action: { kind: 'settings-voice', label: '打开设置 → 语音' },
     feature: 'Voice',
     match: {
       phrases: ['voice', 'dictate', 'dictation', 'speech to text', 'microphone', 'mic', 'talk instead of typing', 'speak instead of typing'],
@@ -199,8 +199,8 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'machines',
-    answer: 'See the agents on your other computers here',
-    action: { kind: 'settings-machines', label: 'Open Settings → Machines' },
+    answer: '在这里查看你其他计算机上的 agent',
+    action: { kind: 'settings-machines', label: '打开设置 → 计算机' },
     match: {
       phrases: [
         'other computer', 'other computers', 'another computer', 'second computer', 'two computers', 'multiple computers', 'other machine', 'other machines', 'another machine',
@@ -210,8 +210,8 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'snooze',
-    answer: 'Snooze a thread from the top bar',
-    link: { label: 'What changed in 0.28.46', href: `${RELEASE}v0.28.46` },
+    answer: '从顶栏将会话设为稍后提醒',
+    link: { label: '0.28.46 有哪些变化', href: `${RELEASE}v0.28.46` },
     feature: 'Snooze a thread',
     match: {
       phrases: ['snooze', 'snoozed', 'snoozing', 'remind me later', 'remind me tomorrow', 'remind me in', 'postpone', 'hide it until', 'hide until'],
@@ -219,8 +219,8 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'star',
-    answer: 'Star a thread from its ⋯ menu',
-    link: { label: 'What changed in 0.28.51', href: `${RELEASE}v0.28.51` },
+    answer: '从会话的 ⋯ 菜单星标会话',
+    link: { label: '0.28.51 有哪些变化', href: `${RELEASE}v0.28.51` },
     feature: 'Star a thread',
     match: {
       phrases: [
@@ -231,8 +231,8 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'unread',
-    answer: 'Mark a thread unread from its row or its header',
-    link: { label: 'What changed in 0.28.43', href: `${RELEASE}v0.28.43` },
+    answer: '从行或标题栏把会话标记为未读',
+    link: { label: '0.28.43 有哪些变化', href: `${RELEASE}v0.28.43` },
     feature: 'Mark unread',
     match: {
       phrases: ['mark unread', 'mark as unread', 'mark it unread', 'mark it as unread', 'keep unread', 'keep it unread', 'unread again', 'back to unread'],
@@ -240,25 +240,25 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'checklist',
-    answer: 'Agents can keep a checklist of their steps in each thread',
-    action: { kind: 'settings-capabilities', label: 'Open Settings → Capabilities' },
+    answer: 'agent 可以在每个会话中保留步骤清单',
+    action: { kind: 'settings-capabilities', label: '打开设置 → 功能' },
     match: {
       phrases: ['checklist', 'check list', 'todo list', 'to do list', 'todos', 'task list', 'list of steps'],
     },
   },
   {
     id: 'board',
-    answer: 'The Board shows the work in flight, one card per piece',
-    action: { kind: 'settings-capabilities', label: 'Open Settings → Capabilities' },
+    answer: '看板展示进行中的工作，每项工作一张卡片',
+    action: { kind: 'settings-capabilities', label: '打开设置 → 功能' },
     match: {
       phrases: ['kanban', 'trello', 'project board', 'task board', 'board view', 'work in flight', 'what all my agents are doing', 'what every agent is doing', 'turn off the board', 'hide the board', 'disable the board'],
     },
   },
   {
     id: 'decision-mode',
-    answer: 'Decision mode lets you answer agents one decision at a time',
+    answer: '决策模式让你一次只回答一个决策',
     experimental: true,
-    action: { kind: 'settings-experimental', label: 'Open Settings → Capabilities' },
+    action: { kind: 'settings-experimental', label: '打开设置 → 功能' },
     match: {
       phrases: ['decision mode', 'too many questions', 'one question at a time'],
       near: [
@@ -269,9 +269,9 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'float-drafts',
-    answer: 'Float reply drafts keeps an unsent reply in a corner',
+    answer: '浮动回复草稿会把未发送的回复留在角落',
     experimental: true,
-    action: { kind: 'settings-experimental', label: 'Open Settings → Capabilities' },
+    action: { kind: 'settings-experimental', label: '打开设置 → 功能' },
     match: {
       phrases: ['float reply drafts', 'floating draft', 'floating drafts', 'floating reply', 'unsent reply', 'reply in a corner', 'draft in a corner'],
       near: [
@@ -282,8 +282,8 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'plan-review-off',
-    answer: 'Plan review in Claude Code can be turned off',
-    link: { label: 'How, in 0.28.52', href: `${RELEASE}v0.28.52` },
+    answer: 'Claude Code 中的计划评审可以关闭',
+    link: { label: '0.28.52 中的方法', href: `${RELEASE}v0.28.52` },
     match: {
       whenBroken: true,
       phrases: ['turn off plan review', 'disable plan review', 'skip plan review', 'without plan review', 'no plan review', 'plan review off', 'planreview'],
@@ -295,24 +295,24 @@ export const KNOWN_ANSWERS: readonly KnownAnswer[] = [
   },
   {
     id: 'updates',
-    answer: 'Plannotator can keep itself up to date',
-    action: { kind: 'settings-about', label: 'Open Settings → About' },
+    answer: 'Plannotator 可以自动保持最新',
+    action: { kind: 'settings-about', label: '打开设置 → 关于' },
     match: {
       phrases: ['auto update', 'auto updates', 'autoupdate', 'automatic update', 'automatic updates', 'update automatically', 'updates automatically', 'keep it up to date', 'how do i update', 'how to update', 'how do i upgrade', 'how to upgrade', 'update plannotator', 'upgrade plannotator'],
     },
   },
   {
     id: 'prompts',
-    answer: 'Change what Plannotator tells your agents',
-    action: { kind: 'settings-prompts', label: 'Open Settings → Prompts' },
+    answer: '更改 Plannotator 告诉 agent 的内容',
+    action: { kind: 'settings-prompts', label: '打开设置 → 提示词' },
     match: {
       phrases: ['custom prompt', 'custom prompts', 'customize the prompt', 'edit the prompt', 'edit prompts', 'change the prompt', 'change the prompts', 'inbox reminder', 'agent instructions', 'custom instructions', 'what the agent is told', 'what agents are told'],
     },
   },
   {
     id: 'tour',
-    answer: 'Take the two minute tour again',
-    action: { kind: 'settings-general', label: 'Open Settings → General' },
+    answer: '重新进行两分钟导览',
+    action: { kind: 'settings-general', label: '打开设置 → 通用' },
     match: {
       phrases: ['tour', 'onboarding', 'tutorial', 'walkthrough', 'how does this work', 'how does it work', 'how do i use this', 'how do i use it', 'getting started', 'where do i start'],
     },

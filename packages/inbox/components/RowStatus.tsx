@@ -14,7 +14,7 @@
  * Off (the default), the row draws its counts as before.
  */
 import { inboxRowArchived, type InboxListRow } from '@plannotator/core/inbox-types';
-import { waitCount } from '../format';
+import { formatCount } from '../format';
 import { rowActionCount } from './RowBadge';
 import { RowTip } from './RowTip';
 
@@ -29,25 +29,36 @@ export function rowStatus(row: Pick<InboxListRow, 'questions' | 'section' | 'res
 
 /** Why a done row is Quiet, in the words its row would show without the mark: "archived", "read", "👍 Looks good". */
 function quietReason(row: InboxListRow): string | null {
-  if (inboxRowArchived(row)) return 'archived';
+  if (inboxRowArchived(row)) return '已归档';
   if (row.section !== 'quiet' || (row.read_at ?? null) === null) return null;
-  return row.ack ? `👍 ${row.ack.label}` : 'read';
+  return row.ack ? `👍 ${row.ack.label}` : '已读';
 }
 
 /** The mark's name for a screen reader: its words, and on a done row why it is Quiet ("Done, read"). */
 export function rowStatusName(row: InboxListRow): string | null {
   const words = rowStatusWords(row);
   const reason = rowStatus(row) === 'done' ? quietReason(row) : null;
-  return words && reason ? `${words}, ${reason}` : words;
+  return words && reason ? `${words}，${reason}` : words;
 }
 
 /** The mark's name and tooltip: "Waiting on you: 1 question", "Waiting on you: 2 questions, 1 action item", "Done". */
 export function rowStatusWords(row: InboxListRow): string | null {
   const status = rowStatus(row);
-  if (status === 'done') return 'Done';
+  if (status === 'done') return '完成';
   if (status !== 'waiting') return null;
   const actions = rowActionCount(row);
-  return `Waiting on you: ${waitCount(row.questions.open, actions) || (actions > 0 ? '1 action item' : '1 question')}`;
+  return `等你处理：${waitWords(row.questions.open, actions) || (actions > 0 ? '1 个操作项' : '1 个问题')}`;
+}
+
+/** What waits on the person in words: "2 个问题，1 个操作项"; nothing for one question and no action items. */
+function waitWords(open: number, actions: number): string {
+  const todos = Math.min(Math.max(actions, 0), open);
+  const questions = open - todos;
+  const questionWords = `${formatCount(questions)} 个问题`;
+  const todoWords = `${formatCount(todos)} 个操作项`;
+  if (todos === 0) return questions >= 2 ? questionWords : '';
+  if (questions === 0) return todoWords;
+  return `${questionWords}，${todoWords}`;
 }
 
 /** Waiting: a ring half filled from below. Done: a ring with a tick. 16 px, in the mark's colour. */

@@ -64,7 +64,7 @@ export interface ProjectBatchToast {
  * writes") is said only to a screen reader, through `speech`.
  */
 export function projectBatchToast(action: ProjectAction, projectName: string, taken: number, rows: readonly InboxListRow[]): ProjectBatchToast {
-  const threads = plural(taken, 'thread');
+  const threads = plural(taken, '个会话', '个会话');
   // Questions still waiting on the person in the threads taken: Mark read and the archive close them.
   const questions = rows.reduce((sum, row) => sum + row.questions.open + row.questions.picked, 0);
   const stopped = rows.filter((row) => row.questions.stopped && row.questions.open > 0);
@@ -74,21 +74,21 @@ export function projectBatchToast(action: ProjectAction, projectName: string, ta
   let said = '';
   let phoneDetail: string | undefined;
   if (stopped.length === 1) {
-    warning = `${shortAgentName(agentName(stopped[0]!.author))} was stopped`;
-    phoneDetail = `Stopped · ${shortAgentName(agentName(stopped[0]!.author))}`;
-    said = `${agentName(stopped[0]!.author)} was stopped`;
+    warning = `${shortAgentName(agentName(stopped[0]!.author))} 已停止`;
+    phoneDetail = `已停止 · ${shortAgentName(agentName(stopped[0]!.author))}`;
+    said = `${agentName(stopped[0]!.author)} 已停止`;
   }
-  else if (stopped.length > 1) warning = `${stopped.length} agents were stopped`;
-  else if (holds > 0) warning = `Held up ${plural(holds, 'thing')}`;
-  const closed = questions > 0 ? `Closed ${plural(questions, 'question')}` : '';
+  else if (stopped.length > 1) warning = `${stopped.length} 个 agent 已停止`;
+  else if (holds > 0) warning = `阻碍 ${plural(holds, '项', '项')}`;
+  const closed = questions > 0 ? `已关闭 ${plural(questions, '个问题', '个问题')}` : '';
   const why = warning || closed;
-  const back = action === 'read' ? 'Back when an agent writes' : 'Back when an agent writes there';
-  const lead = action === 'read' ? `Marked ${threads} read` : `Archived ${threads}`;
+  const back = action === 'read' ? 'agent 再写信时会回来' : 'agent 再写信时会回到已归档';
+  const lead = action === 'read' ? `已标记 ${threads} 为已读` : `已归档 ${threads}`;
   const detail = why || projectName;
-  const speech = `${lead} in ${projectName}. ${said || why || back}.`;
+  const speech = `${projectName}：${lead}。${said || why || back}。`;
   const phone = phoneDetail ? { phoneDetail } : {};
-  if (action === 'read') return { lead, phoneLead: `${threads} read`, detail, ...phone, speech, icon: warning ? 'warn' : 'check' };
-  return { lead, phoneLead: `Archived ${threads}`, detail, ...phone, speech, icon: warning ? 'warn' : 'archive' };
+  if (action === 'read') return { lead, phoneLead: `${threads}已读`, detail, ...phone, speech, icon: warning ? 'warn' : 'check' };
+  return { lead, phoneLead: `已归档 ${threads}`, detail, ...phone, speech, icon: warning ? 'warn' : 'archive' };
 }
 
 /** A key for one batch, so a retried request answers what the first did (the server's `batch_id`). */

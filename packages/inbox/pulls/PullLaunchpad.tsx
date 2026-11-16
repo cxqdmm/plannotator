@@ -12,7 +12,7 @@ import { useId, useRef, type ReactNode, type RefObject } from 'react';
 import { usePhoneHeadFit } from '../headFit';
 import { useInboxTextSize } from '../textSize';
 import type { InboxPull, InboxPullLink, InboxPullStack } from '@plannotator/core/inbox-types';
-import { formatCount, plural } from '@plannotator/core/inbox-format';
+import { formatCount } from '@plannotator/core/inbox-format';
 import type { InboxShapeSummary } from '../api';
 import { HostMark, Icon } from '../icons';
 import { RefMarkIcon } from '../board/RefMark';
@@ -28,8 +28,8 @@ import { forgeName } from './labels';
  * Approve." One file reads "The one file …"; a count the forge did not give (0) reads "All files …".
  */
 export function diffWords(files: number): string {
-  const which = files > 1 ? `All ${formatCount(files)} files` : files === 1 ? 'The one file' : 'All files';
-  return `${which} with your comments, Viewed and Approve.`;
+  const which = files > 1 ? `全部 ${formatCount(files)} 个文件` : files === 1 ? '这一个文件' : '所有文件';
+  return `${which}，带上你的评论、Viewed 和 Approve。`;
 }
 
 /** The Start button, as the stack page's hand-off gives it. Null: no review thread can start now (one at a time). */
@@ -48,7 +48,7 @@ function Door({ kind, icon, title, sub, soon, wide, thread, children }: { kind: 
           {icon}
         </span>
         <h3 className="ib-lp-door-t">{title}</h3>
-        {soon && <span className="ib-lp-soon">Coming</span>}
+        {soon && <span className="ib-lp-soon">即将推出</span>}
       </div>
       <div className="ib-lp-sub">{sub}</div>
       {children}
@@ -68,10 +68,10 @@ export function PullPaneBack({ phone, stacked, onClose }: { phone: boolean; stac
   if (phone) {
     // Short of room the bar shows the chevron alone (`usePhoneHeadFit`, as a thread's `‹ Inbox`): the name stays.
     return (
-      <Tip content="Back to Reviews">
-        <button type="button" className="ib-pback" onClick={onClose} aria-label="Back to Reviews" data-phone-back="">
+      <Tip content="返回评审">
+        <button type="button" className="ib-pback" onClick={onClose} aria-label="返回评审" data-phone-back="">
           <Icon name="chevL" size={18} />
-          <span className="ib-pback-l">Reviews</span>
+          <span className="ib-pback-l">评审</span>
         </button>
       </Tip>
     );
@@ -79,10 +79,10 @@ export function PullPaneBack({ phone, stacked, onClose }: { phone: boolean; stac
   if (!stacked) return null;
   return (
     <>
-      <Tip content="Back to Reviews">
-        <button type="button" className="ib-pback" onClick={onClose} aria-label="Back to Reviews" data-stack-back="">
+      <Tip content="返回评审">
+        <button type="button" className="ib-pback" onClick={onClose} aria-label="返回评审" data-stack-back="">
           <Icon name="chevL" size={16} />
-          <span className="ib-pback-l">Reviews</span>
+          <span className="ib-pback-l">评审</span>
         </button>
       </Tip>
       <span className="ib-vsep" aria-hidden="true" />
@@ -141,7 +141,7 @@ export function PullLaunchpad({
   const details = usePullDetails(pr.key, `${pr.head_sha ?? ''}\u0000${pr.updated_at}`);
   // A thread that only named the PR is no review thread: the doors read as before one, and its own door offers it.
   const link = mentioned ? null : given;
-  const agent = linkAgentName(given) ?? 'the agent';
+  const agent = linkAgentName(given) ?? '这个 agent';
   const ended = link?.agent?.ended === true;
   // A guided review is there once the agent's arrives (the stack page's rule, `ThreadLine`).
   const guide = link?.guide?.review ? link.guide : null;
@@ -176,11 +176,11 @@ export function PullLaunchpad({
         </span>
         <a className="ib-pr-ext" href={pr.url} target="_blank" rel="noreferrer noopener" data-pulls-open-forge="">
           <Icon name="external" size={15} />
-          {phone ? <span className="ib-sr">Open on {forge}</span> : `Open on ${forge}`}
+          {phone ? <span className="ib-sr">在 {forge} 上打开</span> : `在 ${forge} 上打开`}
         </a>
         {!phone && !stacked && (
-          <Tip content="Close">
-            <button type="button" className="ib-iconbtn" onClick={onClose} aria-label="Close">
+          <Tip content="关闭">
+            <button type="button" className="ib-iconbtn" onClick={onClose} aria-label="关闭">
               <Icon name="x" />
             </button>
           </Tip>
@@ -192,14 +192,14 @@ export function PullLaunchpad({
             {pr.title}
           </h2>
           <div className="ib-pr-meta ib-lp-meta" data-launch-facts="">
-            {pr.state === 'draft' && <span data-launch-draft="">Draft</span>}
-            {pr.author && <span dir="auto">by {pr.mine ? 'you' : pr.author}</span>}
+            {pr.state === 'draft' && <span data-launch-draft="">草稿</span>}
+            {pr.author && <span dir="auto">作者：{pr.mine ? '你' : pr.author}</span>}
             <span className="ib-lp-ref">
               <Tip cut content={pr.head}>
                 <code className="ib-lp-head">{pr.head}</code>
               </Tip>
               <span aria-hidden="true">→</span>
-              <span className="ib-sr">into</span>
+              <span className="ib-sr">合入</span>
               <Tip cut content={pr.base}>
                 <code className="ib-lp-base">{pr.base}</code>
               </Tip>
@@ -207,7 +207,7 @@ export function PullLaunchpad({
             <span className="ib-lp-size">
               <span className="ib-add">+{formatCount(pr.additions)}</span> <span className="ib-del">−{formatCount(pr.deletions)}</span>
             </span>
-            <span>{plural(pr.files, 'file')}</span>
+            <span>{formatCount(pr.files)} 个文件</span>
             {checks && (
               <span className="ib-lp-checks" data-checks={pr.checks}>
                 {checks}
@@ -216,12 +216,12 @@ export function PullLaunchpad({
           </div>
           {risk}
 
-          <div className="ib-lp-grid" role="list" aria-label={`What to do with ${inboxPullLabel(pr)}`} data-doors={doors}>
+          <div className="ib-lp-grid" role="list" aria-label={`对 ${inboxPullLabel(pr)} 可以做什么`} data-doors={doors}>
             <Door
               kind="guide"
               wide
               icon={<Icon name="map" size={18} />}
-              title="Guided review"
+              title="引导式评审"
               sub={
                 guide ? (
                   <>
@@ -231,16 +231,16 @@ export function PullLaunchpad({
                       </span>
                     </Tip>
                     {'\u00a0· '}
-                    {plural(guide.steps, 'chapter')} by {agentMark} {agent}
+                    共 {formatCount(guide.steps)} 章，由 {agentMark} {agent} 提供
                   </>
                 ) : onItsWay ? (
                   <>
-                    {link!.ask === 'custom' ? 'Custom curation' : 'A guided review'} is on its way from {agentMark} {agent}.
+                    来自 {agentMark} {agent} 的{link!.ask === 'custom' ? '自定义整理' : '引导式评审'}正在路上。
                   </>
                 ) : link && !ended ? (
-                  <>None yet. Ask {agent} for one in the review thread.</>
+                  <>还没有。在评审会话中向 {agent} 要一份。</>
                 ) : (
-                  <>An agent walks you through the change, chapter by chapter, then you approve or send feedback.</>
+                  <>agent 会按章节带你了解这次改动，然后由你批准或发送反馈。</>
                 )
               }
             >
@@ -249,7 +249,7 @@ export function PullLaunchpad({
                   {guide && link && (
                     <button type="button" className="ib-btn ib-pri" onClick={() => onGuide(link.thread_id, guide.message_id)} data-launch-go="guide">
                       <Icon name="map" size={15} />
-                      Open the guided review
+                      打开引导式评审
                     </button>
                   )}
                   {start && (
@@ -261,23 +261,23 @@ export function PullLaunchpad({
                       data-launch-go="start"
                     >
                       <Icon name="plus" size={15} />
-                      {guide ? 'Start a new guided review' : 'Start a guided review'}
+                      {guide ? '开始新的引导式评审' : '开始引导式评审'}
                     </button>
                   )}
                   {!guide && !start && link && (
                     // A live thread with no guide yet (asked for, or not): its thread is where one comes. Starts nothing.
                     <button type="button" className="ib-btn ib-pri" onClick={() => onThread(link.thread_id)} data-launch-go="guide-thread" data-pulls-primary="open">
                       <Icon name="questionBubble" size={15} />
-                      Open review thread
+                      打开评审会话
                     </button>
                   )}
                 </div>
               ) : null}
             </Door>
-            <Door kind="diff" icon={<Icon name="code" size={18} />} title="The diff" sub={diffWords(pr.files)}>
+            <Door kind="diff" icon={<Icon name="code" size={18} />} title="Diff" sub={diffWords(pr.files)}>
               <div className="ib-lp-go">
                 <button type="button" className="ib-btn" onClick={onDiff} data-launch-go="diff" data-pulls-open-diff="">
-                  Open the diff
+                  打开 Diff
                 </button>
               </div>
             </Door>
@@ -285,52 +285,52 @@ export function PullLaunchpad({
               kind="thread"
               thread={(link ?? named)?.thread_id}
               icon={<Icon name="questionBubble" size={18} />}
-              title="Review thread"
+              title="评审会话"
               sub={
                 named ? (
                   <>
-                    <>Thread with {agentMark} {agent}</>
+                    <>与 {agentMark} {agent} 的会话</>
                     {named.last ? (
                       <span className="ib-lp-said" dir="auto">
                         “{named.last.preview}”
                       </span>
                     ) : (
-                      <>{'\u00a0· '}No answer yet</>
+                      <>{'\u00a0· '}还没有答复</>
                     )}
                   </>
                 ) : link ? (
                   <>
                     {ended ? (
                       <>
-                        {agentMark} {agent} ended
+                        {agentMark} {agent} 已结束
                       </>
                     ) : (
-                      <>With {agentMark} {agent}</>
+                      <>与 {agentMark} {agent}</>
                     )}
                     {link.last ? (
                       <span className="ib-lp-said" dir="auto">
                         “{link.last.preview}”
                       </span>
                     ) : (
-                      !ended && <>{'\u00a0· '}No answer yet</>
+                      !ended && <>{'\u00a0· '}还没有答复</>
                     )}
                   </>
                 ) : (
-                  <>None yet. Starting a guided review starts one.</>
+                  <>还没有。开始引导式评审就会创建一个。</>
                 )
               }
             >
               {link && (
                 <div className="ib-lp-go">
                   <button type="button" className="ib-btn" onClick={() => onThread(link.thread_id)} data-launch-go="thread">
-                    Open review thread
+                    打开评审会话
                   </button>
                 </div>
               )}
               {named && (
                 <div className="ib-lp-go">
                   <button type="button" className="ib-btn" onClick={() => onThread(named.thread_id)} data-launch-go="thread" data-pulls-open-thread="">
-                    Open thread
+                    打开会话
                   </button>
                 </div>
               )}
@@ -339,7 +339,7 @@ export function PullLaunchpad({
               <Door
                 kind="shape"
                 icon={<Pebble alive={!!shape} size={18} />}
-                title="Shape board"
+                title="Shape 看板"
                 sub={
                   shape ? (
                     <>
@@ -353,23 +353,23 @@ export function PullLaunchpad({
                       {relativeWords(shape.updated, now)}
                     </>
                   ) : (
-                    <>None yet. An agent draws one in the review thread.</>
+                    <>还没有。agent 会在评审会话中绘制一个。</>
                   )
                 }
               >
                 {shape && (
                   <div className="ib-lp-go">
                     <button type="button" className="ib-btn" onClick={() => onShape(shape)} data-launch-go="shape">
-                      Open the Shape board
+                      打开 Shape 看板
                     </button>
                   </div>
                 )}
               </Door>
             )}
-            {system && <Door kind="system" soon icon={<Icon name="cube" size={18} />} title="System" sub={<>Where this change sits among the services, data and owners around it. From Workspaces.</>} />}
+            {system && <Door kind="system" soon icon={<Icon name="cube" size={18} />} title="System" sub={<>这次改动在周围的服务、数据和负责人之间处于什么位置。来自 Workspaces。</>} />}
           </div>
 
-          <h3 className="ib-lp-h">Details</h3>
+          <h3 className="ib-lp-h">详情</h3>
           <div className="ib-lp-details">
             <PullDetails
               layer={pr}

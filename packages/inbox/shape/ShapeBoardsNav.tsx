@@ -26,13 +26,13 @@ function BoardsMenu({ rows, current, onGo }: { rows: readonly BoardRow[]; curren
   }, [open]);
   return (
     <DropdownMenu modal={false} open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger render={<button ref={trigger} type="button" className="ib-rj-btn" aria-label={`Boards: ${at + 1} of ${rows.length}`} data-shape-boards="" />}>
+      <DropdownMenuTrigger render={<button ref={trigger} type="button" className="ib-rj-btn" aria-label={`看板：第 ${at + 1} 个，共 ${rows.length} 个`} data-shape-boards="" />}>
         <span className="ib-rj-lead">
-          {at + 1} of {rows.length}
+          第 {at + 1} 个，共 {rows.length} 个
         </span>
         <Icon name="chevD" size={13} className="ib-rj-chev" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={6} anchor={anchor} className="ib-rj-menu" aria-label="Boards" data-review-jump-menu="boards" data-shape-boards-menu="">
+      <DropdownMenuContent align="end" sideOffset={6} anchor={anchor} className="ib-rj-menu" aria-label="看板" data-review-jump-menu="boards" data-shape-boards-menu="">
         <div ref={list} className="ib-rj-list">
           {rows.map((row) => (
             <DropdownMenuItem
@@ -74,8 +74,8 @@ export function useBoardsNav({
   const up = row?.parent ? rows.find((one) => one.id === row.parent) : undefined;
   return {
     back: up ? (
-      <Tip content={`Back to ${up.title}`}>
-        <button type="button" className="ib-iconbtn ib-shape-back" aria-label={`Back to ${up.title}`} onClick={() => onBoard(up.id)} data-shape-board-back={up.id}>
+      <Tip content={`返回 ${up.title}`}>
+        <button type="button" className="ib-iconbtn ib-shape-back" aria-label={`返回 ${up.title}`} onClick={() => onBoard(up.id)} data-shape-board-back={up.id}>
           <Icon name="back" size={16} />
         </button>
       </Tip>

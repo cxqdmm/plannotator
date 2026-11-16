@@ -63,9 +63,9 @@ export function ReuseIcon({ size = 15 }: { size?: number }) {
 }
 
 function reuseWords(file: Pick<InboxAttachmentState, 'name'>, target: ReuseApi['target'], added: boolean): { tip: string; label: string } {
-  if (added) return { tip: 'In your reply. Click to take it out', label: `${file.name} is in your reply. Take it out` };
-  if (target === 'new') return { tip: 'New message with this', label: `New message with ${file.name}` };
-  return { tip: 'Add to your reply', label: `Add ${file.name} to your reply` };
+  if (added) return { tip: '已在你的回复中。点击可移除', label: `${file.name} 已在你的回复中。移除` };
+  if (target === 'new') return { tip: '用这条消息新建', label: `用 ${file.name} 新建消息` };
+  return { tip: '添加到你的回复', label: `将 ${file.name} 添加到你的回复` };
 }
 
 /** The button. `surface` sets its place and size in inbox.css. */

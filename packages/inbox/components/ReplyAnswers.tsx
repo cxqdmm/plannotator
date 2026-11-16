@@ -31,7 +31,7 @@ export function draftAnswerWords(answer: QuestionAnswer): string {
   const words = pickWords(answer);
   const note = answer.note?.trim();
   if (!note) return words;
-  return words ? `${words} · Note: ${note}` : `Note: ${note}`;
+  return words ? `${words} · 备注：${note}` : `备注：${note}`;
 }
 
 /**
@@ -57,15 +57,15 @@ export function ReplyAnswers({ answers, onJump }: { answers: readonly DraftAnswe
   }
   const several = groups.length > 1;
   // One reply per asking message: a message's file is in the same reply.
-  const where = new Set(groups.map((g) => g.messageId)).size > 1 ? 'your replies' : 'this reply';
-  const heading = answers.length === 1 ? `Your answer goes with ${where}` : `Your ${plural(answers.length, 'answer')} go with ${where}`;
+  const where = new Set(groups.map((g) => g.messageId)).size > 1 ? '你的多条回复' : '这条回复';
+  const heading = answers.length === 1 ? `你的回答会随${where}一起发送` : `你的 ${plural(answers.length, 'answer')} 会随${where}一起发送`;
   const row = (a: DraftAnswer) => (
     <li key={a.id}>
       <button
         type="button"
         className="ib-ranswer"
         data-reply-answer={a.id}
-        aria-label={`Q${a.number}, ${a.prompt}: ${a.answer}.${several ? ` ${a.messageName}.` : ''} Show the question.`}
+        aria-label={`Q${a.number}，${a.prompt}：${a.answer}。${several ? ` ${a.messageName}。` : ''} 显示问题。`}
         onClick={() => onJump({ kind: 'question', messageId: a.messageId, key: a.key })}
       >
         <span className="ib-ranswer-n">Q{a.number}</span>{' '}
@@ -126,7 +126,7 @@ export function SentAnswers({ groups, onJump }: { groups: readonly SentAnswerGro
         </Tip>
       </>
     );
-    const label = `Q${a.number}, ${a.prompt}: ${a.answer}.${several ? ` ${group.name}.` : ''}`;
+    const label = `Q${a.number}，${a.prompt}：${a.answer}。${several ? ` ${group.name}。` : ''}`;
     return (
       <li key={a.id}>
         {onJump ? (
@@ -134,7 +134,7 @@ export function SentAnswers({ groups, onJump }: { groups: readonly SentAnswerGro
             type="button"
             className="ib-ranswer"
             data-sent-answer={a.id}
-            aria-label={`${label} Show the question.`}
+            aria-label={`${label} 显示问题。`}
             onClick={() => onJump({ kind: 'question', messageId: a.messageId, key: a.key })}
           >
             {inner}
@@ -192,9 +192,9 @@ export interface ActionRow {
 }
 
 export function actionRowWords(a: Pick<ActionRow, 'outcome' | 'note' | 'seen'>): string {
-  if (a.seen) return a.note ? `Seen done · ${a.outcome === 'cant' ? 'Your reason' : 'Note'}: ${a.note}` : 'Seen done';
-  if (a.outcome === 'cant') return `Can't do it${a.note ? `: ${a.note}` : ''}`;
-  return a.note ? `Done · Note: ${a.note}` : 'Done';
+  if (a.seen) return a.note ? `已见完成 · ${a.outcome === 'cant' ? '你的原因' : '备注'}：${a.note}` : '已见完成';
+  if (a.outcome === 'cant') return `无法完成${a.note ? `：${a.note}` : ''}`;
+  return a.note ? `完成 · 备注：${a.note}` : '完成';
 }
 
 export function ReplyActions({ actions, sent = false, onJump }: { actions: readonly ActionRow[]; sent?: boolean; onJump?: (target: JumpTarget) => void }) {
@@ -205,13 +205,13 @@ export function ReplyActions({ actions, sent = false, onJump }: { actions: reado
   const cant = actions.length - done;
   const heading = sent
     ? done > 0 && cant > 0
-      ? `You did ${plural(done, 'action item')}, couldn't do ${cant}`
+      ? `你完成了 ${plural(done, 'action item')}，有 ${cant} 项没完成`
       : done > 0
-        ? `You did ${plural(done, 'action item')}`
-        : `You couldn't do ${plural(cant, 'action item')}`
+        ? `你完成了 ${plural(done, 'action item')}`
+        : `你有 ${plural(cant, 'action item')} 没完成`
     : actions.length === 1
-      ? 'Your action item goes with this reply'
-      : `Your ${plural(actions.length, 'action item')} go with this reply`;
+      ? '你的行动项会随这条回复一起发送'
+      : `你的 ${plural(actions.length, 'action item')} 会随这条回复一起发送`;
   const inner = (a: ActionRow) => (
     <>
       <span className="ib-ranswer-n">A{a.number}</span>{' '}
@@ -238,13 +238,13 @@ export function ReplyActions({ actions, sent = false, onJump }: { actions: reado
               <button
                 type="button"
                 className="ib-ranswer"
-                aria-label={`A${a.number}, ${a.prompt}: ${actionRowWords(a)}. Show the action item.`}
+                aria-label={`A${a.number}，${a.prompt}：${actionRowWords(a)}。显示行动项。`}
                 onClick={() => onJump({ kind: 'message', messageId: a.messageId })}
               >
                 {inner(a)}
               </button>
             ) : (
-              <div className="ib-ranswer" role="group" aria-label={`A${a.number}, ${a.prompt}: ${actionRowWords(a)}.`}>
+              <div className="ib-ranswer" role="group" aria-label={`A${a.number}，${a.prompt}：${actionRowWords(a)}。`}>
                 {inner(a)}
               </div>
             )}

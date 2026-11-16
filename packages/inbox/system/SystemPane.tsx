@@ -46,9 +46,9 @@ type Drawing = { project: SystemProjectRow; model: SystemModel | null };
 
 /** "Desktop app", "Desktop app and The Inbox", "A, B and 2 more". */
 export function partsWords(names: readonly string[]): string {
-  if (names.length <= 2) return names.join(' and ');
-  if (names.length === 3) return `${names[0]}, ${names[1]} and ${names[2]}`;
-  return `${names[0]}, ${names[1]} and ${names.length - 2} more`;
+  if (names.length <= 2) return names.join(' 和 ');
+  if (names.length === 3) return `${names[0]}、${names[1]} 和 ${names[2]}`;
+  return `${names[0]}、${names[1]} 等 ${names.length} 个`;
 }
 
 export function SystemPane({ project, sheet, full, phone, pulls, onSheet, onFull, onClose, onOpenStack, api }: SystemPaneProps) {
@@ -64,7 +64,7 @@ export function SystemPane({ project, sheet, full, phone, pulls, onSheet, onFull
     read
       .drawing(project)
       .then((answer) => live && setDrawing({ project: answer.project, model: answer.model }))
-      .catch((cause: unknown) => live && setError(cause instanceof Error ? cause.message : 'The drawing could not be read.'));
+      .catch((cause: unknown) => live && setError(cause instanceof Error ? cause.message : '无法读取这张图。'));
     return () => {
       live = false;
     };
@@ -117,14 +117,14 @@ export function SystemPane({ project, sheet, full, phone, pulls, onSheet, onFull
         </div>
       );
     }
-    if (!drawing) return <div className="ib-sysp-note">Opening the drawing…</div>;
+    if (!drawing) return <div className="ib-sysp-note">正在打开图…</div>;
     if (!drawing.model) {
       return (
         <div className="ib-sysp-note" data-system-pane-none={drawing.project.state}>
-          <p>{drawing.project.state === 'broken' ? 'This drawing can’t be read. Set the project up again to redraw it.' : `${name} is not drawn yet.`}</p>
+          <p>{drawing.project.state === 'broken' ? '无法读取这张图。请重新设置项目以重绘。' : `尚未绘制 ${name}。`}</p>
           {drawing.project.repo && (
             <button type="button" className="ib-btn" onClick={() => openSystemSetup(project)}>
-              Set up
+              设置
             </button>
           )}
         </div>
@@ -152,11 +152,11 @@ export function SystemPane({ project, sheet, full, phone, pulls, onSheet, onFull
 
   if (full || phone) {
     return (
-      <section ref={pane} tabIndex={-1} className={`ib-sysfull${phone ? ' ib-sysfull-phone' : ''}`} aria-label={name ? `System: ${name}` : 'System'} data-system-full={phone ? 'phone' : ''} data-system-pane={project}>
+      <section ref={pane} tabIndex={-1} className={`ib-sysfull${phone ? ' ib-sysfull-phone' : ''}`} aria-label={name ? `系统：${name}` : '系统'} data-system-full={phone ? 'phone' : ''} data-system-pane={project}>
         <div className="ib-sysfull-top">
           <button ref={back} type="button" className="ib-sysfull-back" onClick={() => (phone ? onClose() : onFull(false))} data-system-back="">
             <Icon name="back" size={15} />
-            Reviews
+            评审
           </button>
         </div>
         <div className="ib-sysfull-body">
@@ -167,7 +167,7 @@ export function SystemPane({ project, sheet, full, phone, pulls, onSheet, onFull
     );
   }
   return (
-    <section ref={pane} tabIndex={-1} className="ib-pane ib-syspane" aria-label={name ? `System: ${name}` : 'System'} data-system-pane={project}>
+    <section ref={pane} tabIndex={-1} className="ib-pane ib-syspane" aria-label={name ? `系统：${name}` : '系统'} data-system-pane={project}>
       <div className="ib-syspane-draw">{body('pane')}</div>
       {rows}
     </section>
@@ -205,13 +205,13 @@ function SystemPulls({ touches, pulls, onOpenStack }: { touches: SystemPullsAnsw
   return (
     <section className="ib-sysprs" aria-labelledby="ib-sysprs-h" data-system-pulls="">
       <h3 id="ib-sysprs-h" className="ib-sysprs-h">
-        Open PRs that change this
+        会改动它的开放拉取请求
       </h3>
       {touches === null ? (
-        <p className="ib-sysprs-quiet">Reading the open pull requests…</p>
+        <p className="ib-sysprs-quiet">正在读取开放的拉取请求…</p>
       ) : rows.length === 0 ? (
         <p className="ib-sysprs-quiet" data-system-pulls-none="">
-          No open pull request changes it.
+          没有开放的拉取请求会改动它。
         </p>
       ) : (
         <ul className="ib-sysprs-list">
@@ -224,7 +224,7 @@ function SystemPulls({ touches, pulls, onOpenStack }: { touches: SystemPullsAnsw
                     {pull.title}
                   </span>
                   <span className="ib-sysprs-l">
-                    changes{' '}
+                    改动了{' '}
                     <span className="ib-sysprs-parts" data-system-pull-parts="">
                       {partsWords(touch.parts.map((p) => p.name))}
                     </span>
@@ -232,7 +232,7 @@ function SystemPulls({ touches, pulls, onOpenStack }: { touches: SystemPullsAnsw
                   </span>
                 </span>
                 <span className="ib-sysprs-go" aria-hidden="true">
-                  Open review
+                  打开评审
                   <Icon name="chevR" size={13} />
                 </span>
               </button>
@@ -242,7 +242,7 @@ function SystemPulls({ touches, pulls, onOpenStack }: { touches: SystemPullsAnsw
       )}
       {touches !== null && touches.unread > 0 && (
         <p className="ib-sysprs-quiet" data-system-pulls-unread={touches.unread}>
-          {plural(touches.unread, 'pull request')} could not be read.
+          有 {plural(touches.unread, '个拉取请求', '个拉取请求')}无法读取。
         </p>
       )}
     </section>

@@ -36,14 +36,14 @@ export const OPEN_QUESTIONS_LABEL_FORMS: readonly OpenQuestionsLabelForm[] = ['f
 export function openQuestionsFormText(questions: number, form: OpenQuestionsLabelForm, actions = 0, permission = false, skip: number | null = null, answered = false): string {
   // This Send skips the questions the list's "Skip them" counted (approval "reply-bar-pairs"): "6 to skip", or "6" at
   // the count, with the skip glyph. Action items are never skipped, so they are not in it.
-  if (skip !== null && skip > 0) return form === 'count' ? String(skip) : `${skip} to skip`;
+  if (skip !== null && skip > 0) return form === 'count' ? String(skip) : `跳过 ${skip} 个`;
   const n = questions + actions;
   // Nothing left to count: every listed question answered in the draft draws the icon alone ("? ⌄", never a bare "0");
   // only Re-ask or "Decide these" keep the list: its name.
-  if (n === 0) return answered ? '' : 'Questions';
+  if (n === 0) return answered ? '' : '问题';
   if (form === 'count') return String(n);
-  if (permission) return form === 'short' ? `${n} waiting` : `${n} permission${n === 1 ? '' : 's'} waiting`;
-  if (form === 'short') return `${n} open`;
+  if (permission) return form === 'short' ? `等待 ${n} 个` : `等待 ${n} 项权限`;
+  if (form === 'short') return `${n} 个未处理`;
   return openItemsLabel(questions, actions);
 }
 

@@ -32,7 +32,7 @@ export function LaunchSettingsFile({
     }
   };
   const off = busy || saving;
-  const label = 'Claude settings file';
+  const label = 'Claude 设置文件';
   const id = 'ib-launch-settings_file';
   const shown = launch.settings_file ? (launch.settings_file_shown ?? launch.settings_file) : null;
   return (
@@ -46,14 +46,14 @@ export function LaunchSettingsFile({
                 <FileName name={shown} />
               </code>
             ) : (
-              <span data-launch-value="settings_file">None</span>
+              <span data-launch-value="settings_file">无</span>
             )
           ) : (
             <input
               className="ib-agpath"
               type="text"
               aria-label={label}
-              placeholder="None"
+              placeholder="无"
               autoComplete="off"
               spellCheck={false}
               autoFocus
@@ -69,7 +69,7 @@ export function LaunchSettingsFile({
           )}
           {editing === null && (
             <span className="ib-aghint" id={`${id}-hint`}>
-              Added to new sessions
+              添加到新会话
             </span>
           )}
         </span>
@@ -78,15 +78,15 @@ export function LaunchSettingsFile({
       r={
         editing === null ? (
           <button type="button" className="ib-btn ib-sm" aria-describedby={`${id}-hint`} data-launch-change="settings_file" onClick={() => setEditing(launch.settings_file ?? '')}>
-            Change
+            更改
           </button>
         ) : (
           <>
             <button type="button" className="ib-btn ib-sm ib-ghost" onClick={() => setEditing(null)}>
-              Cancel
+              取消
             </button>
             <button type="button" className="ib-btn ib-sm ib-pri" disabled={off} data-launch-save="settings_file" onClick={() => void save(editing.trim() || null)}>
-              Save
+              保存
             </button>
           </>
         )

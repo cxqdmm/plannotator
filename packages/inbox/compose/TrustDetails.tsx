@@ -8,7 +8,7 @@ export function TrustDetails({ folder, facts, said }: { folder: string; facts: r
   return (
     <div className="ib-state ib-nmpop ib-cp-trustask" id="ib-cp-trust-pop" role="dialog" aria-labelledby="ib-cp-trust-q" data-compose-trust-ask="">
       <h5 id="ib-cp-trust-q">
-        Trust <bdi>{folder}</bdi>?
+        信任 <bdi>{folder}</bdi>？
       </h5>
       <p>
         {facts.map((fact) => (

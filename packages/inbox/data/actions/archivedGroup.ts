@@ -36,7 +36,7 @@ export interface ArchivedGroupApp {
   refreshList: (adopt: boolean) => Promise<unknown>;
 }
 
-const subjectOf = (row: Pick<InboxListRow, 'subject'>) => `“${row.subject ?? '(no subject)'}”`;
+const subjectOf = (row: Pick<InboxListRow, 'subject'>) => `“${row.subject ?? '（无主题）'}”`;
 
 export function useArchivedGroup(app: ArchivedGroupApp): { host: ArchivedGroupHost; unarchiveFromSettings: (row: InboxListRow) => Promise<boolean> } {
   const client = useQueryClient();
@@ -51,7 +51,7 @@ export function useArchivedGroup(app: ArchivedGroupApp): { host: ArchivedGroupHo
       return;
     }
     await app.afterWrite([row.thread_id]);
-    app.showToast({ icon: 'check', lead: 'Back in your Inbox', detail: subjectOf(row), onUndo: () => void app.archive(row.thread_id, row.thread_id, true) });
+    app.showToast({ icon: 'check', lead: '已回到收件箱', detail: subjectOf(row), onUndo: () => void app.archive(row.thread_id, row.thread_id, true) });
   };
   const setOn = async (on: boolean) => {
     const draw = drawShowArchived(on);
@@ -75,7 +75,7 @@ export function useArchivedGroup(app: ArchivedGroupApp): { host: ArchivedGroupHo
     }
     app.go({ page: 'inbox', project: null, thread: row.thread_id });
     await app.refreshList(true);
-    app.showToast({ icon: 'check', lead: 'Back in your Inbox', detail: subjectOf(row), onUndo: () => void app.archive(row.thread_id, row.thread_id, true) });
+    app.showToast({ icon: 'check', lead: '已回到收件箱', detail: subjectOf(row), onUndo: () => void app.archive(row.thread_id, row.thread_id, true) });
     return true;
   };
   // The host keeps its identity while project, machines and filters stand, so the list does not draw again for it.

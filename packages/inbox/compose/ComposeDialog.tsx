@@ -280,8 +280,8 @@ export function ComposeDialog(props: ComposeDialogProps) {
   // A paste of 32 KB or more becomes a pasted text tile (approval "inbox-paste-attachment"), put back by its tile.
   const files = useComposeFiles(request.draft?.files ?? [], {
     onPasted: (names) => say(attachedAnnouncement(names)),
-    onAlready: (name) => say(`${name} is already in this message`),
-    onPutBack: () => say('The pasted text is back in your message.'),
+    onAlready: (name) => say(`${name} 已在这条消息中`),
+    onPutBack: () => say('粘贴的文本已放回你的消息。'),
     text: { value: body, set: setBody },
   });
   // A drop anywhere on the dialog attaches the files ("Drop files to attach").
@@ -746,13 +746,13 @@ export function ComposeDialog(props: ComposeDialogProps) {
     if (Date.now() - trustChangedAt.current < ARM_MS) return;
     setError(null);
     if (start && !start.project.exists) {
-      setError('Nothing sent: pick a folder to start in.');
+      setError('未发送：请选择一个启动文件夹。');
       return;
     }
     // A new session (launch) is held to the same rule as a live one: it starts in the pull request's project.
     const sendProject = target ? target.project.id : (start?.project.id ?? null);
     if ((target || start) && pulls && !(sendProject && pulls.projects.includes(sendProject))) {
-      setError("Nothing sent: the pull request's agent works in its own project.");
+      setError('未发送：PR 的 agent 在其自己的项目中工作。');
       return;
     }
     if (linkThread) {
@@ -762,36 +762,36 @@ export function ComposeDialog(props: ComposeDialogProps) {
     }
     if (!target && !start) {
       // The error is an alert, which says it: no second announcement.
-      setError(anyLive || canStart ? 'Nothing sent: choose a live agent first.' : box ? 'Nothing sent: no live agent is chosen.' : NOTHING_SENT_NO_AGENT);
+      setError(anyLive || canStart ? '未发送：请先选择一个活跃的 agent。' : box ? '未发送：没有选择活跃的 agent。' : NOTHING_SENT_NO_AGENT);
       return;
     }
     if (box && reviewKind === 'pr' && !boxPull && !linkOnly) {
-      setError('Nothing sent: choose a pull request first.');
+      setError('未发送：请先选择一个 PR。');
       return;
     }
     if (box && reviewKind === 'walkthrough' && !body.trim()) {
-      setError('Nothing sent: say what to walk you through first.');
+      setError('未发送：请先说明要引导你了解什么。');
       return;
     }
     // "No changes" beside the choice says why: nothing for an agent to review.
     if (noChanges) return;
     if (boxPull && pulls && pulls.keys.length > INBOX_PULL_OWNER_KEYS_MAX) {
-      setError(`A stack of more than ${INBOX_PULL_OWNER_KEYS_MAX} open pull requests can't go to one review thread.`);
+      setError(`一个 PR 栈里打开的 PR 超过 ${INBOX_PULL_OWNER_KEYS_MAX} 个时，无法放进同一个评审会话。`);
       return;
     }
     // Words or files, as a reply takes: a message of a pasted text tile alone goes. New review's empty words are a guided review.
     if (!box && !body.trim() && !files.files.some((file) => file.state !== 'refused')) {
-      setError('Write a message first.');
+      setError('请先写一条消息。');
       textRef.current?.focus();
       return;
     }
     if (files.uploading) {
-      setError('Wait for the files to finish uploading.');
+      setError('请等待文件上传完成。');
       return;
     }
     // Files wait on this computer: a new session on another machine can't take them yet.
     if (start?.machine && files.files.some((file) => file.state !== 'refused')) {
-      setError(`Files can't go with a new session on ${startMachineName ?? 'another machine'} yet. Remove them to start it there.`);
+      setError(`${startMachineName ?? '另一台计算机'} 上的新会话暂时还不能附带文件。要在那里启动，请先移除这些文件。`);
       return;
     }
     // The chip's suggestion as it would be once typing settles: never one a moment old.
@@ -871,17 +871,17 @@ export function ComposeDialog(props: ComposeDialogProps) {
         props.onHeld({
           key: cause.outbox.key,
           queued: cause.outbox.state === 'queued',
-          machineName: cause.machine?.name ?? startMachineName ?? targetMachineName ?? 'the other machine',
+          machineName: cause.machine?.name ?? startMachineName ?? targetMachineName ?? '另一台计算机',
           asleep: cause.machine ? cause.machine.state === 'offline' : startAsleep,
           agentName: start ? start.name : hostLabel(target!.host),
           // E9: what that machine does first when it's back.
-          ...(start?.clone ? { first: `clones ${start.clone.slug}` } : start?.create ? { first: `makes ${start.project.name}` } : {}),
+          ...(start?.clone ? { first: `克隆 ${start.clone.slug}` } : start?.create ? { first: `创建 ${start.project.name}` } : {}),
           draftId: draft?.id ?? null,
           words: { body, ...(threadName ? { thread_name: threadName } : {}), ...(card ? { card } : {}), ...(pulls ? { pulls } : {}), ...(boardRequest ? { board_request: true as const } : {}) },
         });
       } else if (cause instanceof InboxApiError && cause.code === 'session_not_live') {
         void load();
-        setError('That session is not live any more: nothing was sent. Pick a live session, or save it as a draft.');
+        setError('该会话已不再活跃：未发送任何内容。请选择一个活跃的会话，或存为草稿。');
       } else if (cause instanceof InboxApiError && (cause.code === 'folder_missing' || cause.code === 'agent_unavailable')) {
         // Checked before anything is written: nothing was sent. The re-read strikes the folder through, or drops the agent's row.
         void load();
@@ -899,8 +899,8 @@ export function ComposeDialog(props: ComposeDialogProps) {
         setNameError(THREAD_NAME_TAKEN);
       } else if (cause instanceof InboxApiError && cause.code === 'project_unresolved') {
         // git did not answer in time (#1919): the server's words are for an agent; the person presses Send again.
-        setError('Could not tell which project that session works in: git did not answer in time. Nothing was sent; press Send again.');
-      } else setError(cause instanceof InboxApiError ? cause.message : 'The message was not sent. Send again to retry.');
+        setError('无法判断该会话在哪个项目中工作：git 未能及时响应。未发送任何内容；请再次点击“发送”。');
+      } else setError(cause instanceof InboxApiError ? cause.message : '消息未发送。再次点击“发送”重试。');
     } finally {
       setBusy(null);
     }
@@ -915,12 +915,12 @@ export function ComposeDialog(props: ComposeDialogProps) {
     const holder = nameHolder;
     if (!holder || busy !== null) return;
     if (!body.trim() && !files.files.some((file) => file.state !== 'refused')) {
-      setError('Write a message first.');
+      setError('请先写一条消息。');
       textRef.current?.focus();
       return;
     }
     if (files.uploading) {
-      setError('Wait for the files to finish uploading.');
+      setError('请等待文件上传完成。');
       return;
     }
     setBusy('send');
@@ -939,7 +939,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
       if (draft) await inboxApi.deleteDraft(draft.id).catch(() => {});
       props.onJoined?.({ threadId: holder.threadId, threadName: holder.name, agent: holder.agent, draftId: draft?.id ?? null });
     } catch (cause) {
-      setError(cause instanceof InboxApiError ? cause.message : 'The message was not sent. Send again to retry.');
+      setError(cause instanceof InboxApiError ? cause.message : '消息未发送。再次点击“发送”重试。');
     } finally {
       setBusy(null);
     }
@@ -949,7 +949,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
   const save = async (base: string | null = draft?.updated_at ?? null): Promise<DraftView | null> => {
     if (empty) return null;
     if (files.uploading) {
-      setError('Wait for the files to finish uploading.');
+      setError('请等待文件上传完成。');
       return null;
     }
     // Said plainly, before the Inbox refuses it with its own field words.
@@ -994,12 +994,12 @@ export function ComposeDialog(props: ComposeDialogProps) {
         try {
           const newer = (await inboxApi.drafts()).drafts.find((d) => d.id === draftId.current) ?? null;
           setConflict(newer);
-          setError(newer ? 'This draft changed in another window since you opened it.' : 'This draft was deleted in another window.');
+          setError(newer ? '你打开之后，这个草稿已在另一个窗口中更改。' : '这个草稿已在另一个窗口中删除。');
         } catch {
-          setError('This draft changed in another window.');
+          setError('这个草稿已在另一个窗口中更改。');
         }
       } else if (cause instanceof InboxApiError && cause.code === 'validation_error' && cause.message.startsWith('body:')) setError(DRAFT_TOO_LONG);
-      else setError(cause instanceof InboxApiError ? cause.message : 'The draft was not saved.');
+      else setError(cause instanceof InboxApiError ? cause.message : '草稿未保存。');
       return null;
     } finally {
       setBusy(null);
@@ -1049,7 +1049,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
       await inboxApi.deleteDraft(draft.id);
       props.onDeleted(draft);
     } catch (cause) {
-      setError(cause instanceof InboxApiError ? cause.message : 'The draft was not deleted.');
+      setError(cause instanceof InboxApiError ? cause.message : '草稿未删除。');
     } finally {
       setBusy(null);
     }
@@ -1112,7 +1112,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
   const loading = !model;
   // Save draft only for something written: an empty compose offers none.
   const saveOffered = keepsDrafts && !sendable && !loading && !empty;
-  const title = box ? 'New review' : draft ? 'Draft' : 'New message';
+  const title = box ? '新评审' : draft ? '草稿' : '新消息';
   // A scratch start names the folder a Send would make now (from the thread's name).
   const scratchFolder = launch?.scratch ? scratchFolderOf(launch.scratch.root, threadName.trim() || (reviewName ?? suggested)) : null;
   // Linked machines: the folder menu's groups, each scratch row named for its own machine's root and the thread's name.
@@ -1138,7 +1138,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
     };
   });
   // Another machine asleep: the Send waits for it, and says so.
-  const sendLabel = trust ? 'Trust and start' : start && startAsleep && startMachineName ? `Start when ${startMachineName} is back` : box ? (reviewKind === 'walkthrough' ? 'Start walkthrough' : 'Start review') : 'Send';
+  const sendLabel = trust ? '信任并启动' : start && startAsleep && startMachineName ? `${startMachineName} 恢复后启动` : box ? (reviewKind === 'walkthrough' ? '开始引导式评审' : '开始评审') : '发送';
   // The details cover the error line, and on a phone the whole footer: open, they say it.
   const errorInDetails = trustInfoOpen && !conflict;
   const status = start
@@ -1163,7 +1163,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
         data-compose-folder-machine={start.machine ?? undefined}
         data-compose-folder-new={start.create ? '' : undefined}
         data-compose-folder-clone={start.clone ? start.clone.slug : undefined}
-        aria-label={`Start in: ${start.project.name}, ${start.create ? `a new folder at ${start.folder}, made when you send` : start.clone ? `${start.folder}, cloned from ${start.clone.host}/${start.clone.slug} when you send` : tildePath(start.project.root, startHome)}${startMachineName ? `, on ${startMachineName}${startAsleep ? ', asleep' : ''}` : ''}${start.project.exists ? '' : ', not there any more'}. Change`}
+        aria-label={`启动位置：${start.project.name}，${start.create ? `一个位于 ${start.folder} 的新文件夹，发送时创建` : start.clone ? `${start.folder}，发送时从 ${start.clone.host}/${start.clone.slug} 克隆` : tildePath(start.project.root, startHome)}${startMachineName ? `，位于 ${startMachineName}${startAsleep ? '，已休眠' : ''}` : ''}${start.project.exists ? '' : '，已不存在'}。更改`}
         onClick={() => {
           setPicker(false);
           setFolderMenu((open) => !open);
@@ -1203,23 +1203,23 @@ export function ComposeDialog(props: ComposeDialogProps) {
   const noAgent = !!model && !anyLive && !canStart && !endedNote;
   const toValue = target ? target.session : start ? 'start' : endedNote ? 'ended' : 'choose';
   const toName = target
-    ? `To: ${hostLabel(target.host)}${target.label ? `, ${target.label},` : ''} in ${target.project.name}${targetMachineName ? `, on ${targetMachineName}` : ''}. Change`
+    ? `发送给：${hostLabel(target.host)}${target.label ? `，${target.label}` : ''}，在 ${target.project.name} 中${targetMachineName ? `，位于 ${targetMachineName}` : ''}。更改`
     : start
-      ? `To: a new ${start.name} session. Change`
+      ? `发送给：新建 ${start.name} 会话。更改`
       : endedNote
-        ? `To: ${hostLabel(endedNote.host)}, ended. Pick a session`
+        ? `发送给：${hostLabel(endedNote.host)}，已结束。请选择会话`
         : loading
-          ? 'To: looking for live agents'
-          : 'To: choose an agent';
+          ? '发送给：正在查找活跃的 agent'
+          : '发送给：选择 agent';
 
   // A computer: the To line at the top. A phone has none: To is the pill in the foot's row (`phoneTo`).
   const toRow = phone ? null : (
     <div ref={toRowRef} className="ib-cp-to" data-start={start ? '' : undefined}>
-      <span className="ib-cp-tol">To</span>
+      <span className="ib-cp-tol">发送给</span>
       {noAgent ? (
         <span className="ib-cp-none-to" data-compose-to="none">
           <Icon name="info" size={15} />
-          No agent is running
+          没有运行中的 agent
         </span>
       ) : (
         <button
@@ -1242,7 +1242,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
           {start ? (
             <>
               <HostMark host={start.agent} />
-              <b>New {start.name} session</b>
+              <b>新建 {start.name} 会话</b>
             </>
           ) : target ? (
             <>
@@ -1256,13 +1256,13 @@ export function ComposeDialog(props: ComposeDialogProps) {
               <HostMark host={endedNote.host} agent={endedNote.session} />
               <s>{hostLabel(endedNote.host)}</s>
               {endedNote.project_name ? (
-                <SessionDetail name={endedNote.project_name} root={endedNote.project_root} suffix="ended" />
+                <SessionDetail name={endedNote.project_name} root={endedNote.project_root} suffix="已结束" />
               ) : (
-                <span className="ib-cp-tod">· ended</span>
+                <span className="ib-cp-tod">· 已结束</span>
               )}
             </>
           ) : (
-            <span className="ib-cp-tod">{model ? 'Choose an agent' : 'Looking for live agents…'}</span>
+            <span className="ib-cp-tod">{model ? '选择 agent' : '正在查找活跃的 agent…'}</span>
           )}
           <Icon name="chevD" size={15} />
         </button>
@@ -1270,13 +1270,13 @@ export function ComposeDialog(props: ComposeDialogProps) {
       {tipCard}
       {start && (
         <span className="ib-cp-startin">
-          <span className="ib-cp-in">in</span>
+          <span className="ib-cp-in">位于</span>
           {folderButton('ib-cp-tobtn', 15)}
           {launchChoice.button('ib-cp-tobtn')}
         </span>
       )}
-      {(boxPull || (linkOnly && !linkScratch)) && (target || start) && !phone && <span className="ib-cp-rvfrompull">· from the pull request</span>}
-      {draft && !phone && <span className="ib-cp-dsaved">Draft · saved {whenTime(draft.updated_at)}</span>}
+      {(boxPull || (linkOnly && !linkScratch)) && (target || start) && !phone && <span className="ib-cp-rvfrompull">· 来自该 PR</span>}
+      {draft && !phone && <span className="ib-cp-dsaved">草稿 · 保存于 {whenTime(draft.updated_at)}</span>}
     </div>
   );
 
@@ -1284,7 +1284,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
   // and opens the sheet. Where a new session starts is a line over the row.
   const phoneTo = !phone ? null : noAgent ? (
     <span className="ib-apill ib-apill-none" data-compose-to="none">
-      No agent is running
+      没有运行中的 agent
     </span>
   ) : (
     <AgentPill
@@ -1292,8 +1292,8 @@ export function ComposeDialog(props: ComposeDialogProps) {
       host={start ? start.agent : target ? target.host : endedNote ? endedNote.host : undefined}
       agent={start ? null : (target?.session ?? endedNote?.session ?? null)}
       // A new session: the agent's name alone; the line over the row says "New <agent> session in <folder>".
-      label={start ? start.name : target ? (target.label ?? hostLabel(target.host)) : endedNote ? hostLabel(endedNote.host) : model ? 'Choose an agent' : 'Looking for live agents…'}
-      detail={endedNote && !target && !start ? 'ended' : null}
+      label={start ? start.name : target ? (target.label ?? hostLabel(target.host)) : endedNote ? hostLabel(endedNote.host) : model ? '选择 agent' : '正在查找活跃的 agent…'}
+      detail={endedNote && !target && !start ? '已结束' : null}
       struck={!!endedNote && !target && !start}
       ask={!start && !target && !endedNote && !loading}
       open={picker}
@@ -1312,7 +1312,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
   );
   const phoneStartIn = phone && start && (
     <div className="ib-cp-startline" data-compose-start-line="">
-      <span>New {start.name} session in</span>
+      <span>新建 {start.name} 会话，启动于</span>
       {folderButton('ib-cp-startlineb', 13)}
       {launchChoice.button('ib-cp-startlineb')}
     </div>
@@ -1330,7 +1330,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
     };
     const none = () => {
       setNoSkills(true);
-      say('No skills are installed to pick from.');
+      say('没有可选择的技能。');
       setTimeout(() => setNoSkills(false), 2600);
     };
     if (getCachedSkillCatalog().length > 0) return slash();
@@ -1368,7 +1368,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
   const toSelected = target?.session ?? (start ? toStartKey(start.machine, start.agent, start.project.id) : null);
   // The switch's machines: this computer, then each linked one with its live sessions and what can start there.
   const toMachines = useMemo<ToMachine[]>(() => {
-    const here: ToMachine = { key: HERE, machine: null, name: selfView?.name ?? 'This computer', self: true, asleep: false, since: null, home, groups, launch: toStart ? toStart.launch : null, notice: null };
+    const here: ToMachine = { key: HERE, machine: null, name: selfView?.name ?? '此计算机', self: true, asleep: false, since: null, home, groups, launch: toStart ? toStart.launch : null, notice: null };
     if (!otherMachines || !there.machines.some((m) => !m.self && m.state !== 'revoked')) return [here];
     return linkedToMachines(here, there.machines, there.reads, linkedSessions, lastSent, model?.launch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1447,10 +1447,10 @@ export function ComposeDialog(props: ComposeDialogProps) {
           <InboxComposerField
             textareaRef={textRef}
             voice={voice}
-            ariaLabel="Message"
+            ariaLabel="消息"
             ariaDescribedBy={status ? statusId : undefined}
-            destination="your message"
-            placeholder={box ? (reviewKind === 'walkthrough' ? 'What should it walk you through?' : 'A guided review, by default. Add words to curate it your way, or ask for a full review.') : 'Write an idea or a request. It starts a new thread.'}
+            destination="你的消息"
+            placeholder={box ? (reviewKind === 'walkthrough' ? '要引导你了解什么？' : '默认为引导式评审。可补充要求，按你的方式整理；也可以请它做完整评审。') : '写下想法或请求。这会开启一个新的会话。'}
             // The field is tall and sits in a scrolling body above the footer: the picker opens at the
             // caret, inside the dialog and above its footer, and Escape closes it before the dialog.
             caretMenu={caretMenu}
@@ -1476,7 +1476,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
         <p className="ib-cp-asleep" data-compose-note="asleep">
           <Icon name="moon" size={15} />
           <span>
-            {startMachineName} is asleep (since {whenTime(startMachine!.since)}). Your message waits here, and {start.name} starts on {startMachineName} when it's back. You can cancel it until then.
+            {startMachineName} 已休眠（自 {whenTime(startMachine!.since)} 起）。你的消息会在这里等待，{startMachineName} 恢复后会在其上启动 {start.name}。在此之前你可以取消。
           </span>
         </p>
       )}
@@ -1487,7 +1487,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
           {conflict && (
             <span className="ib-cp-conflict">
               <button type="button" className="ib-lnk" onClick={() => void keepDraft()}>
-                Keep mine
+                保留我的
               </button>
               <button
                 type="button"
@@ -1501,7 +1501,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
                   setError(null);
                 }}
               >
-                Use the other
+                使用另一个
               </button>
             </span>
           )}
@@ -1515,8 +1515,8 @@ export function ComposeDialog(props: ComposeDialogProps) {
           // On a phone what the picker hands over is named as a paste is (`image.jpg` -> `pasted-image-<stamp>.jpg`).
           <AttachFilesButton className="ib-cp-clip" iconSize={17} phone={phone} inputData="data-compose-attach" onFiles={(list) => (phone ? files.attach : files.add)(list)} />
         ) : (
-          <Tip content="Files: not in the tour">
-            <span className="ib-cp-clip" role="img" aria-label="Files: not in the tour" aria-disabled="true" data-compose-attach-off="">
+          <Tip content="文件：不在导览中">
+            <span className="ib-cp-clip" role="img" aria-label="文件：不在导览中" aria-disabled="true" data-compose-attach-off="">
               <Icon name="clip" size={17} />
             </span>
           </Tip>
@@ -1525,32 +1525,32 @@ export function ComposeDialog(props: ComposeDialogProps) {
         {phone && attached > 0 && (
           <span className="ib-cp-clipn" data-compose-file-count="">
             {attached}
-            <span className="ib-sr"> attached</span>
+            <span className="ib-sr"> 个附件</span>
           </span>
         )}
         {phone && !box && !transport && (
-          <button type="button" className="ib-pchip" aria-label="Skills" data-compose-skills="" onClick={openSkills}>
+          <button type="button" className="ib-pchip" aria-label="技能" data-compose-skills="" onClick={openSkills}>
             <Icon name="cube" size={20} />
           </button>
         )}
         {phoneTo}
         {phone && noSkills && (
           <span className="ib-cp-hint" data-compose-hint="">
-            No skills are installed
+            没有安装技能
           </span>
         )}
         {/* On a desktop the To line already says "Draft · saved". A phone's row drops the time, then the word; the check stays. */}
         {draft && !dirty && phone && (
-          <span className="ib-cp-savedline" role="img" aria-label={`Saved as a draft ${whenTime(draft.updated_at)}`} data-compose-saved="">
+          <span className="ib-cp-savedline" role="img" aria-label={`已存为草稿，${whenTime(draft.updated_at)}`} data-compose-saved="">
             <Icon name="check" size={14} />
-            <span>Saved</span>
+            <span>已保存</span>
             <span>{whenTime(draft.updated_at)}</span>
           </span>
         )}
         {/* A phone deletes a draft from its row on the Drafts page. */}
         {draft && !phone && (
           <button type="button" className="ib-cp-del" onClick={() => void deleteDraft()} disabled={busy !== null} data-compose-delete="">
-            Delete draft
+            删除草稿
           </button>
         )}
         <span className="ib-sp" />
@@ -1564,12 +1564,12 @@ export function ComposeDialog(props: ComposeDialogProps) {
         <VoiceFoot voice={voice} phone={phone}>
           {box && !phone && (
             <button type="button" className="ib-btn ib-ghost" onClick={requestClose} data-compose-cancel="">
-              Cancel
+              取消
             </button>
           )}
           {saveOffered && !phone && (
             <button type="button" className="ib-btn" onClick={() => void keepDraft()} disabled={busy !== null || voice.busy} data-compose-save="">
-              Save draft
+              保存草稿
             </button>
           )}
         </VoiceFoot>
@@ -1578,7 +1578,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
             type="button"
             ref={trustCircleRef}
             className="ib-iconbtn ib-cp-trustcircle"
-            aria-label="What trusting this folder means"
+            aria-label="信任此文件夹意味着什么"
             aria-haspopup="dialog"
             aria-expanded={trustInfoOpen}
             aria-controls={trustInfoOpen ? 'ib-cp-trust-pop' : undefined}
@@ -1593,7 +1593,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
           type="button"
           className={`ib-btn ib-pri${phone ? ' ib-cp-send' : ''}${sendable ? '' : ' ib-dis'}`}
           // A phone: the round arrow while it says only "Send"; a Send that says more (Trust and start) keeps its words.
-          data-send-words={phone && sendLabel !== 'Send' ? '' : undefined}
+          data-send-words={phone && sendLabel !== '发送' ? '' : undefined}
           aria-disabled={!sendable || undefined}
           aria-keyshortcuts={sendKeys}
           onClick={() => void send()}
@@ -1654,13 +1654,13 @@ export function ComposeDialog(props: ComposeDialogProps) {
         <div className="ib-cp-head">
           <div className="ib-cp-bar">
             <button type="button" className="ib-cp-barb" onClick={requestClose} data-compose-cancel="">
-              Cancel
+              取消
             </button>
             <h2 id={titleId}>{title}</h2>
             {/* Only when nothing can be sent, and a saved draft that has not changed has nothing to save. */}
             {saveOffered && (!draft || dirty) && (
               <button type="button" className="ib-cp-barb ib-strong" onClick={() => void keepDraft()} disabled={busy !== null || voice.busy} data-compose-save="">
-                Save draft
+                保存草稿
               </button>
             )}
           </div>
@@ -1679,7 +1679,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
       {card && (
         <p className="ib-cp-card" data-compose-card={card.id}>
           <span>
-            A thread for the Board card <b dir="auto">{card.title}</b>. Sending links it to the card.
+            这是看板卡片 <b dir="auto">{card.title}</b> 的会话。发送后会将它关联到该卡片。
           </span>
         </p>
       )}
@@ -1720,7 +1720,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
                   setStartPick(known ? { agent: start.agent, projectId: known.id, machine } : { agent: start.agent, projectId: `folder:${folder}`, machine, folder: { path: folder, name, ...(create ? { create: true } : {}) } });
                   setFolderMenu(false);
                   setError(null);
-                  if (create) say(`Starts in ${name}, a new folder made when you send.`);
+                  if (create) say(`将在 ${name} 中启动，这个新文件夹会在发送时创建。`);
                   textRef.current?.focus();
                 }
           }
@@ -1733,7 +1733,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
                   setFolderMenu(false);
                   setError(null);
                   const on = pick.machine ? (machineGroups.groups.find((g) => g.machine === pick.machine)?.name ?? null) : null;
-                  say(`Starts in ${pick.name}${on ? ` on ${on}` : ''}, cloned when you send.`);
+                  say(`将在 ${pick.name}${on ? `（位于 ${on}）` : ''} 中启动，发送时会克隆到那里。`);
                   textRef.current?.focus();
                 }
           }
@@ -1764,15 +1764,15 @@ export function ComposeDialog(props: ComposeDialogProps) {
         />
       )}
       <div className="ib-cp-thread" data-compose-thread-row="">
-        <span className="ib-cp-tol">Thread</span>
+        <span className="ib-cp-tol">会话</span>
         <ThreadNameChip
           state={nameState}
           suggested={reviewName ?? suggested}
-          hint={box ? 'Named from what it reviews until you type here.' : undefined}
+          hint={box ? '在你输入之前，名称取自评审内容。' : undefined}
           error={nameError}
           action={
             nameError === THREAD_NAME_TAKEN && nameHolder
-              ? { label: 'Send to that thread', name: `Send this message to the thread “${nameHolder.name}”, to ${nameHolder.agent}`, onPress: () => void sendToHolder(), disabled: busy !== null || voice.busy, picture: <ThreadPill name={nameHolder.name} author={nameHolder.author} agent={nameHolder.agent} state={nameHolder.state} /> }
+              ? { label: '发送到该会话', name: `将这条消息发送到会话“${nameHolder.name}”，发送给 ${nameHolder.agent}`, onPress: () => void sendToHolder(), disabled: busy !== null || voice.busy, picture: <ThreadPill name={nameHolder.name} author={nameHolder.author} agent={nameHolder.agent} state={nameHolder.state} /> }
               : null
           }
           onChange={(next) => {
@@ -1823,26 +1823,26 @@ export function ComposeDialog(props: ComposeDialogProps) {
           <div>
             {startUnplugged ? (
               <b>
-                <bdi>{startUnplugged}</bdi> isn't connected.
+                <bdi>{startUnplugged}</bdi> 未连接。
               </b>
             ) : (
               <b>
-                <bdi>{tildePath(start.project.root, startHome)}</bdi> isn't there any more.
+                <bdi>{tildePath(start.project.root, startHome)}</bdi> 已不存在。
               </b>
             )}
             <p>
               {startUnplugged ? (
                 <>
-                  Connect it to start {start.name} in <bdi>{start.project.name}</bdi>, or pick another project. Nothing is sent until you do.
+                  请连接后再在 <bdi>{start.project.name}</bdi> 中启动 {start.name}，或选择另一个项目。在此之前不会发送任何内容。
                 </>
               ) : (
                 <>
-                  It was moved or deleted. Pick another project{launch?.scratch ? ', or a new scratch folder,' : ''} to start {start.name} in. Nothing is sent until you do.
+                  它已被移动或删除。请选择另一个项目{launch?.scratch ? '，或新建临时文件夹' : ''}，以便在其中启动 {start.name}。在此之前不会发送任何内容。
                 </>
               )}
             </p>
             <button type="button" className="ib-btn ib-sm" onClick={() => setFolderMenu(true)} data-compose-pick-folder="">
-              Pick a project
+              选择项目
             </button>
           </div>
         </div>
@@ -1851,8 +1851,8 @@ export function ComposeDialog(props: ComposeDialogProps) {
         <div className="ib-cp-note" data-compose-note="none">
           <Icon name="info" size={16} />
           <div>
-            <b>No agent is running{projectName ? ` in ${projectName}` : ''}.</b>
-            <p>{box ? `A review needs one. Start Claude Code, Pi or OpenCode in the project and it shows up here.` : <>Nothing can be sent until one is. Save it as a draft; it waits under Drafts, and you send it when Claude Code, Pi or OpenCode is running.</>}</p>
+            <b>{projectName ? `${projectName} 中` : ''}没有运行中的 agent。</b>
+            <p>{box ? '评审需要一个 agent。在项目中启动 Claude Code、Pi 或 OpenCode，它就会出现在这里。' : <>在有一个 agent 运行前无法发送任何内容。可以先存为草稿；它会留在草稿中，等你启动 Claude Code、Pi 或 OpenCode 后再发送。</>}</p>
           </div>
         </div>
       )}
@@ -1860,14 +1860,14 @@ export function ComposeDialog(props: ComposeDialogProps) {
         <div className="ib-cp-note ib-warn" data-compose-note="ended">
           <Icon name="warn" size={16} />
           <div>
-            <b>The {hostLabel(endedNote.host)} session this {draft ? 'draft' : 'message'} was for has ended.</b>
+            <b>这个{draft ? '草稿' : '消息'}原本要发往的 {hostLabel(endedNote.host)} 会话已结束。</b>
             <p>
-              {endedNote.project_name ? `It was in ${endedNote.project_name}` : 'It'}
-              {endedNote.started_at ? `, started ${whenTime(endedNote.started_at)}` : ''}. Pick a live session to send it, or keep it as a draft.
+              {endedNote.project_name ? `它位于 ${endedNote.project_name}` : '它'}
+              {endedNote.started_at ? `，开始于 ${whenTime(endedNote.started_at)}` : ''}。请选择一个活跃的会话发送，或保留为草稿。
             </p>
             {anyLive && (
               <button type="button" className="ib-btn ib-sm" onClick={() => setPicker(true)} data-compose-pick="">
-                Pick a session
+                选择会话
               </button>
             )}
           </div>
@@ -1888,7 +1888,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
       {drop.over && (
         <div className="ib-cp-drop" aria-hidden="true">
           <Icon name="clip" size={20} />
-          Drop files to attach
+          拖放文件以附加
         </div>
       )}
     </dialog>

@@ -22,7 +22,7 @@ import { AgentMark, AgentPill } from './AgentPill';
 import { BottomSheet } from './BottomSheet';
 import { SheetLine, SheetRow } from './SheetRow';
 
-const TITLE = 'Who gets this reply';
+const TITLE = '谁会收到此回复';
 
 const AtSign = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
@@ -69,13 +69,13 @@ export function PhoneReplyRecipient({
     open,
     keepFocus: true,
     onClick: () => onOpen(!open),
-    ariaLabel: `Reply goes to ${spoken || 'nobody yet'}${ended ? ', ended' : ''}. Change`,
+    ariaLabel: `回复将发给${spoken || '（尚未选择）'}${ended ? '，已结束' : ''}。更改`,
     attrs: { 'data-recipient': '', 'data-recipient-chosen': chosenIds.join(' ') },
   };
   return (
     <>
       {!first ? (
-        <AgentPill {...control} label="Choose an agent" ask />
+        <AgentPill {...control} label="选择 agent" ask />
       ) : chosen.length === 1 ? (
         <AgentPill {...control} host={first.host} agent={first.start ? null : first.session} start={!!first.start} label={null} detail={ended ? 'ended' : null} />
       ) : (
@@ -100,8 +100,8 @@ export function PhoneReplyRecipient({
                     </>
                   }
                   title={row.label}
-                  detail={[`in ${row.start.project}`, row.start.asleep ? "starts when it's back" : null].filter(Boolean).join(' · ')}
-                  ariaLabel={`${row.label} in ${row.start.project}`}
+                  detail={[`在 ${row.start.project} 中`, row.start.asleep ? '回来后启动' : null].filter(Boolean).join(' · ')}
+                  ariaLabel={`${row.label}，在 ${row.start.project} 中`}
                   selected={on}
                   attrs={{ 'data-recipient-row': row.session, 'data-recipient-start': row.host ?? '' }}
                   onClick={() => onOnly(row)}
@@ -131,7 +131,7 @@ export function PhoneReplyRecipient({
                     type="button"
                     role="checkbox"
                     aria-checked={on}
-                    aria-label={`Also send to ${named.name}`}
+                    aria-label={`也发送给 ${named.name}`}
                     className="ib-sheet-tick"
                     data-recipient-tick={row.session}
                     disabled={!canAddRecipient(row, chosenIds, rows)}
@@ -147,7 +147,7 @@ export function PhoneReplyRecipient({
             );
           })}
           <SheetLine />
-          <SheetRow quiet lead={<AtSign />} title="Tag another agent" attrs={{ 'data-recipient-tag': '' }} onClick={onTagAnother} />
+          <SheetRow quiet lead={<AtSign />} title="标记另一位 agent" attrs={{ 'data-recipient-tag': '' }} onClick={onTagAnother} />
         </div>
       </BottomSheet>
     </>

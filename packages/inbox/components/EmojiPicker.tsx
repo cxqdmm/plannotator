@@ -92,9 +92,9 @@ function PickerBody({ onPick, phone, says, idle, onClose }: { onPick: (row: Emoj
           }
         }
       const rows = found.sort((a, b) => a[1] - b[1]).map(([r]) => r);
-      return [{ id: 'results', label: rows.length ? 'Results' : '', rows }];
+      return [{ id: 'results', label: rows.length ? '搜索结果' : '', rows }];
     }
-    return [...(recent.length ? [{ id: 'recent', label: 'Recent', rows: recent }] : []), ...EMOJI.map((c) => ({ id: c.id, label: c.label, rows: c.emoji }))];
+    return [...(recent.length ? [{ id: 'recent', label: '最近使用', rows: recent }] : []), ...EMOJI.map((c) => ({ id: c.id, label: c.label, rows: c.emoji }))];
   }, [query, recent]);
   const flat = useMemo(() => sections.flatMap((s) => s.rows), [sections]);
   // Each section's first index in the flat list, so Up and Down step by the grid's visual rows.
@@ -182,7 +182,7 @@ function PickerBody({ onPick, phone, says, idle, onClose }: { onPick: (row: Emoj
     setCat(current || sections[0]?.id || '');
   };
   const activeId = active >= 0 ? `ib-emo-${active}` : undefined;
-  const tabs = [...(recent.length ? [{ id: 'recent', glyph: null as string | null, label: 'Recent' }] : []), ...EMOJI.map((c) => ({ id: c.id, glyph: c.emoji[0]![0], label: c.label }))];
+  const tabs = [...(recent.length ? [{ id: 'recent', glyph: null as string | null, label: '最近使用' }] : []), ...EMOJI.map((c) => ({ id: c.id, glyph: c.emoji[0]![0], label: c.label }))];
   const current = cat || sections[0]?.id;
 
   let i = 0;
@@ -197,8 +197,8 @@ function PickerBody({ onPick, phone, says, idle, onClose }: { onPick: (row: Emoj
           aria-controls="ib-emo-list"
           aria-activedescendant={activeId}
           aria-autocomplete="list"
-          aria-label="Search emoji"
-          placeholder="Search emoji"
+          aria-label="搜索 emoji"
+          placeholder="搜索 emoji"
           autoComplete="off"
           spellCheck={false}
           value={query}
@@ -208,7 +208,7 @@ function PickerBody({ onPick, phone, says, idle, onClose }: { onPick: (row: Emoj
         />
       </div>
       {!query && (
-        <div className="ib-emo-tabs" role="toolbar" aria-label="Emoji categories">
+        <div className="ib-emo-tabs" role="toolbar" aria-label="emoji 分类">
           {tabs.map((t) => (
             <button key={t.id} type="button" className="ib-emo-tab" aria-label={t.label} aria-current={current === t.id ? 'true' : undefined} onClick={() => jump(t.id)} data-emo-tab={t.id}>
               {t.glyph ? <span aria-hidden="true">{t.glyph}</span> : <Icon name="clock" size={14} />}
@@ -216,15 +216,15 @@ function PickerBody({ onPick, phone, says, idle, onClose }: { onPick: (row: Emoj
           ))}
         </div>
       )}
-      <div className="ib-emo-body" ref={body} onScroll={onScroll} id="ib-emo-list" role="listbox" aria-label="Emoji">
+      <div className="ib-emo-body" ref={body} onScroll={onScroll} id="ib-emo-list" role="listbox" aria-label="emoji">
         {sections.map((s) => (
-          <div key={s.id} role="group" aria-label={s.label || 'Results'} data-emo-sec={s.id}>
+          <div key={s.id} role="group" aria-label={s.label || '搜索结果'} data-emo-sec={s.id}>
             {s.label && (
               <div className="ib-emo-h" aria-hidden="true">
                 {s.label}
               </div>
             )}
-            {s.rows.length === 0 && <p className="ib-emo-none">No emoji match “{query}”.</p>}
+            {s.rows.length === 0 && <p className="ib-emo-none">没有匹配“{query}”的 emoji。</p>}
             <div className="ib-emo-grid">
               {s.rows.map((r) => {
                 const n = i++;
@@ -263,12 +263,12 @@ function PickerBody({ onPick, phone, says, idle, onClose }: { onPick: (row: Emoj
           </>
         ) : (
           <span className="ib-emo-say ib-emo-hint">
-            <b>Any emoji</b>
+            <b>任意 emoji</b>
             <span>{idle}</span>
           </span>
         )}
         {phone && (
-          <button type="button" className="ib-emo-close" aria-label="Close" onClick={onClose}>
+          <button type="button" className="ib-emo-close" aria-label="关闭" onClick={onClose}>
             <Icon name="x" size={16} />
           </button>
         )}

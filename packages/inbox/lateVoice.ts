@@ -9,7 +9,7 @@ export interface LateVoiceMiss {
   retry: (() => void) | null;
 }
 
-export const LATE_VOICE_MISSED = 'Dictation failed, so those words are not in the reply.';
+export const LATE_VOICE_MISSED = '听写失败，这些文字没有加入回复。';
 
 const misses = new Map<string, LateVoiceMiss>();
 const listeners = new Set<() => void>();

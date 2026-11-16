@@ -37,7 +37,7 @@ function formatSummary(data: SemanticDiffOkResponse): string {
 }
 
 function formatLoadError(error: SemanticDiffErrorResponse | Error): string {
-  return error.message || 'Semantic diff failed.';
+  return error.message || '语义 Diff 失败。';
 }
 
 function splitFilePath(filePath: string): { dir: string; name: string } {

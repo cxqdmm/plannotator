@@ -173,7 +173,7 @@ export function createPaneReads(deps: PaneReadsDeps) {
         const since = kept?.threadId === threadId ? kept.at : Date.now();
         if (holder !== null) record(holder).unlisted = { threadId, at: since };
         if (unread.length > 0 && Date.now() - since < UNLISTED_WAIT_MS) {
-          waiting = unread.length === 1 ? `Waiting for ${unread[0]!.name}: this thread may be there.` : 'Waiting for linked machines: this thread may be on one of them.';
+          waiting = unread.length === 1 ? `正在等待 ${unread[0]!.name}：会话可能在那里。` : '正在等待已关联的计算机：会话可能在其中一台上。';
         }
       }
       const pane = shownIn(threadId);

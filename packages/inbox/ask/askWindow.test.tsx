@@ -490,10 +490,10 @@ test('a busy agent gets a note, and its choice asks that session once, with focu
     type(askBox()!, 'Can you stop for this?');
     pressEnter(askBox()!);
     await until(() => noteOf('busy') !== null, 'the busy note');
-    expect(noteOf('busy')!.textContent).toContain('Claude Code is working on something else.');
+    expect(noteOf('busy')!.textContent).toContain('Claude Code 正在处理其他事情。');
     expect((await agentSaw('session-busy')).asked.length).toBe(0);
     requests = [];
-    press(buttonNamed('Interrupt and ask now')!);
+    press(buttonNamed('立即中断并询问')!);
     await until(() => askWindow()!.textContent!.includes('Answered: Can you stop for this?'), 'the answer');
     await replyStaysDraft(replyBox, 'A half-written reply');
   });
@@ -515,14 +515,14 @@ test('a busy choice goes only to the session it was shown for: after a hand-off 
   await driveAgents('/hand-off', {});
 
   requests = [];
-  press(buttonNamed('Interrupt and ask now')!);
+  press(buttonNamed('立即中断并询问')!);
   await until(() => queries().length === 1, 'the question to go out');
   expect(queries()[0]!.body.busyPolicy).toBeUndefined();
   await until(() => noteOf('busy') !== null, 'the new owner being busy');
   expect((await agentSaw('session-new-owner')).interrupts).toBe(0);
 
   // Now the person saw this session busy, and may choose.
-  press(buttonNamed('Interrupt and ask now')!);
+  press(buttonNamed('立即中断并询问')!);
   await until(() => askWindow()!.textContent!.includes('Answered: Who has this now?'), 'the answer');
   expect(queries()[1]!.body.busyPolicy).toBe('interrupt');
   expect((await agentSaw('session-new-owner')).interrupts).toBe(1);
@@ -541,13 +541,13 @@ test('Ask again asks the same turn, with focus kept in the window', async () => 
     await until(() => {
       // What the event stream does when the answer ends (the test's EventSource has none).
       act(() => emitAskChange(on.flaky));
-      return buttonNamed('Ask again') !== undefined;
+      return buttonNamed('再次询问') !== undefined;
     }, 'the note');
     expect(noteOf('unanswered')!.textContent).toContain('The scripted agent failed this one.');
     // The scripted agent's status reaches the Inbox on its 500 ms push: asking sooner finds it busy.
     await wait(700);
     requests = [];
-    press(buttonNamed('Ask again')!);
+    press(buttonNamed('再次询问')!);
     await until(() => askWindow()!.textContent!.includes('Answered: A flaky question'), 'the answer');
     await replyStaysDraft(replyBox, 'Another half-written reply');
   });
@@ -563,15 +563,15 @@ test('Reply in the thread joins the draft, and a window filling the screen moves
   await until(() => sideOffered(), 'Side');
   const replyBox = await writeReplyDraft('Kept words');
   await openChat();
-  await until(() => buttonNamed('Reply in the thread') !== undefined, 'the note');
+  await until(() => buttonNamed('在会话中回复') !== undefined, 'the note');
 
   // A floating window leaves the reply in sight, so it stays.
-  press(buttonNamed('Reply in the thread')!);
+  press(buttonNamed('在会话中回复')!);
   await until(() => replyBox.value === 'Kept words\n\nWhat was the plan?', 'the question in the reply');
   expect(askWindow() !== null).toBe(true);
 
   act(() => askWindow()!.querySelector<HTMLElement>('[aria-label="Fullscreen"]')!.click());
-  press(buttonNamed('Reply in the thread')!);
+  press(buttonNamed('在会话中回复')!);
   await until(() => replyBox.value === 'Kept words\n\nWhat was the plan?\n\nWhat was the plan?', 'the question in the reply again');
   expect(askWindow() === null).toBe(true);
 });
@@ -647,10 +647,10 @@ test('a damaged conversation keeps Ask AI, says so, and the next question sets i
   writeFileSync(join(on.inboxDir, 'ask', `${on.damaged}.json`), '{"v":1,"thread_id":');
   await openInbox(on, on.damaged);
   await openChat();
-  await until(() => askWindow()!.querySelector('[role="alert"]')?.textContent?.includes('damaged') === true, 'the word on the page');
+  await until(() => askWindow()!.querySelector('[role="alert"]')?.textContent?.includes('已损坏') === true, 'the word on the page');
   type(askBox()!, 'Still there?');
   pressEnter(askBox()!);
-  await until(() => askWindow()!.querySelector('[role="alert"]')?.textContent?.includes('set aside') === true, 'where it went');
+  await until(() => askWindow()!.querySelector('[role="alert"]')?.textContent?.includes('将它移开') === true, 'where it went');
   expect(askBox()!.value).toBe('Still there?');
   const kept = readdirSync(join(on.inboxDir, 'ask')).filter((name) => name.startsWith(on.damaged));
   expect(kept).toHaveLength(1);
@@ -666,17 +666,17 @@ test('Stop works from a page that did not start the answer', async () => {
   await openChat();
   type(askBox()!, 'Answer this slowly');
   pressEnter(askBox()!);
-  await until(() => askWindow()!.textContent!.includes('Connecting…'), 'the question to go out');
+  await until(() => askWindow()!.textContent!.includes('正在连接…'), 'the question to go out');
   // A reload: this page's stream and AI session are gone, the answer goes on at the Inbox.
   act(() => root?.unmount());
   host?.remove();
   await openInbox(on, on.second);
   await openChat();
-  await until(() => askWindow()!.textContent!.includes('Answering…'), 'the read to say it runs');
+  await until(() => askWindow()!.textContent!.includes('正在回答…'), 'the read to say it runs');
   requests = [];
-  act(() => askWindow()!.querySelector<HTMLElement>('[aria-label="Stop"]')!.click());
+  act(() => askWindow()!.querySelector<HTMLElement>('[aria-label="停止"]')!.click());
   await until(() => requests.some((r) => r.path.endsWith('/ask/stop')), 'the Stop');
   expect(requests.some((r) => r.path === '/api/ai/abort')).toBe(false);
-  await until(() => askWindow()!.textContent!.includes('Stopped.'), 'the turn to say so');
-  expect(askWindow()!.querySelector('[aria-label="Stop"]')).toBeNull();
+  await until(() => askWindow()!.textContent!.includes('已停止。'), 'the turn to say so');
+  expect(askWindow()!.querySelector('[aria-label="停止"]')).toBeNull();
 });

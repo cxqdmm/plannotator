@@ -68,7 +68,7 @@ export interface PullFilterProps {
 
 /** What the picks say: the view's words and the project's name, or nothing at rest. */
 export function pullScopeWords(filter: PullFilter, projectName: string | null): string {
-  return [filter === 'all' ? null : pullFilterWords(filter), projectName].filter(Boolean).join(', ');
+  return [filter === 'all' ? null : pullFilterWords(filter), projectName].filter(Boolean).join('，');
 }
 
 export function PullFilterControl({ count, filter, project, projects, names, phone, triggerRef, onChange }: PullFilterProps) {
@@ -82,7 +82,7 @@ export function PullFilterControl({ count, filter, project, projects, names, pho
   const projectName = project ? (names.get(project) ?? projects.find((p) => p.id === project)?.name ?? null) : null;
   const said = pullScopeWords(filter, projectName);
   const narrowed = said !== '';
-  const name = narrowed ? `Filter: ${said}` : 'Filter';
+  const name = narrowed ? `筛选：${said}` : '筛选';
   const clear = () => {
     onChange({ filter: 'all', project: null });
     requestAnimationFrame(() => triggerRef.current?.focus());
@@ -111,9 +111,9 @@ export function PullFilterControl({ count, filter, project, projects, names, pho
       <Menu.Portal container={portal ?? undefined}>
         {phone && <Menu.Backdrop className="ib-pm-scrim" />}
         <Menu.Positioner className="ib-pm-pos" side="bottom" align="end" sideOffset={6} data-phone={phone ? '' : undefined}>
-          <Menu.Popup className="ib-pm ib-pc-menu" aria-label="Filter" data-pulls-filter-menu="">
+          <Menu.Popup className="ib-pm ib-pc-menu" aria-label="筛选" data-pulls-filter-menu="">
             <div className="ib-pm-title" aria-hidden="true">
-              Filter
+              筛选
             </div>
             <Menu.RadioGroup value={filter} onValueChange={(next: PullFilter) => next !== filter && onChange({ filter: next, project })}>
               {PULL_FILTERS.map(([value, words]) => (
@@ -129,9 +129,9 @@ export function PullFilterControl({ count, filter, project, projects, names, pho
               <>
                 <Menu.Separator className="ib-pm-sep" />
                 <Menu.RadioGroup value={project ?? ''} onValueChange={(next: string) => next !== (project ?? '') && onChange({ filter, project: next || null })}>
-                  <Menu.RadioItem value="" closeOnClick className="ib-pmi" label="All projects" data-pulls-filter-project-option="">
+                  <Menu.RadioItem value="" closeOnClick className="ib-pmi" label="所有项目" data-pulls-filter-project-option="">
                     <Glyph name="grid" />
-                    <span className="ib-pmi-l">All projects</span>
+                    <span className="ib-pmi-l">所有项目</span>
                     <span className="ib-pmi-n">{formatCount(count(null, filter))}</span>
                     {tick(project === null)}
                   </Menu.RadioItem>
@@ -156,7 +156,7 @@ export function PullFilterControl({ count, filter, project, projects, names, pho
                 <Menu.Separator className="ib-pm-sep" />
                 <Menu.Item className="ib-pmi" data-pulls-filter-clear-item="" onClick={clear}>
                   <Icon name="x" />
-                  <span className="ib-pmi-l">Clear filters</span>
+                  <span className="ib-pmi-l">清除筛选</span>
                 </Menu.Item>
               </>
             )}
@@ -193,7 +193,7 @@ export function PullScopeLine({ filter, projectName, triggerRef, onClear }: { fi
       <button
         type="button"
         className="ib-pscope-x"
-        aria-label="Clear filters"
+        aria-label="清除筛选"
         onClick={() => {
           onClear();
           requestAnimationFrame(() => triggerRef.current?.focus());

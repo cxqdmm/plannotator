@@ -48,8 +48,8 @@ const SECTION_TAG: Record<string, string> = {
   optionalDependencies: 'optional',
 };
 
-const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
-const fullDate = new Intl.DateTimeFormat('en', { dateStyle: 'medium' });
+const compact = new Intl.NumberFormat('zh-CN', { notation: 'compact', maximumFractionDigits: 1 });
+const fullDate = new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium' });
 
 /** `today`, `3d`, `5mo`, `2y`: floored, so a release never reads newer than it is. */
 export function releasedAgo(iso: string, now = Date.now()): string {

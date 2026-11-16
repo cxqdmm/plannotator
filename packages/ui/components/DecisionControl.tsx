@@ -576,7 +576,7 @@ export const DecisionControl: React.FC<DecisionControlProps> = ({
         disabled={busy}
         aria-haspopup="menu"
         aria-expanded={popover !== null}
-        aria-label="More decisions"
+        aria-label="更多决定"
         data-decision-caret="true"
         className={cn('rounded-l-none px-1.5', spec.primary.muted && 'bg-muted text-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/70')}
       >

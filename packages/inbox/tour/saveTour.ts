@@ -52,9 +52,9 @@ export function saveTour(change: InboxTourChange, setSettings: Dispatch<SetState
         showToast(
           {
             icon: 'warn',
-            lead: 'Not saved',
-            detail: 'This browser remembers the tour',
-            speech: `The tour could not be saved: ${why} This browser remembers that you ${decision === 'finished' ? 'finished' : 'left'} it, so it will not offer itself again here.`,
+            lead: '未保存',
+            detail: '此浏览器会记住导览',
+            speech: `导览状态未能保存：${why} 此浏览器会记住你${decision === 'finished' ? '完成了' : '离开了'}导览，因此这里不会再主动提供它。`,
           },
           6000,
         );

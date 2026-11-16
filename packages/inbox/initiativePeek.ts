@@ -60,7 +60,7 @@ export interface InitiativePeekModel {
 export function threadOf(row: InboxListRow): PeekThread {
   return {
     id: row.thread_id,
-    title: displayInboxSubject(row.subject) ?? row.thread_name ?? 'Untitled thread',
+    title: displayInboxSubject(row.subject) ?? row.thread_name ?? '未命名会话',
     agent: row.addressee ? ({ kind: 'agent', host: row.addressee.host, session: row.addressee.session, name: null } as InboxAuthor) : row.author,
   };
 }

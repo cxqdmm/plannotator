@@ -71,7 +71,7 @@ export function shapePageItem(s: ShapeSummaryWire): ShapeGridItem {
 
 /** "8 boards", "1 board". */
 export function boardCount(n: number): string {
-  return n === 1 ? '1 board' : `${n} boards`;
+  return n === 1 ? '1 个看板' : `${n} 个看板`;
 }
 
 type Status = 'loading' | 'on' | 'off' | 'unreachable';
@@ -224,7 +224,7 @@ export function ShapePage({ api, openEvents, win = window }: ShapePageProps) {
 
   const board = route.shape ? (shapes ?? []).find((s) => s.id === route.shape) ?? null : null;
   useEffect(() => {
-    win.document.title = route.shape ? `${board?.title ?? 'Board'} · Shape` : 'Plannotator Shape';
+    win.document.title = route.shape ? `${board?.title ?? '看板'} · Shape` : 'Plannotator Shape';
   }, [route.shape, board?.title, win]);
 
   const onNavigate = useCallback(
@@ -245,14 +245,14 @@ export function ShapePage({ api, openEvents, win = window }: ShapePageProps) {
     body = (
       <div className="shp-page-note" data-shape-page-off="">
         <Pebble alive={false} size={40} />
-        <h2>Shape is off.</h2>
+        <h2>Shape 已关闭。</h2>
       </div>
     );
   } else if (status === 'unreachable') {
     body = (
       <div className="shp-page-note" role="alert">
         <Pebble alive={false} size={40} />
-        <h2>The Shape page's server is not running.</h2>
+        <h2>Shape 页面的服务器未运行。</h2>
       </div>
     );
   } else {
@@ -268,8 +268,8 @@ export function ShapePage({ api, openEvents, win = window }: ShapePageProps) {
           ) : (
             <div className="shp-page-note" data-shape-page-empty="">
               <Pebble alive size={40} />
-              <h2>No boards yet.</h2>
-              <p>Boards your agents draw and keep current: a picture of the work you can point at to change or ask.</p>
+              <h2>还没有看板。</h2>
+              <p>agent 绘制并持续更新的看板：一张可以直接指着提出修改或提问的工作图。</p>
             </div>
           )
         }
@@ -294,7 +294,7 @@ export function ShapePage({ api, openEvents, win = window }: ShapePageProps) {
             {hasBoards && (
               <label className="shp-page-find">
                 <SearchIcon />
-                <input type="search" placeholder="Find by title or project" aria-label="Find by title or project" value={query} onChange={(e) => setQuery(e.target.value)} />
+                <input type="search" placeholder="按标题或项目查找" aria-label="按标题或项目查找" value={query} onChange={(e) => setQuery(e.target.value)} />
               </label>
             )}
           </header>

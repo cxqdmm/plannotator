@@ -12,25 +12,25 @@
 import { INBOX_TAG_PRESETS, isInboxTagPreset, type InboxTagPreset } from '@plannotator/core/inbox-types';
 
 /** The list ⋮'s switch for every row colour (the owner asked for "show tag color"; the window writes "colors"). */
-export const SHOW_TAG_COLOURS_LABEL = 'Show tag colors';
+export const SHOW_TAG_COLOURS_LABEL = '显示标签颜色';
 
-export const TAG_PRESET_NAMES: Record<InboxTagPreset, string> = { accent: 'Accent', green: 'Green', amber: 'Amber', red: 'Red', grey: 'Grey' };
+export const TAG_PRESET_NAMES: Record<InboxTagPreset, string> = { accent: '强调色', green: '绿色', amber: '琥珀色', red: '红色', grey: '灰色' };
 
 export const TAG_PRESETS: readonly { id: InboxTagPreset; name: string }[] = INBOX_TAG_PRESETS.map((id) => ({ id, name: TAG_PRESET_NAMES[id] }));
 
 /** "Green", or "Custom" for an own colour: the tag menu's Highlight rows item says it. */
 export function tagColourName(colour: string): string {
-  return isInboxTagPreset(colour) ? TAG_PRESET_NAMES[colour] : 'Custom';
+  return isInboxTagPreset(colour) ? TAG_PRESET_NAMES[colour] : '自定义';
 }
 
 /** "Green", or "Custom #ff6a00". */
 export function tagColourLong(colour: string): string {
-  return isInboxTagPreset(colour) ? TAG_PRESET_NAMES[colour] : `Custom ${colour}`;
+  return isInboxTagPreset(colour) ? TAG_PRESET_NAMES[colour] : `自定义 ${colour}`;
 }
 
 /** The colour menu's line: "Green: rows tagged Release", or "Off: rows look as usual". */
 export function tagColourCaption(colour: string | null, tagName: string): string {
-  return colour ? `${tagColourLong(colour)}: rows tagged ${tagName}` : 'Off: rows look as usual';
+  return colour ? `${tagColourLong(colour)}：带有 ${tagName} 标签的行` : '关闭：行外观保持不变';
 }
 
 function toLinear(v: number): number {
@@ -122,5 +122,5 @@ export function rowTint(ids: readonly string[], tags: readonly { id: string; nam
 
 /** The tinted row's tooltip: "Highlighted: Release, Green. Also in Windows". */
 export function rowTintTitle(tint: Pick<RowTint, 'colour' | 'name' | 'also'>): string {
-  return `Highlighted: ${tint.name}, ${tagColourLong(tint.colour)}${tint.also.length > 0 ? `. Also in ${tint.also.join(', ')}` : ''}`;
+  return `高亮：${tint.name}，${tagColourLong(tint.colour)}${tint.also.length > 0 ? `。也在 ${tint.also.join('、')} 中` : ''}`;
 }

@@ -11,16 +11,16 @@ export interface GrillMeTipCopy {
 
 /** Variant A, the one shown (approved by the owner, 2026-11-08). */
 export const GRILL_ME_TIP_COPY_A: GrillMeTipCopy = {
-  title: 'Try /grill-me here',
-  body: 'Plannotator gives grill-me an optimized experience: its questions come to your Inbox as cards you can answer anytime.',
-  reach: 'Pick /grill-me in a reply or a new message. Nothing to turn on.',
+  title: '在这里试试 /grill-me',
+  body: 'Plannotator 为 grill-me 提供了优化体验：它的问题会以卡片形式进入你的收件箱，你可以随时回答。',
+  reach: '在回复或新消息中选择 /grill-me。无需开启任何东西。',
 };
 
 /** Variant B, kept for the owner to swap in (`GRILL_ME_TIP_COPY`). */
 export const GRILL_ME_TIP_COPY_B: GrillMeTipCopy = {
-  title: 'Try /grill-me here',
-  body: 'Pick /grill-me in a reply or a new message, and its interview comes back here, one card per question: pick an answer, add a note, take your time.',
-  reach: 'Works with any grill-me skill you have. Nothing to turn on.',
+  title: '在这里试试 /grill-me',
+  body: '在回复或新消息中选择 /grill-me，它的访谈会回到这里，每个问题一张卡片：选一个答案、加一条备注，不必着急。',
+  reach: '适用于你拥有的任意 grill-me 技能。无需开启任何东西。',
 };
 
 /** The words the card shows. */
@@ -31,16 +31,16 @@ export const GRILL_ME_TIP_COPY: GrillMeTipCopy = GRILL_ME_TIP_COPY_A;
  * choices, the Recommended tag, the `Why <choice>:` line and a note being typed.
  */
 export const GRILL_ME_TIP_ART = {
-  question: 'Which dark palette?',
-  context: 'Each picture is your app in that palette.',
+  question: '哪种深色配色？',
+  context: '每张图片都是你的应用使用该配色的样子。',
   choices: [
-    { label: 'Dim', tone: 'dim' },
-    { label: 'Night', tone: 'night' },
+    { label: '微暗', tone: 'dim' },
+    { label: '夜间', tone: 'night' },
   ],
   /** The choice marked Recommended and picked (its index). */
   recommended: 1,
-  why: "your light theme already uses GitHub's colours.",
-  note: 'Keep the blue accent',
+  why: '你的浅色主题已经用了 GitHub 的配色。',
+  note: '保留蓝色强调色',
 } as const;
 
 const COMMAND = '/grill-me';
@@ -80,13 +80,13 @@ export function GrillMeTip({ phone, onClose, copy = GRILL_ME_TIP_COPY }: { phone
               <span className="cap">
                 <span className="dot" />
                 {choice.label}
-                {i === GRILL_ME_TIP_ART.recommended && <span className="tag">Recommended</span>}
+                {i === GRILL_ME_TIP_ART.recommended && <span className="tag">推荐</span>}
               </span>
             </div>
           ))}
         </div>
         <p className="why">
-          <b>Why {GRILL_ME_TIP_ART.choices[GRILL_ME_TIP_ART.recommended].label}:</b> {GRILL_ME_TIP_ART.why}
+          <b>为什么选 {GRILL_ME_TIP_ART.choices[GRILL_ME_TIP_ART.recommended].label}：</b> {GRILL_ME_TIP_ART.why}
         </p>
         <div className="note">
           {GRILL_ME_TIP_ART.note}
@@ -100,7 +100,7 @@ export function GrillMeTip({ phone, onClose, copy = GRILL_ME_TIP_COPY }: { phone
       <div className="ib-bi-acts">
         <span className="ib-bsp" />
         <button type="button" className="ib-btn ib-pri ib-bi-copy" onClick={onClose} data-grill-me-tip-ok="">
-          Got it
+          知道了
         </button>
       </div>
     </Modal>

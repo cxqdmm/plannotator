@@ -54,8 +54,8 @@ export function stepIndexOf(steps: readonly AttachmentStep[], attachmentId: stri
   return steps.findIndex((s) => s.attachment.id === attachmentId || (s.alsoIds?.includes(attachmentId) ?? false));
 }
 
-export const LAST_NOTE = 'Last file in this thread';
-export const FIRST_NOTE = 'First file in this thread';
+export const LAST_NOTE = '此会话中的最后一个文件';
+export const FIRST_NOTE = '此会话中的第一个文件';
 
 /**
  * "3 of 9, checkout-c-drawer.png, PNG image, in Claude Code's 11:22 AM
@@ -67,11 +67,11 @@ export function stepAnnouncement(steps: readonly AttachmentStep[], index: number
   if (!step) return '';
   const { attachment } = step;
   const kind = inboxAttachmentKindLabel(attachment.kind, attachment.name, attachment.media_type);
-  const changed = attachment.changed_since_sent ? (attachment.captured === 'on_open' ? ', changed since you first opened it' : ', changed since it was sent') : '';
-  const where = step.inline ? 'in' : 'attached to';
-  const whose = step.sender === 'You' ? 'your' : `${step.sender}'s`;
-  const from = step.sentAt ? `, ${where} ${whose} ${step.sentAt} message` : `, ${where} ${whose} message`;
-  return `${index + 1} of ${steps.length}, ${attachment.name}, ${kind}${changed}${from}`;
+  const changed = attachment.changed_since_sent ? (attachment.captured === 'on_open' ? '，自你首次打开后已更改' : '，自发送后已更改') : '';
+  const where = step.inline ? '位于' : '附于';
+  const whose = step.sender === '你' ? '你的' : `${step.sender} 的`;
+  const from = step.sentAt ? `，${where} ${whose} ${step.sentAt} 消息` : `，${where} ${whose}消息`;
+  return `第 ${index + 1} 个，共 ${steps.length} 个，${attachment.name}，${kind}${changed}${from}`;
 }
 
 /** Where focus is a place to type: the shared rule (shortcuts/guards.ts), kept here for the files that import it from stepping. */

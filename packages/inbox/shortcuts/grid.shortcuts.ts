@@ -7,21 +7,21 @@ import { defineShortcutScope } from '@plannotator/ui/shortcuts';
  */
 export const inboxArtifactsShortcuts = defineShortcutScope({
   id: 'inbox-artifacts',
-  title: 'Artifacts',
+  title: '产物',
   shortcuts: {
     // ArtifactsView.tsx: ← → the tile before or after, ↑ ↓ the tile above or below, Home End the first or last.
-    move: { description: 'Move between the Artifacts tiles', bindings: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], section: 'Files', preventDefault: true, displayOrder: 5.2 },
-    ends: { description: 'First or last tile', bindings: ['Home', 'End'], section: 'Files', preventDefault: true, displayOrder: 5.3 },
+    move: { description: '在产物磁贴之间移动', bindings: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], section: '文件', preventDefault: true, displayOrder: 5.2 },
+    ends: { description: '第一个或最后一个磁贴', bindings: ['Home', 'End'], section: '文件', preventDefault: true, displayOrder: 5.3 },
   },
 });
 
 export const inboxBoardShortcuts = defineShortcutScope({
   id: 'inbox-board',
-  title: 'Board',
+  title: '看板',
   shortcuts: {
     // BoardPage.tsx: ← → the nearest card in the lane beside, ↑ ↓ within a lane, Home End the lane's first or last.
-    move: { description: 'Move between Board cards', bindings: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], section: 'List', preventDefault: true, displayOrder: 8 },
-    ends: { description: 'First or last card in the lane', bindings: ['Home', 'End'], section: 'List', preventDefault: true, displayOrder: 9 },
+    move: { description: '在看板卡片之间移动', bindings: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], section: '列表', preventDefault: true, displayOrder: 8 },
+    ends: { description: '泳道中的第一张或最后一张卡片', bindings: ['Home', 'End'], section: '列表', preventDefault: true, displayOrder: 9 },
   },
 });
 
@@ -32,8 +32,8 @@ export const inboxBoardShortcuts = defineShortcutScope({
  */
 export const inboxTileShortcuts = defineShortcutScope({
   id: 'inbox-tiles',
-  title: 'Attachments',
+  title: '附件',
   shortcuts: {
-    move: { description: 'Move between a message’s attachments', bindings: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], section: 'Files', preventDefault: true, displayOrder: 5.4 },
+    move: { description: '在消息的附件之间移动', bindings: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], section: '文件', preventDefault: true, displayOrder: 5.4 },
   },
 });

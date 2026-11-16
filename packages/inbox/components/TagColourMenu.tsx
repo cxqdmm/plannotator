@@ -19,9 +19,9 @@ import type { ListTag } from '../threadTags';
 /** The tag menu's Highlight rows item: the colour's name at its right ("Green", "Custom"), nothing with None. */
 export function TagColourItem({ colour, onOpen }: { colour: string | null; onOpen: () => void }) {
   return (
-    <Menu.Item className="ib-pmi" label="Highlight rows" closeOnClick={false} onClick={onOpen} data-tag-action="colour">
+    <Menu.Item className="ib-pmi" label="高亮行" closeOnClick={false} onClick={onOpen} data-tag-action="colour">
       <Icon name="sun" size={15} />
-      Highlight rows
+      高亮行
       <span className="ib-zsub">
         {colour && <span className="ib-tagm-n">{tagColourName(colour)}</span>}
         <Icon name="chevR" size={13} />
@@ -94,12 +94,12 @@ export function TagColourList({ tag, colours, onBack }: { tag: ListTag; colours:
   const noneItem = () => body.current?.querySelector<HTMLElement>(`[data-colour="${NONE}"]`);
   return (
     <div ref={body} data-tag-colour-list="">
-      <Menu.Item className="ib-pmi ib-zb" label="Highlight rows" closeOnClick={false} onClick={onBack} data-tag-colour-back="">
+      <Menu.Item className="ib-pmi ib-zb" label="高亮行" closeOnClick={false} onClick={onBack} data-tag-colour-back="">
         <Icon name="chevL" size={14} />
-        Highlight rows
+        高亮行
       </Menu.Item>
       <Menu.Separator className="ib-pm-sep" />
-      <Menu.RadioGroup value={colour ?? NONE} onValueChange={(next: string) => pick(next === NONE ? null : next)} aria-label={`Highlight colour for ${tag.name}`}>
+      <Menu.RadioGroup value={colour ?? NONE} onValueChange={(next: string) => pick(next === NONE ? null : next)} aria-label={`为 ${tag.name} 设置高亮颜色`}>
         <div className="ib-tagc-sw">
           {TAG_PRESETS.map((preset) => (
             <Swatch key={preset.id} value={preset.id} name={preset.name} on={colour === preset.id} />
@@ -119,8 +119,8 @@ export function TagColourList({ tag, colours, onBack }: { tag: ListTag; colours:
             min={0}
             max={359}
             value={hue}
-            aria-label="Colour, any hue"
-            aria-valuetext={`Hue ${hue}`}
+            aria-label="颜色，任意色相"
+            aria-valuetext={`色相 ${hue}`}
             data-tag-colour-hue=""
             onChange={(event) => {
               const next = Number(event.target.value);
@@ -158,7 +158,7 @@ export function TagColourList({ tag, colours, onBack }: { tag: ListTag; colours:
             maxLength={7}
             spellCheck={false}
             autoComplete="off"
-            aria-label="Hex colour"
+            aria-label="Hex 颜色"
             data-tag-colour-hex=""
             onChange={(event) => {
               setTyped(event.target.value);
@@ -195,7 +195,7 @@ export function TagColourList({ tag, colours, onBack }: { tag: ListTag; colours:
         <Menu.RadioItem
           value={NONE}
           className="ib-pmi"
-          label="None"
+          label="无"
           closeOnClick={false}
           data-colour={NONE}
           onKeyDown={(event: KeyboardEvent<HTMLElement>) => {
@@ -206,7 +206,7 @@ export function TagColourList({ tag, colours, onBack }: { tag: ListTag; colours:
           }}
         >
           <Icon name="x" size={15} />
-          None
+          无
           {colour === null ? <Icon name="check" size={15} className="ib-pmi-check ib-tagm-tick" /> : <span className="ib-tagm-slot" aria-hidden="true" />}
         </Menu.RadioItem>
       </Menu.RadioGroup>

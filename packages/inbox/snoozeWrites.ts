@@ -47,7 +47,7 @@ export function snoozeWrites({ rowOf, threadRow, showError, showToast, dismissTo
     }
     await afterWrite();
     if (answer.snoozed === null) {
-      showError(new InboxApiError(409, 'snooze_past', 'That time has passed.'));
+      showError(new InboxApiError(409, 'snooze_past', '该时间已过。'));
       return;
     }
     const drawnBefore = moveSnoozedRow(threadId);
@@ -55,9 +55,9 @@ export function snoozeWrites({ rowOf, threadRow, showError, showToast, dismissTo
     const when = inboxSnoozeWhen(until);
     showToast({
       icon: 'clock',
-      lead: 'Snoozed',
+      lead: '已设为稍后提醒',
       detail: when,
-      speech: `Snoozed “${row.subject ?? '(no subject)'}” until ${when}.`,
+      speech: `已将“${row.subject ?? '(无主题)'}”设为稍后提醒，${when}。`,
       onUndo: () => void putSnooze(threadId, earlier, drawnBefore),
     });
   };
@@ -81,7 +81,7 @@ export function snoozeWrites({ rowOf, threadRow, showError, showToast, dismissTo
     await afterWrite();
     putSnoozedRowBack(threadId, drawnBefore);
     dismissToast();
-    say(earlier ? 'Snooze moved back.' : 'Unsnoozed.');
+    say(earlier ? '已恢复稍后提醒。' : '已取消稍后提醒。');
   };
   const putSnoozedRowBack = (threadId: string, drawnBefore: InboxListSection[] | null) => {
     const now = rowOf(threadId);
@@ -112,8 +112,8 @@ export function snoozeWrites({ rowOf, threadRow, showError, showToast, dismissTo
     const cameBack = !drawnBefore && !routeRef.current.thread && moveRowAlone(threadId);
     showToast({
       icon: 'clock',
-      lead: 'Unsnoozed',
-      speech: `Unsnoozed “${row.subject ?? '(no subject)'}”.`,
+      lead: '已取消稍后提醒',
+      speech: `已取消“${row.subject ?? '(无主题)'}”的稍后提醒。`,
       onUndo: earlier
         ? () => {
             dismissToast();

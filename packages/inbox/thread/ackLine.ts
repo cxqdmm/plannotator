@@ -33,13 +33,13 @@ export function ackPillLine(
       : ack.delivered_into_turn === false
         ? ` · ${TURN_ENDED_TEXT}`
         : ` · ${autoAfterText(wholeMinutes(ack.wait_started_at!, ack.deliver_now_at!))}`;
-    return { state: 'delivered', text: `Delivered to ${agent}, ${time(ack.delivered_at)}${auto}` };
+    return { state: 'delivered', text: `已送达 ${agent}，${time(ack.delivered_at)}${auto}` };
   }
   // The window ended after the person replied, or the agent wrote again: it was not sent.
-  if (ack.not_sent === 'replied') return { state: 'not-sent', text: 'not sent: you replied' };
-  if (ack.not_sent === 'wrote_again') return { state: 'not-sent', text: `not sent: ${agent} wrote again` };
-  const you = `You, ${time(ack.at)} · `;
-  if (ack.settled_seq == null) return { state: 'pending', text: `${you}goes to ${agent} in a few seconds` };
+  if (ack.not_sent === 'replied') return { state: 'not-sent', text: '未发送：你已回复' };
+  if (ack.not_sent === 'wrote_again') return { state: 'not-sent', text: `未发送：${agent} 又写了消息` };
+  const you = `你，${time(ack.at)} · `;
+  if (ack.settled_seq == null) return { state: 'pending', text: `${you}几秒后发送给 ${agent}` };
   // A 👍 settled before it was sent through (no note) never reaches a wake: it waits for a read.
   if (wakes && ack.note_id) {
     const line = deliveryLine({
@@ -56,5 +56,5 @@ export function ackPillLine(
     });
     return { state: line.state === 'sending' ? 'sending' : 'queued', text: `${you}${line.text}` };
   }
-  return { state: 'saved', text: `${you}Saved for ${agent}. It sees it when it next reads this thread.` };
+  return { state: 'saved', text: `${you}已为 ${agent} 保存。它下次读取此会话时就能看到。` };
 }

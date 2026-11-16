@@ -211,7 +211,7 @@ test.skipIf(!hasDom)('the ⋮ switch saves, shows the group closed, and another 
   expect(events).toEqual(['save:true']);
   expect(group()).not.toBeNull();
   expect(band().getAttribute('aria-expanded')).toBe('false');
-  expect(band().textContent).toBe('Archived');
+  expect(band().textContent).toBe('已归档');
   // Under Snoozed and every other group: the list's last.
   expect(document.querySelector('.ib-lbody .ib-group:last-of-type')).toBe(group());
   adoptShowArchived({ on: false, rev: 6 });
@@ -240,7 +240,7 @@ test.skipIf(!hasDom)('"Show 20 more" adds 20 at a time up to 100, then the group
   await openGroup();
   for (const shown of [40, 60, 80, 100]) {
     const more = group()!.querySelector<HTMLButtonElement>('[data-archived-more]')!;
-    expect(more.textContent).toBe('Show 20 more');
+    expect(more.textContent).toBe('再显示 20 个');
     act(() => more.click());
     await settle();
     await settle();
@@ -249,7 +249,7 @@ test.skipIf(!hasDom)('"Show 20 more" adds 20 at a time up to 100, then the group
   expect(asks.map((a) => a.limit)).toEqual([21, 41, 61, 81, 101]);
   expect(group()!.querySelector('[data-archived-more]')).toBeNull();
   const past = group()!.querySelector<HTMLElement>('[data-archived-past]')!;
-  expect(past.textContent).toBe('Older ones are in Search.');
+  expect(past.textContent).toBe('更早的会话在搜索中。');
   act(() => past.querySelector<HTMLButtonElement>('button')!.click());
   expect(searched).toBe(1);
 });
@@ -265,7 +265,7 @@ test.skipIf(!hasDom)('fewer than 20 archived: no "Show 20 more"; none: "Nothing 
   store = [];
   act(() => band().click());
   await openGroup();
-  expect(group()!.querySelector('[data-archived-none]')!.textContent).toBe('Nothing archived.');
+  expect(group()!.querySelector('[data-archived-none]')!.textContent).toBe('没有已归档的会话。');
 });
 
 test.skipIf(!hasDom)('a thread archived while the group is open comes in at its top', async () => {
@@ -313,7 +313,7 @@ test.skipIf(!hasDom)('Unarchive from the row takes it out at once, and the toast
   await switchOn();
   await openGroup();
   const button = group()!.querySelector<HTMLButtonElement>('[data-row="arc_0"] [data-row-unarchive], [data-row-unarchive]')!;
-  expect(button.getAttribute('aria-label')).toBe('Unarchive: Thread arc_0');
+  expect(button.getAttribute('aria-label')).toBe('取消归档：Thread arc_0');
   act(() => button.click());
   await settle();
   // Before the Inbox answers.
@@ -322,7 +322,7 @@ test.skipIf(!hasDom)('Unarchive from the row takes it out at once, and the toast
   await act(async () => answer!());
   await settle();
   expect(events).toContain('afterWrite:arc_0');
-  expect(toasts.map((t) => [t.lead, t.detail])).toEqual([['Back in your Inbox', '“Thread arc_0”']]);
+  expect(toasts.map((t) => [t.lead, t.detail])).toEqual([['已回到收件箱', '“Thread arc_0”']]);
   toasts[0]!.onUndo();
   expect(events).toContain('archive:arc_0');
 });
@@ -395,9 +395,9 @@ test.skipIf(!hasDom)("an archived row's menu offers Unarchive (and no Mark read)
   });
   const menu = document.querySelector<HTMLElement>('[data-row-menu="arc_0"]')!;
   const labels = [...menu.querySelectorAll('[role="menuitem"]')].map((el) => el.textContent?.trim());
-  expect(labels).toContain('Unarchive');
+  expect(labels).toContain('取消归档');
   expect(labels.some((label) => label?.startsWith('Mark'))).toBe(false);
-  await act(async () => [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')].find((el) => el.textContent?.trim() === 'Unarchive')!.click());
+  await act(async () => [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')].find((el) => el.textContent?.trim() === '取消归档')!.click());
   await settle();
   expect(groupIds()).toEqual(['arc_0', 'arc_1']);
   expect(events).toContain('error:Waiting for Mini: this applies when Mini is back.');

@@ -159,18 +159,18 @@ export async function confirmSetAside(
 export function setAsideWarning(count: SetAsideCount, bulk: boolean): { title: string; body: string; go: string } {
   const what =
     count.actions === 0
-      ? plural(count.questions, 'open question')
+      ? plural(count.questions, '个未回答问题', '个未回答问题')
       : count.questions === 0
-        ? plural(count.actions, 'action item')
-        : `${plural(count.questions, 'open question')} and ${plural(count.actions, 'action item')}`;
+        ? plural(count.actions, '个待办事项', '个待办事项')
+        : `${plural(count.questions, '个未回答问题', '个未回答问题')}、${plural(count.actions, '个待办事项', '个待办事项')}`;
   const one = count.questions + count.actions === 1;
-  const them = one ? 'it' : 'them';
-  const agent = count.threads > 1 ? 'the agents' : 'the agent';
-  if (!bulk) return { title: `Set aside ${what}?`, body: `Mark read closes ${them} unanswered and tells ${agent} not to wait on ${them}.`, go: 'Mark read' };
+  const them = one ? '它' : '它们';
+  const agent = count.threads > 1 ? '这些 agent' : '该 agent';
+  if (!bulk) return { title: `要搁置 ${what} 吗？`, body: `标记为已读会把${them}当作未答复关闭，并告诉 ${agent} 不必再等。`, go: '标记为已读' };
   return {
-    title: `Set aside ${what}?`,
-    body: `Mark all as read closes ${them} unanswered in ${plural(count.threads, 'thread')} and tells ${agent} not to wait on ${them}.`,
-    go: 'Mark all as read',
+    title: `要搁置 ${what} 吗？`,
+    body: `全部标记为已读会把 ${plural(count.threads, '个会话', '个会话')} 中的${them}当作未答复关闭，并告诉 ${agent} 不必再等。`,
+    go: '全部标记为已读',
   };
 }
 
@@ -181,8 +181,8 @@ export function setAsideWarning(count: SetAsideCount, bulk: boolean): { title: s
  * next settles, so the toast names it only.
  */
 export function markUnreadToast(before: Pick<InboxListRow, 'subject'>, moved: boolean): { lead: string; detail: string } {
-  const subject = `“${before.subject ?? '(no subject)'}”`;
-  return { lead: 'Marked unread', detail: moved ? `${subject} · back in New` : subject };
+  const subject = `“${before.subject ?? '(无主题)'}”`;
+  return { lead: '已标记为未读', detail: moved ? `${subject} · 已回到新增` : subject };
 }
 
 export interface MarkReadToast {
@@ -222,30 +222,30 @@ export function markReadToast(
   before: Pick<InboxListRow, 'subject' | 'author' | 'questions'> & { resolved_at?: string | null; unsent?: InboxListRow['unsent'] },
   place: MarkReadPlace,
 ): MarkReadToast {
-  const subject = `“${before.subject ?? '(no subject)'}”`;
+  const subject = `“${before.subject ?? '(无主题)'}”`;
   const warn = before.questions.stopped || before.questions.holds_up.length > 0;
   // Another thread is open: name the row marked, or the toast reads as if the open thread was.
-  if (place === 'held') return { lead: 'Marked read', phoneLead: 'Read', detail: subject, warn };
+  if (place === 'held') return { lead: '已标记为已读', phoneLead: '已读', detail: subject, warn };
   if (before.questions.stopped) {
     const name = agentName(before.author);
     const short = shortAgentName(name);
     return {
-      lead: 'Marked read',
-      phoneLead: 'Read',
-      detail: `${short} was stopped`,
-      phoneDetail: `Stopped · ${short}`,
+      lead: '已标记为已读',
+      phoneLead: '已读',
+      detail: `${short} 已停止`,
+      phoneDetail: `已停止 · ${short}`,
       warn: true,
-      ...(short !== name ? { speech: `Marked read. ${name} was stopped.` } : {}),
+      ...(short !== name ? { speech: `已标记为已读。${name} 已停止。` } : {}),
     };
   }
   if (before.questions.holds_up.length > 0) {
-    return { lead: 'Marked read', phoneLead: 'Read', detail: `Held up ${plural(before.questions.holds_up.length, 'thing')}`, warn: true };
+    return { lead: '已标记为已读', phoneLead: '已读', detail: `阻碍 ${plural(before.questions.holds_up.length, '项', '项')}`, warn: true };
   }
   // A thread that came back from the archive goes back there; any other goes to Quiet.
   const archived = (before.resolved_at ?? null) !== null;
   // Words typed in the reply box, or comments waiting, keep it out of Quiet (approval "inbox-reply-drafts"; Mark read closes the picks).
   const kept = !archived && before.unsent != null && (before.unsent.reply_at !== null || before.unsent.comments > 0);
-  if (kept) return { lead: 'Marked read', phoneLead: 'Read', detail: place === 'open' ? 'Your draft keeps it in New' : `${subject} · your draft keeps it in New`, warn: false };
-  if (place === 'open') return { lead: 'Marked read', phoneLead: 'Read', detail: archived ? 'Goes back to Archived' : 'Moves to Quiet', warn: false };
-  return { lead: archived ? 'Back in Archived' : 'Moved to Quiet', detail: subject, warn: false };
+  if (kept) return { lead: '已标记为已读', phoneLead: '已读', detail: place === 'open' ? '你的草稿让它留在新增' : `${subject} · 你的草稿让它留在新增`, warn: false };
+  if (place === 'open') return { lead: '已标记为已读', phoneLead: '已读', detail: archived ? '回到已归档' : '移到安静', warn: false };
+  return { lead: archived ? '已回到已归档' : '已移到安静', detail: subject, warn: false };
 }

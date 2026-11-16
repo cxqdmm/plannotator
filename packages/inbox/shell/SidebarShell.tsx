@@ -108,7 +108,7 @@ function SidebarEdge({
 		<MotionStyleDiv className="ib-edge-pos" motionStyle={{ left: sidebarWidth }}>
 			<CollapsibleEdge
 				onCollapse={() => setOpen(false)}
-				label="Sidebar width"
+				label="侧边栏宽度"
 				controls={panelId}
 				isDragging={sidebarResize.isDragging}
 				resize={{

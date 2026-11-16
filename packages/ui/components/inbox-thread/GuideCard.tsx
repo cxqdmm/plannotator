@@ -21,17 +21,17 @@ export function GuideCard({ guide, onOpen }: { guide: InboxGuideRef; onOpen: () 
             <Icon name="book" size={18} />
           </span>
           <span className="ib-att-text">
-            <Tip content={`Guided review: ${guide.title}`} cut>
+            <Tip content={`引导式评审：${guide.title}`} cut>
               <span className="ib-nm">
-                Guided review: <bdi>{guide.title}</bdi>
+                引导式评审：<bdi>{guide.title}</bdi>
               </span>
             </Tip>
             <span className="ib-kd">
-              {plural(guide.sections, 'section')}, {plural(guide.files, 'file')}, <span className="ib-add">+{formatCount(guide.additions)}</span>{' '}
+              {plural(guide.sections, '个章节', '个章节')}, {plural(guide.files, '个文件', '个文件')}, <span className="ib-add">+{formatCount(guide.additions)}</span>{' '}
               <span className="ib-del">-{formatCount(guide.deletions)}</span>
             </span>
           </span>
-          <span className="ib-open">Open</span>
+          <span className="ib-open">打开</span>
         </button>
       </div>
     </>

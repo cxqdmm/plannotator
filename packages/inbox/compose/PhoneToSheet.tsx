@@ -102,7 +102,7 @@ export function PhoneToSheet({
   const indexOf = new Map(options.map((o, i) => [o.key, i]));
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="To" host={host} attrs={{ 'data-compose-to-sheet': '' }}>
+    <BottomSheet open={open} onClose={onClose} title="发送给" host={host} attrs={{ 'data-compose-to-sheet': '' }}>
       <div className="ib-sheet-body" onKeyDown={onKey}>
         <label className="ib-sheet-filter">
           <Icon name="search" size={18} />
@@ -113,8 +113,8 @@ export function PhoneToSheet({
             aria-autocomplete="list"
             aria-controls={`ib-to-list-${uid}`}
             aria-activedescendant={hl >= 0 && options[hl] ? optionId(hl) : undefined}
-            aria-label="Find an agent or project"
-            placeholder="Find an agent or project"
+            aria-label="查找 agent 或项目"
+            placeholder="查找 agent 或项目"
             autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
@@ -123,8 +123,8 @@ export function PhoneToSheet({
           />
         </label>
         {all.length > 1 && !typing && <MachineChips machines={all} chosen={chosen} onChoose={setChosen} />}
-        <div className="ib-sheet-list" role="listbox" id={`ib-to-list-${uid}`} aria-label="Live agent sessions">
-          {items.length === 0 && <div className="ib-sheet-none">{typing && parts ? `Nothing matches “${query.trim()}”` : 'No live session matches.'}</div>}
+        <div className="ib-sheet-list" role="listbox" id={`ib-to-list-${uid}`} aria-label="活跃的 agent 会话">
+          {items.length === 0 && <div className="ib-sheet-none">{typing && parts ? `没有匹配“${query.trim()}”的内容` : '没有匹配的活跃会话。'}</div>}
           {items.map((item) => {
             const i = indexOf.get(item.key) ?? -1;
             if (item.type === 'cap') {
@@ -140,7 +140,7 @@ export function PhoneToSheet({
                 <div key={item.key} className="ib-sheet-cap ib-cp-mhd" aria-hidden="true" data-compose-machine-head={m.key}>
                   <Icon name={m.asleep ? 'moon' : 'laptop'} size={14} />
                   <bdi>{m.name}</bdi>
-                  {(m.self || m.asleep) && <span>· {m.self ? 'this computer' : asleepSince(m)}</span>}
+                  {(m.self || m.asleep) && <span>· {m.self ? '此计算机' : asleepSince(m)}</span>}
                 </div>
               );
             }
@@ -152,7 +152,7 @@ export function PhoneToSheet({
               );
             }
             if (item.type === 'missing') {
-              return <SheetRow key={item.key} host={item.agent} title={item.name} disabled end={<span className="ib-cp-stend">Not on {item.machine.name}</span>} attrs={{ 'data-compose-start-missing': item.agent }} />;
+              return <SheetRow key={item.key} host={item.agent} title={item.name} disabled end={<span className="ib-cp-stend">不在 {item.machine.name} 上</span>} attrs={{ 'data-compose-start-missing': item.agent }} />;
             }
             if (item.type === 'more') {
               return (
@@ -160,7 +160,7 @@ export function PhoneToSheet({
                   key={item.key}
                   id={optionId(i)}
                   lead={<Icon name="chevD" size={16} />}
-                  title={`${item.count} more running`}
+                  title={`还有 ${item.count} 个运行中`}
                   quiet
                   highlighted={i === hl}
                   attrs={{ 'data-compose-more-running': item.machine.key }}
@@ -179,11 +179,11 @@ export function PhoneToSheet({
                   id={optionId(i)}
                   host={s.agent}
                   title={s.name}
-                  detail={`in ${s.project.name}`}
+                  detail={`在 ${s.project.name}`}
                   selected={on}
                   highlighted={i === hl}
-                  end={check || (m.asleep ? <span className="ib-cp-stend">starts when it's back</span> : null)}
-                  ariaLabel={`New ${s.name} session in ${s.project.name}${m.machine ? `, on ${m.name}` : ''}`}
+                  end={check || (m.asleep ? <span className="ib-cp-stend">恢复后启动</span> : null)}
+                  ariaLabel={`在 ${s.project.name} 中新建 ${s.name} 会话${m.machine ? `，位于 ${m.name}` : ''}`}
                   attrs={{ 'data-compose-start': s.agent, 'data-compose-start-machine': m.key, 'data-compose-start-project': s.project.name }}
                   onClick={() => pick(item)}
                 />
@@ -206,8 +206,8 @@ export function PhoneToSheet({
                 highlighted={i >= 0 && i === hl}
                 // An asleep machine's agents can't take a message now: shown, as the sidebar shows them, not picked.
                 disabled={asleep}
-                end={check || (parts ? <span className="ib-cp-stend" data-compose-state="">{asleep ? 'asleep' : busyWord(target)}</span> : null)}
-                ariaLabel={`${agent}${target.label ? `, ${target.label},` : ''} in ${target.project.name}${time ? `, started ${time}` : ''}`}
+                end={check || (parts ? <span className="ib-cp-stend" data-compose-state="">{asleep ? '休眠' : busyWord(target)}</span> : null)}
+                ariaLabel={`${agent}${target.label ? `，${target.label}` : ''}，位于 ${target.project.name}${time ? `，开始于 ${time}` : ''}`}
                 attrs={{ 'data-compose-session': target.session, 'data-compose-project': target.project.name, 'data-compose-session-machine': item.machine.key, 'data-session-label': target.label ? '' : undefined }}
                 onClick={() => pick(item)}
               />

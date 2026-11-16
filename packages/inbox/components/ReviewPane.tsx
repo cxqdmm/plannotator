@@ -495,7 +495,7 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
         ? {
             ...shapeHost,
             showMe: (id, part) => showMeFromShape(() => showMeFromBoard.current, id, part),
-            refreshLabel: 'Show me again',
+            refreshLabel: '再演示一次',
             refresh: async (id) => {
               onBoardRef.current(null);
               showMeAgain.current(id);
@@ -754,8 +754,8 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
     [overviewHtml, earlierOverview],
   );
   const overviewMeta = overviewChanged
-    ? `redrawn by ${author} · ${plural(overviewChanged.size, 'part')} changed`
-    : `drawn by ${author} with the guide`;
+    ? `重绘：${author} · ${plural(overviewChanged.size, '部分', '部分')}有变化`
+    : `由 ${author} 使用指南绘制`;
   const renderOverviewDiagram = useCallback(
     (diagram: GuideOverviewDiagram): ReactNode | null =>
       // Code review's picture: a guide, or a review with Code review off, keeps the guide viewer's own note.
@@ -772,7 +772,7 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
   const renderChapterDiagram = useCallback(
     (diagram: GuideOverviewDiagram): ReactNode | null =>
       isReview && shape && overviewPicture(diagram) ? (
-        <ChapterFigure drawn={inboxDrawnViewOf(diagram)} meta={`drawn by ${author} with the guide`} onCode={(target) => void openCode(target)} />
+        <ChapterFigure drawn={inboxDrawnViewOf(diagram)} meta={`由 ${author} 使用指南绘制`} onCode={(target) => void openCode(target)} />
       ) : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [isReview, shape, author, files, chapters, mode],
@@ -791,7 +791,7 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
       setViewed(next);
       inboxApi.saveGuideViewed(message.id, next).then(
         (saved) => setViewed(saved.viewed),
-        (cause: unknown) => setSaveError(cause instanceof Error ? cause.message : 'The Viewed tick was not saved.'),
+        (cause: unknown) => setSaveError(cause instanceof Error ? cause.message : '未能保存“已查看”标记。'),
       );
     },
     [viewed, message.id, setSaveError],
@@ -874,7 +874,7 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
         const failed = failedCommentWrite(writes, new Set([message.id, ...records.map((r) => r.id)]));
         if (failed) {
           if (!mounted.current) return;
-          setSendError(failed.remove ? 'The comment was not removed.' : 'The comment was not saved.');
+          setSendError(failed.remove ? '评论未移除。' : '评论未保存。');
           setSending(false);
           return;
         }
@@ -901,7 +901,7 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
         if (to && cause instanceof InboxApiError && cause.code === 'session_not_live') {
           setRoute((current) => routeRace(current, to.session));
         } else {
-          setSendError(cause instanceof InboxApiError || cause instanceof Error ? cause.message : 'Your verdict was not sent.');
+          setSendError(cause instanceof InboxApiError || cause instanceof Error ? cause.message : '你的评审结论未发送。');
         }
         setSending(false);
       } finally {
@@ -942,9 +942,9 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
     }
   };
 
-  const title = message.guide?.title ?? snapshot?.guide.title ?? 'Review';
+  const title = message.guide?.title ?? snapshot?.guide.title ?? '评审';
   // With no verdict and no post here, what the comments do: ride the person's next Send from the thread.
-  const rides = !readOnly && !verdict && !postPull && comments.length > 0 ? `${plural(comments.length, 'comment')} ${comments.length === 1 ? 'goes' : 'go'} with your next reply to ${author}.` : null;
+  const rides = !readOnly && !verdict && !postPull && comments.length > 0 ? `${plural(comments.length, '条评论', '条评论')}会随你下一条回复一起发给 ${author}。` : null;
   // Who sent it and when, as the thread's message says (the old guide pane's line).
   const from = `from ${author} in ${thread.project.name}, sent ${whenTime(message.created_at)}`;
   const source = snapshot ? reviewSourceLine(snapshot) : '';
@@ -959,11 +959,11 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
     </span>
   );
   const railModes = (
-    <div className="ib-seg ib-rv-modes" role="radiogroup" aria-label="Review by">
+    <div className="ib-seg ib-rv-modes" role="radiogroup" aria-label="评审方式">
       {(['walkthrough', 'files'] as const).map((value) => (
         <label key={value} className="ib-seg-o" data-on={mode === value ? '' : undefined} data-review-mode-choice={value}>
           <input type="radio" name={`ib-rv-mode-${sheetId}`} checked={mode === value} onChange={() => flip(value)} />
-          {value === 'walkthrough' ? 'Walkthrough' : 'All files'}
+          {value === 'walkthrough' ? '引导式评审' : '全部文件'}
         </label>
       ))}
     </div>
@@ -974,14 +974,14 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
     <section
       ref={paneRef}
       className={`ib-viewer ib-wlayer ib-review ib-rv-walk${folded ? ' ib-fold' : ''}${folded && sheet ? ' ib-panel-open' : ''}${!folded && !panelOpen ? ' ib-rv-shut' : ''}${showTree ? ' ib-rv-tree' : ''}${filesSheet ? ' ib-files-open' : ''}`}
-      aria-label={walkthrough ? 'Walkthrough' : 'Review'}
+      aria-label={walkthrough ? '引导式评审' : '评审'}
       data-review-message={message.id}
       data-review-mode={mode}
       {...(narrow && narrowed ? { 'data-review-narrowed': '' } : {})}
     >
       <div className="ib-vhead">
-        <Tip content="Thread">
-          <button type="button" className="ib-back" aria-label="Thread" onClick={onBack}>
+        <Tip content="会话">
+          <button type="button" className="ib-back" aria-label="会话" onClick={onBack}>
             <Icon name="back" size={15} />
           </button>
         </Tip>
@@ -1019,10 +1019,10 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
                     {from}
                   </span>
                 </div>
-                <DropdownMenuRadioGroup className="ib-rj-modes" aria-label="Review by" value={mode} onValueChange={(value) => flip(value as typeof mode)}>
+                <DropdownMenuRadioGroup className="ib-rj-modes" aria-label="评审方式" value={mode} onValueChange={(value) => flip(value as typeof mode)}>
                   {(['walkthrough', 'files'] as const).map((value) => (
                     <DropdownMenuRadioItem key={value} value={value} className="ib-rj-mode" data-review-mode-choice={value}>
-                      {value === 'walkthrough' ? 'Walkthrough' : 'All files'}
+                      {value === 'walkthrough' ? '引导式评审' : '全部文件'}
                     </DropdownMenuRadioItem>
                   ))}
                 </DropdownMenuRadioGroup>
@@ -1085,7 +1085,7 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
           onKeyDown={onSheetKey}
           aria-expanded={panelOpen}
           aria-controls={sheetId}
-          aria-label={`Comments, ${comments.length}`}
+          aria-label={`评论，${comments.length}`}
           data-guide-comments-sheet=""
         >
           <Icon name="comment" size={15} />
@@ -1137,15 +1137,15 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
           onWriteReply &&
           (!postKey || pullsRead) && (
             <Tip content={rides}>
-              <button type="button" className="ib-btn ib-sm ib-pri" onClick={onWriteReply} aria-label="Write the reply" data-review-write-reply="">
+              <button type="button" className="ib-btn ib-sm ib-pri" onClick={onWriteReply} aria-label="写回复" data-review-write-reply="">
                 <Icon name="reply" size={14} />
-                {phone ? 'Reply' : 'Write the reply'}
+                {phone ? '回复' : '写回复'}
               </button>
             </Tip>
           )
         )}
-        <Tip content="Close">
-          <button type="button" className="ib-iconbtn" onClick={onClose} aria-label="Close the review">
+        <Tip content="关闭">
+          <button type="button" className="ib-iconbtn" onClick={onClose} aria-label="关闭评审">
             <Icon name="x" />
           </button>
         </Tip>
@@ -1156,7 +1156,7 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
             className="ib-rrail"
             id={filesSheetId}
             ref={railRef}
-            aria-label="Changed files"
+            aria-label="更改的文件"
             onKeyDown={(event) => {
               // Escape closes the phone's sheet before it closes the review (App's handler skips a used Escape).
               if (event.key === 'Escape' && filesSheet && !event.defaultPrevented) {
@@ -1183,10 +1183,10 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
           {moved && (
             <p className="ib-prr-note" role="status" data-review-pull-moved={moved}>
               {moved === 'reading'
-                ? 'This pull request has new commits since you opened this review. Reading it again…'
+                ? '自你打开此评审以来，此拉取请求有了新提交。正在重新读取…'
                 : moved === 'read'
-                  ? 'This pull request has new commits since you opened this review. Read again: your review now posts to its newest commit.'
-                  : 'This pull request has new commits, and it could not be read again. Try again in a moment.'}
+                  ? '自你打开此评审以来，此拉取请求有了新提交。请重新读取：你的评审将发布到最新提交。'
+                  : '此拉取请求有了新提交，但无法重新读取。请稍后再试。'}
             </p>
           )}
           {posted && (
@@ -1235,14 +1235,14 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
             // The reader is a chunk loaded on first use: one that cannot arrive says so here (ReaderPart).
             <div ref={contentRef}>
             {narrow && narrowed && (
-              <div ref={narrowBar} className="ib-rv-narrow" role="region" aria-label="Opened from the board" data-review-narrow={narrow.pr}>
+              <div ref={narrowBar} className="ib-rv-narrow" role="region" aria-label="从看板打开" data-review-narrow={narrow.pr}>
                 <button ref={narrowBack} type="button" className="ib-rv-narrow-back" onClick={backToBoard} data-review-narrow-back="">
                   <Icon name="chevL" size={15} />
-                  Back to the board
+                  返回看板
                 </button>
                 <span className="ib-rv-narrow-what">
                   {/* The spaces keep the words apart where a phone runs them as text (inbox.css); a flex row ignores them. */}
-                  <b>{narrow.part}</b> <span className="ib-mut">in</span>{' '}
+                  <b>{narrow.part}</b> <span className="ib-mut">在</span>{' '}
                   <a
                     className="ib-rv-narrow-pr"
                     {...(narrow.hue !== undefined ? { 'data-hue': '', style: { '--shp-h': narrow.hue } as CSSProperties } : {})}
@@ -1255,12 +1255,12 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
                   {narrowed.shown < narrowed.total && ' '}
                   {narrowed.shown < narrowed.total && (
                     <span className="ib-mut">
-                      · {narrowed.shown} of the {narrowed.total} files in this chapter
+                      · 本章第 {narrowed.shown} 个，共 {narrowed.total} 个文件
                     </span>
                   )}
                 </span>
                 <button type="button" className="ib-rv-narrow-all" onClick={() => setNarrow(null)} data-review-narrow-all="">
-                  Show the whole stack
+                  显示整个堆叠
                 </button>
               </div>
             )}
@@ -1301,23 +1301,23 @@ export function ReviewPane({ thread, message, onBack, onClose, onSent, onPosted,
           id={sheetId}
           onKeyDown={onSheetKey}
           role="region"
-          aria-label="Comments"
+          aria-label="评论"
           data-guide-comments={comments.length}
           data-review-panel={panelOpen ? 'open' : 'closed'}
         >
           {panelOpen && (
             <div className="ib-sheet-h">
-              <b>Comments</b>
+              <b>评论</b>
               <span className="ib-mut">{comments.length}</span>
               <span className="ib-sp" />
-              <button ref={sheetCloseRef} type="button" className="ib-iconbtn" onClick={closeSheet} aria-label="Close the comments">
+              <button ref={sheetCloseRef} type="button" className="ib-iconbtn" onClick={closeSheet} aria-label="关闭评论">
                 <Icon name="x" />
               </button>
             </div>
           )}
           <AnnotationPanel
-            title="Comments"
-            emptyHint={readOnly ? undefined : 'Click a line number, drag across lines, or select code to comment'}
+            title="评论"
+            emptyHint={readOnly ? undefined : '点击行号、跨行拖动，或选中代码以评论'}
             isOpen
             // The panel's own head (title, count, close) is above: the list draws as embedded at every width.
             presentation="embedded"

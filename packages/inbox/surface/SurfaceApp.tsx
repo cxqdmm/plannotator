@@ -41,7 +41,7 @@ configurePlannotatorUI({
   skillCatalogTransport: async () => [],
   uploadTransport: {
     upload: async () => {
-      throw new Error('Images cannot be added to a comment here.');
+      throw new Error('这里不能在评论中添加图片。');
     },
   },
 });

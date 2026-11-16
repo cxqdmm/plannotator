@@ -170,9 +170,9 @@ export function AnnotationsList({
 
   const name = (record: InboxAnnotationRecord) =>
     record.message
-      ? (messageName?.(record) ?? 'Message')
+      ? (messageName?.(record) ?? '消息')
       : record.live
-        ? `${record.live.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}${record.live.page_url ?? ''} (live)`
+        ? `${record.live.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}${record.live.page_url ?? ''}（实时）`
         : record.guide
           ? record.guide.scope === 'general'
             ? record.guide.title
@@ -203,7 +203,7 @@ export function AnnotationsList({
       <div className="ib-aph">
         <b>{plural(records.length, 'comment')}</b>
         <span className="ib-sp" />
-        <button type="button" className="ib-iconbtn" onClick={() => closeRef.current(true)} aria-label="Close the list">
+        <button type="button" className="ib-iconbtn" onClick={() => closeRef.current(true)} aria-label="关闭列表">
           <Icon name="x" />
         </button>
       </div>
@@ -224,22 +224,22 @@ export function AnnotationsList({
                 }}
               >
                 {name(record)}
-                {record.guide ? ' (guided review)' : record.version !== 'current' ? ' (sent)' : ''}
+                {record.guide ? '（引导式评审）' : record.version !== 'current' ? '（已发送）' : ''}
               </button>
               {tag && <span className="ib-mini">{tag}</span>}
               {unanchored?.has(record.id) && (
                 <span className="ib-mini" data-unanchored="">
-                  Unanchored
+                  未锚定
                 </span>
               )}
               {!isEditing && (
                 <>
                   <span className="ib-sp" />
                   <button type="button" className="ib-aa" onClick={() => onEditing({ id: record.id, text: annotation.text ?? '' })}>
-                    Edit
+                    编辑
                   </button>
                   <button type="button" className="ib-aa" disabled={busy} onClick={() => void run(() => onRemove(record))}>
-                    Remove
+                    删除
                   </button>
                 </>
               )}
@@ -249,7 +249,7 @@ export function AnnotationsList({
               <>
                 <textarea
                   className="ib-aed"
-                  aria-label="Edit the comment"
+                  aria-label="编辑评论"
                   value={editing.text}
                   autoFocus
                   rows={2}
@@ -266,11 +266,11 @@ export function AnnotationsList({
                 />
                 <div className="ib-abt">
                   <button type="button" className="ib-del-l" disabled={busy} onClick={() => void run(() => onRemove(record))}>
-                    Remove
+                    删除
                   </button>
                   <span className="ib-sp" />
                   <button type="button" className="ib-btn ib-sm ib-ghost" onClick={() => onEditing(null)}>
-                    Cancel
+                    取消
                   </button>
                   <button
                     type="button"
@@ -283,7 +283,7 @@ export function AnnotationsList({
                       })
                     }
                   >
-                    Save
+                    保存
                   </button>
                 </div>
               </>
@@ -334,7 +334,7 @@ export function AnnotationsChip({
         onClick={() => onList(list ? null : { at: null })}
       >
         <Icon name="comment" size={13} />
-        {count > 0 ? plural(count, 'comment') : 'No comments'}
+        {count > 0 ? plural(count, 'comment') : '没有评论'}
       </button>
       {list && (
         <AnnotationsList

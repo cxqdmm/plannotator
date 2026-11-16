@@ -36,14 +36,14 @@ export function BulkTagList({ threadIds, onBack }: { threadIds: readonly string[
   };
   return (
     <div ref={body} data-add-tag-list="" data-bulk-tags="">
-      <Menu.Item className="ib-pmi ib-zb" label="Add tag" closeOnClick={false} onClick={onBack} data-add-tag-back="">
+      <Menu.Item className="ib-pmi ib-zb" label="添加标签" closeOnClick={false} onClick={onBack} data-add-tag-back="">
         <Icon name="chevL" size={14} />
-        Add tag
+        添加标签
       </Menu.Item>
       <Menu.Separator className="ib-pm-sep" />
       <label className="ib-tagm-find">
         <Icon name="search" size={15} />
-        <input ref={field} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={onKeyDown} placeholder="Find a tag" aria-label="Find a tag" autoComplete="off" spellCheck={false} data-tag-find="" />
+        <input ref={field} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={onKeyDown} placeholder="查找标签" aria-label="查找标签" autoComplete="off" spellCheck={false} data-tag-find="" />
       </label>
       {shown.map((tag) => {
         const inIt = ids.filter((id) => host.tagsOf(id).includes(tag.id));
@@ -63,7 +63,7 @@ export function BulkTagList({ threadIds, onBack }: { threadIds: readonly string[
             <span className="ib-tagm-l" dir="auto">
               {tag.name}
             </span>
-            {some && <span className="ib-tagm-n">{`${inIt.length} of ${ids.length}`}</span>}
+            {some && <span className="ib-tagm-n">{`${inIt.length}/${ids.length}`}</span>}
             {all ? <Icon name="check" size={15} className="ib-pmi-check ib-tagm-tick" /> : some ? <Icon name="minus" size={15} className="ib-pmi-check ib-tagm-tick" /> : <span className="ib-tagm-slot" aria-hidden="true" />}
           </Menu.CheckboxItem>
         );

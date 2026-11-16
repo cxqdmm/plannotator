@@ -84,7 +84,7 @@ function idOf(url: string): string {
 
 export function pullMediaAttachment(item: PullMediaItem): InboxAttachmentState {
   const at = new Date(0).toISOString();
-  const name = item.name.trim() || (item.kind === 'video' ? 'Video' : 'Picture');
+  const name = item.name.trim() || (item.kind === 'video' ? '视频' : '图片');
   return {
     id: idOf(item.url),
     path: item.url,
@@ -102,7 +102,7 @@ export function pullMediaAttachment(item: PullMediaItem): InboxAttachmentState {
   } as InboxAttachmentState;
 }
 
-const readOnly = () => Promise.reject(new Error('A pull request’s pictures are read here, not kept.'));
+const readOnly = () => Promise.reject(new Error('PR 的图片在这里只读查看，不会被保存。'));
 
 export function pullMediaSource(key: string): InboxFileSource {
   const url = (attachment: InboxAttachmentState) => pullMediaUrl(key, attachment.path);

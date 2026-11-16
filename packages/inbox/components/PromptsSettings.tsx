@@ -44,7 +44,7 @@ type Slot = ReminderSlot | 'guide';
 export function promptsSummary(prompts: InboxPromptsSettings): string {
   const rules = prompts.rules;
   const ruled = rules ? rules.shared !== null || INBOX_PROMPT_HOSTS.some((host) => rules.runtimes[host] !== null) : false;
-  return reminderCustom(prompts) || ruled || Boolean(prompts.guide?.text) ? 'Custom' : 'Default';
+  return reminderCustom(prompts) || ruled || Boolean(prompts.guide?.text) ? '自定义' : '默认';
 }
 
 function reminderCustom(prompts: InboxPromptsSettings): boolean {
@@ -53,7 +53,7 @@ function reminderCustom(prompts: InboxPromptsSettings): boolean {
 }
 
 function Chip({ custom }: { custom: boolean }) {
-  return <span className={`ib-chip${custom ? ' pm-custom' : ''}`}>{custom ? 'Custom' : 'Default'}</span>;
+  return <span className={`ib-chip${custom ? ' pm-custom' : ''}`}>{custom ? '自定义' : '默认'}</span>;
 }
 
 function Chevron() {
@@ -100,7 +100,7 @@ export function PromptsSection({
   /** A calm line for text config.json holds over the limit (ignored, so the next text in line goes). */
   const overNote = (length: number, slot: ReminderSlot) => (
     <p className="pm-over" data-prompt-over={slot}>
-      The text in config.json is {length.toLocaleString('en-US')} characters, over the {reminder.max.toLocaleString('en-US')} limit, so it is ignored.
+      config.json 中的文本有 {length.toLocaleString('zh-CN')} 个字符，超过了 {reminder.max.toLocaleString('zh-CN')} 的上限，因此已被忽略。
     </p>
   );
 
@@ -135,7 +135,7 @@ export function PromptsSection({
       setEditing(null);
       focusAfter.current = refocus;
     } catch (cause) {
-      setError({ slot, text: cause instanceof Error ? cause.message : slot === 'guide' ? 'The instructions were not saved.' : 'The reminder was not saved.' });
+      setError({ slot, text: cause instanceof Error ? cause.message : slot === 'guide' ? '指令未保存。' : '提醒未保存。' });
     } finally {
       setSaving(false);
     }
@@ -180,8 +180,8 @@ export function PromptsSection({
           ref={field}
           className="pm-area"
           value={draft}
-          aria-label={slot === 'guide' ? 'Guided review instructions' : slot === 'shared' ? 'Inbox reminder' : `Inbox reminder for ${AGENT_NAME[slot]}`}
-          placeholder={slot === 'guide' ? 'e.g. Start with the riskiest change. Call the tenant a workspace.' : undefined}
+          aria-label={slot === 'guide' ? '引导评审指令' : slot === 'shared' ? '收件箱提醒' : `${AGENT_NAME[slot]} 的收件箱提醒`}
+          placeholder={slot === 'guide' ? '例如：从风险最高的改动开始。把 tenant 称为 workspace。' : undefined}
           aria-describedby={length >= countFrom ? countId : undefined}
           aria-invalid={over || undefined}
           data-prompt-field={slot}
@@ -189,15 +189,15 @@ export function PromptsSection({
         />
         <div className="pm-acts">
           <button type="button" className="ib-btn ib-sm ib-pri" disabled={!can} onClick={submit} data-prompt-save={slot}>
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? '保存中…' : '保存'}
           </button>
           <button type="button" className="ib-btn ib-sm ib-ghost pm-ghost" onClick={() => cancel(slot)} data-prompt-cancel={slot}>
-            Cancel
+            取消
           </button>
           <span className="pm-sp" />
           {length >= countFrom && (
             <span className="pm-count" id={countId} data-over={over || undefined} data-prompt-count="">
-              {length.toLocaleString('en-US')} / {max.toLocaleString('en-US')}
+              {length.toLocaleString('zh-CN')} / {max.toLocaleString('zh-CN')}
             </span>
           )}
         </div>
@@ -218,7 +218,7 @@ export function PromptsSection({
         {!sharedEditing && (
           <>
             {(sharedCustom || overShared !== null) && (
-              <Tip content="Delete prompts.inbox.reminder: every agent gets Plannotator's text again">
+              <Tip content="删除 prompts.inbox.reminder：每个 agent 都会重新收到 Plannotator 的文本">
                 <button
                   type="button"
                   className="ib-btn ib-sm ib-ghost pm-ghost"
@@ -229,12 +229,12 @@ export function PromptsSection({
                   }}
                   data-prompt-reset=""
                 >
-                  Reset to default
+                  恢复默认
                 </button>
               </Tip>
             )}
-            <button type="button" className="ib-btn ib-sm" onClick={() => startEdit('shared')} data-prompt-edit="shared" aria-label="Edit the Inbox reminder">
-              Edit
+            <button type="button" className="ib-btn ib-sm" onClick={() => startEdit('shared')} data-prompt-edit="shared" aria-label="编辑收件箱提醒">
+              编辑
             </button>
           </>
         )}
@@ -251,10 +251,10 @@ export function PromptsSection({
             <>
               <button type="button" className="pm-disc" aria-expanded={showDefault} aria-controls={defaultId} onClick={() => setShowDefault((open) => !open)} data-prompt-show-default="">
                 <Chevron />
-                Show default
+                显示默认文本
               </button>
               {showDefault && (
-                <p className="pm-text pm-faint" id={defaultId} aria-label="Default text" data-prompt-default="">
+                <p className="pm-text pm-faint" id={defaultId} aria-label="默认文本" data-prompt-default="">
                   {defaultText}
                 </p>
               )}
@@ -273,7 +273,7 @@ export function PromptsSection({
     const over = own === null ? (reminder.over?.runtimes[host] ?? null) : null;
     // OpenCode 1 with nothing custom: its own default (the no-wake line), shown, since it differs from the one above.
     const ownDefault = own === null && reminder.shared === null && !wakes(host);
-    const status = own !== null ? 'Own text' : ownDefault ? 'Uses the default for OpenCode 1' : 'Uses the shared text';
+    const status = own !== null ? '自己的文本' : ownDefault ? '使用 OpenCode 1 的默认文本' : '使用共享文本';
     return (
       <div className="pm-ag" data-agent={host} data-prompt-slot={host} key={host}>
         <div className="ib-prow">
@@ -284,10 +284,11 @@ export function PromptsSection({
               {status}
               {!reminder.on[host] && (
                 <>
-                  {' · Reminder off in '}
+                  {' · 提醒已在 '}
                   <a href="#settings/agents" data-prompt-agents-link="">
-                    Agents
+                    agent
                   </a>
+                  {' 中关闭'}
                 </>
               )}
             </span>
@@ -296,7 +297,7 @@ export function PromptsSection({
             {!isEditing && (
               <>
                 {(own !== null || over !== null) && (
-                  <Tip content={`Delete ${name}'s own text: it gets the shared text again`}>
+                  <Tip content={`删除 ${name} 自己的文本：它将重新使用共享文本`}>
                     <button
                       type="button"
                       className="ib-btn ib-sm ib-ghost pm-ghost"
@@ -304,7 +305,7 @@ export function PromptsSection({
                       onClick={() => void save(host, null, `[data-prompt-edit="${host}"]`)}
                       data-prompt-use-shared={host}
                     >
-                      Use shared
+                      使用共享
                     </button>
                   </Tip>
                 )}
@@ -313,9 +314,9 @@ export function PromptsSection({
                   className={`ib-btn ib-sm${own !== null ? '' : ' ib-ghost pm-ghost'}`}
                   onClick={() => startEdit(host)}
                   data-prompt-edit={host}
-                  aria-label={`Edit the Inbox reminder for ${name}`}
+                  aria-label={`编辑 ${name} 的收件箱提醒`}
                 >
-                  Edit
+                  编辑
                 </button>
               </>
             )}
@@ -345,13 +346,13 @@ export function PromptsSection({
     <div ref={root} data-prompts-page="">
       {prompts.rules && <AgentRulesSection rules={prompts.rules} onPrompts={onPrompts} />}
       <section className={prompts.rules ? 'ib-sgroup' : 'ib-sgroup ib-sgroup-first'} aria-labelledby={`${id}-rem`}>
-        <h2 id={`${id}-rem`}>Inbox reminder</h2>
-        <p>Sent once, when a session starts.</p>
+        <h2 id={`${id}-rem`}>收件箱提醒</h2>
+        <p>在会话开始时发送一次。</p>
         <div className="ib-card">
           <button type="button" className="pm-fold" aria-expanded={reminderOpen} aria-controls={`${id}-rem-body`} onClick={() => setReminderOpen((open) => !open)} data-prompts-reminder-fold="">
             <Chevron />
-            Reminder text
-            <span className="ib-mut">· {reminderCustom(prompts) ? 'Custom' : 'Default'}</span>
+            提醒文本
+            <span className="ib-mut">· {reminderCustom(prompts) ? '自定义' : '默认'}</span>
           </button>
           {reminderOpen && (
             <div id={`${id}-rem-body`} className="pm-rem-body" data-prompts-reminder="">
@@ -363,8 +364,8 @@ export function PromptsSection({
       </section>
       {guide && (
         <section className="ib-sgroup" aria-labelledby={`${id}-guide`}>
-          <h2 id={`${id}-guide`}>Guided reviews</h2>
-          <p>Added to every guided review, from the Inbox, the review page or VS Code.</p>
+          <h2 id={`${id}-guide`}>引导评审</h2>
+          <p>会添加到每次引导评审中，来自收件箱、评审页面或 VS Code。</p>
           <div className="ib-card">
             <div className="pm-shared" data-prompt-slot="guide">
               <div className="pm-head">
@@ -373,14 +374,14 @@ export function PromptsSection({
                 {editing !== 'guide' && (
                   <>
                     {guide.text !== null && (
-                      <Tip content="Delete your instructions: guides follow Plannotator's method alone">
+                      <Tip content="删除你的指令：引导将仅遵循 Plannotator 的方法">
                         <button type="button" className="ib-btn ib-sm ib-ghost pm-ghost" disabled={saving} onClick={() => void save('guide', null, '[data-prompt-edit="guide"]')} data-prompt-reset="guide">
-                          Reset to default
+                          恢复默认
                         </button>
                       </Tip>
                     )}
-                    <button type="button" className="ib-btn ib-sm" onClick={() => startEdit('guide')} data-prompt-edit="guide" aria-label="Edit the guided review instructions">
-                      Edit
+                    <button type="button" className="ib-btn ib-sm" onClick={() => startEdit('guide')} data-prompt-edit="guide" aria-label="编辑引导评审指令">
+                      编辑
                     </button>
                   </>
                 )}
@@ -420,9 +421,9 @@ function OtherPrompts({ others, open, onToggle, configFile, home }: { others: In
     runtimes.map((runtime) => AGENT_NAME[runtime as InboxPromptHost] ?? runtime).join(', ');
   return (
     <section className="ib-sgroup" aria-labelledby={`${id}-h`}>
-      <h2 id={`${id}-h`}>Plan, review and annotate</h2>
+      <h2 id={`${id}-h`}>计划、评审与批注</h2>
       <p>
-        Read-only here. Set them in{' '}
+        此处只读。请在{' '}
         {shown === configFile ? (
           <code className="pm-path" data-prompts-config-path="">{shown}</code>
         ) : (
@@ -430,13 +431,13 @@ function OtherPrompts({ others, open, onToggle, configFile, home }: { others: In
             <code className="pm-path" data-prompts-config-path="">{shown}</code>
           </Tip>
         )}
-        .
+        {' 中设置。'}
       </p>
       <div className="ib-card">
         <button type="button" className="pm-fold" aria-expanded={open} aria-controls={`${id}-list`} onClick={onToggle} data-prompts-fold="">
           <Chevron />
-          {others.length} prompts
-          <span className="ib-mut">{customs ? `· ${customs} custom` : '· all default'}</span>
+          {others.length} 条提示词
+          <span className="ib-mut">{customs ? `· ${customs} 条自定义` : '· 全部为默认'}</span>
         </button>
         {open && (
           <div id={`${id}-list`} data-prompts-list="">
@@ -451,7 +452,7 @@ function OtherPrompts({ others, open, onToggle, configFile, home }: { others: In
                       <code>{item.key}</code>
                     </div>
                     <pre className="pm-otext">{item.text}</pre>
-                    {item.runtimes.length > 0 && <p className="pm-onote">{agents(item.runtimes)}: own text in config.json.</p>}
+                    {item.runtimes.length > 0 && <p className="pm-onote">{agents(item.runtimes)}：在 config.json 中使用自己的文本。</p>}
                     {item.note && !item.custom && <p className="pm-onote">{item.note}</p>}
                   </div>
                 ))}

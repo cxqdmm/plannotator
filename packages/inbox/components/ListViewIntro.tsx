@@ -7,14 +7,14 @@ import { useTheme } from '@plannotator/ui/components/ThemeProvider';
 
 /** The dialog's words, as the owner approved them (2026-11-05). */
 export const LIST_VIEW_INTRO_WORDS = {
-  title: 'Which view do you prefer?',
-  note: 'You can change this any time in the ⋮ menu.',
-  smart: 'Smart groups',
-  recommended: 'Recommended',
-  inUse: 'In use',
-  smartLine: 'Puts what needs you on top and sorts the rest for you.',
-  simple: 'Simple list',
-  simpleLine: 'Every thread, newest first, like email.',
+  title: '你更喜欢哪种视图？',
+  note: '你可以随时在 ⋮ 菜单中更改。',
+  smart: '智能分组',
+  recommended: '推荐',
+  inUse: '使用中',
+  smartLine: '把需要你处理的内容放在最上面，其余自动排序。',
+  simple: '简单列表',
+  simpleLine: '所有会话，最新的在前，和电子邮件一样。',
 } as const;
 
 export interface ListViewIntroProps {
@@ -103,7 +103,7 @@ export function ListViewIntro({ groups, flat, look, projectNames, awayMachines, 
               aria-describedby={`ib-lvc-${choice.key} ib-lvc-${choice.key}-line`}
               data-list-view-choice={choice.key}
             >
-              Use {choice.name}
+              使用{choice.name}
             </button>
           </div>
         ))}

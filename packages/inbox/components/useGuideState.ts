@@ -58,10 +58,10 @@ export function useGuideState(thread: InboxThread, message: InboxMessageWire) {
         if (cancelled) return;
         const parsed = parseGuideSnapshot(answer.snapshot);
         if (parsed.ok) setSnapshot(parsed.value);
-        else setError(`This guided review could not be read (${parsed.error.path}: ${parsed.error.message}).`);
+        else setError(`无法读取这个引导式评审（${parsed.error.path}：${parsed.error.message}）。`);
       })
       .catch((cause: unknown) => {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : 'The guided review did not load.');
+        if (!cancelled) setError(cause instanceof Error ? cause.message : '引导式评审没有加载。');
       });
     return () => {
       cancelled = true;
@@ -96,7 +96,7 @@ export function useGuideState(thread: InboxThread, message: InboxMessageWire) {
     setSaveError(null);
     inboxApi.saveGuideReviewed(message.id, next).then(
       (saved) => setReviewed(saved.reviewed),
-      (cause: unknown) => setSaveError(cause instanceof Error ? cause.message : 'The reviewed tick was not saved.'),
+      (cause: unknown) => setSaveError(cause instanceof Error ? cause.message : '已评审标记未保存。'),
     );
   };
 
@@ -114,7 +114,7 @@ export function useGuideState(thread: InboxThread, message: InboxMessageWire) {
           return true;
         },
         (cause: unknown) => {
-          setSaveError(cause instanceof InboxApiError ? cause.message : 'The comment was not saved.');
+          setSaveError(cause instanceof InboxApiError ? cause.message : '评论未保存。');
           return false;
         },
       );
@@ -129,7 +129,7 @@ export function useGuideState(thread: InboxThread, message: InboxMessageWire) {
         localWrites.current += 1;
         setRecords((list) => list.filter((r) => r.id !== id));
       },
-      (cause: unknown) => setSaveError(cause instanceof InboxApiError ? cause.message : 'The comment was not removed.'),
+      (cause: unknown) => setSaveError(cause instanceof InboxApiError ? cause.message : '评论未删除。'),
     );
   }, []);
   const edit = (id: string, updates: Partial<CodeAnnotation>) => {

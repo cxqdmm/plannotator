@@ -153,10 +153,10 @@ export function useBodyImages({
       const ref = src ? refOf(src) : null;
       if (ref === null || img.hasAttribute('data-ib-broken')) continue;
       const image = imageOf(src);
-      const name = image?.name ?? ref.split(/[\\/]/).pop() ?? 'image';
+      const name = image?.name ?? ref.split(/[\\/]/).pop() ?? '图片';
       img.setAttribute('role', 'button');
       img.tabIndex = 0;
-      img.setAttribute('aria-label', `Open ${name}${img.alt ? `, ${img.alt}` : ''}`);
+      img.setAttribute('aria-label', `打开 ${name}${img.alt ? `，${img.alt}` : ''}`);
       if (image) img.setAttribute('data-inline-image', image.id);
       else img.removeAttribute('data-inline-image');
       img.style.cursor = 'zoom-in';

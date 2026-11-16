@@ -102,7 +102,7 @@ export function pastedSignature(files: readonly { upload_id: string }[]): string
 
 /** What a paste attached, as a screen reader hears it: "Attached notes.png", "Attached 2 files: a.png, b.png". */
 export function attachedAnnouncement(names: readonly string[]): string {
-  return names.length === 1 ? `Attached ${names[0]}` : `Attached ${names.length} files: ${names.join(', ')}`;
+  return names.length === 1 ? `已附加 ${names[0]}` : `已附加 ${names.length} 个文件：${names.join('、')}`;
 }
 
 /**
@@ -205,7 +205,7 @@ export function useComposeFiles(
       })
       .catch((cause) => {
         if (!(cause instanceof DOMException && cause.name === 'AbortError')) {
-          patch(key, { state: 'refused', error: cause instanceof InboxApiError ? cause.message : 'Not attached: the upload failed.' });
+          patch(key, { state: 'refused', error: cause instanceof InboxApiError ? cause.message : '未附加：上传失败。' });
         }
         return null;
       })
@@ -275,7 +275,7 @@ export function useComposeFiles(
       })
       .catch((cause) => {
         if (!(cause instanceof DOMException && cause.name === 'AbortError')) {
-          patch(key, { state: 'refused', error: cause instanceof InboxApiError ? cause.message : 'Not attached: that file could not be added.' });
+          patch(key, { state: 'refused', error: cause instanceof InboxApiError ? cause.message : '未附加：无法添加该文件。' });
         }
         return null;
       })
@@ -294,7 +294,7 @@ export function useComposeFiles(
    */
   const addPasted = (own: OwnAttachmentPaste, pictures: readonly File[]) => {
     const key = `local-${newUuid()}`;
-    const fresh: ComposeFile = { key, name: 'Adding…', size: 0, state: 'uploading', progress: 0, upload: null, error: null, preview: own.src, reuse: { sha256: '' } };
+    const fresh: ComposeFile = { key, name: '正在添加…', size: 0, state: 'uploading', progress: 0, upload: null, error: null, preview: own.src, reuse: { sha256: '' } };
     filesRef.current = [...filesRef.current, fresh];
     setFiles((current) => [...current, fresh]);
     const drop = () => {
@@ -324,7 +324,7 @@ export function useComposeFiles(
           add(pictures);
           onPasted.current?.(pictures.map((file) => file.name));
         } else {
-          patch(key, { state: 'refused', name: 'Picture', error: cause instanceof InboxApiError ? cause.message : 'Not attached: that file could not be added.' });
+          patch(key, { state: 'refused', name: '图片', error: cause instanceof InboxApiError ? cause.message : '未附加：无法添加该文件。' });
         }
         return null;
       })
@@ -494,7 +494,7 @@ export function useComposeFiles(
         // The upload holds the pasted bytes; the box takes them with `\n` line ends, as a fresh tile's.
         insertBack(key, boxText(words), field);
       })
-      .catch(() => patch(key, { error: 'That pasted text could not be read back. It is still attached.' }))
+      .catch(() => patch(key, { error: '无法读回该粘贴文本，它仍作为附件保留。' }))
       .finally(() => reading.current.delete(key));
     return true;
   }, []);
@@ -699,8 +699,8 @@ export function AttachFilesButton({
   inputData?: string;
 }) {
   return (
-    <Tip content="Attach files">
-      <label className={className} aria-label="Attach files">
+    <Tip content="附加文件">
+      <label className={className} aria-label="附加文件">
         <Icon name="clip" size={iconSize} />
         <input
           type="file"
@@ -817,9 +817,9 @@ function iconFor(upload: Pick<InboxUpload, 'kind'> | null): IconName {
 /** The line under a tile's name: words, then its separator and size. A narrow tile cuts only the words. */
 function detailOf(file: ComposeFile): { words: string; size: string } {
   const size = formatBytes(file.state === 'uploading' ? file.size : file.upload!.size);
-  if (file.state === 'uploading') return file.reuse ? { words: 'Adding…', size: ` ${size}` } : { words: `Uploading… ${Math.round(file.progress * 100)}%`, size: ` of ${size}` };
+  if (file.state === 'uploading') return file.reuse ? { words: '正在添加…', size: ` ${size}` } : { words: `正在上传… ${Math.round(file.progress * 100)}%`, size: `，共 ${size}` };
   const upload = file.upload!;
-  return { words: inboxAttachmentKindLabel(upload.kind, upload.name, upload.media_type), size: `, ${size}` };
+  return { words: inboxAttachmentKindLabel(upload.kind, upload.name, upload.media_type), size: `，${size}` };
 }
 
 /** True for the first PASTED_UNDO_MS after `at`, then false (re-rendered when it turns). */
@@ -851,7 +851,7 @@ function useFresh(at: number): boolean {
  */
 function PastedTextTile({ file, pasted, onRemove, onPutBack }: { file: ComposeFile; pasted: PastedText; onRemove: (key: string) => void; onPutBack: (key: string) => void }) {
   const fresh = useFresh(pasted.at);
-  const size = `Pasted text · ${formatBytes(file.size)}`;
+  const size = `粘贴的文本 · ${formatBytes(file.size)}`;
   return (
     <div
       className={`ib-cp-file ib-pt${file.state === 'refused' ? ' ib-refused' : ''}`}
@@ -869,7 +869,7 @@ function PastedTextTile({ file, pasted, onRemove, onPutBack }: { file: ComposeFi
         </span>
         {file.state === 'refused' || file.error ? (
           <span className="ib-cp-ferr" role="alert">
-            {file.error ?? 'Not attached.'}
+            {file.error ?? '未附加。'}
           </span>
         ) : (
           <span className="ib-kd ib-pt-line" data-pasted-line="">
@@ -877,16 +877,16 @@ function PastedTextTile({ file, pasted, onRemove, onPutBack }: { file: ComposeFi
             {/* One button in both states, only its words change: focus on Undo stays on it at the 10 s swap.
                 Its name says which paste, so two tiles never give two identical buttons. */}
             <span className={fresh ? 'ib-pt-undo' : 'ib-pt-back'}>
-              {fresh ? 'Pasted text · ' : null}
+              {fresh ? '粘贴的文本 · ' : null}
               <button
                 type="button"
                 className="ib-pt-act"
                 data-pasted-undo={fresh ? '' : undefined}
                 data-pasted-put-back={fresh ? undefined : ''}
-                aria-label={fresh ? `Undo paste of ${file.name}` : `Put back in box: ${file.name}`}
+                aria-label={fresh ? `撤销粘贴 ${file.name}` : `放回输入框：${file.name}`}
                 onClick={() => onPutBack(file.key)}
               >
-                {fresh ? 'Undo' : 'Put back in box'}
+                {fresh ? '撤销' : '放回输入框'}
               </button>
             </span>
           </span>
@@ -901,12 +901,12 @@ function PastedTextTile({ file, pasted, onRemove, onPutBack }: { file: ComposeFi
         type="button"
         className="ib-pt-side"
         data-pasted-side=""
-        aria-label={fresh ? `Undo paste of ${file.name}` : `Put back: ${file.name}`}
+        aria-label={fresh ? `撤销粘贴 ${file.name}` : `放回：${file.name}`}
         onClick={() => onPutBack(file.key)}
       >
-        {fresh ? 'Undo' : 'Put back'}
+        {fresh ? '撤销' : '放回'}
       </button>
-      <button type="button" className="ib-cp-fx" aria-label={file.state === 'uploading' ? `Stop uploading ${file.name}` : `Remove ${file.name}`} onClick={() => onRemove(file.key)}>
+      <button type="button" className="ib-cp-fx" aria-label={file.state === 'uploading' ? `停止上传 ${file.name}` : `移除 ${file.name}`} onClick={() => onRemove(file.key)}>
         <Icon name="x" size={14} />
       </button>
     </div>
@@ -941,7 +941,7 @@ export function ComposeFileTiles({ files, onRemove, onPutBack }: { files: readon
             <FileName name={file.name} className="ib-nm" />
             {file.state === 'refused' ? (
               <span className="ib-cp-ferr" role="alert">
-                {file.error ?? 'Not attached.'}
+                {file.error ?? '未附加。'}
               </span>
             ) : (
               <span className="ib-kd ib-kd-split">
@@ -955,7 +955,7 @@ export function ComposeFileTiles({ files, onRemove, onPutBack }: { files: readon
               </span>
             )}
           </span>
-          <button type="button" className="ib-cp-fx" aria-label={file.state === 'uploading' ? `Stop uploading ${file.name}` : `Remove ${file.name}`} onClick={() => onRemove(file.key)}>
+          <button type="button" className="ib-cp-fx" aria-label={file.state === 'uploading' ? `停止上传 ${file.name}` : `移除 ${file.name}`} onClick={() => onRemove(file.key)}>
             <Icon name="x" size={14} />
           </button>
         </div>

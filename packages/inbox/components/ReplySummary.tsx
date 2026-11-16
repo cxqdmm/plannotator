@@ -32,9 +32,9 @@ export interface FootComments {
 }
 
 const skipWords = (skip: FootSkip) =>
-  skip.keepOpen ? `${plural(skip.count, 'question')} ${skip.count === 1 ? 'stays' : 'stay'} open` : `${plural(skip.count, 'question')} will be skipped`;
+  skip.keepOpen ? `${plural(skip.count, 'question')} 保持打开` : `${plural(skip.count, 'question')} 将被跳过`;
 
-const droppedWords = (dropped: number) => `${dropped} ${dropped === 1 ? 'pick' : 'picks'} on a replaced question won’t be sent`;
+const droppedWords = (dropped: number) => `被替换的问题上有 ${dropped} 个选择将不会发送`;
 
 /** A small bottom sheet: the scrim, Escape and × close it. Focus goes in, and back to `back` when it closes. */
 function FootSheet({ title, onClose, back, children }: { title: string; onClose: () => void; back: () => HTMLElement | null; children: ReactNode }) {
@@ -82,7 +82,7 @@ function FootSheet({ title, onClose, back, children }: { title: string; onClose:
       <div className="ib-fsheet" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={panel}>
         <div className="ib-fsheet-h">
           <b id={titleId}>{title}</b>
-          <button type="button" className="ib-fsheet-x" aria-label="Close" onClick={closeBack}>
+          <button type="button" className="ib-fsheet-x" aria-label="关闭" onClick={closeBack}>
             <Icon name="x" size={16} />
           </button>
         </div>
@@ -161,18 +161,18 @@ export function ReplySummary({ skip, dropped, comments }: { skip: FootSkip; drop
     parts.push(
       <span key="q">
         {formatCount(skip.count)}
-        {!short && ` question${skip.count === 1 ? '' : 's'}`}
-        {skip.keepOpen ? ' open' : ' to skip'}
+        {!short && ' 个问题'}
+        {skip.keepOpen ? (short ? ' 保持打开' : '保持打开') : short ? ' 将被跳过' : '将被跳过'}
       </span>,
     );
   if (count > 0) parts.push(<span key="c">{plural(count, 'comment')}</span>);
-  if (dropped > 0 && skip.count === 0) parts.push(<span key="d">{dropped} not sent</span>);
+  if (dropped > 0 && skip.count === 0) parts.push(<span key="d">{dropped} 个未发送</span>);
   const shown = parts.length > 0 || commentsOpen;
   // The line's name is its own words ("4 open · 3 comments": what a voice-control user says); the full sentence is its
   // description.
   const longWords = [skip.count > 0 ? skipWords(skip) : null, count > 0 ? plural(count, 'comment') : null, dropped > 0 ? droppedWords(dropped) : null]
     .filter(Boolean)
-    .join(', ');
+    .join('，');
   return (
     <span className="ib-rsum" data-reply-summary="" ref={rowRef}>
       {shown && (
@@ -220,18 +220,18 @@ export function ReplySummary({ skip, dropped, comments }: { skip: FootSkip; drop
         </span>
       )}
       {sheet && (
-        <FootSheet title="Goes with this reply" onClose={() => setSheet(false)} back={() => lineRef.current}>
+        <FootSheet title="随此回复发送" onClose={() => setSheet(false)} back={() => lineRef.current}>
           {skip.count > 0 && (
             <div className="ib-fsheet-row" data-foot-sheet-row="questions">
               <span className="ib-fsheet-t">
                 <Icon name={skip.keepOpen ? 'question' : 'forward'} size={16} />
                 <span>
                   <b>{skipWords(skip)}</b>
-                  <span className="ib-fsheet-sub">{skip.keepOpen ? 'You can still answer them after you send.' : 'They are skipped when you send.'}</span>
+                  <span className="ib-fsheet-sub">{skip.keepOpen ? '发送后你仍可以回答它们。' : '发送时它们会被跳过。'}</span>
                 </span>
               </span>
               <button type="button" className="ib-btn" data-skip-toggle="" onClick={skip.onToggle}>
-                {skip.keepOpen ? `Skip ${skip.count === 1 ? 'it' : 'them'}` : 'Keep open'}
+                {skip.keepOpen ? '跳过' : '保持打开'}
               </button>
             </div>
           )}
@@ -252,13 +252,13 @@ export function ReplySummary({ skip, dropped, comments }: { skip: FootSkip; drop
               <button
                 type="button"
                 className="ib-btn"
-                aria-label="Review comments"
+                aria-label="查看评论"
                 onClick={() => {
                   setSheet(false);
                   comments.onList({ at: null });
                 }}
               >
-                Review
+                查看
               </button>
             </div>
           )}

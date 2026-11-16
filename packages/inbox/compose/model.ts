@@ -122,7 +122,7 @@ export function composeOpening(request: { draft?: Pick<InboxDraft, 'to'> | null;
 
 /** "started 2:41 PM": when the session started, without its host. */
 export function startedLine(target: Pick<ComposeTarget, 'started_at'>): string {
-  return `started ${whenTime(target.started_at)}`;
+  return `开始于 ${whenTime(target.started_at)}`;
 }
 
 /** The status chip: a word, never colour alone. */
@@ -140,7 +140,7 @@ export function subjectPreview(body: string, files: readonly string[] = []): str
 export function composeThreadName(value: string): { name: string } | { error: string } {
   if (value.trim() === '') return { name: '' };
   const checked = checkInboxThreadName(value);
-  return checked.ok ? { name: checked.name } : { error: `Thread name ${checked.message}` };
+  return checked.ok ? { name: checked.name } : { error: `会话名称${checked.message}` };
 }
 
 /**
@@ -283,24 +283,24 @@ export function statusLine(input: {
   /** The live sessions are not read yet. */
   loading?: boolean;
 }): string {
-  if (input.loading) return 'Looking for live agents…';
+  if (input.loading) return '正在查找活跃的 agent…';
   if (input.target) return '';
-  if (input.ended) return 'That session has ended.';
-  if (input.anyLive) return 'Choose an agent to send it.';
-  return input.projectName ? `No agent is running in ${input.projectName}.` : 'No agent is running.';
+  if (input.ended) return '该会话已结束。';
+  if (input.anyLive) return '选择一个 agent 来发送。';
+  return input.projectName ? `${input.projectName} 中没有 agent 在运行。` : '没有 agent 在运行。';
 }
 
 /** What ⌘↵ says when nothing can be sent. */
-export const NOTHING_SENT_NO_AGENT = 'Nothing sent: no live agent is chosen. Save it as a draft.';
+export const NOTHING_SENT_NO_AGENT = '未发送：没有选择活跃的 agent。可保存为草稿。';
 
 /** A draft over the Inbox's limit, said plainly (the server's own words name a field). */
-export const DRAFT_TOO_LONG = `Too long to save as a draft: a draft holds at most ${INBOX_DRAFT_BODY_MAX.toLocaleString('en-US')} characters.`;
+export const DRAFT_TOO_LONG = `太长，无法保存为草稿：草稿最多容纳 ${INBOX_DRAFT_BODY_MAX.toLocaleString('zh-CN')} 个字符。`;
 
 /** The Drafts page chip's words: "Claude Code is live", "That session ended", "No agent chosen". */
 export function draftChip(draft: Pick<InboxDraft, 'to'> & { status: 'live' | 'ended' | 'none' }): string {
-  if (draft.status === 'live' && draft.to) return `${hostLabel(draft.to.host)} is live`;
-  if (draft.status === 'ended') return 'That session ended';
-  return 'No agent chosen';
+  if (draft.status === 'live' && draft.to) return `${hostLabel(draft.to.host)} 在线`;
+  if (draft.status === 'ended') return '该会话已结束';
+  return '未选择 agent';
 }
 
 /** The words that open "New message…" from the palette (the brief's list). */
@@ -353,10 +353,10 @@ export function composeActions(query: string, targets: readonly ComposeTarget[],
 
 export const actionLabel = (action: ComposeAction): string =>
   action.kind === 'new'
-    ? 'New message…'
+    ? '新消息…'
     : action.kind === 'review'
-      ? 'New review…'
-      : `Message ${hostLabel(action.target.host)}${action.target.label ? ` · ${action.target.label}` : ''} in ${action.target.project.name}`;
+      ? '新评审…'
+      : `给 ${action.target.project.name} 中的 ${hostLabel(action.target.host)}${action.target.label ? ` · ${action.target.label}` : ''} 发消息`;
 
 // ── Launch: start a new session from To (behind `inboxLaunch.enabled`, on unless false; docs/agent-guides/inbox-launch.md) ──
 
@@ -429,7 +429,7 @@ export const SCRATCH_PICK = INBOX_SCRATCH_PICK;
 
 /** A scratch start's stand-in project: the root it is made in (the folder itself is named when the person sends). */
 export function scratchProject(root: string): LaunchProject {
-  return { id: SCRATCH_PICK, name: 'New scratch folder', root, exists: true };
+  return { id: SCRATCH_PICK, name: '新建临时文件夹', root, exists: true };
 }
 
 /** The scratch folder a Send would make for this thread name (the server adds `-2`, `-3` when it is taken). */
@@ -439,12 +439,12 @@ export function scratchFolderOf(root: string, threadName: string): string {
 
 /** The folder menu shows "Another folder…" for no filter, or one its words match. */
 export function otherFolderMatches(query: string): boolean {
-  return queryWords(query).every((w) => 'another folder'.includes(w));
+  return queryWords(query).every((w) => '其他文件夹'.includes(w));
 }
 
 /** The folder menu shows "New scratch folder" for no filter, or one its words match. */
 export function scratchMatches(query: string): boolean {
-  return queryWords(query).every((w) => 'new scratch folder'.includes(w));
+  return queryWords(query).every((w) => '新建临时文件夹'.includes(w));
 }
 
 const queryWords = (query: string) => query.toLowerCase().split(/\s+/).filter(Boolean);
@@ -475,9 +475,9 @@ export function filterLaunchProjects(projects: readonly LaunchProject[], query: 
 
 /** The status line beside Send for a start: none, as for a message to a live session, unless the folder is gone (screen 13). */
 export function startStatusLine(start: ComposeStart): string {
-  if (!start.project.exists) return 'Pick a folder to start in.';
+  if (!start.project.exists) return '请选择一个用于启动的文件夹。';
   // C13, decision 11a: what the Send does first.
-  return start.clone ? `Clones ${start.clone.slug}, then starts ${start.name}.` : '';
+  return start.clone ? `将克隆 ${start.clone.slug}，然后启动 ${start.name}。` : '';
 }
 
 // ── Remote launch: the folder menu grouped by machine (approval "remote-launch", the picker's A) ──
@@ -546,7 +546,7 @@ export function lastLaunchAgent(rows: readonly { created_at: string; run?: unkno
 export function newSessionTip(name: string, machineName: string | null, asleep: boolean): string {
   // The window's project names already carry another machine's name wherever it shows several (`machineProjectNames`).
   const named = !machineName || name.endsWith(` · ${machineName}`) ? name : `${name} · ${machineName}`;
-  return `New session in ${named}${asleep ? ", starts when it's back" : ''}`;
+  return `在 ${named} 中新建会话${asleep ? '，恢复后启动' : ''}`;
 }
 
 /** "+" on project rows at all (F1-F7): while agents can be started from New message here. */
@@ -612,7 +612,7 @@ export function launchGroups(input: {
   const { agent, self, reads } = input;
   const history = input.history ?? new Map();
   const groupOf = (machine: string | null, name: string, isSelf: boolean, asleep: boolean, block: InboxComposeLaunch | undefined, home: string | null, words: string | null): LaunchGroup | null => {
-    const quiet = isSelf ? 'this computer' : asleep ? 'asleep' : null;
+    const quiet = isSelf ? '此计算机' : asleep ? '休眠' : null;
     const base = { machine, name, self: isSelf, asleep, quiet, home, projects: [] as MachineLaunchProject[], last: null, scratch: null, notice: null };
     if (words) return { ...base, notice: { line: words, command: null, fix: null } };
     if (!block || !agent) return null;
@@ -629,7 +629,7 @@ export function launchGroups(input: {
     // The other reasons keep their one line (a missing plugin has its command to copy).
     return { ...base, notice: { line: said.line, command: said.command, fix: not.code === 'signed_out' ? said.fix : null } };
   };
-  const mine = groupOf(null, self.name ?? 'This computer', true, false, self.launch, self.home, null);
+  const mine = groupOf(null, self.name ?? '此计算机', true, false, self.launch, self.home, null);
   const linked = input.machines.filter((m) => !m.self && m.state !== 'revoked');
   const theirs = linked.map((m, i) => {
     const asleep = m.state === 'offline';

@@ -89,12 +89,12 @@ export function AgentNoteDialog({ rows, noteText, onModel, onClosed }: AgentNote
     const bad = results.filter((result) => !result.ok).map((result) => INBOX_AGENT_LABELS[result.agent]);
     setLive(
       [
-        ok.length ? `Added the note to ${joinNames(ok)}.` : '',
-        manual.length ? `The note for ${joinNames(manual)} is shown below, to copy into ${CURSOR_RULES_PLACE} yourself.` : '',
-        bad.length ? `Couldn't add the note to ${joinNames(bad)}.` : '',
+        ok.length ? `已将说明添加到 ${joinNames(ok)}。` : '',
+        manual.length ? `下方显示了给 ${joinNames(manual)} 的说明，请自行复制到 ${CURSOR_RULES_PLACE}。` : '',
+        bad.length ? `无法将说明添加到 ${joinNames(bad)}。` : '',
       ]
         .filter(Boolean)
-        .join(' '),
+        .join(''),
     );
   };
   const failedAll = (agents: InboxNoteAgentId[], err: unknown): InboxNoteResult[] =>
@@ -140,23 +140,23 @@ export function AgentNoteDialog({ rows, noteText, onModel, onClosed }: AgentNote
   const manualNames = joinNames(manualRows.map((row) => row.label));
   const title = done
     ? writtenOk.length > 0
-      ? `Added the note to ${whoLabel(writtenOk.map((row) => row.label))}`
+      ? `已将说明添加到 ${whoLabel(writtenOk.map((row) => row.label))}`
       : hasManual && !anyFailed
-        ? `Copy the note into ${manualNames}`
-        : 'The note was not added'
+        ? `将说明复制到 ${manualNames}`
+        : '未添加说明'
     : single
       ? handOnly
-        ? `Copy the note into ${rows[0]!.label}?`
-        : `Add the note to ${rows[0]!.label}?`
-      : 'Tell your agents about the Inbox';
-  const handLine = `${handNames} ${handRows.length === 1 ? 'keeps its' : 'keep their'} rules in the app, so you copy the note into ${CURSOR_RULES_PLACE} yourself; Plannotator can't see, update or remove that copy.`;
+        ? `要将说明复制到 ${rows[0]!.label} 吗？`
+        : `要将说明添加到 ${rows[0]!.label} 吗？`
+      : '让 agent 了解收件箱';
+  const handLine = `${handNames} 的规则保存在应用内，所以需要你自行将说明复制到 ${CURSOR_RULES_PLACE}；Plannotator 无法查看、更新或删除那份副本。`;
   const desc = done
     ? null
     : single && handOnly
-      ? `A short note in its rules tells it to send you decisions and finished work here while you're away. ${handLine}`
+      ? `在它的规则中加一段简短说明，它就会在你离开时把需要决策的事项和已完成的工作发送到这里。${handLine}`
       : single
-        ? "A short note in its instructions tells it to send you decisions and finished work here while you're away. Plain text you can edit or delete."
-        : `Plannotator can add a short note to each agent's instructions, so they send you decisions and finished work here while you're away. Plain text you can edit or delete.${handRows.length > 0 ? ` ${handLine}` : ''}`;
+        ? '在它的指令中加一段简短说明，它就会在你离开时把需要决策的事项和已完成的工作发送到这里。纯文本，你可以编辑或删除。'
+        : `Plannotator 可以给每个 agent 的指令加一段简短说明，让它们在你离开时把需要决策的事项和已完成的工作发送到这里。纯文本，你可以编辑或删除。${handRows.length > 0 ? ` ${handLine}` : ''}`;
 
   return (
     <Modal
@@ -181,7 +181,7 @@ export function AgentNoteDialog({ rows, noteText, onModel, onClosed }: AgentNote
       <div className="ib-anote-body">
         {done ? (
           <>
-            <ul className="ib-anote-table" aria-label="What was written">
+            <ul className="ib-anote-table" aria-label="写入的内容">
               {doneRows.map((row) => {
                 const s = status[row.id]!;
                 return (
@@ -191,7 +191,7 @@ export function AgentNoteDialog({ rows, noteText, onModel, onClosed }: AgentNote
                       <RowMain row={row} failure={s.kind === 'done' && !s.result.ok ? s.result.reason : null} onRetry={() => void retry(row.id as InboxNoteAgentId)} />
                       <span className="ib-anote-st">
                         {s.kind === 'busy' ? (
-                          <span className="ib-anote-pill">Adding…</span>
+                          <span className="ib-anote-pill">正在添加…</span>
                         ) : (
                           <span className={`ib-anote-res ${!s.result.ok ? 'ib-anote-bad' : s.result.action === 'manual' ? 'ib-anote-hand' : 'ib-anote-good'}`}>
                             <Icon name={!s.result.ok ? 'warn' : s.result.action === 'manual' ? 'copy' : 'check'} />
@@ -206,16 +206,16 @@ export function AgentNoteDialog({ rows, noteText, onModel, onClosed }: AgentNote
             </ul>
             <p className="ib-anote-doneline">
               {[
-                writtenOk.length > 0 ? 'Each agent reads it from its next session.' : '',
-                hasManual ? `Copy the note below into ${CURSOR_RULES_PLACE} in ${manualNames}. Plannotator can't see, update or remove that copy.` : '',
-                anyFailed ? 'Fix the file, then try again here or in Settings → Agents.' : '',
+                writtenOk.length > 0 ? '每个 agent 会从下一次会话开始读取它。' : '',
+                hasManual ? `请将下方的说明复制到 ${manualNames} 中的 ${CURSOR_RULES_PLACE}。Plannotator 无法查看、更新或删除那份副本。` : '',
+                anyFailed ? '修复该文件，然后在这里或“设置 → Agents”中重试。' : '',
               ]
                 .filter(Boolean)
-                .join(' ')}
+                .join('')}
             </p>
             {hasManual && (
               <div className="ib-anote-note" data-anote-copy="">
-                <pre tabIndex={0} aria-label={`The note to copy into ${manualNames}`}>
+                <pre tabIndex={0} aria-label={`要复制到 ${manualNames} 的说明`}>
                   <NoteText text={copyText} />
                 </pre>
               </div>
@@ -223,7 +223,7 @@ export function AgentNoteDialog({ rows, noteText, onModel, onClosed }: AgentNote
           </>
         ) : (
           <>
-            <ul className="ib-anote-table" aria-label={single ? 'The note goes to' : 'Agents'}>
+            <ul className="ib-anote-table" aria-label={single ? '说明将添加到' : 'Agents'}>
               {rows.map((row) =>
                 single ? (
                   <li key={row.id}>
@@ -256,11 +256,11 @@ export function AgentNoteDialog({ rows, noteText, onModel, onClosed }: AgentNote
             </ul>
             <button type="button" className="ib-anote-fold" aria-expanded={preview} aria-controls={`${id}-note`} onClick={() => setPreview((open) => !open)}>
               <Icon name="chevR" />
-              {preview ? 'Hide the note' : 'Show the note'}
+              {preview ? '隐藏说明' : '显示说明'}
             </button>
             {preview && (
               <div className="ib-anote-note" id={`${id}-note`}>
-                <pre tabIndex={0} aria-label={handOnly ? 'The note to copy' : 'The note Plannotator adds'}>
+                <pre tabIndex={0} aria-label={handOnly ? '要复制的说明' : 'Plannotator 添加的说明'}>
                   <NoteText text={handOnly ? copyText : noteText} />
                 </pre>
               </div>
@@ -273,25 +273,25 @@ export function AgentNoteDialog({ rows, noteText, onModel, onClosed }: AgentNote
           <>
             <span className="ib-anote-later">
               {writtenOk.length === 0 && hasManual
-                ? `Remove the copy in ${manualNames} yourself when you no longer want it.`
+                ? `不再需要时，请自行删除 ${manualNames} 中的副本。`
                 : hasManual
-                  ? `Remove the added notes any time in Settings → Agents; the copy in ${manualNames} is yours to remove.`
-                  : 'Remove it any time in Settings → Agents.'}
+                  ? `随时可以在“设置 → Agents”中移除已添加的说明；${manualNames} 中的副本需你自行移除。`
+                  : '随时可以在“设置 → Agents”中移除。'}
             </span>
             <button type="button" className="ib-btn ib-pri" data-anote-done="" ref={doneRef} onClick={close}>
-              Done
+              完成
             </button>
           </>
         ) : (
           <>
-            <span className="ib-anote-later">Change it later in Settings → Agents.</span>
+            <span className="ib-anote-later">稍后可以在“设置 → Agents”中更改。</span>
             {primary.add && (
               <button type="button" className="ib-btn ib-ghost" data-anote-notnow="" aria-disabled={busy || undefined} onClick={decline}>
-                Not now
+                暂不
               </button>
             )}
             <button type="button" className="ib-btn ib-pri" data-anote-primary="" aria-disabled={busy || undefined} onClick={() => void add()}>
-              {busy ? (pickedWritten.length > 0 ? 'Adding…' : 'Preparing…') : primary.label}
+              {busy ? (pickedWritten.length > 0 ? '正在添加…' : '正在准备…') : primary.label}
             </button>
           </>
         )}
@@ -304,7 +304,7 @@ export function AgentNoteDialog({ rows, noteText, onModel, onClosed }: AgentNote
 }
 
 function Pill({ row }: { row: InboxAgentRow }) {
-  return <span className="ib-anote-pill">{noteCopiedByHand(row) ? 'Copy yourself' : row.note?.create ? 'New file' : 'Adds to end'}</span>;
+  return <span className="ib-anote-pill">{noteCopiedByHand(row) ? '自行复制' : row.note?.create ? '新文件' : '追加到末尾'}</span>;
 }
 
 function RowMain({ row, failure, onRetry }: { row: InboxAgentRow; failure?: string | null; onRetry?: () => void }) {
@@ -317,14 +317,14 @@ function RowMain({ row, failure, onRetry }: { row: InboxAgentRow; failure?: stri
         </span>
       </Tip>
       {note?.path && <NotePath path={note.path} />}
-      {!failure && noteCopiedByHand(row) && <span className="ib-anote-sub">Nothing is written here: you paste the note into {CURSOR_RULES_PLACE}.</span>}
-      {!failure && row.id === 'pi' && <span className="ib-anote-sub">Pi reads only one of its instruction files; this is the one.</span>}
+      {!failure && noteCopiedByHand(row) && <span className="ib-anote-sub">这里不会写入任何内容：你需要自行将说明粘贴到 {CURSOR_RULES_PLACE}。</span>}
+      {!failure && row.id === 'pi' && <span className="ib-anote-sub">Pi 只读取它的一个指令文件，就是这一个。</span>}
       {!failure && note?.shared_with && note.shared_with.length > 0 && (
-        <span className="ib-anote-sub">This file is shared with {joinNames(note.shared_with.map((other) => INBOX_AGENT_LABELS[other]))}: one section serves both.</span>
+        <span className="ib-anote-sub">此文件与 {joinNames(note.shared_with.map((other) => INBOX_AGENT_LABELS[other]))} 共用：一个章节同时服务两者。</span>
       )}
       {!failure && note?.target && (
         <span className="ib-anote-sub">
-          This file is a link to <code dir="ltr">{note.target}</code>; the note goes there.
+          此文件是指向 <code dir="ltr">{note.target}</code> 的链接；说明会写入那里。
         </span>
       )}
       {failure && (
@@ -336,7 +336,7 @@ function RowMain({ row, failure, onRetry }: { row: InboxAgentRow; failure?: stri
               <>
                 {' '}
                 <button type="button" className="ib-lnk" onClick={onRetry}>
-                  Try again
+                  重试
                 </button>
               </>
             )}

@@ -39,7 +39,7 @@ const arrows = (ref: (action: string, only?: number) => Ref, action: string): Re
 export const MAP_COLUMNS: MapGroup[][] = [
   [
     {
-      title: 'Everywhere',
+      title: '全局',
       rows: [
         { keys: [{ scope: inboxSearchShortcuts, action: 'openSearch' }] },
         { keys: [app('openMap')] },
@@ -54,16 +54,16 @@ export const MAP_COLUMNS: MapGroup[][] = [
       ],
     },
     {
-      title: 'List',
+      title: '列表',
       rows: [
-        { label: 'Move between threads', keys: [list('previous'), list('next')] },
-        { label: 'First or last thread', keys: [list('first'), list('last')] },
+        { label: '在会话之间移动', keys: [list('previous'), list('next')] },
+        { label: '第一个或最后一个会话', keys: [list('first'), list('last')] },
         { keys: [list('open')] },
         { keys: [thread('markRead')] },
         { keys: [thread('archive')] },
         { keys: [thread('snooze')] },
         { keys: [thread('undo')] },
-        { label: 'Row, card or message menu', keys: [list('rowMenu')], also: [thread('messageMenu')] },
+        { label: '行、卡片或消息菜单', keys: [list('rowMenu')], also: [thread('messageMenu')] },
         { keys: arrows(board, 'move') },
         { keys: [board('ends')] },
       ],
@@ -71,19 +71,19 @@ export const MAP_COLUMNS: MapGroup[][] = [
   ],
   [
     {
-      title: 'Thread',
+      title: '会话',
       rows: [
         { keys: [thread('reply')] },
-        { label: 'Send the reply', keys: [thread('send')] },
-        { label: 'Next or previous thread', keys: [thread('nextThread'), thread('previousThread')] },
-        { label: 'Next or previous message', keys: [thread('nextMessage'), thread('previousMessage')] },
+        { label: '发送回复', keys: [thread('send')] },
+        { label: '下一个或上一个会话', keys: [thread('nextThread'), thread('previousThread')] },
+        { label: '下一条或上一条消息', keys: [thread('nextMessage'), thread('previousMessage')] },
         { keys: [thread('firstNew')] },
         { keys: [thread('openItems')] },
         { keys: [thread('close')], also: [app('leavePage'), file('escape'), { scope: inboxPrBoardShortcuts, action: 'leaveSelect' }, { scope: inboxListPickShortcuts, action: 'leavePicks' }] },
       ],
     },
     {
-      title: 'Files',
+      title: '文件',
       rows: [
         { keys: [thread('openNewest')] },
         { keys: arrows(tiles, 'move') },
@@ -91,7 +91,7 @@ export const MAP_COLUMNS: MapGroup[][] = [
         { keys: arrows(grid, 'move') },
         { keys: [grid('ends')] },
         { keys: [thread('fullScreen')] },
-        { label: 'Next or previous file', keys: [file('next', 0), file('previous', 0)], also: [file('next'), file('previous')] },
+        { label: '下一个或上一个文件', keys: [file('next', 0), file('previous', 0)], also: [file('next'), file('previous')] },
         { keys: [file('toggleTools')] },
         { keys: [file('toggleAnnotate')] },
       ],

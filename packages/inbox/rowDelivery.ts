@@ -12,7 +12,7 @@ import { whenTime } from './format';
 /** Whom it goes to, as the thread names it ("Claude Code", "Claude Code (another session)", an MCP agent's own name). */
 export function rowDeliveryName(d: InboxRowDelivery): string {
   const name = inboxAgentName({ kind: 'agent', host: d.host, name: d.name });
-  return d.another_session ? `${name} (another session)` : name;
+  return d.another_session ? `${name}（另一个会话）` : name;
 }
 
 /** The tooltip: the thread's delivery line for the same state (a 👍's says so first). */
@@ -31,7 +31,7 @@ export function rowDeliveryLine(d: InboxRowDelivery, time: (iso: string) => stri
     ...(d.state === 'delivered' && d.auto_after_min !== undefined ? { autoAfterMin: d.auto_after_min } : {}),
     ...(d.state === 'delivered' && d.turn_ended ? { turnEnded: true } : {}),
   });
-  return d.kind === 'ack' ? `👍 Looks good · ${text}` : text;
+  return d.kind === 'ack' ? `👍 没问题 · ${text}` : text;
 }
 
 /**
@@ -52,13 +52,13 @@ export function rowDeliverySpoken(d: InboxRowDelivery): string {
   const words =
     stopped ??
     {
-      delivered: `delivered to ${name}`,
-      undelivered: 'not delivered',
-      saved: `saved for ${name}`,
-      sending: `sending to ${name}`,
-      queued: `queued for ${name}`,
+      delivered: `已送达给 ${name}`,
+      undelivered: '未送达',
+      saved: `已为 ${name} 保存`,
+      sending: `正在发送给 ${name}`,
+      queued: `已为 ${name} 排队`,
     }[d.state];
-  const text = d.kind === 'ack' ? `Looks good, ${words}` : words;
+  const text = d.kind === 'ack' ? `没问题，${words}` : words;
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 

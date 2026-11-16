@@ -10,19 +10,16 @@ import { INBOX_DRAFT_BODY_MAX, type InboxRowUnsent } from '@plannotator/core/inb
 import { shortTime } from '../format';
 import { Icon } from '../icons';
 
-const plural = (count: number, one: string) => `${count} ${one}${count === 1 ? '' : 's'}`;
-
-/** What waits, in words: "Your reply, 2 picks, 1 comment" (`lead`: capitalized). */
-export function unsentWords(unsent: { reply: boolean; picks: number; comments: number; done?: number; cant?: number }, lead = true): string {
+/** What waits, in words: "你的回复，2 个选择，1 条评论". */
+export function unsentWords(unsent: { reply: boolean; picks: number; comments: number; done?: number; cant?: number }, _lead = true): string {
   const parts: string[] = [];
-  if (unsent.reply) parts.push('your reply');
-  if (unsent.picks > 0) parts.push(plural(unsent.picks, 'pick'));
+  if (unsent.reply) parts.push('你的回复');
+  if (unsent.picks > 0) parts.push(`${unsent.picks} 个选择`);
   // Action items whose Done or Can't do it waits for the Send (approval "inbox-action-items-in-reply").
-  if ((unsent.done ?? 0) > 0) parts.push(`${unsent.done} done`);
-  if ((unsent.cant ?? 0) > 0) parts.push(`${unsent.cant} can't do`);
-  if (unsent.comments > 0) parts.push(plural(unsent.comments, 'comment'));
-  const text = parts.join(', ');
-  return lead ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+  if ((unsent.done ?? 0) > 0) parts.push(`${unsent.done} 项已完成`);
+  if ((unsent.cant ?? 0) > 0) parts.push(`${unsent.cant} 项无法完成`);
+  if (unsent.comments > 0) parts.push(`${unsent.comments} 条评论`);
+  return parts.join('，');
 }
 
 /** A row's `unsent`, as unsentWords takes it. */
@@ -38,26 +35,26 @@ export function DraftLabel({ unsent, short = false }: { unsent: InboxRowUnsent; 
   if (short) {
     return (
       <span className="ib-draft-l" data-draft-label="">
-        <b>Draft</b>
+        <b>草稿</b>
       </span>
     );
   }
   return (
     <span className="ib-draft-l" data-draft-label="">
-      <b>Draft</b> <span aria-hidden="true">·</span> <span>{unsentWords(rowUnsent(unsent))}</span>
+      <b>草稿</b> <span aria-hidden="true">·</span> <span>{unsentWords(rowUnsent(unsent))}</span>
     </span>
   );
 }
 
 /** Above the reply box when its words are longer than a draft holds (the Inbox refuses such a draft). */
-export const DRAFT_NOT_SAVED_TOO_LONG = `Not saved: a draft holds at most ${INBOX_DRAFT_BODY_MAX.toLocaleString('en-US')} characters.`;
+export const DRAFT_NOT_SAVED_TOO_LONG = `未保存：草稿最多容纳 ${INBOX_DRAFT_BODY_MAX.toLocaleString('zh-CN')} 个字符。`;
 
 /** Above the reply box when the last save did not land (refused, or no answer): said in place of "Saved …". */
-export const DRAFT_NOT_SAVED_FAILED = 'Not saved. It tries again when you type.';
+export const DRAFT_NOT_SAVED_FAILED = '未保存。你继续输入时会再次尝试。';
 
 /** The conflict line's words: both windows hold words for this reply. */
 export function conflictText(sentElsewhere: boolean): string {
-  return sentElsewhere ? 'Not saved: this reply was sent or discarded in another window.' : 'Not saved: this reply changed in another window.';
+  return sentElsewhere ? '未保存：此回复已在另一个窗口发送或丢弃。' : '未保存：此回复已在另一个窗口中更改。';
 }
 
 /**
@@ -83,32 +80,32 @@ export function DraftHead({ conflict }: { conflict: DraftConflict }) {
   // Not a live region: the thread's own region says it once when it appears.
   return (
     <div className="ib-reply-l ib-draft-head" data-draft-head="" data-draft-conflict="">
-      <span className="ib-draft-pill">Draft</span>
+      <span className="ib-draft-pill">草稿</span>
       <span className="ib-draft-saved" id={conflict.id}>
         {conflict.text}
       </span>
       <span className="ib-draft-acts">
         <button type="button" className="ib-draft-discard" data-draft-keep-mine="" onClick={conflict.onKeepMine}>
-          Keep mine
+          保留我的
         </button>
         <button type="button" className="ib-draft-discard" data-draft-discard="" onClick={conflict.onDiscard}>
-          Discard mine
+          丢弃我的
         </button>
       </span>
     </div>
   );
 }
 
-export const DRAFT_OFFER_TEXT = 'A saved draft of this reply is waiting.';
+export const DRAFT_OFFER_TEXT = '此回复有一份已保存的草稿在等待。';
 
 export function DraftOffer({ onRestore }: { onRestore: () => void }) {
   return (
     <div className="ib-reply-l ib-draft-head" data-draft-head="" data-draft-offer="">
-      <span className="ib-draft-pill">Draft</span>
+      <span className="ib-draft-pill">草稿</span>
       <span className="ib-draft-saved">{DRAFT_OFFER_TEXT}</span>
       <span className="ib-draft-acts">
         <button type="button" className="ib-draft-discard" data-draft-restore="" onClick={onRestore}>
-          Restore draft
+          恢复草稿
         </button>
       </span>
     </div>
@@ -137,13 +134,13 @@ export function DraftStamp({
   if (!tooLong && !failed && savedAt === null) return null;
   return (
     <span className="ib-draft-stamp" data-draft-head="" data-draft-stamp="" data-draft-too-long={tooLong ? '' : undefined} data-draft-failed={failed && !tooLong ? '' : undefined}>
-      <span className="ib-draft-pill">Draft</span>
+      <span className="ib-draft-pill">草稿</span>
       <span className="ib-draft-saved" role="status">
-        {tooLong ? DRAFT_NOT_SAVED_TOO_LONG : failed ? DRAFT_NOT_SAVED_FAILED : `Saved ${shortTime(savedAt!)}`}
+        {tooLong ? DRAFT_NOT_SAVED_TOO_LONG : failed ? DRAFT_NOT_SAVED_FAILED : `已保存 ${shortTime(savedAt!)}`}
       </span>
       {!tooLong && savedAt !== null && (
         <button type="button" className="ib-draft-discard" data-draft-discard="" onClick={onDiscard}>
-          Discard
+          丢弃
         </button>
       )}
     </span>
@@ -176,13 +173,13 @@ export function DraftFootNote({
   const link = onComments ? { type: 'button' as const, onClick: onComments, 'aria-expanded': commentsOpen, 'aria-haspopup': 'dialog' as const, 'data-comments-link': '' } : null;
   return (
     <>
-    {link && <span id={id} hidden>{['Draft', lead, comments].filter(Boolean).join(', ')}</span>}
+    {link && <span id={id} hidden>{['草稿', lead, comments].filter(Boolean).join('，')}</span>}
     <span className="ib-draft-foot" data-draft-foot="" id={link ? undefined : id}>
       <span className="ib-draft-pill">
         {/* The comma is for the ear ("Draft, 1 pick, 3 comments"): inline and sized to nothing, so no space comes before it. */}
         <span>
-          Draft
-          {(lead || comments) && <span className="ib-draft-comma">,</span>}
+          草稿
+          {(lead || comments) && <span className="ib-draft-comma">，</span>}
         </span>
         {unsent.comments > 0 &&
           (link ? (
@@ -199,7 +196,7 @@ export function DraftFootNote({
       </span>{' '}
       <span className="ib-st">
         {lead && <span data-draft-words="">{lead}</span>}
-        {lead && comments && <span data-draft-sep="">{', '}</span>}
+        {lead && comments && <span data-draft-sep="">{'，'}</span>}
         {comments &&
           (link ? (
             <button {...link} className="ib-comments-link" data-draft-comments="">

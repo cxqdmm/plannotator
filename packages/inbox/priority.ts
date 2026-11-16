@@ -21,8 +21,8 @@ export function priorityAction(row: Pick<InboxListRow, 'priority' | 'resolved_at
 /** The group a row returns to when it leaves Priority, for Remove's toast ("Back in Waiting on you"); null when unknown. */
 export function priorityBackIn(row: InboxListRow | null | undefined): string | null {
   if (!row) return null;
-  if (inboxRowArchived(row)) return 'Back in Archived';
-  if (row.snoozed) return `Back in ${INBOX_SNOOZED_BAND.label}`;
+  if (inboxRowArchived(row)) return '已回到已归档';
+  if (row.snoozed) return `已回到「${INBOX_SNOOZED_BAND.label}」`;
   const label = INBOX_SECTIONS.find((section) => section.id === row.section)?.label;
-  return label ? `Back in ${label}` : null;
+  return label ? `已回到「${label}」` : null;
 }

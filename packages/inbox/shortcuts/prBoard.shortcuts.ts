@@ -8,8 +8,8 @@ import { defineShortcutScope } from '@plannotator/ui/shortcuts';
  */
 export const inboxPrBoardShortcuts = defineShortcutScope({
   id: 'inbox-pr-board',
-  title: 'Pull requests',
+  title: 'PR',
   shortcuts: {
-    leaveSelect: { description: 'Close, one layer at a time', bindings: ['Escape'], section: 'Everywhere', preventDefault: true, displayOrder: 9 },
+    leaveSelect: { description: '关闭，一次一层', bindings: ['Escape'], section: '全局', preventDefault: true, displayOrder: 9 },
   },
 });

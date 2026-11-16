@@ -10,17 +10,17 @@ export function HowPairing() {
             <HostMark host="cloud-grok" />
             Grok Bot
           </span>
-          <span className="ib-chow-field">Nightly fixer</span>
+          <span className="ib-chow-field">夜间修复机器人</span>
         </div>
-        <span className="ib-chow-cap">Kind and name</span>
+        <span className="ib-chow-cap">类型和名称</span>
       </div>
       <HowWire toward="right" />
       <div className="ib-chow-step">
         <div className="ib-chow-card ib-chow-letter">
           <span className="ib-chow-letter-h">
-            <span>Shown once</span>
+            <span>仅显示一次</span>
             <span className="ib-chow-copy">
-              <Icon name="copy" size={11} /> Copy
+              <Icon name="copy" size={11} /> 复制
             </span>
           </span>
           <span className="ib-chow-letter-b">
@@ -32,17 +32,17 @@ export function HowPairing() {
             </span>
           </span>
         </div>
-        <span className="ib-chow-cap">One message</span>
+        <span className="ib-chow-cap">一条消息</span>
       </div>
       <HowWire toward="right" />
       <div className="ib-chow-step">
         <div className="ib-chow-card ib-chow-done">
           <HostMark host="cloud-grok" big />
           <span className="ib-chow-ok">
-            <i /> Connected
+            <i /> 已连接
           </span>
         </div>
-        <span className="ib-chow-cap">It sets itself up</span>
+        <span className="ib-chow-cap">它会自行完成设置</span>
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ import { InboxApiError, InboxHeldError } from './api';
 import type { InboxToastModel } from './components/Toast';
 
 /** A fetch that never reached the Inbox (Chrome, Safari, Firefox each word it their own way). */
-export const INBOX_UNREACHABLE = 'The Inbox did not answer. Try again in a moment.';
+export const INBOX_UNREACHABLE = '收件箱没有响应。请稍后再试。';
 
 const NETWORK = /failed to fetch|load failed|networkerror|network request failed|network connection was lost/i;
 

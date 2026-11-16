@@ -27,7 +27,7 @@ export function runEnded(message: InboxMessageWire, messages: readonly InboxMess
 }
 
 /** The thread header's start: "You started Claude Code in acme-api", or "Routine · Claude Code in acme-api". */
-export const startedWords = (root: InboxMessageWire | undefined) => (root?.scheduled_run || root?.scheduled_change ? 'Routine · ' : 'You started ');
+export const startedWords = (root: InboxMessageWire | undefined) => (root?.scheduled_run || root?.scheduled_change ? '例行任务 · ' : '你启动了 ');
 
 /** The fold over earlier runs: "6 earlier runs, Nov 2 to Nov 9", or null when it hides no run. */
 export function earlierRunsLabel(ids: readonly string[], messages: readonly InboxMessageWire[]): string | null {
@@ -80,7 +80,7 @@ export function RunDivider({ message, messages, run, tail }: { message: InboxMes
   const promptId = `st-prompt-${message.id}`;
   return (
     <div className="st-run-at" data-scheduled-divider={scheduled.run} data-late={scheduled.late ? '' : undefined} data-message-id={message.id}>
-      <button type="button" className="st-line" aria-expanded={open} aria-controls={open ? promptId : undefined} aria-label={`${words.replace(/ · /g, ', ')}. ${open ? 'Hide' : 'Show'} the prompt`} onClick={() => setOpen((was) => !was)}>
+      <button type="button" className="st-line" aria-expanded={open} aria-controls={open ? promptId : undefined} aria-label={`${words.replace(/ · /g, '，')}。${open ? '隐藏' : '显示'}提示词`} onClick={() => setOpen((was) => !was)}>
         <Icon name="scheduled" size={14} />
         <span>{words}</span>
       </button>
@@ -91,12 +91,12 @@ export function RunDivider({ message, messages, run, tail }: { message: InboxMes
       )}
       {failed && (
         <p className="st-note st-unfinished" data-scheduled-didnt-start="">
-          <span className="st-bad">The run didn't start.</span> {scheduled.failed}
+          <span className="st-bad">本次运行未启动。</span> {scheduled.failed}
         </p>
       )}
       {ended.didntFinish && (
         <p className="st-note st-unfinished" data-scheduled-unfinished="">
-          <span className="st-bad">Didn't finish.</span> The session ended without a reply.
+          <span className="st-bad">未完成。</span> 会话结束时没有回复。
         </p>
       )}
       {!failed && tail}

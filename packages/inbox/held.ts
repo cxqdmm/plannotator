@@ -140,9 +140,9 @@ export function heldNotice(
   const projects = new Map<string, string>();
   for (const row of rows) projects.set(row.project.id, names?.get(row.project.id) ?? row.project.name);
   if (count === 0) return { count, text: null };
-  if (projects.size !== 1) return { count, text: `${count} new` };
+  if (projects.size !== 1) return { count, text: `${count} 条新消息` };
   const project = [...projects.values()][0]!;
-  return { count, text: `${count} new in ${project}`, project };
+  return { count, text: `${project} 中有 ${count} 条新消息`, project };
 }
 
 /**

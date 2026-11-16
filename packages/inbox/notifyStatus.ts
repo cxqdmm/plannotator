@@ -25,14 +25,14 @@ export function browserName(userAgent: string = typeof navigator !== 'undefined'
   // Chrome, Chromium-based browsers that say Chrome (Arc, Brave), and headless Chrome ("HeadlessChrome/").
   if (/Chrome\//.test(userAgent)) return 'Chrome';
   if (/\bSafari\//.test(userAgent)) return 'Safari';
-  return 'this browser';
+  return '此浏览器';
 }
 
 /** The browser's app name in macOS System Settings → Notifications. */
 export function browserAppName(name: string): string {
   if (name === 'Chrome') return 'Google Chrome';
   if (name === 'Edge') return 'Microsoft Edge';
-  return name === 'this browser' ? 'your browser' : name;
+  return name === '此浏览器' ? '你的浏览器' : name;
 }
 
 export function isMac(platform: string = typeof navigator !== 'undefined' ? navigator.platform || navigator.userAgent : ''): boolean {
@@ -61,31 +61,31 @@ export function notifyStatusKind(enabled: boolean, permission: PermissionState):
 export function notifyStatusText(kind: NotifyStatusKind, browser: string): string {
   switch (kind) {
     case 'on':
-      return 'On for this address';
+      return '已为此地址开启';
     case 'off':
-      return 'Off';
+      return '已关闭';
     case 'not-allowed':
-      return `Not allowed in ${browser} for this address`;
+      return `${browser} 不允许此地址`;
     case 'blocked':
-      return `Blocked in ${browser} for this address`;
+      return `${browser} 已屏蔽此地址`;
     case 'unsupported':
-      return 'This browser cannot show notifications';
+      return '此浏览器无法显示通知';
   }
 }
 
 /** How to unblock this address, in the browser's own words. */
 export function blockedSteps(browser: string, address: string): string {
-  if (browser === 'Safari') return `In Safari: Settings → Websites → Notifications → ${address} → Allow. Then reload this page.`;
-  if (browser === 'Firefox') return `Click the icon left of ${address} in the address bar → Permissions → Send notifications → remove "Blocked". Then reload this page.`;
-  return `Click the icon left of ${address} in the address bar → Site settings → Notifications → Allow. Then reload this page.`;
+  if (browser === 'Safari') return `在 Safari 中：设置 → 网站 → 通知 → ${address} → 允许。然后重新加载此页面。`;
+  if (browser === 'Firefox') return `点击地址栏中 ${address} 左侧的图标 → 权限 → 发送通知 → 移除“已阻止”。然后重新加载此页面。`;
+  return `点击地址栏中 ${address} 左侧的图标 → 网站设置 → 通知 → 允许。然后重新加载此页面。`;
 }
 
 /** Under the test button: why a test the browser accepted may still not show. */
 export function testMissHint(browser: string, mac: boolean): string {
   const app = browserAppName(browser);
   return mac
-    ? `Didn't see it? Check System Settings → Notifications → ${app}, and Focus.`
-    : `Didn't see it? Check your system's notification settings for ${app}, and Do Not Disturb.`;
+    ? `没看到？请检查系统设置 → 通知 → ${app}，以及专注模式。`
+    : `没看到？请检查系统对 ${app} 的通知设置，以及勿扰模式。`;
 }
 
 /**
@@ -96,22 +96,22 @@ export function testMissHint(browser: string, mac: boolean): string {
  */
 export function reachText(input: { here: boolean; enabled: boolean; reach: InboxNotifyReach | null | undefined; origin: string }): { yes: boolean; text: string } {
   const { here, enabled, reach, origin } = input;
-  if (!enabled) return { yes: false, text: 'No: notifications are off.' };
-  if (!reach) return here ? { yes: true, text: 'Yes, through this tab, while it stays open.' } : { yes: false, text: 'No: this tab may not notify.' };
+  if (!enabled) return { yes: false, text: '否：通知已关闭。' };
+  if (!reach) return here ? { yes: true, text: '是，通过此标签页，只要它保持打开。' } : { yes: false, text: '否：此标签页可能无法发送通知。' };
   const others = Math.max(0, reach.allowed - (here ? 1 : 0));
   if (here) {
     return {
       yes: true,
-      text: others > 0 ? `Yes, through this tab and ${others} other Inbox ${others === 1 ? 'tab' : 'tabs'}, while one stays open.` : 'Yes, through this tab, while it stays open.',
+      text: others > 0 ? `是，通过此标签页和另外 ${others} 个收件箱标签页，只要其中一个保持打开。` : '是，通过此标签页，只要它保持打开。',
     };
   }
   if (reach.allowed > 0) {
     const elsewhere = reach.allowed_origins.filter((o) => o !== origin).map(addressOf);
-    return { yes: true, text: `Yes, through another Inbox tab${elsewhere.length > 0 ? ` (${elsewhere.join(', ')})` : ''}.` };
+    return { yes: true, text: `是，通过另一个收件箱标签页${elsewhere.length > 0 ? `（${elsewhere.join('、')}）` : ''}。` };
   }
-  if (reach.windows === 0) return { yes: false, text: 'No: no Inbox tab is open.' };
+  if (reach.windows === 0) return { yes: false, text: '否：没有打开的收件箱标签页。' };
   return {
     yes: false,
-    text: reach.windows > 1 ? `No: none of the ${reach.windows} open Inbox tabs may notify.` : 'No: no open Inbox tab may notify.',
+    text: reach.windows > 1 ? `否：${reach.windows} 个打开的收件箱标签页均无法发送通知。` : '否：没有打开的收件箱标签页可以发送通知。',
   };
 }

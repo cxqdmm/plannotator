@@ -28,7 +28,7 @@ export function DecisionAsk() {
         group.sessions.map((session) => ({
           host: session.host,
           session: session.session,
-          name: INBOX_HOST_NAMES[session.host] ?? 'An agent',
+          name: INBOX_HOST_NAMES[session.host] ?? '某个 agent',
           project: group.project.name,
           label: session.label ?? null,
         })),
@@ -62,7 +62,7 @@ export function DecisionAsk() {
     } catch (cause) {
       // The agent went while this was open: nothing was sent, and the box reads the sessions there are now.
       if (cause instanceof InboxApiError && cause.code === 'session_not_live') await load();
-      else setError(cause instanceof InboxApiError && cause.code !== 'project_unresolved' ? cause.message : 'The message was not sent. Send again to retry.');
+      else setError(cause instanceof InboxApiError && cause.code !== 'project_unresolved' ? cause.message : '消息未发送。再次发送即可重试。');
     } finally {
       setBusy(false);
     }
@@ -70,10 +70,10 @@ export function DecisionAsk() {
 
   return (
     <section className="ib-sgroup ib-dd-ask" data-decision-ask="">
-      <h2>Ask</h2>
+      <h2>询问</h2>
       <p>
-        Forgot why or when something was decided? Ask here.
-        {agent ? ` ${agent.name} reads your threads in every project and answers in a new thread.` : ''}
+        忘了某件事为什么或何时做出的决定？在这里问吧。
+        {agent ? ` ${agent.name} 会读取你在所有项目中的会话，并在新会话中回答。` : ''}
       </p>
       <form
         className="ib-dd-box"
@@ -82,11 +82,11 @@ export function DecisionAsk() {
           void ask();
         }}
       >
-        <input aria-label="Ask about a decision" placeholder="Why did we drop DockView?" value={text} onChange={(event) => change(event.target.value)} />
+        <input aria-label="询问某个决定" placeholder="我们为什么放弃了 DockView？" value={text} onChange={(event) => change(event.target.value)} />
         {agent ? (
           <button type="submit" className="ib-btn ib-sm" disabled={!question || busy} data-ask-go="">
             <HostMark host={agent.host} agent={agent.session} />
-            <span>Ask {agent.name}</span>
+            <span>询问 {agent.name}</span>
           </button>
         ) : sessions ? (
           <button
@@ -99,17 +99,17 @@ export function DecisionAsk() {
             }}
           >
             <Icon name={copied ? 'check' : 'copy'} size={14} />
-            <span>{copied ? 'Copied' : 'Copy'}</span>
+            <span>{copied ? '已复制' : '复制'}</span>
           </button>
         ) : null}
       </form>
       {sessions && sessions.length > 1 && (
         <div className="ib-dd-who">
-          <select aria-label="Which agent" value={agent?.session ?? ''} onChange={(event) => setChosen(event.target.value)} data-ask-who="">
+          <select aria-label="选择 agent" value={agent?.session ?? ''} onChange={(event) => setChosen(event.target.value)} data-ask-who="">
             {sessions.map((session) => (
               <option key={session.session} value={session.session}>
                 {session.label ? `${session.label} · ` : ''}
-                {session.name} in {session.project}
+                {session.name}（{session.project}）
               </option>
             ))}
           </select>
@@ -117,7 +117,7 @@ export function DecisionAsk() {
       )}
       {sessions && sessions.length === 0 && (
         <p className="ib-dd-note" data-ask-none="">
-          No agent is running
+          没有正在运行的 agent
         </p>
       )}
       {error && (

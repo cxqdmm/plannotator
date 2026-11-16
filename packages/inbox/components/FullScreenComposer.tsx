@@ -165,7 +165,7 @@ const PILL_BAR_GAP = 4;
 const Count = ({ n, word }: { n: number; word: string }) => (
   <span>
     {n}
-    <span className="ib-fcomp-w">{` ${word}${n === 1 ? '' : 's'}`}</span>
+    <span className="ib-fcomp-w">{` ${word}`}</span>
   </span>
 );
 
@@ -224,13 +224,13 @@ function Rides({ reply, phone, linkRef, onComments }: { reply: FullScreenReply; 
       {reply.picks > 0 && (
         <span className="ib-fcomp-chip">
           <Icon name="check" size={12} />
-          <Count n={reply.picks} word="pick" />
+          <Count n={reply.picks} word="个选择" />
         </span>
       )}
       {reply.actions > 0 && (
         <span className="ib-fcomp-chip">
           <Icon name="check" size={12} />
-          <Count n={reply.actions} word="action item" />
+          <Count n={reply.actions} word="个待办项" />
         </span>
       )}
       {reply.annotations > 0 && (
@@ -245,7 +245,7 @@ function Rides({ reply, phone, linkRef, onComments }: { reply: FullScreenReply; 
           onClick={onComments}
         >
           <Icon name="comment" size={12} />
-          <Count n={reply.annotations} word="comment" />
+          <Count n={reply.annotations} word="条评论" />
         </button>
       )}
       {/* The thread foot's words (openItemsLabel): "2 open questions", "1 open action item", "2 questions, 1 action item".
@@ -390,9 +390,9 @@ export function FullScreenComposer({
     if (listAt && !listShown) reply.comments.onList(null);
   });
 
-  const nounText = noun === 'video' ? 'this video' : noun === 'recording' ? 'this recording' : noun === 'page' ? 'this page' : 'this image';
-  const commentLabel = `Comment on ${nounText}`;
-  const replyLabel = `Reply to ${reply.to}`;
+  const nounText = noun === 'video' ? '此视频' : noun === 'recording' ? '此录音' : noun === 'page' ? '此页面' : '此图片';
+  const commentLabel = `评论${nounText}`;
+  const replyLabel = `回复 ${reply.to}`;
   const label = mode === 'comment' ? commentLabel : replyLabel;
 
   /**
@@ -410,7 +410,7 @@ export function FullScreenComposer({
   if (state.minimized) {
     // Words or files wait in the reply: the pill says so (a phone's, "Draft").
     const waiting = hasDraft || reply.files.length > 0;
-    const pillText = waiting ? 'Reply draft' : label;
+    const pillText = waiting ? '回复草稿' : label;
     return (
       <>
       {keptComment(false)}
@@ -424,7 +424,7 @@ export function FullScreenComposer({
             state.setMinimized(false);
           }}
           aria-expanded={false}
-          aria-label={`Show the composer: ${pillText}`}
+          aria-label={`显示撰写框：${pillText}`}
           data-fcomp-pill=""
         >
           <Icon name={waiting || mode === 'reply' ? 'reply' : 'comment'} size={phone ? 18 : 13} />
@@ -471,7 +471,7 @@ export function FullScreenComposer({
         onClick={() => pick(which)}
         onKeyDown={onTabKey}
         data-fcomp-mode={which}
-        title={!on && words ? `${text} (has words)` : narrow && short ? text : undefined}
+        title={!on && words ? `${text}（有文字）` : narrow && short ? text : undefined}
       >
         {on && flare('l')}
         {on && flare('r')}
@@ -502,10 +502,10 @@ export function FullScreenComposer({
       onClick={reply.onSend}
       disabled={reply.sending || !reply.canSend || voice.busy}
       aria-busy={reply.sending || undefined}
-      aria-label={phone ? `Send to ${reply.to}` : undefined}
+      aria-label={phone ? `发送给 ${reply.to}` : undefined}
       data-fcomp-send=""
     >
-      {reply.sending ? 'Sending…' : 'Send'}
+      {reply.sending ? '正在发送…' : '发送'}
     </button>
   );
   const foot =
@@ -523,10 +523,10 @@ export function FullScreenComposer({
         {showSent ? (
           <span className="ib-fcomp-sent" data-fcomp-sent="">
             <Icon name="checkCircle" size={13} />
-            <span className="ib-fcomp-sentl">Sent to {reply.to}</span>
+            <span className="ib-fcomp-sentl">已发送给 {reply.to}</span>
           </span>
         ) : reply.conflict ? (
-          <span className="ib-fcomp-note">This reply changed in another window.</span>
+          <span className="ib-fcomp-note">此回复已在另一个窗口中更改。</span>
         ) : (
           <Rides
             reply={reply}
@@ -539,7 +539,7 @@ export function FullScreenComposer({
           />
         )}
         <button type="button" className="ib-fcomp-link" onClick={reply.onOpenThread} data-fcomp-open-thread="">
-          <span className="ib-fcomp-lo">Open in </span>
+          <span className="ib-fcomp-lo">在以下位置打开 </span>
           <span className="ib-fcomp-lt">thread</span>
         </button>
         <button
@@ -550,8 +550,8 @@ export function FullScreenComposer({
             reply.onChange('');
             replyRef.current?.focus({ preventScroll: true });
           }}
-          aria-label="Clear the reply’s words"
-          title="Clear the reply’s words"
+          aria-label="清空回复中的文字"
+          title="清空回复中的文字"
           data-fcomp-bin=""
         >
           {binIcon}
@@ -603,17 +603,17 @@ export function FullScreenComposer({
     >
       <div className="ib-fcomp-top" {...dragHandle}>
         {takesComments ? (
-          <div className="ib-fcomp-tabs" role="radiogroup" aria-label="Write" ref={tabsRef}>
-            {tab('comment', 'comment', phone ? 'Comment' : commentLabel, commentWords, phone ? undefined : 'Comment')}
-            {tab('reply', 'reply', phone ? 'Reply' : replyLabel, hasDraft, phone ? undefined : 'Reply')}
+          <div className="ib-fcomp-tabs" role="radiogroup" aria-label="撰写" ref={tabsRef}>
+            {tab('comment', 'comment', phone ? '评论' : commentLabel, commentWords, phone ? undefined : '评论')}
+            {tab('reply', 'reply', phone ? '回复' : replyLabel, hasDraft, phone ? undefined : '回复')}
           </div>
         ) : (
           <span className="ib-fcomp-solo">
             <Icon name="reply" size={12} />
-            Reply to <b>{reply.to}</b>
+            回复 <b>{reply.to}</b>
           </span>
         )}
-        <Tip content={value.onGather ? 'Hide tools' : 'Hide the composer'} side="top">
+        <Tip content={value.onGather ? '隐藏工具' : '隐藏撰写框'} side="top">
           <button
             type="button"
             className="ib-fvb ib-fcomp-min"
@@ -626,7 +626,7 @@ export function FullScreenComposer({
               focusNext.current = 'pill';
               state.setMinimized(true);
             }}
-            aria-label={value.onGather ? 'Hide tools' : 'Hide the composer'}
+            aria-label={value.onGather ? '隐藏工具' : '隐藏撰写框'}
             aria-expanded={value.onGather ? undefined : true}
             data-fcomp-minimize=""
           >
@@ -661,8 +661,8 @@ export function FullScreenComposer({
               className="ib-fvb ib-fcomp-bin"
               disabled={!commentWords}
               onClick={clearComment}
-              aria-label="Discard this comment"
-              title="Discard this comment"
+              aria-label="丢弃此评论"
+              title="丢弃此评论"
               data-fcomp-bin=""
             >
               {binIcon}
@@ -677,7 +677,7 @@ export function FullScreenComposer({
               ariaLabel={replyLabel}
               ariaDescribedBy={reply.error ? errorId : undefined}
               placeholder={`${replyLabel}…`}
-              destination="your reply"
+              destination="你的回复"
               tags={reply.tags}
               skillFilter={reply.skillFilter}
               value={reply.value}
@@ -711,7 +711,7 @@ export function FullScreenComposer({
       {drop.over && (
         <div className="ib-rdrop ib-fcomp-drop" aria-hidden="true" data-fcomp-drop="">
           <Icon name="clip" size={18} />
-          Drop to attach
+          拖放以附加
         </div>
       )}
     </div>

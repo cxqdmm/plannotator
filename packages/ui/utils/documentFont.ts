@@ -27,10 +27,10 @@ export const DOCUMENT_FONT_PRESETS = {
 
 /** The options of the Settings select, Theme Default first. */
 export const DOCUMENT_FONT_OPTIONS = [
-  { value: '', label: 'Theme Default' },
-  { value: 'serif', label: 'Serif' },
-  { value: 'sans-serif', label: 'Sans Serif' },
-  { value: 'monospace', label: 'Monospace' },
+  { value: '', label: '主题默认' },
+  { value: 'serif', label: '衬线' },
+  { value: 'sans-serif', label: '无衬线' },
+  { value: 'monospace', label: '等宽' },
 ] as const;
 
 /** The attribute theme.css keys on; present only away from the default. */

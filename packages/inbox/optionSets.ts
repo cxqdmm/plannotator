@@ -173,8 +173,8 @@ export function optionOf(set: OptionSet, attachmentId: string, choice: number | 
   return index < 0 ? null : { choice: set.choices[index]!, index };
 }
 
-export const LAST_OPTION_NOTE = 'Last option';
-export const FIRST_OPTION_NOTE = 'First option';
+export const LAST_OPTION_NOTE = '最后一个选项';
+export const FIRST_OPTION_NOTE = '第一个选项';
 
 /**
  * "Option B of 4: Quiet hover menu, recommended": what a step inside a set
@@ -185,8 +185,8 @@ export const FIRST_OPTION_NOTE = 'First option';
 export function optionAnnouncement(set: OptionSet, index: number, otherFiles?: number): string {
   const choice = set.choices[index];
   if (!choice) return '';
-  const said = `Option ${choice.letter} of ${set.choices.length}: ${choice.label}${choice.recommended ? ', recommended' : ''}`;
+  const said = `选项 ${choice.letter}（共 ${set.choices.length} 个）：${choice.label}${choice.recommended ? '，推荐' : ''}`;
   if (otherFiles === undefined || index !== set.steps.length - 1) return said;
   if (otherFiles === 0) return `${said}. ${LAST_OPTION_NOTE}`;
-  return `${said}. ${LAST_OPTION_NOTE}. ${otherFiles} other ${otherFiles === 1 ? 'file' : 'files'} under the ${index + 1}/${set.steps.length} button`;
+  return `${said}。${LAST_OPTION_NOTE}。${index + 1}/${set.steps.length} 按钮下还有 ${otherFiles} 个其他文件`;
 }

@@ -476,12 +476,12 @@ function SheetImpl({ layout: L, model, lod = 2, live = false, onNavigate, onEnte
                 data-status={box.status ?? undefined}
                 data-opens={opens ? '' : undefined}
                 // several open PRs at rest: the hover names every one (the part's line shows two at most)
-                title={box.who ? `${p.name}: changed by ${box.who.join(', ')}` : p.name}
+                title={box.who ? `${p.name}：由 ${box.who.join('、')} 改动` : p.name}
                 style={{ left: box.x, top: box.y, width: box.w, height: box.h, opacity: dim < 1 ? dim : undefined }}
                 // a live sheet's parts take the keyboard: Tab walks them in reading
                 // order, the view moves between them with the arrows and dives on Enter
                 tabIndex={live ? 0 : undefined}
-                aria-label={live ? [box.n ? `${box.n}. ${p.name}, ${box.status}` : p.name, p.role, box.who ? `changed by ${box.who.join(', ')}` : box.lines ?? '', opens ? `${plural(box.cw!, 'sheet')} inside, Enter opens it` : ''].filter(Boolean).join('. ') : undefined}
+                aria-label={live ? [box.n ? `${box.n}. ${p.name}，${box.status}` : p.name, p.role, box.who ? `由 ${box.who.join('、')} 改动` : box.lines ?? '', opens ? `内含 ${plural(box.cw!, '张图纸')}，按 Enter 打开` : ''].filter(Boolean).join('。') : undefined}
                 onPointerEnter={() => onHover(id)}
                 onPointerLeave={() => onHover(null)}
                 onFocus={live ? () => onHover(id) : undefined}
@@ -502,12 +502,12 @@ function SheetImpl({ layout: L, model, lod = 2, live = false, onNavigate, onEnte
                   <>
                     <span className="sys-win-stack" aria-hidden="true" />
                     {live && opens ? (
-                      <button type="button" tabIndex={-1} className="sys-win-cue sys-go sys-t-phrase" onClick={(e) => { e.stopPropagation(); if (onEnter) onEnter(id); else onNavigate!(first!); }} aria-label={`Open ${p.name}: ${plural(box.cw, 'sheet')} inside`}>
-                        {plural(box.cw, 'sheet') + ' inside'}
+                      <button type="button" tabIndex={-1} className="sys-win-cue sys-go sys-t-phrase" onClick={(e) => { e.stopPropagation(); if (onEnter) onEnter(id); else onNavigate!(first!); }} aria-label={`打开 ${p.name}：内含 ${plural(box.cw, '张图纸')}`}>
+                        {`内含 ${plural(box.cw, '张图纸')}`}
                         <Chevron />
                       </button>
                     ) : (
-                      <span className="sys-win-cue sys-t-phrase">{plural(box.cw, 'sheet') + ' inside'}<Chevron /></span>
+                      <span className="sys-win-cue sys-t-phrase">{`内含 ${plural(box.cw, '张图纸')}`}<Chevron /></span>
                     )}
                   </>
                 ) : null}

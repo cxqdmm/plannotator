@@ -380,7 +380,7 @@ function algorithmSheet(model: SystemModel, code: string, opts: KindOpts): Sheet
     const t = wrap(Ld.what || '', FONTS.step, LW - 30);
     const cmd = Ld.cmd ? wrap(Ld.cmd, FONTS.mono, LW - 30).lines : [];
     const h = 12 + 16 + t.lines.length * L18 + (cmd.length ? 6 + cmd.length * L15 : 0) + 12;
-    figures.push({ id: 'loads', type: 'load', x: M, y: ly, w: LW, h, when: Ld.when || 'At start', lines: t.lines, code: cmd, size: Ld.size || null });
+    figures.push({ id: 'loads', type: 'load', x: M, y: ly, w: LW, h, when: Ld.when || '开始时', lines: t.lines, code: cmd, size: Ld.size || null });
     if (ep) figures.push({ id: 'loads:a', type: 'arrow', pts: [[M + LW, ly + 24], [rects[ep]!.x, ly + 24]], label: null, dashed: true });
     else if (entry) figures.push({ id: 'loads:a', type: 'arrow', pts: [[M + LW, entry.y + entry.h / 2], [entry.x, entry.y + entry.h / 2]], label: null, dashed: true });
     ly += h + 26;

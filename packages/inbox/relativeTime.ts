@@ -13,24 +13,24 @@ export const RELATIVE_TICK_MS = 60_000;
 
 export function relativeTime(iso: string, now: number): string {
   const minutes = Math.max(0, Math.floor((now - Date.parse(iso)) / 60_000));
-  if (minutes < 1) return 'now';
-  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1) return '刚刚';
+  if (minutes < 60) return `${minutes} 分钟`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
+  if (hours < 24) return `${hours} 小时`;
   const days = Math.floor(hours / 24);
-  return days < 7 ? `${days}d` : shortTime(iso);
+  return days < 7 ? `${days} 天` : shortTime(iso);
 }
 
 /** The same time for a screen reader, which would read "4m" as "4 meters": "4 minutes ago", then the date. */
 export function relativeWords(iso: string, now: number): string {
   const minutes = Math.max(0, Math.floor((now - Date.parse(iso)) / 60_000));
-  if (minutes < 1) return 'just now';
-  const ago = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'} ago`;
-  if (minutes < 60) return ago(minutes, 'minute');
+  if (minutes < 1) return '刚刚';
+  const ago = (n: number, unit: string) => `${n} ${unit}前`;
+  if (minutes < 60) return ago(minutes, '分钟');
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return ago(hours, 'hour');
+  if (hours < 24) return ago(hours, '小时');
   const days = Math.floor(hours / 24);
-  return days < 7 ? ago(days, 'day') : shortTime(iso);
+  return days < 7 ? ago(days, '天') : shortTime(iso);
 }
 
 const listeners = new Set<() => void>();

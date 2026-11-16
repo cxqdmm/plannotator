@@ -66,12 +66,12 @@ export const INBOX_CARD_AUTO_SHIP_COLUMNS: readonly InboxCardColumn[] = ["todo",
 
 /** How the Board names each column. Dropped is "Cancelled" to the person; its id stays, so an older Inbox still reads it. */
 export const INBOX_CARD_COLUMN_LABELS: Readonly<Record<InboxCardColumn, string>> = {
-  backlog: "Backlog",
-  todo: "Todo",
-  in_progress: "In progress",
-  in_review: "In review",
-  done: "Done",
-  dropped: "Cancelled",
+  backlog: "待规划",
+  todo: "待办",
+  in_progress: "进行中",
+  in_review: "评审中",
+  done: "已完成",
+  dropped: "已取消",
 };
 
 /**

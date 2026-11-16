@@ -5,7 +5,7 @@
 import { useMemo } from 'react';
 import type { Revision, SystemModel } from '../format/types.ts';
 import type { GateResult } from '../gate/gate.ts';
-import { changeSummary, isRevision, type ChangeFile, type ChangeSummary } from '../change/summary.ts';
+import { changeSummary, isRevision, type ChangeFile, type ChangeSummary, CHANGE_IS_WORDS } from '../change/summary.ts';
 
 export type PartsListProps = {
   model: SystemModel;
@@ -34,7 +34,7 @@ export function PartsList({ model, revision, files, onOpenFile, selected = null,
   const sum = useMemo(() => summary ?? changeSummary(model, revision, files), [summary, model, revision, files]);
   const plan = isRevision(revision) && revision.pr == null;
   const byPath = useMemo(() => new Map((files ?? []).map((f) => [f.path, f])), [files]);
-  const head = plan ? 'Parts in this plan' : 'Parts in this PR';
+  const head = plan ? '此计划中的部分' : '此 PR 中的部分';
   return (
     <section className="sys sys-plist" aria-label={head}>
       <h2 className="sys-plist-h">{head}</h2>
@@ -44,12 +44,12 @@ export function PartsList({ model, revision, files, onOpenFile, selected = null,
           return (
             <li key={p.id} className="sys-plist-row" data-status={p.is} data-row={p.id} aria-current={selected === p.id ? 'true' : undefined}>
               <button type="button" className="sys-plist-pick" onClick={() => onSelect?.(p.id)} onPointerEnter={() => onHover?.(p.id)} onPointerLeave={() => onHover?.(null)} onFocus={() => onHover?.(p.id)} onBlur={() => onHover?.(null)}
-                aria-label={`${i + 1}. ${p.name}, ${p.is}${p.lines ? `, ${p.lines}` : ''}`}>
+                aria-label={`${i + 1}. ${p.name}，${CHANGE_IS_WORDS[p.is]}${p.lines ? `，${p.lines}` : ''}`}>
                 <span className="sys-plist-n">{i + 1}</span>
                 <span className="sys-plist-name">{p.name}</span>
               </button>
               {first && !plan && (
-                <button type="button" className="sys-plist-diff" onClick={() => onOpenFile(first, p.id)} aria-label={`Open ${first} in the diff`}>
+                <button type="button" className="sys-plist-diff" onClick={() => onOpenFile(first, p.id)} aria-label={`在 Diff 中打开 ${first}`}>
                   diff<svg width="7" height="10" viewBox="0 0 7 10" aria-hidden="true"><path d="M1.5 1.5L5 5L1.5 8.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 </button>
               )}
@@ -72,11 +72,11 @@ export function PartsList({ model, revision, files, onOpenFile, selected = null,
         {sum.flows.filter((f) => f.is === 'removed').map((f) => (
           <li key={f.id} className="sys-plist-row sys-plist-line" data-status="removed">
             <span className="sys-plist-pick"><span className="sys-plist-n" aria-hidden="true" /><span className="sys-plist-name">{f.says || f.id}</span></span>
-            <div className="sys-plist-files"><span className="sys-plist-file">a line, removed</span></div>
+            <div className="sys-plist-files"><span className="sys-plist-file">一行，已移除</span></div>
           </li>
         ))}
       </ol>
-      {!plan && sum.parts.some((p) => p.files.length) && <p className="sys-plist-foot">A part opens its file in the diff. The guide stays in Start review.</p>}
+      {!plan && sum.parts.some((p) => p.files.length) && <p className="sys-plist-foot">点击部分可在 Diff 中打开它的文件。指南仍保留在“开始评审”中。</p>}
     </section>
   );
 }

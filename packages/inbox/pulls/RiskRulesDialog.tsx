@@ -5,10 +5,10 @@ import { InlinePicker } from '@plannotator/ui/components/InlinePicker';
 import { inboxApi } from '../api';
 import { Modal } from '../components/Updates';
 
-const PLACEHOLDER = 'It touches billing or auth.\nIt changes how we store user data.';
-const LOADING = [{ value: '', label: 'Loading models…' }];
+const PLACEHOLDER = '它涉及账单或认证。\n它改变了我们存储用户数据的方式。';
+const LOADING = [{ value: '', label: '正在加载模型…' }];
 /** What the guided review's picker calls an agent's own default model. */
-const AGENT_DEFAULT = { value: '', label: 'Default' };
+const AGENT_DEFAULT = { value: '', label: '默认' };
 
 /**
  * "No slop zone rules": the person's words for what a high-risk pull request is, and the
@@ -51,7 +51,7 @@ export function RiskRulesDialog({ answer, onSaved, onClose }: { answer: InboxPul
     try {
       onSaved(await inboxApi.savePullRisk({ rules, provider, model }));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'The rules could not be saved.');
+      setError(cause instanceof Error ? cause.message : '规则无法保存。');
       setSaving(false);
     }
   };
@@ -67,14 +67,14 @@ export function RiskRulesDialog({ answer, onSaved, onClose }: { answer: InboxPul
           void save();
         }}
       >
-        <h2 id={titleId}>No slop zone rules</h2>
+        <h2 id={titleId}>低质代码规则</h2>
         <label className="ib-sub ib-riskd-l" htmlFor={rulesId}>
-          What makes a pull request high risk for you? Every open one is ranked against this: not touched is low, maybe is medium, definitely is high.
+          对你来说，什么样的 PR 属于高风险？每个开放的 PR 都会据此评级：没涉及是低，可能有是中，确定有是高。
         </label>
         <textarea ref={field} id={rulesId} className="ib-riskd-t" rows={5} placeholder={PLACEHOLDER} value={rules} onChange={(event) => setRules(event.target.value)} data-pull-risk-rules-text="" />
         {answer.agents.length === 0 ? (
           <p className="ib-quietline" data-pull-risk-no-agent="">
-            No agent found on this computer. Install Claude Code, Codex, Pi or OpenCode to rank pull requests.
+            这台计算机上没有找到 agent。安装 Claude Code、Codex、Pi 或 OpenCode 后即可为 PR 评级。
           </p>
         ) : (
           <>
@@ -83,7 +83,7 @@ export function RiskRulesDialog({ answer, onSaved, onClose }: { answer: InboxPul
                 <InlinePicker
                   keysStayInList
                   plainGroupLabels
-                  label="Risk agent"
+                  label="评级 agent"
                   value={provider ?? ''}
                   options={answer.agents.map((agent) => ({ value: agent.id, label: agent.label }))}
                   onChange={(next) => {
@@ -94,13 +94,13 @@ export function RiskRulesDialog({ answer, onSaved, onClose }: { answer: InboxPul
                 />
               </div>
               <div data-pull-risk-model={model ?? ''}>
-                <InlinePicker keysStayInList plainGroupLabels label="Model" value={list ? (model ?? '') : ''} options={modelOptions} onChange={(next) => setModel(next || null)} />
+                <InlinePicker keysStayInList plainGroupLabels label="模型" value={list ? (model ?? '') : ''} options={modelOptions} onChange={(next) => setModel(next || null)} />
               </div>
             </div>
-            <p className="ib-quietline">A cheap model is plenty: Sonnet, Luna or similar. Diffs go only to the provider you choose here.</p>
+            <p className="ib-quietline">便宜的模型就足够：Sonnet、Luna 等即可。Diff 只会发送到你在这里选择的提供商。</p>
             {answer.last_failure && (
               <p className="ib-quietline" data-pull-risk-failed="">
-                The last ranking didn&rsquo;t finish. {answer.last_failure}
+                上一次评级没有完成。{answer.last_failure}
               </p>
             )}
           </>
@@ -112,10 +112,10 @@ export function RiskRulesDialog({ answer, onSaved, onClose }: { answer: InboxPul
         )}
         <div className="ib-acts-row ib-riskd-acts">
           <button type="button" className="ib-btn" onClick={onClose}>
-            Cancel
+            取消
           </button>
           <button type="submit" className="ib-btn ib-pri" disabled={saving || readingModel} data-pull-risk-save="">
-            Save
+            保存
           </button>
         </div>
       </form>

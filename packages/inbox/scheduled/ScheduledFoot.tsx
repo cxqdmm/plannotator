@@ -15,19 +15,19 @@ function LocalFoot({ id }: { id: string }) {
   // Not in this computer's list (deleted, or the switch is off): nothing to edit, no mark.
   if (!row) return null;
   const next = row.next_run ? nextWhenWords(row.next_run) : null;
-  const words = next ? `Routine · next ${next}` : 'Routine';
+  const words = next ? `例行任务 · 下次 ${next}` : '例行任务';
   return (
     <button
       type="button"
       className="st-foot-mark"
-      aria-label={`${next ? `Routine, next run ${next}` : 'Routine'}. Edit the routine`}
+      aria-label={`${next ? `例行任务，下次运行 ${next}` : '例行任务'}。编辑例行任务`}
       onClick={() => writeRoute({ page: 'scheduled', project: null, thread: null, scheduled: id })}
       data-scheduled-foot={id}
     >
       <Icon name="scheduled" size={14} />
       <span>{words}</span>
       <span aria-hidden="true">·</span>
-      <span className="st-edit">Edit</span>
+      <span className="st-edit">编辑</span>
     </button>
   );
 }
@@ -40,7 +40,7 @@ export function ScheduledFoot({ messages, machine }: { messages: readonly InboxM
     return (
       <span className="st-foot-mark st-far" data-scheduled-foot-far="">
         <Icon name="scheduled" size={14} />
-        <span>Routine on {machine.name}. Manage it there.</span>
+        <span>{machine.name} 上的例行任务。请在那里管理。</span>
       </span>
     );
   return <LocalFoot id={latest.scheduled_run!.scheduled_id} />;

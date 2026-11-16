@@ -76,7 +76,7 @@ const defaultFetchVersions = async (): Promise<{
 }> => {
   const res = await fetch("/api/plan/versions");
   if (!res.ok) {
-    throw new Error("Failed to load versions.");
+    throw new Error("加载版本失败。");
   }
   return (await res.json()) as {
     project: string;

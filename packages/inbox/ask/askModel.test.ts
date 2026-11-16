@@ -69,12 +69,12 @@ describe('the chat list', () => {
   });
 
   test('a row says how long ago in words that step up with the time', () => {
-    expect(askChatTime(ago(0), NOW)).toBe('now');
-    expect(askChatTime(ago(4), NOW)).toBe('4 min ago');
-    expect(askChatTime(ago(3 * HOUR), NOW)).toBe('3 h ago');
-    expect(askChatTime(ago(24 * HOUR), NOW)).toBe('yesterday');
-    expect(askChatTime(ago(72 * HOUR), NOW)).toBe('3 days ago');
-    expect(askChatTime(ago(8 * 24 * HOUR), NOW)).toBe('last week');
+    expect(askChatTime(ago(0), NOW)).toBe('刚刚');
+    expect(askChatTime(ago(4), NOW)).toBe('4 分钟前');
+    expect(askChatTime(ago(3 * HOUR), NOW)).toBe('3 小时前');
+    expect(askChatTime(ago(24 * HOUR), NOW)).toBe('昨天');
+    expect(askChatTime(ago(72 * HOUR), NOW)).toBe('3 天前');
+    expect(askChatTime(ago(8 * 24 * HOUR), NOW)).toBe('上周');
   });
 });
 

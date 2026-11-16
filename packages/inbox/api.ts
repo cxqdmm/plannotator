@@ -896,7 +896,7 @@ export function localIdsIn(value: unknown): Set<string> {
 }
 
 /** Two linked machines claim the thread, message, file or project a path names: it goes to neither (inboxUrl.ts). */
-export const CONFLICT_TEXT = 'Two linked machines both claim this thread, so it opens on neither. Unlink the one that should not have it.';
+export const CONFLICT_TEXT = '两台关联计算机都声称拥有这个会话，因此它不会在任何一台打开。请取消关联不应拥有它的那台。';
 function refuseContested(path: string): void {
   const named = /^\/api\/inbox\/(?:threads|messages|attachments|projects|cards)\/([^/?]+)/.exec(path)?.[1];
   if (named && isContested(decodeURIComponent(named))) throw new InboxApiError(409, 'machine_conflict', CONFLICT_TEXT);
@@ -948,16 +948,16 @@ export class InboxHeldError extends InboxApiError {
 
 /** What a held write says, by its machine's state. */
 export function heldWords(machine: Pick<MachineView, 'name' | 'state'> | null): string {
-  const name = machine?.name ?? 'the other machine';
+  const name = machine?.name ?? '另一台计算机';
   return machine && machine.state !== 'online' && machine.state !== 'connecting'
-    ? `Waiting for ${name}: this applies when ${name} is back.`
-    : `Sending to ${name}: this applies once ${name} confirms.`;
+    ? `正在等待 ${name}：它回来后就会生效。`
+    : `正在发送给 ${name}：它确认后就会生效。`;
 }
 
 /** A read that gives no answer in `timeoutMs` (a held connection, a stalled server) fails with this. */
 export class InboxReadTimeout extends Error {
   constructor(readonly timeoutMs: number) {
-    super(`no answer in ${Math.round(timeoutMs / 1000)} s`);
+    super(`${Math.round(timeoutMs / 1000)} 秒内没有响应`);
     this.name = 'InboxReadTimeout';
   }
 }
@@ -1133,9 +1133,9 @@ export async function post<T>(path: string, body: Record<string, unknown>, init:
         return entry.answer as T;
       }
       // Taken back with Cancel: a Send retried with its key never sends it after all.
-      if (entry.state === 'cancelled') throw new InboxApiError(409, 'outbox_cancelled', `Cancelled. It was never sent to ${held.machine?.name ?? 'the other machine'}.`);
+      if (entry.state === 'cancelled') throw new InboxApiError(409, 'outbox_cancelled', `已取消，从未发送给 ${held.machine?.name ?? '另一台计算机'}。`);
       const why = entry.answer && typeof entry.answer === 'object' ? (entry.answer as { error?: unknown }).error : null;
-      throw new InboxApiError(409, 'not_delivered', typeof why === 'string' && why ? why : `Not delivered to ${held.machine?.name ?? 'the other machine'}.`);
+      throw new InboxApiError(409, 'not_delivered', typeof why === 'string' && why ? why : `没有送达 ${held.machine?.name ?? '另一台计算机'}。`);
     }
   }
   const answer = await readJson<T>(response);
@@ -1358,7 +1358,7 @@ export async function reuseAttachment(attachmentId: string, version: 'current' |
     signal: options.signal,
   });
   const body = (await response.json().catch(() => ({}))) as { upload?: InboxUpload; error?: string; code?: string };
-  if (!response.ok || !body.upload) throw new InboxApiError(response.status, body.code ?? 'error', body.error ?? 'Not attached: that file could not be added.');
+  if (!response.ok || !body.upload) throw new InboxApiError(response.status, body.code ?? 'error', body.error ?? '未附加：无法添加该文件。');
   return body.upload;
 }
 
@@ -1391,11 +1391,11 @@ export function uploadFile(
           new InboxApiError(
             xhr.status,
             typeof body.code === 'string' ? body.code : 'error',
-            typeof body.error === 'string' ? body.error : xhr.status === 413 ? 'Not attached: the file is too large.' : 'Not attached: the upload failed.',
+            typeof body.error === 'string' ? body.error : xhr.status === 413 ? '未附加：文件太大。' : '未附加：上传失败。',
           ),
         );
     };
-    xhr.onerror = () => reject(new InboxApiError(0, 'network', 'Not attached: the upload failed.'));
+    xhr.onerror = () => reject(new InboxApiError(0, 'network', '未附加：上传失败。'));
     xhr.onabort = () => reject(new DOMException('Aborted', 'AbortError'));
     options.signal?.addEventListener('abort', () => xhr.abort(), { once: true });
     xhr.send(file);

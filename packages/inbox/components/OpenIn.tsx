@@ -65,9 +65,9 @@ function useOpenInActions(path: string | null, open: (id: string) => Promise<{ o
     setStatus(null);
     try {
       const result = await open(item.id);
-      if (!result.ok) flash(result.error || `Could not open ${item.label}`, true);
+      if (!result.ok) flash(result.error || `无法打开 ${item.label}`, true);
     } catch (cause) {
-      flash(cause instanceof InboxApiError ? cause.message : `Could not open ${item.label}`, true);
+      flash(cause instanceof InboxApiError ? cause.message : `无法打开 ${item.label}`, true);
     } finally {
       setBusy(false);
     }
@@ -75,7 +75,7 @@ function useOpenInActions(path: string | null, open: (id: string) => Promise<{ o
 
   const copyPath = async () => {
     const ok = path !== null && (await copyTextToClipboard(path));
-    flash(ok ? 'Path copied' : 'Could not copy the path', !ok);
+    flash(ok ? '路径已复制' : '无法复制路径', !ok);
   };
 
   return { busy, status, launch, copyPath, flash };
@@ -98,7 +98,7 @@ function ItemIcon({ item, kind }: { item: OpenInItem; kind: unknown }) {
 }
 
 function missingLabel(attachment: InboxAttachmentState): string {
-  return attachment.unavailable?.code === 'attachment_missing' ? 'Missing' : 'Changed';
+  return attachment.unavailable?.code === 'attachment_missing' ? '缺失' : '已更改';
 }
 
 /** The list both menus show: the apps, then Copy path. */
@@ -136,7 +136,7 @@ function OpenInMenuItems({ kind, missingWord, menu, onLaunch, onCopyPath }: { ki
       {menu.items.length > 0 && <DropdownMenuSeparator />}
       <DropdownMenuItem className="text-xs" onClick={onCopyPath} data-open-in-item="copy-path">
         <Icon name="copy" size={15} className="ib-appi ib-glyph" />
-        <span className="flex-1">Copy path</span>
+        <span className="flex-1">复制路径</span>
       </DropdownMenuItem>
     </>
   );
@@ -178,8 +178,8 @@ function NewTabButton({ attachment, version, big }: { attachment: InboxAttachmen
   const href = newTabUrl(attachment, version);
   if (!href) return null;
   return (
-    <Tip content="Open in new tab">
-      <a className="ib-iconbtn" href={href} target="_blank" rel="noopener noreferrer" aria-label="Open in new tab" data-open-in-tab="">
+    <Tip content="在新标签页中打开">
+      <a className="ib-iconbtn" href={href} target="_blank" rel="noopener noreferrer" aria-label="在新标签页中打开" data-open-in-tab="">
         <Icon name="external" size={big ? 18 : 16} />
       </a>
     </Tip>
@@ -228,11 +228,11 @@ function SplitButton({
   };
   const primary = menu.primary;
   const disabled = !primary || busy || (menu.missing && primary.kind !== 'browser');
-  const title = !primary ? 'Open in…' : menu.missing && primary.kind !== 'browser' ? missingWord : primary.label;
+  const title = !primary ? '打开方式…' : menu.missing && primary.kind !== 'browser' ? missingWord : primary.label;
   const face = (
     <>
       {primary && <ItemIcon item={primary} kind={kind} />}
-      {label && <span>Open</span>}
+      {label && <span>打开</span>}
     </>
   );
   return (
@@ -240,18 +240,18 @@ function SplitButton({
       <span className={`ib-split${open ? ' ib-on' : ''}${menu.missing ? ' ib-dis' : ''}`}>
         {primary?.kind === 'browser' ? (
           <Tip content={title}>
-            <a className="ib-sa" href={primary.href} target="_blank" rel="noopener noreferrer" aria-label="Open in Browser" data-open-in-primary="browser">
+            <a className="ib-sa" href={primary.href} target="_blank" rel="noopener noreferrer" aria-label="在浏览器中打开" data-open-in-primary="browser">
               {face}
             </a>
           </Tip>
         ) : (
-          <Tip content={note ? `${title}: ${note}` : title}>
+          <Tip content={note ? `${title}：${note}` : title}>
             <button
               type="button"
               className="ib-sa"
               disabled={disabled}
               onClick={() => primary && void launch(primary)}
-              aria-label={primary ? `Open in ${primary.label}` : 'Open'}
+              aria-label={primary ? `用 ${primary.label} 打开` : '打开'}
               data-open-in-primary={primary?.id ?? ''}
             >
               {face}
@@ -259,8 +259,8 @@ function SplitButton({
           </Tip>
         )}
         <DropdownMenu open={open} onOpenChange={setOpen}>
-          <Tip content="Open in…">
-            <DropdownMenuTrigger render={<button type="button" className="ib-st" aria-label="Open in…" data-open-in-caret="" />}>
+          <Tip content="打开方式…">
+            <DropdownMenuTrigger render={<button type="button" className="ib-st" aria-label="打开方式…" data-open-in-caret="" />}>
               <Icon name="chevD" size={12} />
             </DropdownMenuTrigger>
           </Tip>
@@ -474,7 +474,7 @@ function useCodeHover({ scope, path, line, lineEnd }: CodeHoverWords, raised = f
             <>
               {preview.pull && (
                 <a className="ib-code-hover-forge" href={withLines(preview.pull, line, lineEnd)} target="_blank" rel="noopener noreferrer" data-code-hover-forge="">
-                  Open on {preview.pull.platform === 'gitlab' ? 'GitLab' : 'GitHub'}
+                  在 {preview.pull.platform === 'gitlab' ? 'GitLab' : 'GitHub'} 上打开
                 </a>
               )}
               <OpenInFile
@@ -482,7 +482,7 @@ function useCodeHover({ scope, path, line, lineEnd }: CodeHoverWords, raised = f
                 path={path}
                 line={line}
                 label
-                note={preview.pull ? "opens this computer's copy" : undefined}
+                note={preview.pull ? '打开本机的副本' : undefined}
                 onListOpenChange={(next) => {
                   listOpen.current = next;
                   // Closed with the pointer gone: the window goes too.
@@ -491,7 +491,7 @@ function useCodeHover({ scope, path, line, lineEnd }: CodeHoverWords, raised = f
               />
               {touch && (
                 <button type="button" className="ib-code-hover-close" onClick={() => hover.dismiss()} data-code-hover-close="">
-                  Close
+                  关闭
                 </button>
               )}
             </>
@@ -706,11 +706,11 @@ function TileMenuItems({
           {/* This file in that view; the remembered choice is unchanged (fileView.ts). */}
           <DropdownMenuItem className="text-xs" onClick={() => onOpenAs('side')} data-open-as="side">
             <Icon name="sideBySide" size={15} className="ib-appi ib-glyph" />
-            <span className="flex-1">Open side by side</span>
+            <span className="flex-1">并排打开</span>
           </DropdownMenuItem>
           <DropdownMenuItem className="text-xs" onClick={() => onOpenAs('full')} data-open-as="full">
             <Icon name="frame" size={15} className="ib-appi ib-glyph" />
-            <span className="flex-1">Open full screen</span>
+            <span className="flex-1">全屏打开</span>
           </DropdownMenuItem>
           {(download || pin || onCopyImage || menu) && <DropdownMenuSeparator />}
         </>
@@ -720,7 +720,7 @@ function TileMenuItems({
           {/* The version the tile opens, under the file's own name: an HTML page or a Markdown file is saved, never opened. */}
           <DropdownMenuItem className="text-xs" render={<a href={download} download={attachment.name} />} data-tile-download={attachment.id}>
             <Icon name="download" size={15} className="ib-appi ib-glyph" />
-            <span className="flex-1">{version === 'sent' ? 'Download the sent version' : 'Download'}</span>
+            <span className="flex-1">{version === 'sent' ? '下载已发送的版本' : '下载'}</span>
           </DropdownMenuItem>
         </>
       )}
@@ -728,7 +728,7 @@ function TileMenuItems({
       {onCopyImage && (
         <DropdownMenuItem className="text-xs" onClick={onCopyImage} data-tile-copy-image={attachment.id}>
           <Icon name="copy" size={15} className="ib-appi ib-glyph" />
-          <span className="flex-1">Copy image</span>
+          <span className="flex-1">复制图片</span>
         </DropdownMenuItem>
       )}
       {(download || pin || onCopyImage) && menu && <DropdownMenuSeparator />}
@@ -790,7 +790,7 @@ export function TileMenu({
   // Nothing leaves the window in the tour: no Copy image either.
   const copyImage =
     source.writes && readInboxAttachmentKind(attachment.kind) === 'image'
-      ? () => void copyImageToClipboard(source.imageUrl(attachment, version), attachment.name).then((ok) => flash(ok ? 'Image copied' : 'Could not copy the image', !ok))
+      ? () => void copyImageToClipboard(source.imageUrl(attachment, version), attachment.name).then((ok) => flash(ok ? '图片已复制' : '无法复制图片', !ok))
       : null;
   const pin = pinOf && artifactPinnable(pinOf.threadId) ? pinOf : null;
   const empty = !onOpenAs && !download && !pin && !menu;
@@ -824,7 +824,7 @@ export function TileMenu({
       <button
         type="button"
         className="ib-att-more"
-        aria-label={`More: ${attachment.name}`}
+        aria-label={`更多：${attachment.name}`}
         aria-haspopup="menu"
         aria-expanded={false}
         data-open-in-more={attachment.id}
@@ -840,8 +840,8 @@ export function TileMenu({
     ? plain
     : apps && !empty ? (
       <DropdownMenu open={open} onOpenChange={setOpen}>
-        <Tip content="More">
-          <DropdownMenuTrigger render={<button type="button" className="ib-att-more" aria-label={`More: ${attachment.name}`} data-open-in-more={attachment.id} />}>
+        <Tip content="更多">
+          <DropdownMenuTrigger render={<button type="button" className="ib-att-more" aria-label={`更多：${attachment.name}`} data-open-in-more={attachment.id} />}>
             <Icon name="dots" size={16} />
           </DropdownMenuTrigger>
         </Tip>
@@ -904,7 +904,7 @@ function FullScreenMoreApps(props: FullScreenMoreProps) {
         openIn={
           menu ? (
             <DropdownMenuGroup>
-              <DropdownMenuLabel className="text-[11px] text-muted-foreground">Open in</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-[11px] text-muted-foreground">打开方式</DropdownMenuLabel>
               <OpenInMenuItems kind={props.attachment.kind} missingWord={missingLabel(props.attachment)} menu={menu} onLaunch={(item) => void launch(item)} onCopyPath={() => void copyPath()} />
             </DropdownMenuGroup>
           ) : null
@@ -921,11 +921,11 @@ function FullScreenMoreMenu(props: FullScreenMoreProps & { openIn: React.ReactNo
   const { writes } = useInboxFileSource();
   // Through the tailnet or on a phone (or a server without the app list): a new tab, for HTML and images.
   const tab = writes && props.openIn === null && props.surface !== undefined ? newTabUrl(attachment, version) : null;
-  const named = [props.openIn || tab ? 'open in' : null, writes ? 'download' : null, props.versionAction ? 'versions' : null].filter(Boolean).join(', ') || 'not in the tour';
+  const named = [props.openIn || tab ? '打开方式' : null, writes ? '下载' : null, props.versionAction ? '版本' : null].filter(Boolean).join('、') || '不在导览中';
   return (
     <DropdownMenu open={props.open} onOpenChange={props.onOpenChange}>
       <DropdownMenuTrigger
-        render={<button type="button" className={`ib-fvb ib-fvmore${props.open ? ' ib-open' : ''}`} aria-label={`More: ${named}`} data-full-view-more="" />}
+        render={<button type="button" className={`ib-fvb ib-fvmore${props.open ? ' ib-open' : ''}`} aria-label={`更多：${named}`} data-full-view-more="" />}
       >
         <Icon name="dots" size={props.phone ? 20 : 17} />
       </DropdownMenuTrigger>
@@ -935,19 +935,19 @@ function FullScreenMoreMenu(props: FullScreenMoreProps & { openIn: React.ReactNo
         {tab && (
           <DropdownMenuItem className="text-xs" render={<a href={tab} target="_blank" rel="noopener noreferrer" />} data-open-in-tab="">
             <Icon name="external" size={15} className="ib-appi ib-glyph" />
-            <span className="flex-1">Open in new tab</span>
+            <span className="flex-1">在新标签页中打开</span>
           </DropdownMenuItem>
         )}
         {writes && (props.openIn || tab) && <DropdownMenuSeparator />}
         {writes ? (
           <DropdownMenuItem className="text-xs" render={<a href={attachmentDownloadUrl(attachment, version)} download={attachment.name} />} data-attachment-download="">
             <Icon name="download" size={15} className="ib-appi ib-glyph" />
-            <span className="flex-1">{version === 'sent' ? 'Download the sent version' : 'Download'}</span>
+            <span className="flex-1">{version === 'sent' ? '下载已发送的版本' : '下载'}</span>
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem className="text-xs" disabled data-full-view-not-in-tour="">
             <Icon name="download" size={15} className="ib-appi ib-glyph" />
-            <span className="flex-1">Open in, Download: not in the tour</span>
+            <span className="flex-1">打开方式、下载：不在导览中</span>
           </DropdownMenuItem>
         )}
         {props.versionAction && (

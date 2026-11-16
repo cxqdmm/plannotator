@@ -446,9 +446,9 @@ export interface TokenAnnotationMeta {
 
 /** Severity display styles — shared between agent detail panel and inline diff annotations. */
 export const SEVERITY_STYLES: Record<string, { dot: string; label: string }> = {
-  important: { dot: 'bg-destructive', label: 'Important' },
-  nit: { dot: 'bg-amber-500', label: 'Nit' },
-  pre_existing: { dot: 'bg-muted-foreground', label: 'Pre-existing' },
+  important: { dot: 'bg-destructive', label: '重要' },
+  nit: { dot: 'bg-amber-500', label: '小问题' },
+  pre_existing: { dot: 'bg-muted-foreground', label: '既有问题' },
 };
 
 // For @pierre/diffs integration

@@ -26,10 +26,10 @@ export interface RevealTurnOnDeps<S extends FeatureSettings> {
 
 /** The toast's lead when the save fails. */
 const REVEAL_FEATURE_NAMES: Record<RevealFeature, string> = {
-  board: 'The Board isn’t on',
-  steps: 'The Checklist isn’t on',
-  code_review: 'Code review isn’t on',
-  bro: 'Bro mode isn’t on',
+  board: '看板未开启',
+  steps: '清单未开启',
+  code_review: '代码评审未开启',
+  bro: 'Bro 模式未开启',
 };
 
 /** How long the "isn't on" toast stays. */
@@ -48,9 +48,9 @@ export function turnOnFromReveal<S extends FeatureSettings>(feature: RevealFeatu
         {
           icon: 'warn',
           lead: REVEAL_FEATURE_NAMES[feature],
-          detail: 'The setting wasn’t saved. You can turn it on in Settings.',
+          detail: '设置未保存。你可以在设置中开启。',
           action: {
-            label: 'Open Settings',
+            label: '打开设置',
             onPress: () => {
               deps.dismissToast();
               deps.openSettings();

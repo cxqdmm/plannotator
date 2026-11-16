@@ -74,7 +74,7 @@ export function StepsButton({ lists, phone, onWaiting, boardCard = null, answere
   // Another session's list too: "+1" says it is there (the panel shows them all).
   const more = lists.length - 1;
   const asOf = stepsAsOf(first);
-  const name = `${stepsName(agentName(first.agent), first)}${stepsWaitingNameTail(first, answeredSince)}${asOf ? `, as of ${asOf}` : ''}${more > 0 ? `, and ${more} more checklist${more === 1 ? '' : 's'}` : ''}`;
+  const name = `${stepsName(agentName(first.agent), first)}${stepsWaitingNameTail(first, answeredSince)}${asOf ? `，截至 ${asOf}` : ''}${more > 0 ? `，另有 ${more} 份清单` : ''}`;
   const waitingFor = (list: InboxStepsWire) => {
     const go = onWaiting(list);
     return go
@@ -100,7 +100,7 @@ export function StepsButton({ lists, phone, onWaiting, boardCard = null, answere
       <Popover.Portal container={portal ?? undefined}>
         {phone && <Popover.Backdrop className="ib-oq-scrim" data-steps-scrim="" />}
         <Popover.Positioner className="ib-oq-pos ib-st-pos" side="top" align="start" sideOffset={8} collisionPadding={16} data-phone={phone ? '' : undefined}>
-          <Popover.Popup className="ib-stp" aria-label={lists.length > 1 ? 'Checklist' : name} data-steps-panel="" finalFocus={() => (jumped.current ? false : (trigger.current ?? true))}>
+          <Popover.Popup className="ib-stp" aria-label={lists.length > 1 ? '清单' : name} data-steps-panel="" finalFocus={() => (jumped.current ? false : (trigger.current ?? true))}>
             {phone && <div className="ib-st-grab" aria-hidden="true" />}
             <div className="ib-stp-scroll">
               <StepsLists
@@ -109,11 +109,11 @@ export function StepsButton({ lists, phone, onWaiting, boardCard = null, answere
                 headExtra={
                   <>
                     {boardCard && (
-                      <Tip content="Open its card on the Board">
+                      <Tip content="在看板上打开它的卡片">
                         <button
                           type="button"
                           className="ib-st-card"
-                          aria-label={`Open “${boardCard.title}” on the Board`}
+                          aria-label={`在看板上打开“${boardCard.title}”`}
                           data-steps-card=""
                           onClick={() => {
                             // The Board takes the page: focus goes to the opened card, not back to this button.
@@ -127,7 +127,7 @@ export function StepsButton({ lists, phone, onWaiting, boardCard = null, answere
                       </Tip>
                     )}
                     {phone && (
-                      <Popover.Close className="ib-st-x" aria-label="Close" data-steps-close="">
+                      <Popover.Close className="ib-st-x" aria-label="关闭" data-steps-close="">
                         <Icon name="x" size={16} />
                       </Popover.Close>
                     )}
@@ -159,7 +159,7 @@ export function StepsButtonFace({ list, more = 0, now, answeredSince }: { list: 
       </span>
       {asOf && (
         <span className="ib-st-asof" data-steps-as-of="" aria-hidden="true">
-          as of {asOf}
+          截至 {asOf}
         </span>
       )}
       {more > 0 && (

@@ -35,17 +35,17 @@ export interface EarlierReply {
 
 /** What a comment says: a comment with no words says what it was. */
 function wordsOf(annotation: Annotation): string {
-  if (isWordlessMarkup(annotation)) return 'Drawing';
+  if (isWordlessMarkup(annotation)) return '绘图';
   const words = annotation.text?.trim() ?? '';
-  return !words && annotation.type === AnnotationType.DELETION ? 'Remove this' : words;
+  return !words && annotation.type === AnnotationType.DELETION ? '删除此段' : words;
 }
 
 /** Where the comment is, when the record keeps it. An image's comment is on the whole image, so it has none. */
 function spotOf(annotation: Annotation): string | null {
   const time = readInboxVideoTime(annotation);
-  if (time !== null) return `At ${formatInboxVideoTime(time)}`;
+  if (time !== null) return `在 ${formatInboxVideoTime(time)}`;
   const lines = codeRangeOf(annotation);
-  if (lines) return lines.lineStart === lines.lineEnd ? `Line ${lines.lineStart}` : `Lines ${lines.lineStart}–${lines.lineEnd}`;
+  if (lines) return lines.lineStart === lines.lineEnd ? `第 ${lines.lineStart} 行` : `第 ${lines.lineStart}–${lines.lineEnd} 行`;
   if (annotation.type === AnnotationType.GLOBAL_COMMENT || annotation.blockId === 'image') return null;
   const quote = annotationQuote(annotation).replace(/\s+/g, ' ').trim();
   if (quote) return `"${quote}"`;
@@ -55,8 +55,8 @@ function spotOf(annotation: Annotation): string | null {
 /** "Today, 6:30 PM", "Yesterday, 6:30 PM", else "Oct 3, 6:30 PM". */
 function replyWhen(iso: string, now: Date): string {
   const day = dayWords(iso, now);
-  if (day === 'today') return `Today, ${clockTime(iso)}`;
-  if (day === 'yesterday') return `Yesterday, ${clockTime(iso)}`;
+  if (day === 'today') return `今天 ${clockTime(iso)}`;
+  if (day === 'yesterday') return `昨天 ${clockTime(iso)}`;
   return dateTime(iso, now);
 }
 
@@ -79,5 +79,5 @@ export function earlierCommentsOn(
   }
   return [...replies.entries()]
     .sort(([, a], [, b]) => b.at.localeCompare(a.at))
-    .map(([replyId, { at, comments }]) => ({ replyId, label: `From your reply · ${replyWhen(at, now)}`, comments }));
+    .map(([replyId, { at, comments }]) => ({ replyId, label: `来自你的回复 · ${replyWhen(at, now)}`, comments }));
 }

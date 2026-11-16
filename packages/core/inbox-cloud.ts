@@ -24,12 +24,12 @@ export const INBOX_CLOUD_PRESETS = ["claude-routine", "grok-bot", "muse", "herme
 export type InboxCloudPreset = (typeof INBOX_CLOUD_PRESETS)[number];
 
 export const INBOX_CLOUD_PRESET_NAMES: Readonly<Record<InboxCloudPreset, string>> = {
-  "claude-routine": "Claude Code routine",
-  "grok-bot": "Grok Bot routine",
+  "claude-routine": "Claude Code 例行任务",
+  "grok-bot": "Grok Bot 例行任务",
   muse: "Muse by Meta",
   hermes: "Hermes Agent",
   openclaw: "OpenClaw",
-  other: "Other",
+  other: "其他",
 };
 
 export const INBOX_CLOUD_PRESET_LABELS: Readonly<Record<InboxCloudPreset, string>> = {
@@ -38,7 +38,7 @@ export const INBOX_CLOUD_PRESET_LABELS: Readonly<Record<InboxCloudPreset, string
   muse: "Muse by Meta",
   hermes: "Hermes Agent",
   openclaw: "OpenClaw",
-  other: "Other",
+  other: "其他",
 };
 
 export function inboxCloudPresetWakes(preset: InboxCloudPreset): boolean {

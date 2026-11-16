@@ -95,10 +95,10 @@ export function ListColumnEdge({ controls, onCollapse }: { controls?: string; on
 		<div ref={edge} className="ib-listedge">
 			{(room || onCollapse) && (
 				<CollapsibleEdge
-					label="List width"
+					label="列表宽度"
 					onCollapse={hide}
 					tipActions={tip}
-					collapseTip={room ? "Click to hide the list, drag to resize" : "Click to hide the list"}
+					collapseTip={room ? "点击隐藏列表，拖动调整大小" : "点击隐藏列表"}
 					controls={controls}
 					isDragging={resize.isDragging}
 					resize={{ value, min: resize.minWidth, max: resize.maxWidth, resizeTo: resize.resizeTo }}

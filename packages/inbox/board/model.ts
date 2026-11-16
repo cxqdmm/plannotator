@@ -264,14 +264,14 @@ export function cardAge(iso: string, now: number = Date.now()): { short: string;
   const then = Date.parse(iso);
   if (Number.isNaN(then)) return { short: '', long: '' };
   const minutes = Math.max(0, Math.floor((now - then) / 60_000));
-  if (minutes < 1) return { short: 'now', long: 'just now' };
-  const unit = (n: number, s: string, word: string) => ({ short: `${n}${s} ago`, long: `${n} ${word}${n === 1 ? '' : 's'} ago` });
-  if (minutes < 60) return unit(minutes, 'm', 'minute');
+  if (minutes < 1) return { short: '刚刚', long: '刚刚' };
+  const unit = (n: number, word: string) => ({ short: `${n} ${word}前`, long: `${n} ${word}前` });
+  if (minutes < 60) return unit(minutes, '分钟');
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return unit(hours, 'h', 'hour');
+  if (hours < 24) return unit(hours, '小时');
   const days = Math.floor(hours / 24);
-  if (days < 14) return unit(days, 'd', 'day');
-  return unit(Math.floor(days / 7), 'w', 'week');
+  if (days < 14) return unit(days, '天');
+  return unit(Math.floor(days / 7), '周');
 }
 
 /** Whether a card shows bold: unread at the visit's look, and not opened or moved by the person this visit. */
@@ -327,10 +327,10 @@ export type CardMenuItem =
 export function cardMenuItems(card: InboxCardWire, thread: string | null): CardMenuItem[][] {
   if (card.column === 'dropped') return [];
   const groups: CardMenuItem[][] = [];
-  if (thread) groups.push([{ kind: 'thread', threadId: thread, label: 'Open thread' }]);
+  if (thread) groups.push([{ kind: 'thread', threadId: thread, label: '打开会话' }]);
   const choices = columnChoices(card).map((choice) => ({ kind: 'column' as const, ...choice }));
   groups.push(choices.slice(0, INBOX_CARD_LIVE_COLUMNS.length), choices.slice(INBOX_CARD_LIVE_COLUMNS.length));
-  groups.push([{ kind: 'drop', label: 'Cancel…' }]);
+  groups.push([{ kind: 'drop', label: '取消…' }]);
   return groups;
 }
 
@@ -345,14 +345,14 @@ export function cardMenuItems(card: InboxCardWire, thread: string | null): CardM
 export function cardMenuToast(card: InboxCardWire, moved: InboxCardWire): { lead: string; detail: string; undo: BoardMove } | null {
   if (moved.column === card.column) return null;
   const detail = `“${card.title}”`;
-  if (moved.column === 'dropped') return { lead: 'Cancelled', detail, undo: { op: 'restore' } };
-  if (moved.column === 'done' && INBOX_CARD_LIVE_COLUMNS.includes(card.column)) return { lead: 'Done', detail, undo: { op: 'move', column: card.column } };
+  if (moved.column === 'dropped') return { lead: '已取消', detail, undo: { op: 'restore' } };
+  if (moved.column === 'done' && INBOX_CARD_LIVE_COLUMNS.includes(card.column)) return { lead: '已完成', detail, undo: { op: 'move', column: card.column } };
   return null;
 }
 
 /** The toast after one click on an initiative's Delete: every one deleted while it is up, undone together. */
 export function initiativeDeletedToast(deleted: readonly Pick<InboxInitiative, 'name'>[]): { lead: string; detail: string } {
-  return { lead: 'Deleted', detail: deleted.length === 1 ? `“${deleted[0]!.name}”` : `${deleted.length} tags` };
+  return { lead: '已删除', detail: deleted.length === 1 ? `“${deleted[0]!.name}”` : `${deleted.length} 个标签` };
 }
 
 /**
@@ -367,14 +367,14 @@ export function cardUndoStillApplies(moved: Pick<InboxCardWire, 'column' | 'move
 
 /** What the live region says after a move. */
 export function moveSaid(card: InboxCardWire, moved: InboxCardWire): string {
-  if (moved.column === 'dropped') return `Cancelled “${card.title}”. It is kept under Cancelled.`;
-  if (card.column === 'dropped') return `Restored “${card.title}” to ${INBOX_CARD_COLUMN_LABELS[moved.column]}.`;
-  return `Moved “${card.title}” to ${INBOX_CARD_COLUMN_LABELS[moved.column]}.`;
+  if (moved.column === 'dropped') return `已取消“${card.title}”。它保留在“已取消”下。`;
+  if (card.column === 'dropped') return `已将“${card.title}”恢复到 ${INBOX_CARD_COLUMN_LABELS[moved.column]}。`;
+  return `已将“${card.title}”移动到 ${INBOX_CARD_COLUMN_LABELS[moved.column]}。`;
 }
 
 /** The agent's name a card belongs to, or "You" for a card the person made. */
 export function cardOwnerName(card: InboxCardWire): string {
-  return card.agent?.kind === 'agent' ? inboxAgentName(card.agent) : 'You';
+  return card.agent?.kind === 'agent' ? inboxAgentName(card.agent) : '你';
 }
 
 /** What the person owes on a card ("You: …"), only in In review; null otherwise. */
@@ -408,12 +408,12 @@ export function youThread(card: Pick<InboxCardWire, 'threads' | 'sent'>, rowOf: 
 
 /** The "You: …" link's accessible name: its visible words first (WCAG 2.5.3), then where it goes: "You: Merge #14, open the thread". */
 export function youLinkLabel(you: string): string {
-  return `You: ${you}, open the thread`;
+  return `你：${you}，打开会话`;
 }
 
 /** The "Waiting on you" link's name, its words first (WCAG 2.5.3): "Waiting on you: Page numbers, open the thread". */
 export function waitingLinkLabel(subject: string | null): string {
-  return `Waiting on you: ${subject ?? 'a question'}, open the thread`;
+  return `等待你处理：${subject ?? '一个问题'}，打开会话`;
 }
 
 /** The agent a sent card went to, while it waits in Todo: "Sent to Codex". */
@@ -488,7 +488,7 @@ export function shortRef(ref: string): string {
 }
 
 function authorName(by: InboxAuthor): string {
-  return by.kind === 'person' ? 'you' : inboxAgentName(by);
+  return by.kind === 'person' ? '你' : inboxAgentName(by);
 }
 
 /** One history line, in words: a lead, the bold part, the rest, and a quote under it. */
@@ -502,33 +502,33 @@ export function historyWords(
     case 'initiative':
       // Approval "board-initiatives": "Tag: Code review by you", or "Tag cleared by you" (approval "inbox-thread-tags").
       return entry.initiative
-        ? { before: 'Tag: ', bold: initiativeNameOf(entry.initiative) ?? 'a deleted tag', after: ` by ${by}`, quote: null }
-        : { before: `Tag cleared by ${by}`, bold: null, after: '', quote: null };
+        ? { before: '标签：', bold: initiativeNameOf(entry.initiative) ?? '已删除的标签', after: `（${by}）`, quote: null }
+        : { before: `标签已清除（${by}）`, bold: null, after: '', quote: null };
     case 'created':
-      return { before: `Created by ${by}`, bold: null, after: '', quote: null };
+      return { before: `由 ${by} 创建`, bold: null, after: '', quote: null };
     case 'sent':
-      return { before: 'Sent to ', bold: inboxAgentName(entry.to), after: entry.existing_thread ? ' in the card\u2019s thread' : ' in a new thread', quote: null };
+      return { before: '\u53d1\u9001\u7ed9 ', bold: inboxAgentName(entry.to), after: entry.existing_thread ? '\uff0c\u5728\u5361\u7247\u4f1a\u8bdd\u4e2d' : '\uff0c\u5728\u65b0\u4f1a\u8bdd\u4e2d', quote: null };
     case 'moved':
-      return { before: 'Moved to ', bold: INBOX_CARD_COLUMN_LABELS[entry.column], after: ` by ${by}`, quote: entry.you ? `You: “${entry.you}”` : null };
+      return { before: '移动到 ', bold: INBOX_CARD_COLUMN_LABELS[entry.column], after: `（${by}）`, quote: entry.you ? `你：“${entry.you}”` : null };
     case 'restored':
-      return { before: 'Restored to ', bold: INBOX_CARD_COLUMN_LABELS[entry.column], after: ` by ${by}`, quote: null };
+      return { before: '恢复到 ', bold: INBOX_CARD_COLUMN_LABELS[entry.column], after: `（${by}）`, quote: null };
     case 'dropped':
-      return { before: `Cancelled by ${by}`, bold: null, after: '', quote: entry.reason ? `“${entry.reason}”` : null };
+      return { before: `由 ${by} 取消`, bold: null, after: '', quote: entry.reason ? `“${entry.reason}”` : null };
     case 'auto_shipped':
       // The Inbox moved it to Done (approval "inbox-board-columns-v2", Q3): every PR it links had merged.
-      return { before: 'Done automatically: ', bold: entry.prs.map((url) => shortRef(prRefOfUrl(url))).join(', '), after: entry.prs.length === 1 ? ' merged' : ' all merged', quote: null };
+      return { before: '自动完成：', bold: entry.prs.map((url) => shortRef(prRefOfUrl(url))).join(', '), after: entry.prs.length === 1 ? ' 已合并' : ' 全部已合并', quote: null };
     case 'said':
-      return { before: by === 'you' ? 'You' : by, bold: null, after: '', quote: `“${entry.text}”` };
+      return { before: by, bold: null, after: '', quote: `“${entry.text}”` };
     case 'you':
-      return { before: `${by === 'you' ? 'You' : by} asked you`, bold: null, after: '', quote: `“${entry.text}”` };
+      return { before: `${by} 问了你`, bold: null, after: '', quote: `“${entry.text}”` };
     case 'linked_thread':
-      return { before: 'Linked a thread', bold: null, after: by === 'you' ? '' : ` (${by})`, quote: null };
+      return { before: '已关联一个会话', bold: null, after: by === '你' ? '' : `（${by}）`, quote: null };
     case 'linked_ref':
-      return { before: 'Linked ', bold: shortRef(entry.ref), after: '', quote: null };
+      return { before: '已关联 ', bold: shortRef(entry.ref), after: '', quote: null };
     case 'renamed':
-      return { before: 'Renamed by ', bold: null, after: by, quote: `“${entry.title}”` };
+      return { before: `由 ${by} 重命名`, bold: null, after: '', quote: `“${entry.title}”` };
     case 'notes':
-      return { before: `Notes edited by ${by}`, bold: null, after: '', quote: null };
+      return { before: `由 ${by} 编辑备注`, bold: null, after: '', quote: null };
   }
 }
 
@@ -541,23 +541,23 @@ export function refState(data: Pick<ForgeRefCardData, 'state' | 'kind' | 'closed
   const day = data.closedAt ? ` ${dayOfMonth(data.closedAt)}` : '';
   switch (data.state) {
     case 'open':
-      return { label: 'Open', tone: 'open' };
+      return { label: '开放', tone: 'open' };
     case 'draft':
-      return { label: 'Draft', tone: 'neutral' };
+      return { label: '草稿', tone: 'neutral' };
     case 'merged':
-      return { label: `Merged${day}`, tone: 'merged' };
+      return { label: `已合并${day}`, tone: 'merged' };
     case 'completed':
-      return { label: `Closed${day}`, tone: 'merged' };
+      return { label: `已关闭${day}`, tone: 'merged' };
     case 'not_planned':
-      return { label: `Not planned${day}`, tone: 'neutral' };
+      return { label: `未计划${day}`, tone: 'neutral' };
     default:
-      return { label: `Closed${day}`, tone: data.kind === 'pull' ? 'closed' : 'neutral' };
+      return { label: `已关闭${day}`, tone: data.kind === 'pull' ? 'closed' : 'neutral' };
   }
 }
 
 function dayOfMonth(iso: string): string {
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
 }
 
 /** The working state of a card's agent, from the live sessions: working, idle, or ended (not live). */
@@ -576,10 +576,10 @@ export function cardLabel(card: InboxCardWire, unread: boolean, now: number = Da
   const parts = [card.title];
   if (project) parts.push(project);
   const line = cardLine(card);
-  if (line) parts.push(line.you ? `You: ${line.text}` : line.text);
+  if (line) parts.push(line.you ? `你：${line.text}` : line.text);
   parts.push(INBOX_CARD_COLUMN_LABELS[card.column]);
   const age = cardAge(card.heard_at, now).long;
-  if (age) parts.push(`last heard ${age}`);
-  if (unread) parts.push(`new from ${cardOwnerName(card)}`);
-  return parts.join('. ');
+  if (age) parts.push(`最近消息 ${age}`);
+  if (unread) parts.push(`来自 ${cardOwnerName(card)} 的新消息`);
+  return parts.join('。');
 }

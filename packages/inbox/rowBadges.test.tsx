@@ -147,20 +147,20 @@ describe('the card model', () => {
   test('Stopped: the reasons first, then what it also holds up; Q labels when more than one question', () => {
     const m = waitCardModel(STOP)!;
     expect(m.kind).toBe('stop');
-    expect(m.title).toBe('Stopped');
+    expect(m.title).toBe('已停止');
     expect(m.lead).toEqual([{ label: 'Q1', text: 'The retry worker cannot ship without this' }]);
     expect(m.also).toEqual([
       { label: 'Q2', text: 'The retry worker' },
       { label: 'Q2', text: 'The admin retry view' },
     ]);
-    expect(badgeDescription(STOP)).toBe('Stopped: The retry worker cannot ship without this. Also holds up: The retry worker; The admin retry view.');
+    expect(badgeDescription(STOP)).toBe('已停止：The retry worker cannot ship without this。另外阻碍：The retry worker；The admin retry view。');
   });
 
   test('Holds up from one question: no labels', () => {
     const m = waitCardModel(HOLD)!;
-    expect(m.title).toBe('Holds up 3');
+    expect(m.title).toBe('阻碍 3 项');
     expect(m.lead.map((i) => i.label)).toEqual([null, null, null]);
-    expect(badgeDescription(HOLD)).toBe('Holds up: The install page; The agent table; The screenshots.');
+    expect(badgeDescription(HOLD)).toBe('阻碍：The install page；The agent table；The screenshots。');
   });
 
   test('two messages whose questions are both Q1: the card numbers them in order', () => {
@@ -177,13 +177,13 @@ describe('the card model', () => {
       waits: [wait('q-1', 0, null, ['deploy']), wait('q-2', 1, null, ['deploy', 'docs'])],
     });
     const m = waitCardModel(shared)!;
-    expect(m.title).toBe('Holds up 2');
+    expect(m.title).toBe('阻碍 2 项');
     expect(m.lead).toEqual([
       { label: 'Q1, Q2', text: 'Deploy' },
       { label: 'Q2', text: 'Docs' },
     ]);
     expect(m.lead).toHaveLength(shared.questions.holds_up.length);
-    expect(badgeDescription(shared)).toBe('Holds up: Deploy; Docs.');
+    expect(badgeDescription(shared)).toBe('阻碍：Deploy；Docs。');
     // One question holding up "deploy" twice (the summary drops the repeat too): one row, no label.
     const twice = row('msg_twice', 'holding', {
       questions: { open: 1, picked: 0, stopped: false, holds_up: ['deploy'], prompt: null },
@@ -205,11 +205,11 @@ describe('the card model', () => {
     const m = waitCardModel(many)!;
     expect(m.lead).toHaveLength(5);
     expect(m.more).toBe(2);
-    expect(badgeDescription(many)).toEndWith('And 2 more.');
+    expect(badgeDescription(many)).toEndWith('另有 2 项。');
     const older = { ...HOLD, waits: undefined };
     expect(waitCardModel(older)!.lead.map((i) => i.text)).toEqual(['The install page', 'The agent table', 'The screenshots']);
     const olderStop = { ...STOP, waits: undefined };
-    expect(badgeDescription(olderStop)).toBe('Stopped: The agent cannot go on until you answer. Also holds up: The retry worker; The admin retry view.');
+    expect(badgeDescription(olderStop)).toBe('已停止：The agent cannot go on until you answer。另外阻碍：The retry worker；The admin retry view。');
   });
 
   test('no badge, no card', () => {
@@ -277,17 +277,17 @@ describe.if(hasDom)('the marks in the list', () => {
       expect(open.dataset.waitStep).toBe('open');
       expect(open.className).toBe('ib-c ib-qn');
       expect(face(open)).toBe('2');
-      expect(said(open)).toBe('2 questions');
+      expect(said(open)).toBe('2 个问题');
       const hold = qmark(el, 'msg_hold', scope)!;
       expect(hold.dataset.waitStep).toBe('hold');
       expect(hold.classList.contains('ib-badge')).toBe(true);
       expect(hold.classList.contains('ib-b-hold')).toBe(true);
       expect(face(hold)).toBe('1');
-      expect(said(hold)).toBe('Holding up work: 1 question');
+      expect(said(hold)).toBe('Holding up work：1 个问题');
       const stop = qmark(el, 'msg_stop', scope)!;
       expect(stop.dataset.waitStep).toBe('stop');
       expect(stop.classList.contains('ib-b-stop')).toBe(true);
-      expect(said(stop)).toBe('Stopped on you: 2 questions');
+      expect(said(stop)).toBe('Stopped on you：2 个问题');
       // One mark per row: no triangle badge, no second count.
       expect(el.querySelector('[data-row-badge], svg.ib-tri')).toBeNull();
       for (const id of ['msg_wait', 'msg_hold', 'msg_stop']) expect(el.querySelectorAll(`${scope}[data-thread-id="${id}"] .ib-qn`)).toHaveLength(1);
@@ -304,19 +304,19 @@ describe.if(hasDom)('the marks in the list', () => {
       expect(open.dataset.waitStep).toBe('open');
       expect(open.classList.contains('ib-b-act')).toBe(true);
       expect(face(open)).toBe('2');
-      expect(said(open)).toBe('2 actions to do');
+      expect(said(open)).toBe('2 个待办操作');
       const hold = abox(el, 'msg_acthold', scope)!;
       expect(hold.dataset.waitStep).toBe('hold');
       expect(hold.classList.contains('ib-b-hold')).toBe(true);
       expect(hold.classList.contains('ib-b-act')).toBe(false);
-      expect(said(hold)).toBe('Holding up work: 2 action items');
+      expect(said(hold)).toBe('Holding up work：2 个操作项');
       // Its question holds nothing up: it stays open beside the filled box.
       expect(qmark(el, 'msg_acthold', scope)!.dataset.waitStep).toBe('open');
       const stop = abox(el, 'msg_actstop', scope)!;
       expect(stop.dataset.waitStep).toBe('stop');
       expect(stop.classList.contains('ib-b-stop')).toBe(true);
       expect(face(stop)).toBe('1');
-      expect(said(stop)).toBe('Stopped on you: 1 action item');
+      expect(said(stop)).toBe('Stopped on you：1 个操作项');
       expect(qmark(el, 'msg_actstop', scope)).toBeNull();
       act(() => root!.unmount());
       host!.remove();
@@ -328,14 +328,14 @@ describe.if(hasDom)('the marks in the list', () => {
     const el = mount({ sections: STEPS });
     const many = qmark(el, 'msg_many')!;
     expect(face(many)).toBe('99+');
-    expect(said(many)).toBe('Holding up work: 104 questions');
+    expect(said(many)).toBe('Holding up work：104 个问题');
     const open = qmark(el, 'msg_manyopen')!;
     expect(face(open)).toBe('99+');
-    expect(said(open)).toBe('104 questions');
+    expect(said(open)).toBe('104 个问题');
     // An open mark's tooltip is its words.
     await tooltipOf(qmark(el, 'msg_manyopen')!, 0);
     unhover(qmark(el, 'msg_manyopen')!);
-    expect(await tooltipOf(qmark(el, 'msg_manyopen')!)).toBe('104 questions');
+    expect(await tooltipOf(qmark(el, 'msg_manyopen')!)).toBe('104 个问题');
   });
 
   test('a blocked row with words in place of its counts keeps its filled mark, and only that one', () => {
@@ -344,7 +344,7 @@ describe.if(hasDom)('the marks in the list', () => {
       const scope = narrow ? '.ib-nrow' : '.ib-row';
       const r = el.querySelector<HTMLElement>(`${scope}[data-thread-id="msg_answered"]`)!;
       expect(r.querySelector('[data-count-words]')!.getAttribute('data-count-words')).toBe('Answered, not sent');
-      expect(said(qmark(el, 'msg_answered', scope))).toBe('Holding up work: 1 question');
+      expect(said(qmark(el, 'msg_answered', scope))).toBe('Holding up work：1 个问题');
       // The open action box gives way to the words, as the counts did before.
       expect(abox(el, 'msg_answered', scope)).toBeNull();
       act(() => root!.unmount());
@@ -362,8 +362,8 @@ describe.if(hasDom)('the marks in the list', () => {
       expect(hold).toBeNull();
       return;
     }
-    expect(stop!.textContent).toBe('Stopped');
-    expect(hold!.textContent).toBe('Holds up 3');
+    expect(stop!.textContent).toBe('已停止');
+    expect(hold!.textContent).toBe('阻碍 3 项');
     // Seen only: the mark's words and the row's description say it to a screen reader.
     expect(stop!.getAttribute('aria-hidden')).toBe('true');
     expect(el.querySelector('.ib-row[data-thread-id="msg_wait"] [data-wait-words]')).toBeNull();
@@ -395,10 +395,10 @@ describe.if(hasDom)('the marks in the list', () => {
     expect(c.querySelector<HTMLElement>('.ib-wc-tri')!.dataset.waitCardGlyph).toBe('question');
     expect(c.querySelector('.ib-wc-tri svg.ib-qbub')).not.toBeNull();
     expect(c.querySelector('svg.ib-tri')).toBeNull();
-    expect(c.querySelector('.ib-wc-h')!.textContent).toBe('Stopped');
+    expect(c.querySelector('.ib-wc-h')!.textContent).toBe('已停止');
     expect(c.querySelector('.ib-wc-chip')!.textContent).toBe('retry-worker');
     expect([...c.querySelectorAll('.ib-wc-row')].map((r) => r.textContent)).toEqual(['Q1The retry worker cannot ship without this', 'Q2The retry worker', 'Q2The admin retry view']);
-    expect(c.querySelector('.ib-wc-sub')!.textContent).toBe('Also holds up 2');
+    expect(c.querySelector('.ib-wc-sub')!.textContent).toBe('另外阻碍 2 项');
     expect(c.querySelector('.ib-wc-foot')!.textContent).toContain('Claude Code');
     unhover(qmark(el, 'msg_stop')!);
     await settle();
@@ -406,7 +406,7 @@ describe.if(hasDom)('the marks in the list', () => {
 
     // The held-up count lives in the card now.
     await tooltipOf(qmark(el, 'msg_hold')!);
-    expect(card()!.querySelector('.ib-wc-h')!.textContent).toBe('Holds up 3');
+    expect(card()!.querySelector('.ib-wc-h')!.textContent).toBe('阻碍 3 项');
     expect(card()!.querySelector('.ib-wc-q')).toBeNull();
     expect(card()!.querySelector('.ib-wc-foot')!.textContent).toContain('OpenCode');
   });

@@ -18,9 +18,9 @@ export function HowRelay() {
           <Icon name="laptop" />
           <PlannotatorMark className="ib-chow-pmark" />
         </span>
-        <span className="ib-chow-cap">Your computer</span>
+        <span className="ib-chow-cap">你的计算机</span>
       </span>
-      <HowWire toward="right" label="calls out" chip={<Sealed />} />
+      <HowWire toward="right" label="主动连接" chip={<Sealed />} />
       <span className="ib-chow-node ib-chow-box">
         <span className="ib-chow-big">
           <Icon name="mailOpen" />
@@ -28,15 +28,15 @@ export function HowRelay() {
             <Icon name="lock" size={12} />
           </span>
         </span>
-        <span className="ib-chow-cap">Relay</span>
-        <span className="ib-chow-sub">Can’t read it</span>
+        <span className="ib-chow-cap">中继</span>
+        <span className="ib-chow-sub">无法读取</span>
       </span>
-      <HowWire toward="left" label="calls out" chip={<Sealed />} />
+      <HowWire toward="left" label="主动连接" chip={<Sealed />} />
       <span className="ib-chow-node">
         <span className="ib-chow-big">
           <HostMark host="cloud" />
         </span>
-        <span className="ib-chow-cap">Cloud agent</span>
+        <span className="ib-chow-cap">云端 agent</span>
       </span>
     </div>
   );

@@ -59,7 +59,7 @@ export async function eachRow<T>(rows: readonly InboxListRow[], write: (row: Inb
       try {
         out[at] = { row, ok: true, value: await write(row), held: null };
       } catch (cause) {
-        out[at] = cause instanceof InboxHeldError ? { row, ok: true, value: undefined as T, held: cause.machine?.name ?? 'the other machine' } : { row, ok: false, cause };
+        out[at] = cause instanceof InboxHeldError ? { row, ok: true, value: undefined as T, held: cause.machine?.name ?? '另一台计算机' } : { row, ok: false, cause };
       }
     }
   };
@@ -68,14 +68,14 @@ export async function eachRow<T>(rows: readonly InboxListRow[], write: (row: Inb
 }
 
 const WORDS: Record<BulkAction, (n: string) => string> = {
-  archive: (n) => `Archived ${n}`,
-  snooze: (n) => `Snoozed ${n}`,
-  read: (n) => `Marked ${n} read`,
-  unread: (n) => `Marked ${n} unread`,
-  star: (n) => `Starred ${n}`,
-  unstar: (n) => `Unstarred ${n}`,
-  'priority-add': (n) => `Added ${n} to Priority`,
-  'priority-remove': (n) => `Removed ${n} from Priority`,
+  archive: (n) => `已归档 ${n}`,
+  snooze: (n) => `已设为稍后提醒 ${n}`,
+  read: (n) => `已标记 ${n} 为已读`,
+  unread: (n) => `已标记 ${n} 为未读`,
+  star: (n) => `已置顶 ${n}`,
+  unstar: (n) => `已取消置顶 ${n}`,
+  'priority-add': (n) => `已将 ${n} 加入优先`,
+  'priority-remove': (n) => `已将 ${n} 移出优先`,
 };
 
 /**
@@ -88,16 +88,16 @@ export function bulkToast(action: BulkAction, outcomes: readonly Outcome<unknown
   const refused = outcomes.filter((o): o is Extract<Outcome<unknown>, { ok: false }> => !o.ok);
   const held = made.filter((o) => o.ok && o.held);
   const total = outcomes.length;
-  const count = refused.length > 0 ? `${made.length} of ${plural(total, 'thread')}` : plural(made.length, 'thread');
+  const count = refused.length > 0 ? `${made.length} / ${plural(total, '个会话', '个会话')}` : plural(made.length, '个会话', '个会话');
   const parts: string[] = [];
   if (detail) parts.push(detail);
   if (held.length > 0) {
     const names = [...new Set(held.map((o) => (o.ok ? o.held : null)))];
-    parts.push(names.length === 1 ? `${held.length} when ${names[0]} is back` : `${held.length} when their machines are back`);
+    parts.push(names.length === 1 ? `${held.length} 个将在 ${names[0]} 回来后生效` : `${held.length} 个将在各自的计算机回来后生效`);
   }
   if (refused.length > 0) {
-    const why = refused[0]!.cause instanceof Error && refused[0]!.cause.message ? refused[0]!.cause.message : 'It didn’t go.';
-    parts.push(`${refused.length} did not change: ${why}`);
+    const why = refused[0]!.cause instanceof Error && refused[0]!.cause.message ? refused[0]!.cause.message : '未成功。';
+    parts.push(`${refused.length} 个未更改：${why}`);
   }
   return {
     icon: refused.length > 0 ? 'warn' : action === 'archive' ? 'archive' : action === 'snooze' ? 'clock' : action === 'unread' ? 'unread' : 'check',
@@ -110,10 +110,10 @@ export function bulkToast(action: BulkAction, outcomes: readonly Outcome<unknown
 
 /** Add tag on the picks: "Tagged 3 threads · Billing", "Removed 3 threads · from Billing". */
 export function tagsToast(outcomes: readonly Outcome<unknown>[], tag: string, on: boolean): Pick<InboxToastModel, 'icon' | 'lead' | 'phoneLead' | 'detail' | 'wrap'> | null {
-  const copy = bulkToast('archive', outcomes, on ? tag : `from ${tag}`);
+  const copy = bulkToast('archive', outcomes, tag);
   if (!copy) return null;
-  const n = copy.lead.replace(/^Archived /, '');
-  return { ...copy, icon: copy.icon === 'warn' ? 'warn' : 'check', lead: `${on ? 'Tagged' : 'Removed'} ${n}`, phoneLead: on ? 'Tagged' : 'Removed' };
+  const n = copy.lead.replace(/^已归档 /, '');
+  return { ...copy, icon: copy.icon === 'warn' ? 'warn' : 'check', lead: `${on ? '已添加标签' : '已移除标签'} ${n}`, phoneLead: on ? '已添加标签' : '已移除标签' };
 }
 
 export function bulkWrites(host: BulkHost) {
@@ -122,7 +122,7 @@ export function bulkWrites(host: BulkHost) {
   /** Every row refused: the window's error toast, as a single action's. */
   const allRefused = (outcomes: readonly Outcome<unknown>[]) => {
     const first = outcomes.find((o) => !o.ok);
-    if (first && !first.ok) showToast(errorToast(first.cause, 'The threads did not change.'));
+    if (first && !first.ok) showToast(errorToast(first.cause, '这些会话未更改。'));
   };
   /** Undo: each made write taken back, then "Moved back." */
   const undoWith = (outcomes: readonly Outcome<unknown>[], back: (o: Extract<Outcome<unknown>, { ok: true }>) => Promise<unknown>, after?: (written: string[]) => void) => () => {
@@ -136,8 +136,8 @@ export function bulkWrites(host: BulkHost) {
       await afterWrite(ids(undone));
       after?.(ids(undone));
       const refused = undone.find((o) => !o.ok);
-      if (refused && !refused.ok) showToast(errorToast(refused.cause, 'Some threads did not move back.'));
-      else say('Moved back.');
+      if (refused && !refused.ok) showToast(errorToast(refused.cause, '部分会话未能移回。'));
+      else say('已移回。');
     })();
   };
   const finish = (action: BulkAction, outcomes: readonly Outcome<unknown>[], onUndo: () => void, detail?: string) => {

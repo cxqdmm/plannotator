@@ -210,7 +210,7 @@ export function ListNewPill({ news, unseen, body, order, layout, covered, onShow
   useLayoutEffect(() => {
     if (on) last.current = drawn;
   });
-  const words = `${drawn.count} new ${drawn.count === 1 ? 'message' : 'messages'} ${drawn.edge === 'bottom' ? 'below' : 'above'}`;
+  const words = `${drawn.edge === 'bottom' ? '下方' : '上方'}有 ${drawn.count} 条新消息`;
   // Said once as the pill comes, not again as its count changes.
   const [said, setSaid] = useState('');
   useEffect(() => {
@@ -229,7 +229,7 @@ export function ListNewPill({ news, unseen, body, order, layout, covered, onShow
         tabIndex={on ? 0 : -1}
         aria-hidden={!on}
         // Held, the press is Show and then goes there; shown already, it only goes there.
-        aria-label={`${words}, ${drawn.held ? 'show and go there' : 'go there'}`}
+        aria-label={`${words}，${drawn.held ? '显示并前往' : '前往'}`}
         onPointerEnter={() => hold(true)}
         onPointerLeave={() => hold(false)}
         onFocus={() => hold(true)}
@@ -242,7 +242,7 @@ export function ListNewPill({ news, unseen, body, order, layout, covered, onShow
         }}
       >
         <Icon name={drawn.edge === 'bottom' ? 'arrowDown' : 'arrowUp'} size={15} />
-        {drawn.count} new
+        {drawn.count} 条新消息
       </button>
       <span className="ib-sr" aria-live="polite" data-list-new-said="">
         {said}

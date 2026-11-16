@@ -179,11 +179,11 @@ export function InboxComposerField({
             kinds: ['agent'],
             matchDetail: false,
             // Only a bare `@` with nobody to offer says so; a query nobody matches closes the picker (prose after a tag).
-            emptyNotice: options.length === 0 ? 'No agent to tag: none is live, and none reads the Inbox yet.' : null,
+            emptyNotice: options.length === 0 ? '没有可标记的 agent：目前没有活跃的，也还没有能读取收件箱的。' : null,
             tokenClassName: TAG_TOKEN_CLASS,
             onMentionsChange: (ids) => onTagsChange?.(ids),
             // A session on an older Plannotator: nothing is inserted; say why.
-            onPickBlocked: (person) => setAnnounce(`${person.label}: ${TAG_UPDATE_WORDS}.`),
+            onPickBlocked: (person) => setAnnounce(`${person.label}：${TAG_UPDATE_WORDS}。`),
           }
         : undefined,
     [options, people, onTagsChange],
@@ -329,7 +329,7 @@ export function InboxComposerField({
       {options && showNotes && (tags?.note ? tags.note({ id: notesId, tagged, focusField: () => innerRef.current?.focus() }) : <TagNotes id={notesId} tagged={tagged} owner={owner} />)}
       {options && (
         <div className="ib-sr" role="status" aria-live="polite" data-tag-live="">
-          {tagMenu ? `${tagMenu.items.length} ${tagMenu.items.length === 1 ? 'agent' : 'agents'}${announce ? `. ${announce}` : ''}` : announce}
+          {tagMenu ? `${tagMenu.items.length} 个 agent${announce ? `。${announce}` : ''}` : announce}
         </div>
       )}
     </div>

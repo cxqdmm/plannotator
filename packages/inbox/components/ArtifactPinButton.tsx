@@ -39,7 +39,7 @@ export function ArtifactPinButton({
   const [pop, setPop] = useState(0);
   if (!artifactPinnable(threadId)) return null;
   const pinned = byKey.has(artifactKey);
-  const verb = pinned ? 'Unpin' : 'Pin';
+  const verb = pinned ? '取消置顶' : '置顶';
   return (
     <Tip content={verb}>
       <button
@@ -74,7 +74,7 @@ export function ArtifactPinMenuItem({ threadId, artifactKey, name, separator = t
   const { byKey } = useArtifactPins();
   if (!artifactPinnable(threadId)) return null;
   const pinned = byKey.has(artifactKey);
-  const verb = pinned ? 'Unpin' : 'Pin';
+  const verb = pinned ? '取消置顶' : '置顶';
   return (
     <>
       <DropdownMenuItem

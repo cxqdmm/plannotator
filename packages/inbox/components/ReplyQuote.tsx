@@ -13,7 +13,7 @@ import { quoteLineText, REPLY_QUOTE_WORDS } from '../replyQuote';
 import { Tip } from './Tip';
 
 function whoOf(message: InboxMessageWire): string {
-  return message.author.kind === 'agent' ? agentName(message.author) : 'You';
+  return message.author.kind === 'agent' ? agentName(message.author) : '你';
 }
 
 /** An agent's mark at text size. The person's own mark is the reply arrow, which the line already starts with: none. */

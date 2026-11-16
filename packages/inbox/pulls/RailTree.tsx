@@ -107,7 +107,7 @@ export function RailTree({ tree, loose, files, viewed, commentCount, threadCount
     return (
       <li key={key}>
         <Tip content={file.path}>
-          <button type="button" className="ib-prp-file" data-seen={seen ? '' : undefined} style={{ paddingLeft: pad(depth) }} aria-label={`${file.path}${doubled.has(file.path) ? `, ${file.status}` : ''}${seen ? ', viewed' : ''}${t ? `, ${t} open ${t === 1 ? 'thread' : 'threads'}` : ''}`} onClick={() => onSelect(file.path)} data-review-file={file.path}>
+          <button type="button" className="ib-prp-file" data-seen={seen ? '' : undefined} style={{ paddingLeft: pad(depth) }} aria-label={`${file.path}${doubled.has(file.path) ? `，${file.status}` : ''}${seen ? '，已查看' : ''}${t ? `，${t} 个开放的评审会话` : ''}`} onClick={() => onSelect(file.path)} data-review-file={file.path}>
             {/* The review app's row: [viewed][letter] name [comments], its numbers at the row's end. */}
             {onToggleViewed && <ViewedControl isViewed={seen} name={file.path} onToggle={() => onToggleViewed(file.path)} />}
             <span className="review-change-letter"><ChangeTypeLetter status={file.status} oldPath={file.oldPath} /></span>
@@ -148,9 +148,9 @@ export function RailTree({ tree, loose, files, viewed, commentCount, threadCount
   return (
     <div className="ib-prp-files">
       <div className="ib-prp-fileshead" aria-live="polite">
-        {head ?? <span>{files.length} {files.length === 1 ? 'file' : 'files'}</span>}
+        {head ?? <span>{files.length} 个文件</span>}
         <span className="ib-sp" />
-        {seenCount > 0 && <span>{seenCount} viewed</span>}
+        {seenCount > 0 && <span>已查看 {seenCount} 个</span>}
       </div>
       <ul className="ib-prp-list" data-review-files="">
         {draw(rows)}

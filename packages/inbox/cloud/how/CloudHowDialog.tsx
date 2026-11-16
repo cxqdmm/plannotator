@@ -20,38 +20,38 @@ const PANELS: Panel[] = [
   {
     id: 'elsewhere',
     picture: <HowElsewhere />,
-    seen: 'Claude Code, Grok Bot, Muse, Hermes Agent and OpenClaw marks above an Inbox thread where Nightly fixer posts and you reply.',
-    title: 'An agent that runs somewhere else',
-    line: 'A Claude Code routine, Grok Bot, Muse, or a Hermes Agent or OpenClaw server. It posts to this Inbox and reads your replies.',
+    seen: '收件箱会话上方显示 Claude Code、Grok Bot、Muse、Hermes Agent 和 OpenClaw 的标记，该会话中夜间修复机器人发消息、你来回复。',
+    title: '运行在别处的 agent',
+    line: 'Claude Code 例行任务、Grok Bot、Muse，或 Hermes Agent、OpenClaw 服务器。它会向这个收件箱发消息，并读取你的回复。',
   },
   {
     id: 'pairing',
     picture: <HowPairing />,
-    seen: 'Pick a kind and a name, copy the message Plannotator shows once, and the agent connects.',
-    title: 'Pair it with one message',
-    line: 'Pick its kind and a name, then send it the message Plannotator shows you. It sets itself up. A Claude Code routine gets three short pieces for its settings instead.',
+    seen: '选择类型和名称，复制 Plannotator 只显示一次的消息，agent 就会连接。',
+    title: '用一条消息完成配对',
+    line: '选择类型和名称，然后把 Plannotator 显示的消息发给他。它会自行完成设置。Claude Code 例行任务则会获得三段简短的设置内容。',
   },
   {
     id: 'relay',
     picture: <HowRelay />,
-    seen: 'Your computer and the cloud agent each call out to the relay in the middle. Messages in the relay are locked.',
-    title: 'Messages pass through a locked mailbox',
-    line: 'Your computer and the agent each call out to the relay, so your computer opens no door to the internet. Only they hold the keys: the relay cannot read a word.',
+    seen: '你的计算机和云端 agent 都主动连接中间的中继。中继中的消息是加密的。',
+    title: '消息经过一个加密信箱',
+    line: '你的计算机和 agent 都主动连接中继，因此你的计算机无需向互联网开放任何端口。只有双方持有密钥：中继读不到一个字。',
   },
   {
     id: 'limits',
     picture: <HowLimits />,
-    seen: 'The agent sees every thread: its own, other agents’ and those in other projects. It cannot answer your questions, approve anything, run anything on your computer or open your files.',
-    title: 'It works across your whole Inbox',
-    line: 'Any thread in any project: it reads, searches and posts there, always under its own name.',
+    seen: 'agent 能看到所有会话：它自己的、其他 agent 的以及其他项目中的。它不能回答你的问题、批准任何操作、在你的计算机上运行任何东西，也不能打开你的文件。',
+    title: '它适用于你的整个收件箱',
+    line: '任何项目中的任何会话：它都能读取、搜索和发消息，且始终以自己的名义。',
   },
   {
     id: 'replies',
     picture: <HowReplies />,
-    seen: 'With a wake address, your computer calls the agent’s own service and a run starts. Without one, it reads your reply when it next checks.',
-    title: 'It hears back when you reply',
-    line: 'With a wake address, your computer starts it within a minute of your reply. Without one, it reads your reply when it next checks.',
-    note: 'A wake goes straight from your computer to the agent’s own service, such as Anthropic for a Claude Code routine or xAI for Grok Bot, and carries your reply’s words there. It does not pass through the relay.',
+    seen: '设置唤醒地址后，你的计算机会调用 agent 自己的服务并启动一次运行。未设置时，它会在下次检查时读取你的回复。',
+    title: '你一回复它就能收到',
+    line: '设置唤醒地址后，你的计算机会在你回复后一分钟内启动它。未设置时，它会在下次检查时读取你的回复。',
+    note: '唤醒请求会从你的计算机直接发往 agent 自己的服务（例如 Claude Code 例行任务对应 Anthropic，Grok Bot 对应 xAI），并把你的回复内容带过去。它不经过中继。',
   },
 ];
 
@@ -70,8 +70,8 @@ export function CloudHowDialog({ onClose }: { onClose: () => void }) {
   return (
     <Modal labelledBy={`${uid}-t`} testId="cloud-how" onClose={onClose} ownKeys initialFocus=".ib-chow-next" className="ib-chow">
       <div className="ib-chow-head">
-        <h2 id={`${uid}-t`}>How cloud agents work</h2>
-        <button type="button" className="ib-btn ib-ghost ib-icon ib-chow-x" aria-label="Close" onClick={onClose}>
+        <h2 id={`${uid}-t`}>云端 agent 如何工作</h2>
+        <button type="button" className="ib-btn ib-ghost ib-icon ib-chow-x" aria-label="关闭" onClick={onClose}>
           <Icon name="x" />
         </button>
       </div>
@@ -90,7 +90,7 @@ export function CloudHowDialog({ onClose }: { onClose: () => void }) {
             )}
             {last && (
               <p className="ib-chow-end" data-cloud-how-end="">
-                Remove cuts it off at once. A new pairing stops the old one.
+                移除会立即断开。新的配对会让旧的失效。
               </p>
             )}
           </div>
@@ -102,16 +102,16 @@ export function CloudHowDialog({ onClose }: { onClose: () => void }) {
             <i key={p.id} data-on={i === at ? '' : undefined} />
           ))}
           <span className="ib-chow-sr" data-cloud-how-step={at + 1}>
-            {at + 1} of {PANELS.length}
+            {at + 1} / {PANELS.length}
           </span>
         </span>
         {at > 0 && (
           <button type="button" className="ib-btn ib-ghost ib-chow-back" onClick={() => go(at - 1)} data-cloud-how-back="">
-            Back
+            返回
           </button>
         )}
         <button ref={next} type="button" className="ib-btn ib-pri ib-chow-next" onClick={() => (last ? onClose() : go(at + 1))} data-cloud-how-next="">
-          {last ? 'Done' : 'Next'}
+          {last ? '完成' : '下一步'}
         </button>
       </div>
     </Modal>

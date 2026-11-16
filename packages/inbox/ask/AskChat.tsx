@@ -170,7 +170,7 @@ export function AskChat({ threadId, store, model, picked, phone, focusRequest, s
       if (posted.provider_id) answer(posted, question, posted.provider_id, undefined, source);
     } catch (cause) {
       if (!readAskWords(threadId)) saveAskWords(threadId, question);
-      setProblem(errorText(cause, 'That question did not go through. Try again.'));
+      setProblem(errorText(cause, '问题未能发出。请重试。'));
       // A damaged file was set aside by this refusal, so the read has changed.
       onReload();
     } finally {
@@ -200,9 +200,9 @@ export function AskChat({ threadId, store, model, picked, phone, focusRequest, s
       // A busy choice holds for the session the person saw busy. A retry goes to the thread's owner now, and
       // after a hand-off that one gets its own note: it is never interrupted on a choice made about another.
       if (posted.provider_id) answer(posted, turn.question, posted.provider_id, posted.turn.session === shownFor ? policy : undefined, turn.source);
-      else if (posted.reason) setProblem(`${name} can't take this right now. Try again, or reply in the thread.`);
+      else if (posted.reason) setProblem(`${name} 现在无法处理。请重试，或在会话中回复。`);
     } catch (cause) {
-      setProblem(errorText(cause, 'That question did not go through. Try again.'));
+      setProblem(errorText(cause, '问题未能发出。请重试。'));
     } finally {
       postingRef.current = false;
       setPosting(false);
@@ -218,7 +218,7 @@ export function AskChat({ threadId, store, model, picked, phone, focusRequest, s
       onReload();
     } catch (cause) {
       setStopping(false);
-      setProblem(errorText(cause, 'That Stop did not go through. Try again.'));
+      setProblem(errorText(cause, '停止未能生效。请重试。'));
     }
   };
 
@@ -227,10 +227,10 @@ export function AskChat({ threadId, store, model, picked, phone, focusRequest, s
     onLeave();
   };
 
-  const name = agent.name || 'The agent';
+  const name = agent.name || '该 agent';
   const mark = <HostMark host={agent.host} />;
 
-  const pendingLine = response?.status === 'waiting' ? `Waiting for ${name} to finish…` : response?.status === 'interrupting' ? `Interrupting ${name}…` : !posting && runningTurn && runningTurn !== liveTurn ? 'Answering…' : 'Connecting…';
+  const pendingLine = response?.status === 'waiting' ? `正在等待 ${name} 完成…` : response?.status === 'interrupting' ? `正在中断 ${name}…` : !posting && runningTurn && runningTurn !== liveTurn ? '正在回答…' : '正在连接…';
   const hasWords = liveText ? liveText.text.length > 0 : false;
   const status: ChatStatus = !busy ? 'ready' : hasWords ? 'streaming' : 'submitted';
 
@@ -239,7 +239,7 @@ export function AskChat({ threadId, store, model, picked, phone, focusRequest, s
     if (here?.errorCode === SESSION_ASK_ERROR_CODES.agentBusy && turn.answer === undefined && !turn.stopped) {
       return (
         <div className="ib-ask-note" data-ask-note="busy">
-          <p>{name} is working on something else.</p>
+          <p>{name} 正在处理其他事情。</p>
           <SessionAskActions response={here} onAction={(policy) => void askAgain(turn, policy)} />
         </div>
       );
@@ -249,18 +249,18 @@ export function AskChat({ threadId, store, model, picked, phone, focusRequest, s
     if (turn.stopped && turn.answer === undefined) {
       return (
         <p className="ib-ask-note" data-ask-note="stopped">
-          Stopped.
+          已停止。
         </p>
       );
     }
     if (!note && !askUnanswered(turn, runningTurn)) return null;
     return (
       <div className="ib-ask-note" data-ask-note="unanswered">
-        <p>{note ?? 'No answer arrived.'}</p>
+        <p>{note ?? '没有收到回答。'}</p>
         <span className="ib-ask-noteacts">
           {turn.answer === undefined && (
             <button type="button" className="ib-ask-notebtn" disabled={busy || posting} onClick={() => void askAgain(turn)}>
-              Ask again
+              再次询问
             </button>
           )}
           <button
@@ -272,7 +272,7 @@ export function AskChat({ threadId, store, model, picked, phone, focusRequest, s
               if (store.fullscreen || phone) minimize();
             }}
           >
-            Reply in the thread
+            在会话中回复
           </button>
         </span>
       </div>
@@ -297,7 +297,7 @@ export function AskChat({ threadId, store, model, picked, phone, focusRequest, s
   return (
     <ChatFrame
       store={store}
-      label={`Ask AI: ${askChatName(current.subject)}`}
+      label={`Ask AI：${askChatName(current.subject)}`}
       className="isolate"
       rootProps={{ 'data-popover-layer': '', 'data-ask-window': threadId }}
       header={() => <AskChatMenu current={current} phone={phone} onPick={onPick} />}
@@ -311,12 +311,12 @@ export function AskChat({ threadId, store, model, picked, phone, focusRequest, s
             status={status}
             agentName={name}
             agentMark={mark}
-            label="Ask AI conversation"
+            label="Ask AI 对话"
             scrollRef={paneRef}
             stopped={stopped}
             pending={pendingLine}
             messageFooter={footer}
-            empty={model ? <p className="ib-ask-empty">Ask {agent.name || 'the agent'} about this thread.</p> : null}
+            empty={model ? <p className="ib-ask-empty">就这个会话询问 {agent.name || '该 agent'}。</p> : null}
           />
           <AskBox
             words={words}
@@ -331,7 +331,7 @@ export function AskChat({ threadId, store, model, picked, phone, focusRequest, s
             notices={
               problem || model?.damaged ? (
                 <p role="alert" className="ib-ask-problem">
-                  {problem ?? "This chat's file is damaged and can't be shown. Your next question moves it aside and tells you where."}
+                  {problem ?? '这个聊天的文件已损坏，无法显示。你提出的下一个问题会将它移开，并告诉你它被放到了哪里。'}
                 </p>
               ) : undefined
             }
@@ -376,14 +376,14 @@ export function AskBox({
   const sendOnEnter = !isTouchPhone();
   const empty = words.trim() === '';
   const button = busy ? (
-    <Tip content="Stop">
-      <button type="button" className="ib-askq" onClick={onStop} aria-label="Stop" data-ask-stop="">
+    <Tip content="停止">
+      <button type="button" className="ib-askq" onClick={onStop} aria-label="停止" data-ask-stop="">
         <AskStopGlyph />
       </button>
     </Tip>
   ) : (
-    <Tip content="Ask">
-      <button type="button" className="ib-askq" data-ready={empty ? undefined : ''} onClick={onSend} disabled={disabled || posting || empty} aria-label="Ask" data-ask-send="">
+    <Tip content="询问">
+      <button type="button" className="ib-askq" data-ready={empty ? undefined : ''} onClick={onSend} disabled={disabled || posting || empty} aria-label="询问" data-ask-send="">
         {posting ? <span className="ib-spin" aria-hidden="true" /> : phone ? <AskUpGlyph /> : <AskEnterGlyph />}
       </button>
     </Tip>
@@ -408,8 +408,8 @@ export function AskBox({
             dir="auto"
             value={words}
             disabled={disabled}
-            placeholder="Ask about this thread"
-            aria-label="Ask about this thread"
+            placeholder="就这个会话提问"
+            aria-label="就这个会话提问"
             onChange={(event) => onWords(event.target.value)}
             onKeyDown={(event) => {
               const enter = event.key === 'Enter';

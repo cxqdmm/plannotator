@@ -59,7 +59,7 @@ export function drawMessageHead(d: MessageHeadData) {
       head={(more) => (
         <div className="ib-fline ib-is-open" data-open-head="" data-revealed={revealed ? '' : undefined}>
           {!one && (
-            <button type="button" className="ib-fl-hit" data-fold-head="" aria-expanded={true} aria-label={`${d.nameSaid}, ${time}${isNew ? ', new' : ''}. Fold this message`} onClick={toggle} />
+            <button type="button" className="ib-fl-hit" data-fold-head="" aria-expanded={true} aria-label={`${d.nameSaid}，${time}${isNew ? '，新消息' : ''}。折叠此消息`} onClick={toggle} />
           )}
           <span className="ib-a11y-skip" aria-hidden={hide}>
             {isAgent ? (
@@ -76,22 +76,22 @@ export function drawMessageHead(d: MessageHeadData) {
             ) : (
               <span className="ib-fl-nm ib-who" aria-hidden={hide} data-session-name={named ? '' : undefined} onClick={named && !one ? toggle : undefined}>
                 <bdi>{name}</bdi>
-                {named && !hide && <span className="ib-sr">, {kind}</span>}
+                {named && !hide && <span className="ib-sr">，{kind}</span>}
               </span>
             )}
           </Tip>
           <span className="ib-fl-meta">
             <span className="ib-fl-in" aria-hidden={hide}>
-              in <bdi>{d.folder}</bdi>{' '}
+              于 <bdi>{d.folder}</bdi>{' '}
             </span>
             <span className="ib-fl-to" aria-hidden={hide}>
               <span className="ib-to-sep">·</span>{' '}
               <span className="ib-to">
-                to {d.toLabel}
+                发送给 {d.toLabel}
                 {d.ended && <SessionEndedMark />}
                 {d.tagNames !== null && (
                   <span data-tagged-names="">
-                    {' · tagged '}
+                    {' · 标签 '}
                     {d.tagNames}
                   </span>
                 )}
@@ -99,8 +99,8 @@ export function drawMessageHead(d: MessageHeadData) {
                   <span className="ib-m-board" data-board-request="">
                     <span className="ib-to-sep">·</span>
                     <Icon name="board" />
-                    <span aria-hidden="true">Board</span>
-                    <span className="ib-sr">Board tracking asked</span>
+                    <span aria-hidden="true">看板</span>
+                    <span className="ib-sr">已请求看板跟踪</span>
                   </span>
                 )}
               </span>
@@ -109,18 +109,18 @@ export function drawMessageHead(d: MessageHeadData) {
           </span>
           <span className="ib-fl-chips" />
           <span className="ib-fl-tm">
-            {isNew && <span className="ib-newtag">New</span>}
+            {isNew && <span className="ib-newtag">新</span>}
             <Tip content={d.fullWhen}>
               <span data-full-when="">{time}</span>
             </Tip>
             {d.live && (isAgent || (!isInboxNote(message) && !message.ack_of)) && (
-              <Tip content="Reply">
+              <Tip content="回复">
                 <button
                   type="button"
                   className="ib-mut"
                   onPointerDown={() => acts.current.quoteAtPress(message.id)}
                   onClick={() => acts.current.replyToMessage(message)}
-                  aria-label="Reply"
+                  aria-label="回复"
                   data-message-reply={message.id}
                 >
                   <Icon name="reply" size={15} />

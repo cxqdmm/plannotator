@@ -13,13 +13,13 @@ import { useMinuteClock } from './Undelivered';
 function minutesSince(since: string | null, now: number): string | null {
   if (!since) return null;
   const min = Math.floor((now - Date.parse(since)) / 60_000);
-  return min >= 1 ? `${min} min` : null;
+  return min >= 1 ? `${min} 分钟` : null;
 }
 
 /** `claude attach 4f1c9a2e` on screen; the command copied also changes into the folder first. */
 const shownCommand = (command: string) => command.replace(/^cd .*? && /, '');
 
-const STOP_TIP = 'Stops the session. Commands it started in the background keep running.';
+const STOP_TIP = '停止该会话。它已在后台启动的命令会继续运行。';
 
 
 /**
@@ -71,8 +71,8 @@ export function RunLine({
   const [whatsIn, setWhatsIn] = useState(false);
   const clone = run.clone ?? null;
   // The machine in a clone's words: its name, else this computer (a sentence's first word takes a capital).
-  const where = machineName ?? 'this computer';
-  const Where = machineName ?? 'This computer';
+  const where = machineName ?? '这台电脑';
+  const Where = machineName ?? '这台电脑';
   const ticking = run.state === 'working' || run.state === 'waiting_answer' || run.state === 'waiting_terminal';
   const now = useMinuteClock(ticking);
   const name = hostLabel(run.agent);
@@ -88,7 +88,7 @@ export function RunLine({
       else await inboxApi.launchOpen(run.launch_id);
       onChanged();
     } catch (cause) {
-      setError(cause instanceof InboxApiError ? cause.message : what === 'open' ? 'Terminal did not open; copy the command instead.' : 'That did not work; try again.');
+      setError(cause instanceof InboxApiError ? cause.message : what === 'open' ? 'Terminal 没有打开；请改为复制命令。' : '没有成功；请重试。');
       // The folder changed since this line was read: draw the new warning for the next click.
       if (cause instanceof InboxApiError && cause.code === 'trust_warning_changed') onChanged();
     } finally {
@@ -101,34 +101,34 @@ export function RunLine({
     const ok = await copyTextToClipboard(cloneCommand(clone));
     setCloneCopied(ok);
     if (ok) setTimeout(() => setCloneCopied(false), 1500);
-    else setError('Could not copy; select the command and copy it.');
+    else setError('无法复制；请选中命令后手动复制。');
   };
   const copy = async () => {
     if (!run.attach_command) return;
     const ok = await copyTextToClipboard(run.attach_command);
     setCopied(ok);
     if (ok) setTimeout(() => setCopied(false), 1500);
-    else setError('Could not copy; select the command and copy it.');
+    else setError('无法复制；请选中命令后手动复制。');
   };
 
   const stop = (
     <Tip content={STOP_TIP}>
       <button type="button" className="ib-run-btn" disabled={busy !== null} onClick={() => void act('stop')} data-run-stop="">
-        Stop
+        停止
       </button>
     </Tip>
   );
   const openTerminal = (
     <button type="button" className="ib-btn ib-sm" disabled={busy !== null} onClick={() => void act('open')} data-run-open="">
       <Icon name="terminal" size={14} />
-      Open in Terminal
+      在 Terminal 中打开
     </button>
   );
   const attach = run.attach_command && (
     <span className="ib-run-cmd" data-run-attach="">
       <code>{shownCommand(run.attach_command)}</code>
-      <button type="button" className="ib-run-btn" onClick={() => void copy()} aria-label={`Copy ${shownCommand(run.attach_command)}`}>
-        {copied ? 'Copied' : 'Copy'}
+      <button type="button" className="ib-run-btn" onClick={() => void copy()} aria-label={`复制 ${shownCommand(run.attach_command)}`}>
+        {copied ? '已复制' : '复制'}
       </button>
     </span>
   );
@@ -141,17 +141,17 @@ export function RunLine({
       {words}
     </button>
   );
-  const kept = 'Your message is kept.';
+  const kept = '你的消息已保留。';
   let bar: number | null = null;
   switch (run.state) {
     case 'starting':
-      text = run.again ? `Starting ${name} again…` : (
+      text = run.again ? `正在再次启动 ${name}…` : (
         <>
-          Starting {name} in <bdi>{run.project}</bdi>…
+          正在 <bdi>{run.project}</bdi> 中启动 {name}…
           {/* E11: the name was taken between the pick and the clone. */}
           {clone?.renamed_from && clone.folder_shown ? (
             <span className="ib-run-sub" data-run-clone-renamed="">
-              Cloned into {clone.folder_shown}: {lastName(clone.renamed_from)} was taken by then.
+              已克隆到 {clone.folder_shown}：当时 {lastName(clone.renamed_from)} 这个名称已被占用。
             </span>
           ) : null}
         </>
@@ -161,14 +161,14 @@ export function RunLine({
       // E1, E2.
       text = (
         <>
-          Cloning {clone?.slug ?? run.project}
-          {clone?.pct != null ? ` · ${clone.pct}%` : ''} · {name} starts next
+          正在克隆 {clone?.slug ?? run.project}
+          {clone?.pct != null ? ` · ${clone.pct}%` : ''} · 接下来启动 {name}
         </>
       );
       bar = clone?.pct ?? null;
       actions = (
         <button type="button" className="ib-run-btn" disabled={busy !== null} onClick={() => void act('stop')} data-run-clone-cancel="">
-          Cancel
+          取消
         </button>
       );
       break;
@@ -178,22 +178,22 @@ export function RunLine({
       const host = clone?.host ?? '';
       const copyCommand = clone && (
         <button type="button" className="ib-btn ib-sm" onClick={() => void copyClone()} data-run-clone-copy="">
-          {cloneCopied ? 'Copied' : 'Copy clone command'}
+          {cloneCopied ? '已复制' : '复制克隆命令'}
         </button>
       );
       if (clone?.error === 'auth') {
         // E4.
         text = (
           <>
-            <b>Couldn't clone {slug}.</b> {Where} isn't signed in to {host}. {kept}
+            <b>无法克隆 {slug}。</b>{Where} 尚未登录 {host}。{kept}
             <span className="ib-run-sub">
-              Sign in to {host} on {where}, then try again.
+              请在 {where} 上登录 {host}，然后重试。
             </span>
           </>
         );
         actions = (
           <>
-            {retry('Try again')}
+            {retry('重试')}
             {copyCommand}
           </>
         );
@@ -201,17 +201,17 @@ export function RunLine({
         // E5.
         text = (
           <>
-            <b>Couldn't clone {slug}.</b> {host} has no such repo, or {where} can't see it. {kept}
+            <b>无法克隆 {slug}。</b>{host} 上没有这个仓库，或者 {where} 看不到它。{kept}
           </>
         );
         actions = (
           <>
             {onChangeUrl && clone && (
               <button type="button" className="ib-btn ib-sm" onClick={() => onChangeUrl(clone.url)} data-run-clone-change="">
-                Change the URL
+                更改 URL
               </button>
             )}
-            {retry('Try again')}
+            {retry('重试')}
           </>
         );
       } else if (clone?.error === 'network') {
@@ -219,23 +219,23 @@ export function RunLine({
         text = (
           <>
             <b>
-              Couldn't reach {host} from {where}.
+              无法从 {where} 连接到 {host}。
             </b>{' '}
             {kept}
           </>
         );
-        actions = retry('Try again');
+        actions = retry('重试');
       } else {
         // git failed another way (or the Inbox closed during the clone): its own words, and the command to run by hand.
         text = (
           <>
-            <b>Couldn't clone {slug}.</b> {clone?.error_text ? `${clone.error_text.trim().split('\n').at(-1)} ` : ''}
+            <b>无法克隆 {slug}。</b>{clone?.error_text ? `${clone.error_text.trim().split('\n').at(-1)} ` : ''}
             {kept}
           </>
         );
         actions = (
           <>
-            {retry('Try again')}
+            {retry('重试')}
             {copyCommand}
           </>
         );
@@ -245,17 +245,17 @@ export function RunLine({
     case 'clone_cancelled':
       // E7.
       icon = 'stop';
-      text = `You cancelled the clone. Nothing was kept on ${where}. Your reply starts it again.`;
+      text = `你取消了克隆。${where} 上没有保留任何内容。你的回复会重新开始克隆。`;
       actions = (
         <button type="button" className="ib-run-btn" disabled={busy !== null} onClick={() => void act('retry')} data-run-retry="">
-          Clone again
+          再次克隆
         </button>
       );
       break;
     case 'working':
       text = (
         <>
-          {name} is working{minutes ? ` · ${minutes}` : ''}
+          {name} 正在工作{minutes ? ` · ${minutes}` : ''}
         </>
       );
       actions = stop;
@@ -264,7 +264,7 @@ export function RunLine({
       // A permission prompt asked above, as a question card (screen 09): answering it is the action.
       text = (
         <>
-          {name} is waiting on your answer{minutes ? ` · ${minutes}` : ''}
+          {name} 正在等待你的回答{minutes ? ` · ${minutes}` : ''}
         </>
       );
       actions = stop;
@@ -273,9 +273,9 @@ export function RunLine({
       icon = 'warn';
       text = (
         <>
-          <b>{name} is waiting on a permission prompt</b>
+          <b>{name} 正在等待权限提示</b>
           {minutes ? ` · ${minutes}` : ''}
-          {canOpen ? null : <span className="ib-run-sub">Answer it in Terminal on your Mac:</span>}
+          {canOpen ? null : <span className="ib-run-sub">在你的 Mac 上的 Terminal 中回答：</span>}
         </>
       );
       actions = (
@@ -291,10 +291,10 @@ export function RunLine({
       // `cause`: the host's words for a stop that was not the person's (`LaunchHost.stoppedNote`). Anyone's reply starts it again.
       text =
         run.stopped_by_person && run.since
-          ? `You stopped ${name} at ${whenTime(run.since)}. Your reply starts it again.`
+          ? `你在 ${whenTime(run.since)} 停止了 ${name}。你的回复会重新启动它。`
           : run.cause
-            ? `${name} stopped. ${run.cause}`
-            : `${name} stopped. Your reply starts it again.`;
+            ? `${name} 已停止。${run.cause}`
+            : `${name} 已停止。你的回复会重新启动它。`;
       break;
     case 'failed':
       icon = 'warn';
@@ -303,12 +303,12 @@ export function RunLine({
           <>
             <b>
               {/* The agent's own error is the note above: the line says only that it couldn't answer, and that the message is kept. */}
-              {name} {INBOX_TURN_FAILED_WORDS}.
+              {name} {INBOX_TURN_FAILED_WORDS}。
             </b>{' '}
             {kept}
           </>
         );
-        actions = retry('Try again');
+        actions = retry('重试');
         break;
       }
       // E10: a cloned repo that brings hooks, MCP servers or settings starts once the person trusts it (decision 4a).
@@ -316,9 +316,9 @@ export function RunLine({
         text = (
           <>
             <b>
-              <bdi>{run.project}</bdi> has its own {bringsWords(clone.brings)}.
+              <bdi>{run.project}</bdi> 自带 {bringsWords(clone.brings)}。
             </b>{' '}
-            {name} starts once you trust the folder.
+            你信任该文件夹后，{name} 就会启动。
             {whatsIn && run.trust.warning ? (
               <span className="ib-run-sub" data-run-trust-warning="">
                 {run.trust.warning}
@@ -329,11 +329,11 @@ export function RunLine({
         actions = (
           <>
             <button type="button" className="ib-btn ib-sm" disabled={busy !== null} onClick={() => void act('trust')} data-run-trust="">
-              Trust and start
+              信任并启动
             </button>
             {run.trust.warning && (
               <button type="button" className="ib-btn ib-sm" aria-expanded={whatsIn} onClick={() => setWhatsIn((open) => !open)} data-run-whats-in="">
-                What's in it
+                里面有什么
               </button>
             )}
           </>
@@ -342,11 +342,11 @@ export function RunLine({
       }
       text = (
         <>
-          <b>{name} didn't start.</b> {run.cause ?? ''} Your message is kept.
+          <b>{name} 没有启动。</b>{run.cause ?? ''} 你的消息已保留。
           {/* Create a folder (E8): the folder the Send made is not taken away when the agent doesn't start. */}
           {run.made_folder ? (
             <span className="ib-run-sub" data-run-made-folder="">
-              {run.made_folder} was made and stays.
+              已创建 {run.made_folder}，它会保留。
             </span>
           ) : null}
           {run.trust?.warning ? (
@@ -357,11 +357,11 @@ export function RunLine({
           {run.untrusted && !run.trust ? (
             <span className="ib-run-sub" data-run-trust-howto="">
               {run.trust_covers_home ? (
-                "This folder can't be trusted because trust would cover your home folder. Start in a project folder with its own git repo."
+                '无法信任此文件夹，因为信任范围会覆盖你的主文件夹。请在一个自带 git 仓库的项目文件夹中启动。'
               ) : run.home_folder ? (
-                "Your home folder can't be trusted. Start in a folder inside it."
+                '无法信任你的主文件夹。请在它里面的一个文件夹中启动。'
               ) : (
-                <>To trust it, run {name} here in a terminal on the Inbox's computer.</>
+                <>要信任它，请在收件箱所在电脑的终端里运行 {name}。</>
               )}
             </span>
           ) : null}
@@ -371,12 +371,12 @@ export function RunLine({
         <>
           {run.trust && (
             <button type="button" className="ib-btn ib-sm" disabled={busy !== null} onClick={() => void act('trust')} data-run-trust="">
-              Trust folder
+              信任文件夹
             </button>
           )}
           {canOpen && openTerminal}
           <button type="button" className="ib-btn ib-sm" disabled={busy !== null} onClick={() => void act('retry')} data-run-retry="">
-            Try again
+            重试
           </button>
         </>
       );
@@ -385,7 +385,7 @@ export function RunLine({
       icon = 'warn';
       text = (
         <>
-          <b>{name} isn't on this computer any more.</b> Your reply is waiting. Install {name} again and it goes in{canReaddress ? ', or send the reply to another session.' : '.'}
+          <b>{name} 已不在这台电脑上。</b>你的回复正在等待。重新安装 {name} 后就会送达{canReaddress ? '，也可以把回复发送到另一个会话。' : '。'}
         </>
       );
       break;
@@ -417,7 +417,7 @@ export function RunLine({
 /** "hooks and MCP servers", "hooks, MCP servers and settings": what a cloned repo brings (E10). */
 function bringsWords(brings: readonly string[]): string {
   if (brings.length <= 1) return brings[0] ?? '';
-  return `${brings.slice(0, -1).join(', ')} and ${brings.at(-1)}`;
+  return `${brings.slice(0, -1).join('、')} 和 ${brings.at(-1)}`;
 }
 
 /** A path's last folder. */

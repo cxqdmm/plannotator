@@ -6,12 +6,12 @@ export function CloudStatus({ agent }: { agent: InboxCloudAgentView }) {
   const { state, last_seen_at } = agent.link;
   const text =
     state === 'connected'
-      ? `Connected · last seen ${last_seen_at ? relativeWords(last_seen_at, now) : 'just now'}`
+      ? `已连接 · 最近一次活动：${last_seen_at ? relativeWords(last_seen_at, now) : '刚刚'}`
       : state === 'waiting'
-        ? `Waiting for ${agent.name} to connect…`
+        ? `正在等待 ${agent.name} 连接…`
         : state === 'relay_down'
-          ? `This computer cannot reach the relay, so ${agent.name} cannot reach it. Check that this computer is online.`
-          : 'Not connected: this computer could not reach the relay. Once it is online, make a new pairing.';
+          ? `这台计算机无法连接中继，因此 ${agent.name} 也无法连接。请确认这台计算机已联网。`
+          : '未连接：这台计算机无法连接中继。等它恢复联网后，请重新配对。';
   return (
     <span className={`ib-cl-link-line ib-cl-${state}`} role="status" data-cloud-status={state}>
       <span className="ib-cl-dot" aria-hidden="true" />

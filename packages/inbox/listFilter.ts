@@ -49,12 +49,12 @@ export type PullPick = 'open' | 'draft' | 'merged' | 'closed' | 'any' | 'none';
 const PULL_PICKS: readonly PullPick[] = ['open', 'draft', 'merged', 'closed', 'any', 'none'];
 /** The menu's words, in order. */
 export const PULL_OPTIONS: ReadonlyArray<{ value: PullPick; label: string }> = [
-  { value: 'open', label: 'Open' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'merged', label: 'Merged' },
-  { value: 'closed', label: 'Closed' },
-  { value: 'any', label: 'Has a PR' },
-  { value: 'none', label: 'No PR' },
+  { value: 'open', label: '打开' },
+  { value: 'draft', label: '草稿' },
+  { value: 'merged', label: '已合并' },
+  { value: 'closed', label: '已关闭' },
+  { value: 'any', label: '有 PR' },
+  { value: 'none', label: '无 PR' },
 ];
 
 /**
@@ -98,10 +98,10 @@ export const NO_LIST_FILTER: ListFilter = { projects: [], updated: null, agents:
 
 /** The menu's words for the preset spans, in order; "Custom range…" follows them. */
 export const UPDATED_OPTIONS: ReadonlyArray<{ value: UpdatedPreset; label: string }> = [
-  { value: 'today', label: 'Today' },
-  { value: '3d', label: 'Last 3 days' },
-  { value: '7d', label: 'Last 7 days' },
-  { value: '30d', label: 'Last 30 days' },
+  { value: 'today', label: '今天' },
+  { value: '3d', label: '最近 3 天' },
+  { value: '7d', label: '最近 7 天' },
+  { value: '30d', label: '最近 30 天' },
 ];
 
 /**

@@ -20,25 +20,25 @@ export function BroIntro({ phone, onClose, onTurnOn }: { phone: boolean; onClose
     <Modal labelledBy="ib-bro-title" describedBy="ib-bro-desc" testId="bro-intro" onClose={onClose} ownKeys className={`ib-bi ib-bro${phone ? ' ib-bi-phone' : ''}`}>
       <h2 id="ib-bro-title">
         Bro <br />
-        mode
+        模式
         <span className="ib-bro-tater" aria-hidden="true">
           <span className="ib-bro-strip" style={{ backgroundImage: `url(${spriteSheet})` }} />
         </span>
       </h2>
       <span className="ib-chip ib-bro-exp" data-bro-intro-experimental="">
-        Experimental
+        实验性
       </span>
       <div className="ib-bi-text">
-        <p id="ib-bro-desc">Agents write to your Inbox in plain words, like one person to another.</p>
+        <p id="ib-bro-desc">agent 用平实的语言写入你的收件箱，就像人与人之间的交流。</p>
         <p className="ib-bro-reach">
-          Applies to new agent sessions. In open Claude Code sessions, run <code>/reload-plugins plannotator</code>.
+          适用于新的 agent 会话。在已打开的 Claude Code 会话中，运行 <code>/reload-plugins plannotator</code>。
         </p>
         <p className="ib-bro-credit">
-          <code>/bro</code> as seen by{' '}
+          <code>/bro</code> 来自{' '}
           <a href={BRO_CREDIT.seenBy} target="_blank" rel="noopener noreferrer">
             @dillon_mulroy
           </a>
-          , repo:{' '}
+          ，仓库：{' '}
           <a href={BRO_CREDIT.by} target="_blank" rel="noopener noreferrer">
             backnotprop/bro
           </a>
@@ -46,11 +46,11 @@ export function BroIntro({ phone, onClose, onTurnOn }: { phone: boolean; onClose
       </div>
       <div className="ib-bi-acts">
         <button type="button" className="ib-btn ib-ghost" onClick={onClose} data-bro-intro-close="">
-          Not now
+          暂不
         </button>
         <span className="ib-bsp" />
         <button type="button" className="ib-btn ib-pri ib-bi-copy" onClick={onTurnOn} data-bro-intro-on="">
-          Turn it on
+          开启
         </button>
       </div>
     </Modal>

@@ -114,7 +114,7 @@ function repoFrom(host: string, path: string): string | null {
   return `${host.toLowerCase()}/${named.join('/')}`;
 }
 
-const REPO_ERROR = 'That isn’t a repo. Use owner/name or the repo’s URL.';
+const REPO_ERROR = '这不是一个仓库。请使用 owner/name 或仓库 URL。';
 
 /**
  * A repo the person typed, as `host/owner/name`: `owner/name` (on `defaultHost`), `host/owner/name`, an https link
@@ -122,7 +122,7 @@ const REPO_ERROR = 'That isn’t a repo. Use owner/name or the repo’s URL.';
  */
 export function parseSystemRepo(input: string, defaultHost = 'github.com'): Parsed<string> {
   const text = input.trim();
-  if (!text) return { ok: false, error: 'Type a repo: owner/name, or its URL.' };
+  if (!text) return { ok: false, error: '请输入仓库：owner/name 或它的 URL。' };
   if (text.length > ENTRY_MAX || /\s/.test(text)) return { ok: false, error: REPO_ERROR };
   let repo: string | null = null;
   const scp = /^[A-Za-z0-9_.-]+@([^:/]+):(.+)$/.exec(text);
@@ -144,12 +144,12 @@ export function parseSystemRepo(input: string, defaultHost = 'github.com'): Pars
   return repo ? { ok: true, value: repo } : { ok: false, error: REPO_ERROR };
 }
 
-const DOC_ERROR = 'That isn’t a web address. Paste a doc site’s URL, like docs.example.com.';
+const DOC_ERROR = '这不是一个网址。请粘贴文档站点的 URL，例如 docs.example.com。';
 
 /** A doc site the person pasted, as a full https (or http) URL. A bare host gets `https://`. */
 export function parseSystemDocSite(input: string): Parsed<string> {
   const text = input.trim();
-  if (!text) return { ok: false, error: 'Paste a doc site’s URL.' };
+  if (!text) return { ok: false, error: '请粘贴文档站点的 URL。' };
   if (text.length > ENTRY_MAX || /\s/.test(text)) return { ok: false, error: DOC_ERROR };
   const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(text) && !/^[^:/]+:\d+(\/|$)/.test(text);
   let url: URL;
@@ -158,8 +158,8 @@ export function parseSystemDocSite(input: string): Parsed<string> {
   } catch {
     return { ok: false, error: DOC_ERROR };
   }
-  if (url.protocol !== 'https:' && url.protocol !== 'http:') return { ok: false, error: 'A doc site starts with https://.' };
-  if (url.username || url.password) return { ok: false, error: 'Leave the sign-in out of the address.' };
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return { ok: false, error: '文档站点应以 https:// 开头。' };
+  if (url.username || url.password) return { ok: false, error: '请勿在地址中包含登录信息。' };
   if (url.hostname !== 'localhost' && !HOST.test(url.hostname)) return { ok: false, error: DOC_ERROR };
   url.hash = '';
   return { ok: true, value: url.href };

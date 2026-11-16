@@ -18,7 +18,7 @@ export function SendingReply({ sends, held, machine }: { sends: readonly SendDra
             <span className="ib-mk ib-big" aria-hidden="true">
               <Icon name="reply" />
             </span>
-            <span className="ib-fl-nm ib-who">You</span>
+            <span className="ib-fl-nm ib-who">你</span>
           </div>
           <div className="ib-msg">
             <p className="ib-held-words" dir="auto">
@@ -27,7 +27,7 @@ export function SendingReply({ sends, held, machine }: { sends: readonly SendDra
             <div className="ib-delivered" data-delivery="queued">
               <span className="ib-dl-main">
                 <Icon name="send" size={14} />
-                <span className="ib-dl-text">Sending…</span>
+                <span className="ib-dl-text">发送中…</span>
               </span>
             </div>
           </div>

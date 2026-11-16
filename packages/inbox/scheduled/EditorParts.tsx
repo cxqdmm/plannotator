@@ -55,9 +55,9 @@ export function RunsAs({ block, agent, model, effort, phone, onChange }: { block
   const choice = { ...(model ? { model } : {}), ...(effort ? { effort } : {}) };
   return (
     <div className="st-foot" data-runs-as="">
-      <span className="st-lbl">Runs as</span>
+      <span className="st-lbl">运行身份</span>
       <Menu.Root modal={false}>
-        <Menu.Trigger ref={anchor} className="st-gh" aria-label={`Agent: ${name}. Change`} data-runs-as-agent={agent}>
+        <Menu.Trigger ref={anchor} className="st-gh" aria-label={`agent：${name}。更改`} data-runs-as-agent={agent}>
           <HostMark host={agent} />
           {name}
           <Icon name="chevD" size={12} />
@@ -65,7 +65,7 @@ export function RunsAs({ block, agent, model, effort, phone, onChange }: { block
         <Menu.Portal container={portal ?? undefined}>
           {sheet && <Menu.Backdrop className="ib-pm-scrim" />}
           <Menu.Positioner className="ib-pm-pos" side="bottom" align="start" sideOffset={4} data-phone={sheet ? '' : undefined}>
-            <Menu.Popup className="ib-pm" aria-label="Agent">
+            <Menu.Popup className="ib-pm" aria-label="agent">
               <Menu.RadioGroup value={agent} onValueChange={(next: string) => next !== agent && onChange({ agent: next })}>
                 {agents.map((a) => (
                   <Menu.RadioItem key={a.agent} value={a.agent} closeOnClick className="ib-pmi" label={a.name}>
@@ -95,7 +95,7 @@ export function FolderPick({ block, folder, shown, agentName, phone, onChange }:
   const launch = block?.launch ?? null;
   const home = block?.home ?? null;
   const project = 'project_id' in folder ? launch?.projects.find((p) => p.id === folder.project_id) : undefined;
-  const words = 'scratch' in folder ? 'New scratch folder' : (shown ?? (project ? tildePath(project.root, home) : 'path' in folder ? tildePath(folder.path, home) : 'Pick a folder'));
+  const words = 'scratch' in folder ? '新建临时文件夹' : (shown ?? (project ? tildePath(project.root, home) : 'path' in folder ? tildePath(folder.path, home) : '选择文件夹'));
   return (
     <div className="st-folder">
       <button type="button" className="st-chip" aria-haspopup="true" aria-expanded={open} onClick={() => setOpen((was) => !was)} disabled={!launch} data-scheduled-folder="">
@@ -147,7 +147,7 @@ export function FilesRow({ files, onChange }: { files: readonly string[]; onChan
         <span key={file} className="st-chip" title={file}>
           <Icon name="doc" />
           <span>{fileName(file)}</span>
-          <button type="button" className="st-chip-x" aria-label={`Remove ${fileName(file)}`} onClick={() => onChange(files.filter((f) => f !== file))}>
+          <button type="button" className="st-chip-x" aria-label={`移除 ${fileName(file)}`} onClick={() => onChange(files.filter((f) => f !== file))}>
             <Icon name="x" size={12} />
           </button>
         </span>
@@ -156,7 +156,7 @@ export function FilesRow({ files, onChange }: { files: readonly string[]; onChan
         <input
           className="st-chip st-path"
           autoFocus
-          aria-label="File path"
+          aria-label="文件路径"
           placeholder="/path/to/file"
           spellCheck={false}
           value={path}
@@ -174,7 +174,7 @@ export function FilesRow({ files, onChange }: { files: readonly string[]; onChan
       ) : (
         <button type="button" className="st-add" onClick={() => setAdding(true)}>
           <Icon name="plus" size={14} />
-          Add file
+          添加文件
         </button>
       )}
     </div>

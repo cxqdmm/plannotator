@@ -15,7 +15,7 @@ export function wholeFileReader(read: (path: string, signal: AbortSignal, patch:
     const held = kept.get(file.path);
     if (held?.patch === file.patch) return held.contents;
     const contents = await read(file.path, signal, file.patch);
-    if (contents.failed) throw new Error(`Could not read ${file.path}.`);
+    if (contents.failed) throw new Error(`无法读取 ${file.path}。`);
     if (contents.oldContent !== null && contents.newContent !== null) kept.set(file.path, { patch: file.patch, contents });
     return contents;
   };

@@ -83,7 +83,7 @@ export function mergePlans(parts: readonly { target: TidyTarget; plan: InboxTidy
     (sum, { plan }) => (plan.unreached ? { ended: sum.ended + plan.unreached.ended, asked: sum.asked + plan.unreached.asked } : sum),
     { ended: 0, asked: 0 },
   );
-  const unasked = parts.filter((p) => p.target.machine !== null && (p.plan === null || p.target.out)).map((p) => ({ name: p.target.name ?? 'Another machine', threads: p.target.threads?.length ?? 0 }));
+  const unasked = parts.filter((p) => p.target.machine !== null && (p.plan === null || p.target.out)).map((p) => ({ name: p.target.name ?? '另一台计算机', threads: p.target.threads?.length ?? 0 }));
   const picking = parts.some((p) => p.target.threads);
   return {
     serverSession: own.serverSession,
@@ -101,7 +101,7 @@ export function mergePlans(parts: readonly { target: TidyTarget; plan: InboxTidy
 /** Reads every target's plan; a part that cannot be read (asleep, refused) is null. */
 export async function readAcross(targets: readonly TidyTarget[], read: (target: TidyTarget) => Promise<InboxTidyPlan>): Promise<TidyAcrossPlan | null> {
   const parts = await Promise.all(targets.map(async (target) => ({ target, plan: target.out ? null : await read(target).catch(() => null) })));
-  if (parts.every((p) => p.plan === null) && parts.some((p) => p.target.machine === null)) throw new Error('Tidy could not be read.');
+  if (parts.every((p) => p.plan === null) && parts.some((p) => p.target.machine === null)) throw new Error('无法读取整理结果。');
   return mergePlans(parts);
 }
 
@@ -120,5 +120,5 @@ export async function startAcross(
   })));
   const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
   if (!failed) return null;
-  return failed.reason instanceof Error ? failed.reason.message : 'Tidy did not start.';
+  return failed.reason instanceof Error ? failed.reason.message : '整理没有开始。';
 }

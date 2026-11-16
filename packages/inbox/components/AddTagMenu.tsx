@@ -19,9 +19,9 @@ export function AddTagItem({ threadId, onOpen }: { threadId: string; onOpen: () 
   if (!host || !host.can(threadId)) return null;
   const n = host.tagsOf(threadId).length;
   return (
-    <Menu.Item className="ib-pmi" label="Add tag" closeOnClick={false} onClick={onOpen} data-add-tag-item="">
+    <Menu.Item className="ib-pmi" label="添加标签" closeOnClick={false} onClick={onOpen} data-add-tag-item="">
       <TagIcon size={15} />
-      Add tag
+      添加标签
       <span className="ib-zsub">
         {n > 0 && <span className="ib-tagm-n">{n}</span>}
         <Icon name="chevR" size={13} />
@@ -76,16 +76,16 @@ export function AddTagList({ threadId, onBack }: { threadId: string; onBack?: ()
     <div ref={body} data-add-tag-list="">
       {onBack && (
         <>
-          <Menu.Item className="ib-pmi ib-zb" label="Add tag" closeOnClick={false} onClick={onBack} data-add-tag-back="">
+          <Menu.Item className="ib-pmi ib-zb" label="添加标签" closeOnClick={false} onClick={onBack} data-add-tag-back="">
             <Icon name="chevL" size={14} />
-            Add tag
+            添加标签
           </Menu.Item>
           <Menu.Separator className="ib-pm-sep" />
         </>
       )}
       <label className="ib-tagm-find">
         <Icon name="search" size={15} />
-        <input ref={field} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={onKeyDown} onBlur={onBlur} placeholder="Find or make a tag" aria-label="Find or make a tag" autoComplete="off" spellCheck={false} data-tag-find="" />
+        <input ref={field} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={onKeyDown} onBlur={onBlur} placeholder="查找或创建标签" aria-label="查找或创建标签" autoComplete="off" spellCheck={false} data-tag-find="" />
       </label>
       {shown.map((tag) => {
         const ticked = on.has(tag.id);
@@ -102,16 +102,16 @@ export function AddTagList({ threadId, onBack }: { threadId: string; onBack?: ()
       })}
       {(shown.length > 0 || typed) && <Menu.Separator className="ib-pm-sep" />}
       {typed && !exact ? (
-        <Menu.Item className="ib-pmi" label={`New tag “${typed}”`} closeOnClick={false} onClick={create} data-tag-new="">
+        <Menu.Item className="ib-pmi" label={`新建标签“${typed}”`} closeOnClick={false} onClick={create} data-tag-new="">
           <Icon name="plus" size={15} />
           <span className="ib-tagm-l" dir="auto">
-            New tag “{typed}”
+            新建标签“{typed}”
           </span>
         </Menu.Item>
       ) : !typed ? (
-        <Menu.Item className="ib-pmi ib-tagm-quiet" label="New tag" closeOnClick={false} onClick={() => field.current?.focus({ preventScroll: true })} data-tag-new-focus="">
+        <Menu.Item className="ib-pmi ib-tagm-quiet" label="新建标签" closeOnClick={false} onClick={() => field.current?.focus({ preventScroll: true })} data-tag-new-focus="">
           <Icon name="plus" size={15} />
-          New tag…
+          新建标签…
         </Menu.Item>
       ) : null}
     </div>

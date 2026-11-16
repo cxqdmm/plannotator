@@ -32,11 +32,11 @@ export function scopeOnPage(stack: Pick<InboxPullStack, 'layers' | 'parents' | '
   return {
     scope,
     ...(from ? { from } : {}),
-    title: scope === 'stack' ? `Whole stack up to ${label}` : name ? `${name} as one diff` : null,
+    title: scope === 'stack' ? `截止 ${label} 的整个堆叠` : name ? `${name}，作为一个 Diff` : null,
     rangeName: name,
     base: scope === 'stack' ? stack.open_base : scope === 'range' ? range?.first.base : scope === 'since' ? from : layer.base,
     whole: scope === 'stack' || scope === 'range',
-    empty: scope === 'stack' ? `The stack up to ${label} changes no files.` : name ? `${name} change no files.` : scope === 'since' ? 'No files changed since you looked.' : `This ${noun} changes no files.`,
+    empty: scope === 'stack' ? `截止 ${label} 的堆叠没有改动任何文件。` : name ? `${name} 没有改动任何文件。` : scope === 'since' ? '自你上次查看以来，没有文件发生变化。' : `这个 ${noun} 没有改动任何文件。`,
     covers: scope === 'stack' ? [...under, layer] : range ? range.layers.filter(inboxPullIsOpen) : [layer],
   };
 }

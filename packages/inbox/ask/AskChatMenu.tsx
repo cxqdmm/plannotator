@@ -42,7 +42,7 @@ export function AskChatMenu({ current, phone, onPick }: { current: InboxAskChat;
         className="ib-pmi ib-ask-row"
         label={name}
         onClick={() => onPick(chat)}
-        aria-label={[name, chat.project, when, state === 'current' ? 'current chat' : state === 'answering' ? 'answering' : state === 'unread' ? 'new answer' : null].filter(Boolean).join(', ')}
+        aria-label={[name, chat.project, when, state === 'current' ? '当前聊天' : state === 'answering' ? '正在回答' : state === 'unread' ? '新回答' : null].filter(Boolean).join('，')}
         data-ask-chat={chat.thread_id}
         data-state={state ?? undefined}
       >
@@ -64,7 +64,7 @@ export function AskChatMenu({ current, phone, onPick }: { current: InboxAskChat;
 
   return (
     <Menu.Root modal={false} onOpenChange={(open) => open && read()}>
-      <Menu.Trigger ref={chip} className="ib-ask-chip" aria-label={`${askChatName(current.subject)}, chats`} data-ask-chip="">
+      <Menu.Trigger ref={chip} className="ib-ask-chip" aria-label={`${askChatName(current.subject)}，聊天列表`} data-ask-chip="">
         {/* Told apart from a draft's window at a glance (approval "inbox-reply-floaters"): Ask's sparkle and "Ask AI · <thread>". */}
         <AskSparkle />
         <span className="ib-ask-chipname" dir="auto">
@@ -75,16 +75,16 @@ export function AskChatMenu({ current, phone, onPick }: { current: InboxAskChat;
       <Menu.Portal container={portal ?? undefined}>
         {phone && <Menu.Backdrop className="ib-pm-scrim" />}
         <Menu.Positioner className="ib-pm-pos" side="bottom" align="start" sideOffset={4} data-phone={phone ? '' : undefined}>
-          <Menu.Popup className="ib-pm ib-ask-menu" aria-label="Chats" data-ask-menu="">
+          <Menu.Popup className="ib-pm ib-ask-menu" aria-label="聊天" data-ask-menu="">
             <div className="ib-pm-title" aria-hidden="true">
-              Chats
+              聊天
             </div>
             {top.map(row)}
             {recent.length > 0 && (
               <>
                 <Menu.Separator className="ib-pm-sep" />
                 <Menu.Group>
-                  <Menu.GroupLabel className="ib-ask-grouplabel">Recent</Menu.GroupLabel>
+                  <Menu.GroupLabel className="ib-ask-grouplabel">最近</Menu.GroupLabel>
                   {recent.map(row)}
                 </Menu.Group>
               </>

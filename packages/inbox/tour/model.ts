@@ -297,7 +297,7 @@ export function tourStepOf(raw: string | null | undefined): number {
   return Math.min(n, TOUR_STEPS);
 }
 
-export const TOUR_SKIPPED = 'Skipped';
+export const TOUR_SKIPPED = '已跳过';
 
 export function tourPickOf(answer: QuestionAnswer | null | undefined): string | null {
   if (!answer) return null;
@@ -311,9 +311,9 @@ export function tourPickOf(answer: QuestionAnswer | null | undefined): string | 
 
 /** The replay's note starts with what the person did: "You picked B · …", "You answered “…”", "You skipped it". */
 export function tourPickWords(picked: string): string {
-  if (picked === TOUR_SKIPPED) return 'You skipped it';
-  if (picked.startsWith('“')) return `You answered ${picked}`;
-  return `You picked ${picked}`;
+  if (picked === TOUR_SKIPPED) return '你跳过了它';
+  if (picked.startsWith('“')) return `你回答了${picked}`;
+  return `你选择了 ${picked}`;
 }
 
 /** Where a comment sits, by what it is on. */
@@ -758,11 +758,11 @@ export interface TourDegraded {
  * joined them (approval "inbox-snooze-announce", 2026-11-02): new users never get its one-time dialog, so the tour names it.
  */
 export const TOUR_ALSO_ITEMS: { mark: string; title: string; text: string }[] = [
-  { mark: '⭐', title: 'Star a thread', text: 'to keep it at the top of the sidebar.' },
-  { mark: '⏰', title: 'Snooze', text: 'puts a thread away until later, and brings it back on time.' },
-  { mark: '👍', title: 'Looks good', text: 'tells an agent in one click when there’s nothing to add.' },
-  { mark: '↻', title: 'Re-ask', text: 'gathers an agent’s open questions into one fresh message.' },
-  { mark: '➤', title: 'Send now', text: 'puts your reply into a turn that’s running.' },
+  { mark: '⭐', title: '给会话加星', text: '让它留在侧边栏顶部。' },
+  { mark: '⏰', title: '稍后提醒', text: '把会话暂时收起来，到时间再带回来。' },
+  { mark: '👍', title: '看起来不错', text: '没什么要补充时，一键告诉 agent。' },
+  { mark: '↻', title: '重新提问', text: '把一个 agent 所有未回答的问题汇成一条新消息。' },
+  { mark: '➤', title: '立即发送', text: '把你的回复送进正在运行的一轮。' },
 ];
 
 /**
@@ -792,12 +792,12 @@ export function tourCoach(state: TourState, names: { developer: string; agent: s
   if (step === TOUR_STEPS) return null;
   if (step === TOUR_SETTINGS_STEP)
     // The owner (2026-11-02): the button says what comes next.
-    return { key: '10-yours', title: 'Make it yours', text: 'Pick how the Inbox looks. It changes as you tap.', picture: 'settings', next: true, nextLabel: 'Connect agents next', nextArrow: true, skip: true, target: null };
+    return { key: '10-yours', title: '把它变成你的', text: '选择收件箱的样子。你一点，它就会变。', picture: 'settings', next: true, nextLabel: '下一步：连接 agent', nextArrow: true, skip: true, target: null };
   if (step === 1 && state.orient)
     return {
       key: '1-orient',
-      title: 'How it’s organised',
-      text: 'It reads like email: projects on the left, and each row is a thread about one subject, such as a single feature. Open a thread and it’s a conversation, with files attached as tiles.',
+      title: '它是如何组织的',
+      text: '它读起来像邮件：左侧是项目，每一行都是一个只有一个主题的会话，比如单个功能。打开会话就是一段对话，文件像卡片一样附在旁边。',
       picture: 'orient',
       next: true,
       target: null,
@@ -805,95 +805,95 @@ export function tourCoach(state: TourState, names: { developer: string; agent: s
   if (step === 1)
     return {
       key: '1',
-      title: 'An agent came back with a question',
-      text: `${developer} asked ${agent} to rethink a VS Code feature, then went back to other work.`,
-      action: 'Open the question it came back with.',
+      title: '一个 agent 带着问题回来了',
+      text: `${developer} 让 ${agent} 重新思考一个 VS Code 功能，然后回去做别的工作了。`,
+      action: '打开它带回来的那个问题。',
       target: 'row',
     };
   // Steps 2 to 7 happen in thread A; left mid-step, the card shows the way back.
   if (step <= 7 && state.route !== TOUR_THREAD)
-    return { key: `back-${step}`, title: 'The question is in this thread', text: 'The tour goes on where you left it.', action: 'Open it again.', target: 'row' };
+    return { key: `back-${step}`, title: '问题在这个会话里', text: '导览会从你离开的地方继续。', action: '再次打开。', target: 'row' };
   if (step === 2) {
     if (state.warmSent)
       return {
         key: state.warmDelivered ? '2-delivered' : '2-sending',
-        title: state.warmDelivered ? 'Delivered. Now watch.' : 'Sending…',
-        text: `${agent} takes your answer as its next turn and goes to work.`,
+        title: state.warmDelivered ? '已送达。接下来看着。' : '发送中…',
+        text: `${agent} 把你的回答当作下一轮输入，继续工作。`,
         wait: true,
         target: state.warmDelivered ? 'delivered' : null,
       };
-    if (state.warmPicked) return { key: '2-send', title: 'Send it back', text: 'Your pick waits in a draft until you send it.', action: 'Press Send.', target: 'warm-send' };
-    return { key: '2', title: 'Start with a plain question', text: `${agent} checks one thing before it starts. Your answer goes back into the session that asked.`, action: 'Pick an answer.', target: 'warm-choices' };
+    if (state.warmPicked) return { key: '2-send', title: '把它发回去', text: '你的选择会留在草稿里，等你发送。', action: '按发送。', target: 'warm-send' };
+    return { key: '2', title: '从一个简单的问题开始', text: `${agent} 开始前先确认一件事。你的回答会回到提问的那个会话。`, action: '选择一个回答。', target: 'warm-choices' };
   }
   if (step === 3)
     return degraded.pictures
-      ? { key: '3', title: 'Pick a direction', text: `These are ${agent}’s four directions for the VS Code guide, each named on the card.`, action: 'Pick the direction you would build.', target: 'choices' }
-      : { key: '3', title: 'The choices are pictures', text: `They are ${agent}’s mockups of VS Code; the magnifier looks closer.`, action: 'Pick the direction you would build.', target: 'choices' };
+      ? { key: '3', title: '选一个方向', text: `这些是 ${agent} 为 VS Code 指南提出的四个方向，每张卡片上都有名称。`, action: '选一个你会做的方向。', target: 'choices' }
+      : { key: '3', title: '选项就是图片', text: `它们是 ${agent} 画的 VS Code 效果图；放大镜可以看得更近。`, action: '选一个你会做的方向。', target: 'choices' };
   if (step === 4)
     return ui.composing
-      ? { key: '4-box', title: 'Say something about any words', text: 'Each comment box starts with one of the developer’s real comments; keep it or write your own.', action: 'Save the comment.', target: 'composer' }
-      : { key: '4', title: 'Say something about any words', text: 'Select text in a message to comment on it; the comment goes with your reply.', action: 'Select the highlighted words.', target: 'phrase' };
+      ? { key: '4-box', title: '对任何文字说点什么', text: '每个评论框都以开发者的一条真实评论开头；你可以保留它，也可以自己写。', action: '保存评论。', target: 'composer' }
+      : { key: '4', title: '对任何文字说点什么', text: '在消息中选中文字即可评论；评论会随你的回复一起发出。', action: '选中高亮的文字。', target: 'phrase' };
   if (step === 5) {
-    if (!state.file) return { key: '5', title: 'Files open right here', text: 'Agents attach plans, mocks and screenshots; you read them beside the thread.', action: 'Open EVALUATION.md.', target: 'eval-tile' };
-    if (ui.composing) return { key: '5-box', title: 'Comment on any line', text: 'The comment stays on this file and rides your next reply.', action: 'Save it.', target: 'composer' };
-    return { key: '5-file', title: 'Comment on any line', text: `The real file, as ${agent} sent it.`, action: 'Select the highlighted line to comment on it.', target: 'eval-line' };
+    if (!state.file) return { key: '5', title: '文件就在这里打开', text: 'agent 会附上计划、效果图和截图；你在会话旁边阅读它们。', action: '打开 EVALUATION.md。', target: 'eval-tile' };
+    if (ui.composing) return { key: '5-box', title: '对任意一行评论', text: '评论会留在这个文件上，并随你的下一条回复发出。', action: '保存。', target: 'composer' };
+    return { key: '5-file', title: '对任意一行评论', text: `${agent} 发来的真实文件。`, action: '选中高亮的行即可评论。', target: 'eval-line' };
   }
   if (step === 6)
     return state.replyOpen
-      ? { key: '6-box', title: 'Everything goes back together', text: 'Here is your answer and both comments, ready to go.', action: 'Press Send to replay it.', target: 'reply-box' }
-      : { key: '6', title: 'Everything goes back together', text: 'Your pick and both comments ride one reply, into the session that asked.', action: 'Press Send to see what goes.', target: 'reply' };
+      ? { key: '6-box', title: '所有内容一起发回去', text: '你的回答和两条评论都在这里，可以发送了。', action: '按发送来重放这次回复。', target: 'reply-box' }
+      : { key: '6', title: '所有内容一起发回去', text: '你的选择和两条评论都随一条回复，回到提问的那个会话。', action: '按发送，看看会发出什么。', target: 'reply' };
   if (step === 7) {
     if (state.arrived < 2)
       return {
         key: state.delivered ? '7-delivered' : '7-sending',
-        title: state.delivered ? 'Delivered. Now watch.' : 'Sending…',
-        text: 'In the real thread, the session that asked had your answer now.',
+        title: state.delivered ? '已送达。接下来看着。' : '发送中…',
+        text: '在真实会话里，提问的那个会话现在已经拿到了你的回答。',
         wait: true,
         target: state.delivered ? 'delivered' : null,
       };
     if (state.artifactsTour === 2)
-      return { key: '7-art-open', title: 'Every file in one place', text: 'Each tile opens in the same viewer, ready for comments.', next: true, target: 'file' };
+      return { key: '7-art-open', title: '所有文件都在一处', text: '每张卡片都在同一个查看器里打开，随时可以评论。', next: true, target: 'file' };
     if (state.artifactsTour === 1)
       return state.artifactsOpen
-        ? { key: '7-art-grid', title: 'Every file in one place', text: 'Everything this thread holds, as tiles: the mock, the notes, the screenshots.', action: 'Open any tile.', target: 'art-grid' }
-        : { key: '7-art', title: 'Every file in one place', text: 'Artifacts gathers every file, picture and film in a thread, newest first.', action: 'Press Artifacts.', target: 'art-button' };
-    if (tourImageCommented(state)) return { key: '7-drawn', title: 'Pictures take comments too', text: 'The drawing waits in your draft and goes with your next reply.', next: true, target: state.file ? 'image-foot' : 'arrival' };
-    if (!state.file) return { key: '7', title: 'It keeps working, and shows you', text: `An hour later ${agent} was done, with screenshots right in the message.`, action: 'Open the first screenshot.', target: 'inline-img' };
+        ? { key: '7-art-grid', title: '所有文件都在一处', text: '这个会话里的所有内容都在这里，一张张卡片：效果图、笔记、截图。', action: '打开任意一张卡片。', target: 'art-grid' }
+        : { key: '7-art', title: '所有文件都在一处', text: '产物会汇集会话里的每个文件、图片和影片，最新的在前。', action: '按“产物”。', target: 'art-button' };
+    if (tourImageCommented(state)) return { key: '7-drawn', title: '图片也能评论', text: '画会留在你的草稿里，随下一条回复一起发出。', next: true, target: state.file ? 'image-foot' : 'arrival' };
+    if (!state.file) return { key: '7', title: '它继续工作，还给你看结果', text: `一小时后 ${agent} 完成了，截图就放在消息里。`, action: '打开第一张截图。', target: 'inline-img' };
     // While Mark up's drawing surface is open, the card stands clear of its tools (it points at nothing).
-    if (ui.annotating && !ui.drawn) return { key: '7-drawing', title: 'Circle what you like', text: 'Drag on the picture to draw; Save keeps the drawing.', action: 'Drag a circle.', target: null };
+    if (ui.annotating && !ui.drawn) return { key: '7-drawing', title: '圈出你喜欢的地方', text: '在图片上拖动即可绘制；保存会留下这幅画。', action: '拖出一个圈。', target: null };
     return ui.drawn
-      ? { key: '7-drawn-unsaved', title: 'Circle what you like', text: 'Your circle is on the picture; the suggestion is the developer’s real reaction.', action: 'Save it.', target: 'image-foot' }
-      : { key: '7-file', title: 'Circle what you like', text: 'Mark up draws on the picture, and the drawing goes with your words.', action: 'Press Mark up, then drag a circle.', target: 'markup' };
+      ? { key: '7-drawn-unsaved', title: '圈出你喜欢的地方', text: '你的圈已经画在图片上；建议框里是开发者的真实反应。', action: '保存。', target: 'image-foot' }
+      : { key: '7-file', title: '圈出你喜欢的地方', text: '“标注”可以在图片上画，画会随你的文字一起发出。', action: '按“标注”，然后拖出一个圈。', target: 'markup' };
   }
   if (step === 8) {
     if (state.route !== TOUR_FILM_THREAD && !state.filmSent)
-      return { key: '8-open', title: 'A film came in too', text: `The same work, a day earlier: ${agent} sent the launch film.`, action: 'Open the film thread.', target: 'film-row' };
-    if (state.filmArrived) return { key: '8-done', title: 'It knew exactly where', text: `The moment and the frame went with your words, so ${agent} knew what to fix.`, next: true, target: 'arrival' };
+      return { key: '8-open', title: '还来了一部影片', text: `同一件工作，早一天：${agent} 发来了发布影片。`, action: '打开影片会话。', target: 'film-row' };
+    if (state.filmArrived) return { key: '8-done', title: '它精确知道在哪里', text: `时刻和画面随你的文字一起发出，所以 ${agent} 知道该修什么。`, next: true, target: 'arrival' };
     if (state.filmSent)
-      return { key: state.filmDelivered ? '8-delivered' : '8-sending', title: state.filmDelivered ? 'Delivered.' : 'Sending…', text: `In the real thread, ${agent} answered a minute later.`, wait: true, target: 'delivered' };
-    if (tourFilmCommented(state)) return { key: '8-send', title: 'Send it back', text: 'The comment, its moment and its frame go in one reply.', action: 'Press Send.', target: 'film-send' };
-    const title = 'Comment on a film, at the moment';
-    if (!state.file) return { key: '8', title, text: 'Videos play right in the thread.', action: 'Play guides-vscode.mp4.', target: 'film-tile' };
-    if (ui.pinnedAt) return { key: '8-pinned', title, text: `Pinned at ${ui.pinnedAt}, with the frame beside your words.`, action: 'Press Comment.', target: 'film-composer' };
-    return { key: '8-file', title, text: 'Pause anywhere; your comment keeps the time and the frame.', action: 'Play it and pause near the chapter text, or start typing.', target: 'film-rail' };
+      return { key: state.filmDelivered ? '8-delivered' : '8-sending', title: state.filmDelivered ? '已送达。' : '发送中…', text: `在真实会话里，${agent} 一分钟后作了回答。`, wait: true, target: 'delivered' };
+    if (tourFilmCommented(state)) return { key: '8-send', title: '把它发回去', text: '评论、它的时刻和画面都在一条回复里发出。', action: '按发送。', target: 'film-send' };
+    const title = '在影片的某个时刻评论';
+    if (!state.file) return { key: '8', title, text: '视频可以直接在会话里播放。', action: '播放 guides-vscode.mp4。', target: 'film-tile' };
+    if (ui.pinnedAt) return { key: '8-pinned', title, text: `固定在 ${ui.pinnedAt}，画面就在你的文字旁边。`, action: '按评论。', target: 'film-composer' };
+    return { key: '8-file', title, text: '随时暂停；你的评论会保留时间和画面。', action: '播放，并在章节文字附近暂停，或者直接开始输入。', target: 'film-rail' };
   }
   // Step 9.
-  if (state.also) return { key: '9-also', title: 'Also in your Inbox', text: '', items: TOUR_ALSO_ITEMS, next: true, target: null };
-  if (state.newArrived) return { key: '9-loop', title: 'That’s the loop', text: 'Agents ask, you answer when you can, and they keep going.', next: true, target: state.route === TOUR_NEW_THREAD ? 'arrival' : 'new-row' };
+  if (state.also) return { key: '9-also', title: '收件箱里还有这些', text: '', items: TOUR_ALSO_ITEMS, next: true, target: null };
+  if (state.newArrived) return { key: '9-loop', title: '这就是闭环', text: 'agent 提问，你有空时回答，它们继续工作。', next: true, target: state.route === TOUR_NEW_THREAD ? 'arrival' : 'new-row' };
   if (state.compose === 'sent')
-    return { key: state.newDelivered ? '9-delivered' : '9-sending', title: state.newDelivered ? 'Delivered.' : 'Sending…', text: 'It went into that session as its next turn.', wait: true, target: state.route === TOUR_NEW_THREAD ? 'delivered' : 'new-row' };
+    return { key: state.newDelivered ? '9-delivered' : '9-sending', title: state.newDelivered ? '已送达。' : '发送中…', text: '它作为下一轮输入进入了那个会话。', wait: true, target: state.route === TOUR_NEW_THREAD ? 'delivered' : 'new-row' };
   if (state.compose === 'open')
     return ui.toChosen
-      ? { key: '9-to', title: 'Start a thread yourself', text: 'The words are the developer’s real request; the thread names itself.', action: 'Press Send.', target: 'compose-send' }
-      : { key: '9-open', title: 'Start a thread yourself', text: 'To starts empty, so you always choose who gets it.', action: 'Choose Claude Code.', target: 'compose-to' };
-  return { key: '9', title: 'Start a thread yourself', text: 'New message writes to any agent session that is running, in any project.', action: 'Press New message.', target: 'compose-btn' };
+      ? { key: '9-to', title: '自己发起一段会话', text: '这些话是开发者的真实请求；会话会自己命名。', action: '按发送。', target: 'compose-send' }
+      : { key: '9-open', title: '自己发起一段会话', text: '收件人一开始是空的，所以总是由你选择发给谁。', action: '选择 Claude Code。', target: 'compose-to' };
+  return { key: '9', title: '自己发起一段会话', text: '新消息可以写给任何项目中正在运行的 agent 会话。', action: '按“新消息”。', target: 'compose-btn' };
 }
 
 /** The coach card as one sentence for the live region. */
 export function tourCoachSpeech(coach: TourCoach, step: number): string {
   const items = coach.items?.map((i) => `${i.title} ${i.text}`).join(' ') ?? '';
-  const action = coach.action ? (tourYourTurn(coach) ? ` Your turn: ${coach.action}` : ` ${coach.action}`) : '';
-  return `Step ${step} of ${TOUR_STEPS}. ${coach.title}.${coach.text ? ` ${coach.text}` : ''}${items ? ` ${items}` : ''}${action}`;
+  const action = coach.action ? (tourYourTurn(coach) ? `轮到你了：${coach.action}` : coach.action) : '';
+  return `第 ${step} 步，共 ${TOUR_STEPS} 步。${coach.title}。${coach.text}${items ? `${items} ` : ''}${action}`;
 }
 
 // ─────────────────────────── What the window draws ───────────────────────────
@@ -1103,7 +1103,7 @@ export function tourMessages(fixture: TourFixture, threadId: string, state: Tour
   if (thread.person && thread.compose) {
     if (state.compose !== 'sent') return [];
     const first = personReply(thread, TOUR_NEW_MESSAGE_ID, '', thread.compose.body, thread.compose.time, 0, now);
-    out.push({ wire: { ...first, reply_to: null }, time: tourTime(thread.compose.time), who: 'You', to: 'to Claude Code', fixture: null, replay: false, reply: true });
+    out.push({ wire: { ...first, reply_to: null }, time: tourTime(thread.compose.time), who: '你', to: '发送给 Claude Code', fixture: null, replay: false, reply: true });
   }
   for (const m of thread.messages) {
     if (!messageShown(thread, m, state)) continue;
@@ -1120,22 +1120,22 @@ export function tourMessages(fixture: TourFixture, threadId: string, state: Tour
     }
     const who = m.who === 'agent' ? 'Claude Code' : developer;
     const replayed = !!m.replay || !!m.after_warmup;
-    const to = m.who === 'agent' ? `to ${replayed || thread.id !== TOUR_THREAD ? 'you' : developer}` : 'to Claude Code';
+    const to = m.who === 'agent' ? `发送给 ${replayed || thread.id !== TOUR_THREAD ? '你' : developer}` : '发送给 Claude Code';
     out.push({ wire: wireMessage(thread, m, now, questions, files), time: tourTime(m.time), who, to, fixture: m, replay: replayed, reply: false });
     // The warm-up's reply follows its question.
     if (thread.id === TOUR_THREAD && m.warmup && state.warmSent && state.warmPicked) {
       const body = state.warmPicked === TOUR_SKIPPED ? 'Skipped 1 question.' : 'Answered 1 question.';
-      out.push({ wire: personReply(thread, TOUR_WARM_REPLY_ID, m.id, body, thread.warmup_reply_time ?? '11:49', 0, now), time: tourTime(thread.warmup_reply_time ?? '11:49'), who: 'You', to: 'to Claude Code', fixture: null, replay: false, reply: true });
+      out.push({ wire: personReply(thread, TOUR_WARM_REPLY_ID, m.id, body, thread.warmup_reply_time ?? '11:49', 0, now), time: tourTime(thread.warmup_reply_time ?? '11:49'), who: '你', to: '发送给 Claude Code', fixture: null, replay: false, reply: true });
     }
     // The person's replayed reply follows what it answers.
     if (thread.id === TOUR_THREAD && m.asks && state.sent && state.picked) {
       const n = state.comments.filter((r) => r.sent_reply_id === TOUR_REPLY_ID).length;
       const body = state.picked === TOUR_SKIPPED ? 'Skipped 1 question.' : 'Answered 1 question.';
-      out.push({ wire: personReply(thread, TOUR_REPLY_ID, m.id, body, thread.reply_time ?? '12:17', n, now), time: tourTime(thread.reply_time ?? '12:17'), who: 'You', to: 'to Claude Code', fixture: null, replay: false, reply: true });
+      out.push({ wire: personReply(thread, TOUR_REPLY_ID, m.id, body, thread.reply_time ?? '12:17', n, now), time: tourTime(thread.reply_time ?? '12:17'), who: '你', to: '发送给 Claude Code', fixture: null, replay: false, reply: true });
     }
     if (thread.id === TOUR_FILM_THREAD && !m.replay && state.filmSent) {
       const n = state.comments.filter((r) => r.sent_reply_id === TOUR_FILM_REPLY_ID).length;
-      out.push({ wire: personReply(thread, TOUR_FILM_REPLY_ID, m.id, '', thread.reply_time ?? '18:10', n, now), time: tourTime(thread.reply_time ?? '18:10'), who: 'You', to: 'to Claude Code', fixture: null, replay: false, reply: true });
+      out.push({ wire: personReply(thread, TOUR_FILM_REPLY_ID, m.id, '', thread.reply_time ?? '18:10', n, now), time: tourTime(thread.reply_time ?? '18:10'), who: '你', to: '发送给 Claude Code', fixture: null, replay: false, reply: true });
     }
   }
   return out;

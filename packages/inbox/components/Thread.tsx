@@ -206,7 +206,7 @@ import { MessageBody } from '../parts/MessageBody/MessageBody';
 export { AckPill, MessageBody };
 export { routeSendAnnotations, sendTargetsOf, type SendTarget };
 
-export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, notice, thread: threadRead, threadSteps = null, codeReview = false, pullReview, machine = null, onMachineUpdate, onNewMessageWith, outbox = NO_OUTBOX, onDismissOutbox, sent, onQuestions, onSentRead, readPending = false, onPickSaves, onChanged, onTakenBack, draftChanged = 0, filesChanged = 0, draftSignal = null, filesSignal = null, onClose, file, onOpenFile, onOpenGuide, lookSeq, seenThrough = null, onSeen, covered = false, onScreenChange, row, drawn = null, onMarkRead, onMarkUnread, onAck, onAction, onArchive, pinned = false, onPin, priority, onSnooze, onUnsnooze, snoozeBlocked, replyRequest, onReplyOpened, shapeButton = null, onSide, onSideWords, replyWords = null, onReplyWordsTaken, replyPart = null, onReplyPartTaken, onToastGone, backLabel = 'Inbox', cardChip, phone = false, stacked = false, fileStacked = false, namedFile = null, onOpenNamedFile, remote = false, onBackToList, onToast, linkOf, onInboxLink, fullFromSide = false, fullExitFile = null, landing = null, onLanded, artifacts: artifactsRoute = false, onArtifacts, links: linksRoute = false, onLinks, decide = null, threadAlone = false, fullSidebar = true, onFull, run: runLine, attachCommand = null, onRunChanged, openedWith = null, snoozeBack = null, agentContext = null, agentFilter = null, onAgentFilter }: ThreadPaneProps) {
+export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, notice, thread: threadRead, threadSteps = null, codeReview = false, pullReview, machine = null, onMachineUpdate, onNewMessageWith, outbox = NO_OUTBOX, onDismissOutbox, sent, onQuestions, onSentRead, readPending = false, onPickSaves, onChanged, onTakenBack, draftChanged = 0, filesChanged = 0, draftSignal = null, filesSignal = null, onClose, file, onOpenFile, onOpenGuide, lookSeq, seenThrough = null, onSeen, covered = false, onScreenChange, row, drawn = null, onMarkRead, onMarkUnread, onAck, onAction, onArchive, pinned = false, onPin, priority, onSnooze, onUnsnooze, snoozeBlocked, replyRequest, onReplyOpened, shapeButton = null, onSide, onSideWords, replyWords = null, onReplyWordsTaken, replyPart = null, onReplyPartTaken, onToastGone, backLabel = '收件箱', cardChip, phone = false, stacked = false, fileStacked = false, namedFile = null, onOpenNamedFile, remote = false, onBackToList, onToast, linkOf, onInboxLink, fullFromSide = false, fullExitFile = null, landing = null, onLanded, artifacts: artifactsRoute = false, onArtifacts, links: linksRoute = false, onLinks, decide = null, threadAlone = false, fullSidebar = true, onFull, run: runLine, attachCommand = null, onRunChanged, openedWith = null, snoozeBack = null, agentContext = null, agentFilter = null, onAgentFilter }: ThreadPaneProps) {
   /**
    * The questions this pane's own saves brought back (by `<message id>/<key>`), and how many saves landed. The thread
    * drawn is the one read, its questions never older than these: a read that left before the last keys were saved
@@ -246,7 +246,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       if (done) onToast?.({ icon: 'check', ...(typeof done === 'string' ? { lead: done } : done(result)) });
       onRunChanged?.();
     } catch (cause) {
-      setLaunchError(cause instanceof InboxApiError ? cause.message : 'That did not work; try again.');
+      setLaunchError(cause instanceof InboxApiError ? cause.message : '没有成功，请重试。');
     }
   };
   // A failed clone's Change the URL (E5): New message with the URL in the folder menu's filter and the same words.
@@ -266,7 +266,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       ? {
           name: hostName(launched.agent),
           copyAttach: attach
-            ? () => void copyTextToClipboard(attach).then((ok) => onToast?.(ok ? { icon: 'check', lead: 'Copied', detail: 'the attach command' } : { icon: 'warn', lead: 'Not copied' }))
+            ? () => void copyTextToClipboard(attach).then((ok) => onToast?.(ok ? { icon: 'check', lead: '已复制', detail: '附加命令' } : { icon: 'warn', lead: '未复制' }))
             : null,
           // A resting agent (no line) still runs in the background: Stop is offered then too.
           stop: inboxLaunchStops(!!launched.session_ref, runLine?.state ?? null) ? () => void launchAct(() => inboxApi.launchStop(launched.id, machine?.id ?? null)) : null,
@@ -410,8 +410,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
   // words; Put back, Undo and the browser's undo return it there. Full screen's card writes the same words.
   const replyFiles = useComposeFiles(NO_UPLOADS, {
     onPasted: (names) => announce(attachedAnnouncement(names)),
-    onAlready: (name) => announce(`${name} is already in your reply`),
-    onPutBack: () => announce('The pasted text is back in your reply.'),
+    onAlready: (name) => announce(`${name} 已在你的回复中`),
+    onPutBack: () => announce('粘贴的文本已回到你的回复中。'),
     machine: machine?.id ?? null,
     text: {
       get value() {
@@ -581,7 +581,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
   // so the "New" marks last until the person leaves the thread.
   const one = thread.messages.length < 2;
   // The thread's name as the list shows it: nothing when unnamed or when the subject already starts with it.
-  const nameChip = threadChipName(thread.thread_name, thread.subject ?? '(no subject)');
+  const nameChip = threadChipName(thread.thread_name, thread.subject ?? '(无主题)');
   // The bar's name: in Reviews, the review's title once it landed, the name its row and heading show (`ReviewView.name`).
   const barName = reviewView?.name ?? nameChip;
   // The agent sessions this thread involves (approval "inbox-tag-agents"): overlapping marks in the head.
@@ -603,7 +603,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
   else if (snoozeBackPlace.current?.threadId !== thread.thread_id || snoozeBackPlace.current.until !== snoozeBack) {
     snoozeBackPlace.current = { threadId: thread.thread_id, until: snoozeBack, above: snoozeBackAbove(thread.messages, fresh) };
   }
-  const snoozeBackWords = snoozeBack ? `Back from snooze · ${inboxSnoozeWhen(snoozeBack)}` : '';
+  const snoozeBackWords = snoozeBack ? `稍后提醒已结束 · ${inboxSnoozeWhen(snoozeBack)}` : '';
   // A long thread's far messages draw their tooltips and menus plain until they come near the view (messageArming.tsx).
   const [arms] = useState(createMessageArms);
   useEffect(() => () => arms.disconnect(), [arms]);
@@ -740,11 +740,11 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       const lastReal = lastNonNote(thread.messages);
       setFoldState((current) => (current ? { ...current, folded: new Set(thread.messages.filter((m) => m !== last && m !== lastReal).map((m) => m.id)), shown: current.hidden.map(() => 0), stepped: NO_IDS } : current));
       setHeaderFiles({ threadId: thread.thread_id, open: new Set([...headerOpen].filter((id) => id === last.id)) });
-      announce('Earlier messages folded');
+      announce('已折叠较早的消息');
     } else {
       setFoldState((current) => (current ? { ...current, folded: new Set(), shown: current.hidden.map((ids) => ids.length), stepped: NO_IDS } : current));
       setEarlierShownIn(thread.thread_id);
-      announce(`All ${thread.messages.length} messages open`);
+      announce(`已展开全部 ${thread.messages.length} 条消息`);
     }
   };
   /**
@@ -770,7 +770,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     anchorRef.current = { id: keep, top: keep ? (articleOf(keep)?.getBoundingClientRect().top ?? 0) : 0, focus: coming[coming.length - 1]!, folding: false, room: true };
     setFoldState((current) => (current ? { ...current, shown: current.shown.map((s, i) => (i === index ? s + n : s)), stepped: all ? NO_IDS : new Set(coming) } : current));
     const left = rest.length - n;
-    announce(`${plural(n, 'earlier message')} shown${left > 0 ? `, ${formatCount(left)} still folded` : ''}`);
+    announce(`已显示 ${plural(n, '条更早的消息', '条更早的消息')}${left > 0 ? `，还有 ${formatCount(left)} 条已折叠` : ''}`);
   };
   /**
    * The middle fold: "↑ Show 20 earlier · N hidden" and a quiet "Show all" (only while more than a step is
@@ -782,18 +782,18 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     const total = rest.length;
     const n = Math.min(FOLD_STEP, total);
     return (
-      <div className="ib-mfold ib-mfold-steps" key={`fold-${run}`} data-middle-fold="" role="group" aria-label={`${plural(total, 'earlier message')} folded`}>
+      <div className="ib-mfold ib-mfold-steps" key={`fold-${run}`} data-middle-fold="" role="group" aria-label={`${plural(total, '条更早的消息', '条更早的消息')}已折叠`}>
         <div className="ib-mfold-row">
-          <button type="button" className="ib-mfold-b ib-mfold-step" data-fold-head="" data-fold-step="" onClick={() => stepRun(run, false)} aria-label={`Show ${plural(n, 'earlier message')}`}>
+          <button type="button" className="ib-mfold-b ib-mfold-step" data-fold-head="" data-fold-step="" onClick={() => stepRun(run, false)} aria-label={`显示 ${plural(n, '条更早的消息', '条更早的消息')}`}>
             <span>
               <Icon name="arrowUp" size={14} />
-              {earlierRunsLabel(rest, thread.messages) ?? `Show ${formatCount(n)} earlier`}
-              {n < total && <span className="ib-mfold-when"> · {formatCount(total)} hidden</span>}
+              {earlierRunsLabel(rest, thread.messages) ?? `显示更早的 ${formatCount(n)} 条`}
+              {n < total && <span className="ib-mfold-when"> · 已折叠 {formatCount(total)} 条</span>}
             </span>
           </button>
           {n < total && (
-            <button type="button" className="ib-mfold-all" onClick={() => stepRun(run, true)} aria-label={`Show all ${plural(total, 'earlier message')}`} data-fold-all="">
-              Show all
+            <button type="button" className="ib-mfold-all" onClick={() => stepRun(run, true)} aria-label={`显示全部 ${plural(total, '条更早的消息', '条更早的消息')}`} data-fold-all="">
+              全部显示
             </button>
           )}
         </div>
@@ -1290,8 +1290,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
   const messageCommentName = (record: InboxAnnotationRecord) => {
     const message = thread.messages.find((m) => m.id === record.message_id);
     if (message?.author.kind === 'person') return `${OWN_MESSAGE_COMMENT_ROW} ${whenTime(record.message?.at ?? message.created_at)}`;
-    const who = message ? agentName(message.author) : 'Agent';
-    return `${who}'s message, ${whenTime(record.message?.at ?? message?.created_at ?? '')}`;
+    const who = message ? agentName(message.author) : 'agent';
+    return `${who} 的消息，${whenTime(record.message?.at ?? message?.created_at ?? '')}`;
   };
   const saveMessageComment = async (messageId: string, annotation: Annotation): Promise<boolean> => {
     try {
@@ -1303,12 +1303,12 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       // `message_deletions`): say so, with that machine's Update, not its store's words (approval "inbox-toolbar-delete").
       const home = machineOf(messageId) ?? machineOf(thread.thread_id);
       if (home !== null && annotation.type === AnnotationType.DELETION && cause instanceof InboxApiError && cause.status === 422 && machine?.message_deletions !== true) {
-        const line = `${machine?.name ?? 'That machine'} needs an update to delete words`;
+        const line = `${machine?.name ?? '那台计算机'}需要更新后才能删除文字`;
         setError(line);
         setErrorUpdate({ for: line, machine: home });
         return false;
       }
-      setError(cause instanceof InboxApiError ? cause.message : 'The comment was not saved.');
+      setError(cause instanceof InboxApiError ? cause.message : '评论未保存。');
       return false;
     }
   };
@@ -1365,8 +1365,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     const before = readFileViewChoice();
     writeFileViewChoice(next);
     if (before === next) return;
-    const lead = next === 'side' ? 'Files open side by side now' : 'Files open full screen now';
-    const detail = next === 'side' ? 'until you choose Full screen' : 'until you choose Side by side';
+    const lead = next === 'side' ? '文件现在并排打开' : '文件现在全屏打开';
+    const detail = next === 'side' ? '直到你选择全屏' : '直到你选择并排';
     onToast?.({
       icon: 'check',
       lead,
@@ -1451,7 +1451,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       setPaneFocus((n) => n + 1);
     };
     const pane = paneRef.current;
-    if (pane && file && file.id !== attachment.id) pane.leave(attachment.name ?? allFiles.find((a) => a.id === attachment.id)?.name ?? 'that file', go);
+    if (pane && file && file.id !== attachment.id) pane.leave(attachment.name ?? allFiles.find((a) => a.id === attachment.id)?.name ?? '该文件', go);
     else go();
   };
   /** A file the person's sent reply names (its feedback heading): beside the thread, at the version the comments were on. */
@@ -1525,7 +1525,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
           : await inboxApi.saveAnnotation(record.attachment_id, record.version, next);
       saveRecord(result.annotation);
     } catch (cause) {
-      setError(cause instanceof InboxApiError ? cause.message : 'The comment was not saved.');
+      setError(cause instanceof InboxApiError ? cause.message : '评论未保存。');
     }
   };
   const removeRecord = async (record: InboxAnnotationRecord) => {
@@ -1533,7 +1533,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       await inboxApi.removeAnnotation(record.id);
       dropRecord(record.id);
     } catch (cause) {
-      setError(cause instanceof InboxApiError ? cause.message : 'The comment was not removed.');
+      setError(cause instanceof InboxApiError ? cause.message : '评论未移除。');
     }
   };
   /** The list of comments: open or not, one state for its four ways in (reply box, foot, highlights, full-screen card). */
@@ -1872,7 +1872,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     const first = added[0]!;
     const asks = added.some((m) => (m.questions ?? []).some((q) => q.state === 'open'));
     announce(
-      added.length === 1 ? `New message from ${agentName(first.author)}${asks ? ', with a question' : ''}` : `${added.length} new messages${asks ? ', with a question' : ''}`,
+      added.length === 1 ? `来自 ${agentName(first.author)} 的新消息${asks ? '，其中包含一个问题' : ''}` : `${added.length} 条新消息${asks ? '，其中包含一个问题' : ''}`,
     );
     // Room a fold step borrowed keeps only its part still in view under the arrival, so following it ends on the thread, not in blank.
     shrinkRoom();
@@ -2072,7 +2072,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
   const openNewestByKey = (view: FileView | null = null) => {
     const newest = newestViewableFile(artifactList);
     if (!newest) {
-      announce('No files in this thread.');
+      announce('此会话中没有文件。');
       return;
     }
     const active = document.activeElement;
@@ -2243,14 +2243,14 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       if (answer.draft) {
         setBox({ open: true, text: answer.draft.body });
         takeDraftFiles(answer.draft.files ?? [], answer.draft.body);
-        announce('This reply changed in another window.');
+        announce('此回复已在另一个窗口中更改。');
       } else {
         // Sent or discarded elsewhere: nothing of it is left to show (a file still uploading here keeps the box open).
         takeDraftFiles([], '');
         const others = replyFiles.current().length > 0;
         setBox({ open: others, text: '' });
         if (!others) setTaggedIds([]);
-        announce('This reply was sent or discarded in another window.');
+        announce('此回复已在另一个窗口中发送或丢弃。');
       }
     });
   };
@@ -2338,7 +2338,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
   // Words and files are kept as a draft (words also sent as the page goes). The restart guard asks while a file
   // the draft does not hold yet, or words not saved yet (a save waiting or on its way, words a conflict left
   // unsaved, a file landing in a closed box's draft: replyDraftUnsaved, read when the guard asks), would be lost.
-  const unsentSubject = thread.subject ?? 'this thread';
+  const unsentSubject = thread.subject ?? '此会话';
   // A file the reply draft holds on the server is not lost by a restart. One still uploading, waiting for its save,
   // refused (its upload gone), or on another machine's thread (whose drafts are not saved) would be: the guard asks.
   const heldFiles = new Set((replyDraft.draft?.files ?? []).map((file) => file.upload_id));
@@ -2404,15 +2404,15 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         return next;
       });
       const away = machineNow.current;
-      onToastNow.current?.({ icon: 'warn', lead: `Pick not saved. ${outboxLine(entry, away)?.text ?? `Not delivered to ${away?.name ?? 'the other machine'}.`}`, wrap: true });
+      onToastNow.current?.({ icon: 'warn', lead: `选项未保存。${outboxLine(entry, away)?.text ?? `没有送达 ${away?.name ?? '另一台计算机'}。`}`, wrap: true });
     }
   }, []);
   useEffect(() => settleHeldPicks(outbox), [outbox, settleHeldPicks]);
 
   /** An answer left unsaved with no pane to show why: the toast outlives it. Names the thread, as the pane is gone. */
   const unsavedWhenGone = () => {
-    const subject = threadRef.current.subject ?? 'this thread';
-    onToastNow.current?.({ icon: 'warn', lead: `Pick not saved. Your answer in "${subject}" did not reach the Inbox.`, wrap: true });
+    const subject = threadRef.current.subject ?? '此会话';
+    onToastNow.current?.({ icon: 'warn', lead: `选项未保存。你在“${subject}”中的回答没有到达收件箱。`, wrap: true });
   };
   useEffect(() => {
     paneGone.current = false;
@@ -2427,7 +2427,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
   }, [pickQueue]);
 
   /** A wait said an answer was not saved: its error shows, or (nothing said why) this one. Never a silent stop. */
-  const pickNotSaved = () => setError((current) => current ?? 'The pick was not saved.');
+  const pickNotSaved = () => setError((current) => current ?? '选择未保存。');
 
   /**
    * The save of one answer, run by the queue. `keepalive`: started as the page hides or goes, so it outlives the page.
@@ -2507,13 +2507,13 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         if (isSuperseded(cause)) {
           replacedSaves.current.add(id);
           setStale((current) => (current.includes(id) ? current : [...current, id]));
-          if (answer && !newer) onToastNow.current?.({ icon: 'warn', lead: "Pick not saved. That question was replaced, so this answer won't be sent.", wrap: true });
+          if (answer && !newer) onToastNow.current?.({ icon: 'warn', lead: '选择未保存。该问题已被替换，因此这个回答不会被发送。', wrap: true });
           await onChanged();
           return true;
         }
         // It went with a reply while this save waited: that reply stands, and the agent has what was saved before.
         if (cause instanceof InboxApiError && cause.code === 'question_already_sent') {
-          if (answer && !newer) onToastNow.current?.({ icon: 'warn', lead: 'Pick not saved. That question was already sent, so your last change did not go.', wrap: true });
+          if (answer && !newer) onToastNow.current?.({ icon: 'warn', lead: '选择未保存。该问题已发送，因此你最后的更改没有发出。', wrap: true });
           await onChanged();
           return true;
         }
@@ -2521,7 +2521,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         kept = true;
         if (!newer) {
           if (paneGone.current) unsavedWhenGone();
-          else setError(cause instanceof InboxApiError ? cause.message : 'The pick was not saved.');
+          else setError(cause instanceof InboxApiError ? cause.message : '选择未保存。');
         }
         await onChanged();
         return false;
@@ -2662,14 +2662,14 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     if (q.state === 'sent') {
       const at = sentAt(q.sent_reply_id);
       // The person skipped it with "Skip them" on the Send (approval "inbox-explicit-skip").
-      if (q.answer?.skipped && q.answer.by_reply) return at ? `Skipped · ${whenTime(at)}` : 'Skipped';
-      return at ? `Sent ${whenTime(at)}` : 'Sent';
+      if (q.answer?.skipped && q.answer.by_reply) return at ? `已跳过 · ${whenTime(at)}` : '已跳过';
+      return at ? `已发送 ${whenTime(at)}` : '已发送';
     }
-    if (q.state === 'closed' && q.set_aside_at) return `Closed unanswered when you marked it read · ${whenTime(q.set_aside_at)}`;
-    if (q.state === 'picked' && q.picked_at) return `Picked ${whenTime(q.picked_at)} · in your draft`;
+    if (q.state === 'closed' && q.set_aside_at) return `标记为已读时未回答，已关闭 · ${whenTime(q.set_aside_at)}`;
+    if (q.state === 'picked' && q.picked_at) return `已选择 ${whenTime(q.picked_at)} · 在你的草稿中`;
     // Re-ask: the person asked the agent for it again; it stays open until the agent replaces it.
     const reaskedBy = reaskedIn(thread.messages, message.id, q);
-    if (reaskedBy) return `Asked again ${whenTime(reaskedBy.created_at)}`;
+    if (reaskedBy) return `再次询问于 ${whenTime(reaskedBy.created_at)}`;
     return null;
   };
 
@@ -2743,7 +2743,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
           const id = `${m.id}/${q.key}`;
           const answer = pending.has(id) ? pending.get(id)! : q.answer;
           if (!answer || isQuestionAnswerEmpty(answer)) return [];
-          const messageName = `${agentName(m.author)}'s message, ${whenTime(m.created_at)}`;
+          const messageName = `${agentName(m.author)} 的消息，${whenTime(m.created_at)}`;
           // A question inside an attached file (issue #2828): its own group, named by the file.
           return [{ id, messageId: m.id, key: q.key, number: q.position + 1, prompt: q.prompt, answer: draftAnswerWords(answer), messageName: q.attachment ? fileGroupName(q.attachment.name, messageName) : messageName, ...(q.attachment ? { fileId: q.attachment.id } : {}) }];
         }),
@@ -2774,7 +2774,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     const out = new Map<string, SentAnswerGroup[]>();
     for (const m of thread.messages) {
       if (m.author.kind !== 'person') continue;
-      const groups = sentAnswersOf(m, thread.messages, (asked) => `${agentName(asked.author)}'s message, ${whenTime(asked.created_at)}`);
+      const groups = sentAnswersOf(m, thread.messages, (asked) => `${agentName(asked.author)} 的消息，${whenTime(asked.created_at)}`);
       if (groups.length > 0) out.set(m.id, groups);
     }
     return (heldSentAnswers.current = keepEqualByKey(heldSentAnswers.current, out));
@@ -2921,7 +2921,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     const leftover = leftoverText(earlier);
     finishSent(earlier.uploads, true);
     setError(leftover);
-    announce(leftover ?? 'Your reply went.');
+    announce(leftover ?? '回复已发送。');
   };
 
   /**
@@ -2934,11 +2934,11 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     unconfirmed.delete(id);
     replyDraft.expectOwnClear(earlier.words);
     const edited = after === 'edited';
-    setError(edited ? 'Your earlier reply may have gone; Send sends your edited words as another reply.' : null);
+    setError(edited ? '你之前的回复可能已发送；按“发送”会将修改后的文字作为另一条回复发出。' : null);
     void replyLanded(id, earlier.key).then(async (landed) => {
       if (threadRef.current.thread_id !== id) return;
       if (landed === 'yes') {
-        const line = edited ? 'Your earlier reply went; Send sends your edited words as another reply.' : 'Your reply went.';
+        const line = edited ? '你之前的回复已发送；按“发送”会将修改后的文字作为另一条回复发出。' : '回复已发送。';
         setError(line);
         announce(line);
         // Its clear_draft went with it: a closed box's foot no longer shows a draft of those words.
@@ -2962,7 +2962,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       unconfirmed.delete(thread.thread_id);
       replyDraft.expectOwnClear(earlier.words);
       const leftover = leftoverText(earlier);
-      const line = box.open && replyText.get().trim() ? 'Your earlier reply went; Send sends your edited words as another reply.' : (leftover ?? 'Your reply went.');
+      const line = box.open && replyText.get().trim() ? '你之前的回复已发送；按“发送”会将修改后的文字作为另一条回复发出。' : (leftover ?? '回复已发送。');
       setError(line);
       announce(line);
       if (!box.open) void replyDraft.reload();
@@ -3016,7 +3016,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     sentByChord.current = false;
     if (sending || voice.busy || checkingEnded.current) return;
     if (sendingAnywhere.current) {
-      setError('Your reply in another thread is still sending. Send again in a moment.');
+      setError('你在另一个会话中的回复仍在发送。请稍后再发送。');
       return;
     }
     if (staleQuestions.length > 0 && !options.despiteReplaced) {
@@ -3025,7 +3025,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       return;
     }
     if (replyFiles.uploading) {
-      setError('Wait for the files to finish uploading.');
+      setError('请等待文件上传完成。');
       return;
     }
     let gateEnded = askerEnded;
@@ -3061,7 +3061,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       if (gone && reaches && rcptAgents.some((r) => r.state === 'live' || r.state === 'old') && !rcptAsked.current) {
         const empty = picksCount === 0 && records.length === 0 && boxWords() === '' && replyUploads.length === 0 && draftPastes === 0 && !skipping;
         if (empty) {
-          setError('Write a reply or pick an answer first.');
+          setError('请先写回复或选择答案。');
           return;
         }
         rcptAsked.current = true;
@@ -3082,7 +3082,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     if (!pillActive && gateEnded && gateOtherLive && gateAsking && !options.routed) {
       const empty = picksCount === 0 && records.length === 0 && boxWords() === '' && replyUploads.length === 0 && draftPastes === 0 && !skipping;
       if (empty) {
-        setError('Write a reply or pick an answer first.');
+        setError('请先写回复或选择答案。');
         return;
       }
       setError(null);
@@ -3119,7 +3119,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     const drawing = drawSend({ threadId: thread.thread_id, words: drawnWords });
     if (drawnWords !== '') {
       setWordsAway(box.open ? sendThread : null);
-      announce(`Sending your reply to ${replyToNames}.`);
+      announce(`正在将你的回复发送给 ${replyToNames}。`);
       requestAnimationFrame(() => bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight }));
     }
     const sendEnds = replySendStarts(thread.thread_id);
@@ -3166,7 +3166,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         return;
       }
       if (!here()) {
-        fail('Not sent: you left the thread before it went. Your words are kept in its draft.');
+        fail('未发送：发送前你离开了会话。文字已保留在草稿中。');
         return;
       }
       const current = threadRef.current;
@@ -3184,7 +3184,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         const landed = await replyLanded(current.thread_id, earlier.key);
         if (landed === 'unknown') {
           unconfirmed.set(current.thread_id, earlier);
-          setError('Still no answer from the Inbox, so nothing was sent. Try again in a moment.');
+          setError('收件箱仍未响应，因此未发送任何内容。请稍后再试。');
           return;
         }
         if (landed === 'gone') {
@@ -3230,7 +3230,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       const ours = new Set([current.thread_id, ...current.messages.map((m) => m.id), ...allFiles.map((a) => a.id), ...records.map((r) => r.id)]);
       const failed = failedCommentWrite(writes, ours);
       if (failed) {
-        fail(failed.remove ? 'The comment was not removed.' : 'The comment was not saved.');
+        fail(failed.remove ? '评论未移除。' : '评论未保存。');
         return;
       }
       const pendingAnnotations = withCommentWrites(records, writes, current.thread_id);
@@ -3251,7 +3251,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       // A comment on another session's message rides a reply to that message (routeSendAnnotations).
       const { targets, carried } = routeSendAnnotations(current, plain, pendingAnnotations);
       if (targets.length === 0) {
-        setError('Write a reply or pick an answer first.');
+        setError('请先写回复或选择答案。');
         return;
       }
       /** One request of this Send: its target, the key it keeps across retries, its comments, and where it goes. */
@@ -3374,7 +3374,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       focusSent.current = !options.stayFull;
       if (options.stayFull) {
         setComposerSentAt(Date.now());
-        announce(`Sent to ${replyToNames}.`);
+        announce(`已发送给 ${replyToNames}。`);
       }
       finishSent(sentUploads, sendClears, sendThread);
       if (handedReply) {
@@ -3382,10 +3382,10 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         const name = handoffName(reply);
         onToast?.({
           icon: 'check',
-          lead: `Handed to ${shortAgentName(name)}`,
-          phoneLead: 'Handed off',
-          detail: 'Your later replies go there',
-          speech: `Handed this thread to ${name}. Your later replies go there. Undo takes it back for a few seconds.`,
+          lead: `已移交 ${shortAgentName(name)}`,
+          phoneLead: '已移交',
+          detail: '你之后的回复会发送到那里',
+          speech: `已将此会话移交给 ${name}。你之后的回复会发送到那里。撤销可在几秒内收回。`,
           onUndo: () => void undoHandoff(reply.id),
         });
       }
@@ -3467,7 +3467,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         if (wentAnyway === 'yes') {
           finishSent(sentUploads, sendClears, sendThread);
           fail(null);
-          announce('Your reply went.');
+          announce('回复已发送。');
           void onChanged();
           void reloadFiles();
         } else if (wentAnyway === 'gone') {
@@ -3486,7 +3486,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
             picks: requests.flatMap((r) => (r.input.questions ?? []).map((q) => `${r.messageId}/${q.key}`)),
             at: Date.now(),
           });
-          fail('The reply may not have gone. Send again: it looks for this one first, so it is not sent twice.');
+          fail('回复可能未发送成功。请再次发送：它会先查找这一条，因此不会重复发送。');
         } else {
           replyDraft.release(sendThread);
           const text = textRef.current && here() ? replyText.get() : '';
@@ -3523,7 +3523,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       await inboxApi.resolve(root.id, next);
       await onChanged();
     } catch (cause) {
-      setError(cause instanceof InboxApiError ? cause.message : 'The thread did not change.');
+      setError(cause instanceof InboxApiError ? cause.message : '会话未发生变化。');
     }
   };
 
@@ -3567,7 +3567,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
   const earlierDelivered = (message: InboxMessageWire): string | null => {
     if (message === last || message.author.kind !== 'person' || isInboxNote(message) || !isDelivered(message, root)) return null;
     const name = message.delivery ? toName(message, message.delivery) : message.to ? toName(message, message.to) : recipientName(askedBy(message));
-    return message.delivery?.at ? `Delivered to ${name}, ${whenTime(message.delivery.at)}` : `Delivered to ${name}`;
+    return message.delivery?.at ? `已送达给 ${name}，${whenTime(message.delivery.at)}` : `已送达给 ${name}`;
   };
   const lastTo = last.author.kind === 'person' && !isInboxNote(last) ? (last.to ?? (startedTo && last.reply_to && !isOtherAgent(askedBy(last), startedTo) ? startedTo : null)) : null;
   // The session the person's last reply goes to, when its connection wakes it: a message addressed to a
@@ -3610,10 +3610,10 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     const name = tagName(tag, ownerHost, replySession);
     const line = tagDeliveryLine(tag, name, tagConnections[tag.session], whenTime, last.id);
     // The former owner of a handed-off thread was told to stop (approval "inbox-tag-handoff").
-    if (tag.handed_away && tag.delivery) return { tag, name, line: { ...line, text: `${name} was told to stop, ${whenTime(tag.delivery.at)}` } };
-    if (tag.handed_away && !last.handoff?.settled_at) return { tag, name, line: { state: 'queued' as const, text: `${name} is told to stop once the Undo window ends.` } };
+    if (tag.handed_away && tag.delivery) return { tag, name, line: { ...line, text: `已告诉 ${name} 停止，${whenTime(tag.delivery.at)}` } };
+    if (tag.handed_away && !last.handoff?.settled_at) return { tag, name, line: { state: 'queued' as const, text: `撤销窗口结束后会告诉 ${name} 停止。` } };
     // Settled, not taken yet: the notice goes in when its turn ends. No Send now: the notice never interrupts a turn.
-    if (tag.handed_away) return { tag, name, line: { state: 'queued' as const, text: `${name} is told to stop when its turn ends.` } };
+    if (tag.handed_away) return { tag, name, line: { state: 'queued' as const, text: `本轮结束时会告诉 ${name} 停止。` } };
     return { tag, name, line };
   });
   const deliveredNow: DeliveryLine | null =
@@ -3653,7 +3653,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
   const delivered: DeliveryLine | null = cloudLast
     ? null
     : heldHandoff && deliveredNow
-      ? { state: 'queued', text: `Goes to ${handoffName(last)} once the Undo window ends.` }
+      ? { state: 'queued', text: `撤销窗口结束后将发送给 ${handoffName(last)}。` }
       : deliveredNow;
   // No Send now because that session runs an older plugin than a restart loads (the "Steps" line,
   // owner approval "restart-warning"): only while the reply waits for a working session.
@@ -3697,10 +3697,10 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     try {
       await inboxApi.undoHandoff(id);
       setHandoffUndo(null);
-      announce('Hand-off taken back: your reply goes as an Ask, and the thread stays where it was.');
+      announce('已收回移交：你的回复将作为提问发送，会话保持在原处。');
       await onChanged();
     } catch (cause) {
-      setHandoffUndo({ id, busy: false, error: cause instanceof InboxApiError ? cause.message : 'The hand-off was not taken back. Try again.' });
+      setHandoffUndo({ id, busy: false, error: cause instanceof InboxApiError ? cause.message : '收回移交失败，请重试。' });
       await onChanged();
     }
   };
@@ -3811,8 +3811,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         void loadLive();
         return;
       }
-      const why = cause instanceof InboxApiError ? cause.message : 'Try again.';
-      setError(went > 0 ? `${went} of ${total} went; the rest did not. ${why}` : `Nothing was asked again. ${why}`);
+      const why = cause instanceof InboxApiError ? cause.message : '请重试。';
+      setError(went > 0 ? `${went}/${total} 条已重新提问；其余未成功。${why}` : `没有重新提问任何内容。${why}`);
       if (went > 0) await onChanged();
     } finally {
       releasePicks?.();
@@ -3853,11 +3853,11 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     try {
       await inboxApi.reply(target.message.id, { idempotency_key: guideKey.current.key, words: GUIDE_REQUEST_WORDS, questions: [] });
       guideKey.current = null;
-      announce(`Asked ${hostName(target.to.host)} for a guided review.`);
+      announce(`已请 ${hostName(target.to.host)} 进行引导式评审。`);
       await onChanged();
       requestAnimationFrame(() => bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight }));
     } catch (cause) {
-      setError(`The guided review request was not sent. ${cause instanceof InboxApiError ? cause.message : 'Try again.'}`);
+      setError(`引导式评审请求未发送。${cause instanceof InboxApiError ? cause.message : '请重试。'}`);
     } finally {
       requestingGuide.current = false;
     }
@@ -3930,11 +3930,11 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       {' '}
       {lateMiss.retry && (
         <button type="button" className="ib-dtlink ib-vstrong" data-late-voice-retry="" onClick={lateMiss.retry}>
-          Retry
+          重试
         </button>
       )}{' '}
       <button type="button" className="ib-dtlink" data-late-voice-discard="" onClick={() => clearLateVoiceMiss(thread.thread_id)}>
-        Discard
+        丢弃
       </button>
     </>
   );
@@ -3996,14 +3996,14 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         <>
           {' · '}
           <button type="button" className="ib-errup" data-error-update={errorUpdateFor} onClick={() => onMachineUpdate?.(errorUpdateFor)}>
-            Update
+            更新
           </button>
         </>
       )}
       {/* A failed Send's own words (a path, the Inbox's message), one press away (decision D3). */}
       {errorMore && (
         <details className="ib-errd" data-error-details="">
-          <summary>Details</summary>
+          <summary>详情</summary>
           <span className="ib-errd-t">{errorMore}</span>
         </details>
       )}
@@ -4064,7 +4064,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     voice.session.covered();
     forgetQuote();
     closeBox(true);
-    if (had) announce('Draft discarded.');
+    if (had) announce('草稿已丢弃。');
   };
   /** The live-session choice open under the box: it stands in for the box's Send and bin. */
   const routeChoiceOpen = route.open && asking;
@@ -4082,7 +4082,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       setBox({ open: true, text: draft.body });
       takeDraftFiles(draft.files ?? [], draft.body);
     }
-    announce('Your saved draft is in the reply.');
+    announce('已保存的草稿已放入回复框。');
   };
   /** After a conflict, "Discard mine": only this window's words and file changes go; the other window's draft stays and comes into the box. */
   const discardMine = () => {
@@ -4090,7 +4090,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     const theirs = draft?.body ?? '';
     setBox({ open: true, text: theirs });
     takeDraftFiles(draft?.files ?? [], theirs);
-    announce(theirs.trim() ? 'Your words were discarded; the other window’s are in the box.' : 'Your words were discarded.');
+    announce(theirs.trim() ? '你的文字已丢弃；另一个窗口的文字在输入框中。' : '你的文字已丢弃。');
     requestAnimationFrame(() => textRef.current?.focus());
   };
   const draftStamp = <DraftStamp savedAt={stampSavedAt} tooLong={stampTooLong} failed={stampFailed} onDiscard={discardReply} />;
@@ -4106,12 +4106,12 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       {draftAnswers.length > 0 && (
         <span className="ib-rchip" data-picks-chip="">
           <Icon name="check" size={13} />
-          {plural(draftAnswers.length, 'pick')}
+          {plural(draftAnswers.length, '个选择', '个选择')}
         </span>
       )}
       <SkipChip count={replySkip.count} keepOpen={keepOpen} onToggle={toggleKeepOpen} />
       {dropped.length > 0 && (
-        <Tip content="Replaced; this pick won't be sent">
+        <Tip content="已被替换；此选择不会被发送">
           <span className="ib-rchip ib-dropped" data-dropped-picks-chip="">
             {dropped.length} {dropped.length === 1 ? 'pick' : 'picks'} on a replaced question
           </span>
@@ -4164,7 +4164,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     };
     const none = () => {
       setNoSkillsHint(true);
-      announce('No skills are installed to pick from.');
+      announce('没有可选择的技能。');
       if (noSkillsTimer.current) clearTimeout(noSkillsTimer.current);
       noSkillsTimer.current = setTimeout(() => setNoSkillsHint(false), NO_SKILLS_HINT_MS);
     };
@@ -4194,14 +4194,14 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
   const onlyRecipient = (row: RecipientRow) => {
     aimReply([row.session]);
     setRcptOpen(false);
-    announce(`This reply goes to ${row.label}.`);
+    announce(`这条回复将发送给 ${row.label}。`);
   };
   const toggleReplyRecipient = (row: RecipientRow) => {
     // The agents typed with `@` count toward the most one reply goes to.
     const base = rcptPicked ?? (rcptDefault ? [rcptDefault] : []);
     const next = toggleRecipient(base, row.session, RECIPIENTS_MAX - taggedIds.filter((id) => !base.includes(id)).length, rcptAlone);
     aimReply(next);
-    announce(`This reply goes to ${namesList(next.map((id) => rcptAgents.find((r) => r.session === id)?.label ?? id))}.`);
+    announce(`这条回复将发送给 ${namesList(next.map((id) => rcptAgents.find((r) => r.session === id)?.label ?? id))}。`);
   };
   // The one place the reply's recipient control splits: a phone's is in the box's row with its sheet (approval
   // "inbox-phone-composer-picker"), a computer's is the pill. Both show by the same rule (`pillActive`): a thread with
@@ -4433,7 +4433,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       replyDraft.save(text, files);
       replyDraft.flush();
     };
-    onToast?.({ icon: 'check', lead: 'Added to your reply', phoneLead: 'Added to your reply', speech: 'Added to your reply.', onUndo: undo });
+    onToast?.({ icon: 'check', lead: '已添加到你的回复', phoneLead: '已添加到你的回复', speech: '已添加到你的回复。', onUndo: undo });
     // openBox and changeReply read this render's draft and Send state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replyPart, sending]);
@@ -4656,7 +4656,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     }
     if (boxRef.current.open && replyFiles.holding(source.sha256)) {
       replyFiles.removeHolding(source.sha256);
-      announce(`${source.name} taken out of your reply`);
+      announce(`已从你的回复中移除 ${source.name}`);
       return;
     }
     openBehind();
@@ -4693,7 +4693,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       ref={sectionRef}
       className={`ib-pane${fileOpen ? ' ib-withfile' : ''}`}
       data-full={threadAlone && !fileOpen ? '' : undefined}
-      aria-label={thread.subject ?? 'Thread'}
+      aria-label={thread.subject ?? '会话'}
       data-thread-id={thread.thread_id}
       {...paneDrop.handlers}
     >
@@ -4702,8 +4702,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
           <span className="ib-panedrop-card">
             <Icon name="clip" size={20} />
             <span>
-              <b>Drop to attach to your reply</b>
-              <span className="ib-panedrop-sub">Images, PDFs, any file up to {INBOX_UPLOAD_MAX_BYTES / (1024 * 1024)} MB</span>
+              <b>拖放以附加到你的回复</b>
+              <span className="ib-panedrop-sub">图片、PDF 或任何不超过 {INBOX_UPLOAD_MAX_BYTES / (1024 * 1024)} MB 的文件</span>
             </span>
           </span>
         </div>
@@ -4713,14 +4713,14 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         {phone && artifactsOn ? (
           // On a phone Artifacts is a screen of its own: its way back is to the thread (the browser's Back, so the swipe agrees).
           <>
-            <button type="button" className="ib-pback" onClick={() => onArtifacts?.(false)} aria-label="Back to the thread" data-artifacts-phone-back="">
+            <button type="button" className="ib-pback" onClick={() => onArtifacts?.(false)} aria-label="返回会话" data-artifacts-phone-back="">
               <Icon name="chevL" size={18} />
-              <span className="ib-pback-l">Thread</span>
+              <span className="ib-pback-l">会话</span>
             </button>
             {viewSwitch}
           </>
         ) : phone ? (
-          <button type="button" className="ib-pback" onClick={onClose} aria-label={`Back to ${backLabel}`} data-phone-back="">
+          <button type="button" className="ib-pback" onClick={onClose} aria-label={`返回${backLabel}`} data-phone-back="">
             <Icon name="chevL" size={18} />
             <span className="ib-pback-l">{backLabel}</span>
           </button>
@@ -4729,8 +4729,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
             {/* A stacked thread covers the list: the way back to it leads, where the list was. */}
             {stacked && (
               <>
-                <Tip content={`Back to ${backLabel}`}>
-                  <button type="button" className="ib-pback" onClick={onClose} aria-label={`Back to ${backLabel}`} data-stack-back="">
+                <Tip content={`返回${backLabel}`}>
+                  <button type="button" className="ib-pback" onClick={onClose} aria-label={`返回${backLabel}`} data-stack-back="">
                     <Icon name="chevL" size={16} />
                     <span className="ib-pback-l">{backLabel}</span>
                   </button>
@@ -4742,8 +4742,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                 the sidebar and the list becomes the way back to them. A file beside the thread leads with its own. */}
             {threadAlone && !stacked && !backBesideFile && (
               <>
-                <Tip content={fullSidebar ? 'Show the sidebar and the list' : 'Show the list'}>
-                  <button type="button" className="ib-pback" onClick={() => onFull?.(false)} aria-label={`Back to ${backLabel}`} data-full-back="">
+                <Tip content={fullSidebar ? '显示侧栏和列表' : '显示列表'}>
+                  <button type="button" className="ib-pback" onClick={() => onFull?.(false)} aria-label={`返回${backLabel}`} data-full-back="">
                     <Icon name="chevL" size={16} />
                     <span className="ib-pback-l">{backLabel}</span>
                   </button>
@@ -4755,8 +4755,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
             {/* A file beside the thread hides the list: the same way back leads; it closes the file. */}
             {backBesideFile && (
               <>
-                <Tip content={openAttachment ? `Close ${openAttachment.name} and show the list` : `Back to ${backLabel}`}>
-                  <button type="button" className="ib-pback" onClick={backToList} aria-label={`Back to ${backLabel}`} data-file-back="">
+                <Tip content={openAttachment ? `关闭 ${openAttachment.name} 并显示列表` : `返回${backLabel}`}>
+                  <button type="button" className="ib-pback" onClick={backToList} aria-label={`返回${backLabel}`} data-file-back="">
                     <Icon name="chevL" size={16} />
                     <span className="ib-pback-l">{backLabel}</span>
                   </button>
@@ -4780,10 +4780,10 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
               // bar's free room, so the tooltip hangs on the words inside it (`.ib-phsubj-t`, as wide as they are, cut
               // with "…" at the box's edge): it opens under the title, not centred on the empty room after a short one.
               <span className="ib-phsubj" dir="auto" data-header-subject="" data-header-name={barName ? '' : undefined} data-on={barName || chrome.subject || artifactsOn ? '' : undefined} aria-hidden="true">
-                <Tip content={thread.subject ?? '(no subject)'} cut={!barName}>
+                <Tip content={thread.subject ?? '(无主题)'} cut={!barName}>
                   <span className="ib-phsubj-t" data-header-title="">
                     <HeadMark thread={thread} where="bar" />
-                    {barName ?? thread.subject ?? '(no subject)'}
+                    {barName ?? thread.subject ?? '(无主题)'}
                   </span>
                 </Tip>
               </span>
@@ -4805,7 +4805,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
               />
             )}
             {artifactsButton && (
-              <Tip content={withShortcut(artifactsOn ? 'Back to the thread' : linksOnly ? 'Links' : 'Artifacts: every file, image and guided review in this thread', { scope: inboxThreadShortcuts, action: 'artifacts' })}>
+              <Tip content={withShortcut(artifactsOn ? '返回会话' : linksOnly ? '链接' : '产物：此会话中的每个文件、图片和引导式评审', { scope: inboxThreadShortcuts, action: 'artifacts' })}>
                 <button
                   ref={artifactsButtonRef}
                   type="button"
@@ -4824,13 +4824,13 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
               </Tip>
             )}
             {!one && !artifactsOn && (
-              <Tip content={allOpen ? 'Fold the earlier messages' : 'Expand all messages'}>
+              <Tip content={allOpen ? '折叠较早的消息' : '展开全部消息'}>
                 <button
                   type="button"
                   className="ib-iconbtn"
                   data-expand-all=""
                   onClick={expandAll}
-                  aria-label={allOpen ? 'Fold the earlier messages' : 'Expand all messages'}
+                  aria-label={allOpen ? '折叠较早的消息' : '展开全部消息'}
                 >
                   <Icon name={allOpen ? 'fold' : 'unfold'} size={16} />
                 </button>
@@ -4866,8 +4866,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
             {phone || stacked || backBesideFile || threadAlone ? null : (
               <>
                 <span className="ib-vsep" aria-hidden="true" />
-                <Tip content="Close">
-                  <button type="button" className="ib-iconbtn" onClick={onClose} aria-label="Close the thread">
+                <Tip content="关闭">
+                  <button type="button" className="ib-iconbtn" onClick={onClose} aria-label="关闭会话">
                     <Icon name="x" />
                   </button>
                 </Tip>
@@ -4891,54 +4891,53 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
             <span dir="auto">{reviewView.context}</span>
             {reviewView.onOpenPull && (
               <button type="button" className="ib-rvctx-link" onClick={reviewView.onOpenPull} data-review-open-pull="">
-                See the pull request
+                查看 PR
               </button>
             )}
             {reviewView.pullUrl && (
               <a className="ib-rvctx-link" href={reviewView.pullUrl} target="_blank" rel="noreferrer noopener" data-review-pull-link="">
-                See the pull request
+                查看 PR
               </a>
             )}
           </div>
         )}
         <HeadMark thread={thread} where="body" />
-        <h2 className="ib-subject" dir="auto" tabIndex={-1}>{reviewView?.title ?? (thread.pull_keys?.length || thread.review_started ? thread.thread_name : null) ?? thread.subject ?? '(no subject)'}</h2>
+        <h2 className="ib-subject" dir="auto" tabIndex={-1}>{reviewView?.title ?? (thread.pull_keys?.length || thread.review_started ? thread.thread_name : null) ?? thread.subject ?? '(无主题)'}</h2>
         <ThreadTagLine threadId={thread.thread_id} phone={phone} />
         {reviewView?.fromThread && (
           <p className="ib-rvfrom" data-review-from="">
-            Review from thread{' '}
+            来自会话的评审{' '}
             <button type="button" className="ib-rvctx-link" dir="auto" onClick={reviewView.onWholeThread} data-review-from-link="">
               {reviewView.fromThread}
             </button>
           </p>
         )}
         {/* The bar's title is aria-hidden, so a screen reader hears the name here (a one-message thread has no meta line). */}
-        {nameChip && <span className="ib-sr" data-thread-name-sr="">Thread name: {nameChip}</span>}
+        {nameChip && <span className="ib-sr" data-thread-name-sr="">会话名称：{nameChip}</span>}
         {machine && (
           // Another machine's thread: which machine, or since when it is away (its rows are greyed in the list).
           <div className="ib-tmeta" data-thread-machine={machine.id} data-away={awayLine(machine) ? '' : undefined}>
-            <span>{awayLine(machine) ?? `On ${machine.name}`}</span>
+            <span>{awayLine(machine) ?? `位于 ${machine.name}`}</span>
           </div>
         )}
         {cardChip ? <div className="ib-tmeta" data-thread-card-row="">{cardChip}</div> : null}
         {notice}
         {launched && <StartedBy launched={launched} root={thread.messages[0]} project={thread.project.name} />}
         {confirmDelete && launched && (
-          <div className="ib-cp-note ib-warn ib-run-confirm" role="alertdialog" aria-label={`Delete the ${hostName(launched.agent)} session`} data-launch-confirm="">
+          <div className="ib-cp-note ib-warn ib-run-confirm" role="alertdialog" aria-label={`删除 ${hostName(launched.agent)} 会话`} data-launch-confirm="">
             <Icon name="warn" size={16} />
             <div>
-              <b>Delete the {hostName(launched.agent)} session?</b>
+              <b>删除 {hostName(launched.agent)} 会话？</b>
               {launched.scratch ? (
                 <p>
-                  It stops, and its session files and its scratch folder <bdi>{launched.folder.split('/').pop()}</bdi>, with everything in it, are removed. This thread
-                  stays.
+                  它会停止，会话文件以及临时文件夹 <bdi>{launched.folder.split('/').pop()}</bdi>（其中的所有内容也会被删除）。此会话会保留。
                 </p>
               ) : (
-                <p>It stops, and its session files are removed. This thread stays.</p>
+                <p>它会停止，会话文件会被删除。此会话会保留。</p>
               )}
               <span className="ib-acts">
                 <button type="button" className="ib-btn ib-ghost" onClick={() => setConfirmDelete(false)}>
-                  Cancel
+                  取消
                 </button>
                 <button
                   type="button"
@@ -4949,11 +4948,11 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                     // A scratch folder that was not the one the Inbox made (a link, another folder, gone) is kept: the toast says so.
                     void launchAct(
                       () => inboxApi.launchDelete(launched.id, machine?.id ?? null),
-                      (result) => (result.scratch_removed === false ? { lead: 'Session deleted', detail: 'its scratch folder was kept' } : { lead: 'Session deleted' }),
+                      (result) => (result.scratch_removed === false ? { lead: '会话已删除', detail: '其临时文件夹已保留' } : { lead: '会话已删除' }),
                     );
                   }}
                 >
-                  Delete session
+                  删除会话
                 </button>
               </span>
             </div>
@@ -4966,10 +4965,10 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         )}
         {startedTo && !launched && (
           <div className="ib-tmeta" data-started-by="">
-            <span>You started this thread</span>
+            <span>你启动了此会话</span>
             <span className="ib-tdot" aria-hidden="true" />
             <span>
-              to {addresseeName(startedTo.host)} in <bdi>{thread.project.name}</bdi>
+              发送给 {addresseeName(startedTo.host)}，项目 <bdi>{thread.project.name}</bdi>
             </span>
           </div>
         )}
@@ -4978,20 +4977,20 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
           <div className="ib-tmeta" data-thread-owner="">
             <HostMark host={handedOff.to!.host} agent={handedOff.to!.session} />
             <span>
-              Now with <b>{handoffName(handedOff)}</b>
+              现在由 <b>{handoffName(handedOff)}</b> 负责
             </span>
             <span className="ib-tdot" aria-hidden="true" />
-            <span>handed off {whenTime(handedOff.created_at)}</span>
+            <span>移交于 {whenTime(handedOff.created_at)}</span>
           </div>
         )}
         {/* By this window's clock: an archived thread stays open across its time with no list read to end it. */}
         {row?.snoozed && inboxRowSnoozed(row) && (
           <div className="ib-readline" data-snooze-line="">
             <Icon name="clock" size={16} />
-            <div>Snoozed until {inboxSnoozeWhen(row.snoozed.until)}</div>
+            <div>已设为稍后提醒，将于 {inboxSnoozeWhen(row.snoozed.until)} 回来</div>
             {onUnsnooze && (
               <button type="button" onClick={onUnsnooze} data-unsnooze="">
-                Unsnooze
+                取消稍后提醒
               </button>
             )}
           </div>
@@ -5001,21 +5000,20 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
             <Icon name="checkCircle" size={16} />
             <div>
               <span>
-                Read {whenTime(readAt)}. It stays out of the top until {asker} writes again.
+                已于 {whenTime(readAt)} 阅读。在 {asker} 再次写信之前，它不会回到顶部。
               </span>
               {closedByRead.length > 0 && (
                 <>
                   <br />
                   <span>
-                    {closedByRead.length === 1 ? '1 question was' : `${closedByRead.length} questions were`} closed unanswered; {asker} is told not to wait on{' '}
-                    {closedByRead.length === 1 ? 'it' : 'them'}.
+                    {closedByRead.length === 1 ? '1 个问题未回答即关闭' : `${closedByRead.length} 个问题未回答即关闭`}；已告诉 {asker} 不必再等{closedByRead.length === 1 ? '它' : '它们'}。
                   </span>
                 </>
               )}
             </div>
             {onMarkRead && (
               <button type="button" onClick={() => onMarkRead(false)} data-move-back="">
-                Move back
+                移回
               </button>
             )}
           </div>
@@ -5052,8 +5050,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
           if (run < 0 && hiddenNow.has(message.id)) return before;
           if (isNew && index > 0 && thread.messages.findIndex((m) => fresh.has(m.id)) === index) {
             before.push(
-              <div className="ib-newdiv" key="new-divider" data-new-divider="" data-snooze-back-line={backHere ? '' : undefined} role="separator" aria-label={backHere ? `${snoozeBackWords}: ${plural(fresh.size, 'new message')}` : `New since you looked: ${plural(fresh.size, 'message')}`}>
-                {backHere ? snoozeBackWords : 'New since you looked'}
+              <div className="ib-newdiv" key="new-divider" data-new-divider="" data-snooze-back-line={backHere ? '' : undefined} role="separator" aria-label={backHere ? `${snoozeBackWords}：${plural(fresh.size, '条新消息', '条新消息')}` : `你上次查看后的新消息：${plural(fresh.size, '条消息', '条消息')}`}>
+                {backHere ? snoozeBackWords : '你上次查看后的新消息'}
               </div>,
             );
           } else if (backHere) {
@@ -5074,10 +5072,10 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                 {/* Added to a thread of several: "You added Retry worker · 4:20 PM", the header's names, no icon or mark. */}
                 {!quietAdd && <Icon name={move.kind === 'handoff' ? 'forward' : 'plus'} size={14} />}
                 <span className="ib-tmove-t">
-                  {move.kind === 'handoff' ? 'You handed this thread to ' : 'You added '}
+                  {move.kind === 'handoff' ? '你将会话移交给了 ' : '你添加了 '}
                   {!quietAdd && <HostMark host={move.host} />}
                   <b>{move.names}</b>
-                  {move.kind === 'added' && !quietAdd ? ' to this thread' : ''}
+                  {move.kind === 'added' && !quietAdd ? ' 到此会话' : ''}
                   <span className="ib-tmove-tm"> · {whenTime(message.created_at)}</span>
                 </span>
                 {held && (
@@ -5092,7 +5090,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                       disabled={handoffUndo?.id === message.id && handoffUndo.busy}
                       onClick={() => void undoHandoff(message.id)}
                     >
-                      Undo
+                      撤销
                     </button>
                   </>
                 )}
@@ -5116,7 +5114,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
           const sessionName = message.author.kind === 'agent' ? (sessionNames.get(message.author.session ?? '') ?? null) : null;
           const named = sessionName && sessionName !== kind ? sessionName : null;
           const authorLabel = message.author.kind === 'agent' && !named ? labelOf(sessionLabels, message.author.session) : null;
-          const name = named ?? kind ?? 'You';
+          const name = named ?? kind ?? '你';
           const labelled = authorLabel ? authorWithLabel(name, authorLabel) : null;
           const nameTip = named ? `${named} · ${kind}` : (labelled?.shown ?? name);
           const nameSaid = named ? `${named}, ${kind}` : (labelled?.spoken ?? name);
@@ -5145,7 +5143,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
           }
           // A Tidy note: one quiet line in place of the message.
           if (message.tidy) {
-            before.push(<TidyNote key={message.id} agent={message.to ? toName(message, message.to) : 'the agent'} time={time} fullWhen={fullWhen} />);
+            before.push(<TidyNote key={message.id} agent={message.to ? toName(message, message.to) : 'agent'} time={time} fullWhen={fullWhen} />);
             return before;
           }
           if (message.scheduled_run) {
@@ -5274,7 +5272,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
               />
               <div className="ib-msg" data-revealed={revealed ? '' : undefined}>
                 {fileCount > 0 && (
-                  <div className="ib-hatts" id={bandId} role="region" aria-label="Attachments in this message" hidden={!filesOpen} onKeyDown={closeHeaderOnEscape(message.id)} data-header-band={message.id}>
+                  <div className="ib-hatts" id={bandId} role="region" aria-label="此消息中的附件" hidden={!filesOpen} onKeyDown={closeHeaderOnEscape(message.id)} data-header-band={message.id}>
                     {filesOpen && (
                       <>
                         <AttachmentTiles
@@ -5286,7 +5284,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                           placement="header"
                           openIn={openIn} pinOf={(a) => ({ threadId: thread.thread_id, key: openArtifactKey(artifactList, a.id) })}
                         />
-                        <p className="ib-hatts-note">Also at the end of the message.</p>
+                        <p className="ib-hatts-note">消息末尾也会显示。</p>
                       </>
                     )}
                   </div>
@@ -5360,11 +5358,11 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                 )}
                 {message === lastAgent && liveMessage(lastAgent) && waitingHoldsUp.length > 0 && (
                   <div className="ib-waitfoot">
-                    <b>Waiting on this answer</b>
-                    <span className="ib-badge ib-b-hold">Holds up {waitingHoldsUp.length}</span>
+                    <b>正在等待这个回答</b>
+                    <span className="ib-badge ib-b-hold">阻碍 {waitingHoldsUp.length} 项</span>
                     <span className="ib-sp" />
                     <button type="button" className="ib-mut" onClick={() => setHoldsOpen((v) => !v)} aria-expanded={holdsOpen}>
-                      {holdsOpen ? 'Hide' : 'Show'} <Icon name={holdsOpen ? 'chevR' : 'chevD'} size={14} />
+                      {holdsOpen ? '隐藏' : '显示'} <Icon name={holdsOpen ? 'chevR' : 'chevD'} size={14} />
                     </button>
                   </div>
                 )}
@@ -5385,7 +5383,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                       {takeBackLast && <TakeBackButton busy={takingBack} onPress={takeBackLast} />}
                       {delivered.sendNow && (
                         <button type="button" className="ib-sendnow" data-send-now="" disabled={sendNowState?.id === last.id && sendNowState.busy} onClick={() => void sendNow()}>
-                          Send now
+                          立即发送
                         </button>
                       )}
                     </li>
@@ -5398,11 +5396,11 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                             type="button"
                             className="ib-sendnow"
                             data-send-now={tag.session}
-                            aria-label={`Send now to ${name}`}
+                            aria-label={`立即发送给 ${name}`}
                             disabled={tagSendNow?.id === last.id && tagSendNow.session === tag.session && tagSendNow.busy}
                             onClick={() => void sendTagNow(tag.session)}
                           >
-                            Send now
+                            立即发送
                           </button>
                         )}
                       </li>
@@ -5441,7 +5439,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                     </span>
                     {takeBackLast && <TakeBackButton busy={takingBack} onPress={takeBackLast} />}
                     {delivered.sendNow && (
-                      <Tip content="Put it into the running turn now: the agent reads it at its next step, without waiting for the turn to end.">
+                      <Tip content="立即放入正在进行的回合：agent 会在下一步读到它，无需等待回合结束。">
                         <button
                           type="button"
                           className="ib-sendnow"
@@ -5449,7 +5447,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                           disabled={sendNowState?.id === last.id && sendNowState.busy}
                           onClick={() => void sendNow()}
                         >
-                          Send now
+                          立即发送
                         </button>
                       </Tip>
                     )}
@@ -5540,19 +5538,18 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         {cameBack && (
           <div className="ib-acts ib-archnote" data-came-back="">
             <span className="ib-st">
-              Archived · {cameBackName} wrote after you archived it. Your reply goes to {replyTo === cameBackName ? 'it' : replyTo}; the thread stays
-              archived.
+              已归档 · 你归档后 {cameBackName} 又写了信。你的回复会发送给 {replyTo === cameBackName ? '它' : replyTo}；会话仍保持归档。
             </span>
             <button type="button" className="ib-btn" onClick={() => void resolve(false)}>
-              Unarchive
+              取消归档
             </button>
           </div>
         )}
         {resolved ? (
           <div className="ib-acts">
-            <span className="ib-st">Archived. The next message from {asker} starts a new thread.</span>
+            <span className="ib-st">已归档。{asker} 的下一条消息会开启一个新会话。</span>
             <button type="button" className="ib-btn" onClick={() => void resolve(false)}>
-              Unarchive
+              取消归档
             </button>
           </div>
         ) : guard && staleQuestions.length > 0 ? (
@@ -5601,7 +5598,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                   onKeepMine: () => {
                     const mine = replyText.get();
                     replyDraft.keepMine(mine, replyFiles.draftFiles(mine));
-                    announce('Your words are saved.');
+                    announce('你的文字已保存。');
                     requestAnimationFrame(() => textRef.current?.focus());
                   },
                   onDiscard: discardMine,
@@ -5634,8 +5631,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
             >
               {/* The one visible way to close for a pointer or a phone (Esc does the same): it keeps the words and files as
                   the draft, as Cancel did; an empty box leaves none. */}
-              <Tip content="Close (Esc). Your words stay as a draft.">
-                <button type="button" className="ib-rclose" aria-label="Close the reply box (your draft is kept)" data-reply-close="" onClick={() => setAside()}>
+              <Tip content="关闭（Esc）。文字会保留为草稿。">
+                <button type="button" className="ib-rclose" aria-label="关闭回复框（草稿会保留）" data-reply-close="" onClick={() => setAside()}>
                   <Icon name="chevD" size={phone ? 20 : 16} />
                 </button>
               </Tip>
@@ -5650,9 +5647,9 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                   textareaRef={textRef}
                   voice={voice}
                   voiceNoteGlide
-                  ariaLabel={`Reply to ${replyToNames}`}
+                  ariaLabel={`回复 ${replyToNames}`}
                   ariaDescribedBy={[showAskerNote ? noteId : null, replyDraft.conflict !== null ? conflictId : null].filter(Boolean).join(' ') || undefined}
-                  placeholder="Write a reply. Type / for a skill"
+                  placeholder="写回复。输入 / 选择技能"
                   destination="your reply"
                   skillFilter={skillFilter}
                   commands={replyCommands}
@@ -5740,8 +5737,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                   />
                 }
                 skills={
-                  <Tip content="Skills (or type / in the reply)">
-                    <button type="button" className="ib-ricon" aria-label="Skills" data-reply-skills="" onClick={openSkillsFromBox}>
+                  <Tip content="技能（或在回复中输入 /）">
+                    <button type="button" className="ib-ricon" aria-label="技能" data-reply-skills="" onClick={openSkillsFromBox}>
                       <Icon name="cube" size={phone ? 20 : 16} />
                     </button>
                   </Tip>
@@ -5750,29 +5747,29 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                 status={<VoiceStatusLine voice={voice} phone={phone} />}
                 files={
                   replyFiles.files.length >= REPLY_FILES_SUMMARY_FROM ? (
-                    <button type="button" className="ib-rchip ib-rfilesn" data-reply-files-count="" aria-label={`${replyFiles.files.length} files attached. Show them`} onClick={showReplyFiles}>
+                    <button type="button" className="ib-rchip ib-rfilesn" data-reply-files-count="" aria-label={`已附加 ${replyFiles.files.length} 个文件。显示它们`} onClick={showReplyFiles}>
                       <Icon name="clip" size={13} />
-                      {replyFiles.files.length} files
+                      {replyFiles.files.length} 个文件
                     </button>
                   ) : null
                 }
                 chips={replyChips}
                 summary={<ReplySummary skip={replySkip} dropped={dropped.length} comments={takesAnnotations ? { props: commentsListProps, list: commentsList?.card ? null : commentsList, onList: setCommentsList } : null} />}
                 pill={rcptPill}
-                hint={noSkillsHint ? 'No skills are installed' : null}
+                hint={noSkillsHint ? '未安装任何技能' : null}
                 discard={
                   // While the live-session choice is open it stands in for Send and the bin, as it did for Send's
                   // row, so nothing can close the box under it. After a conflict the bin is "Discard mine": the
                   // other window's draft is never deleted from here.
                   phone || routeChoiceOpen ? null : replyDraft.conflict !== null ? (
-                    <Tip content="Discard your words; the other window’s draft stays">
-                      <button type="button" className="ib-ricon ib-rdiscard" aria-label="Discard my words" data-reply-discard="" onClick={discardMine}>
+                    <Tip content="丢弃你的文字；另一个窗口的草稿会保留">
+                      <button type="button" className="ib-ricon ib-rdiscard" aria-label="丢弃我的文字" data-reply-discard="" onClick={discardMine}>
                         <Icon name="trash" size={16} />
                       </button>
                     </Tip>
                   ) : (
-                    <Tip content="Discard this draft">
-                      <button type="button" className="ib-ricon ib-rdiscard" aria-label="Discard draft" data-reply-discard="" onClick={discardReply}>
+                    <Tip content="丢弃此草稿">
+                      <button type="button" className="ib-ricon ib-rdiscard" aria-label="丢弃草稿" data-reply-discard="" onClick={discardReply}>
                         <Icon name="trash" size={16} />
                       </button>
                     </Tip>
@@ -5782,12 +5779,12 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
               {boxDrop.over && (
                 <div className="ib-rdrop" aria-hidden="true" data-box-drop="">
                   <Icon name="clip" size={18} />
-                  Drop to attach
+                  拖放以附加
                 </div>
               )}
             </div>
             <div className="ib-sr" role="status">
-              {skipping ? `${plural(skipIds.size, 'question')} will be skipped when you send.` : ''}
+              {skipping ? `发送时将跳过 ${plural(skipIds.size, '个问题', '个问题')}。` : ''}
             </div>
             {route.open && asking ? routeChoice : lineError && errorLine}
           </>
@@ -5806,7 +5803,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
               {(waiting || draftKept) && (
                 <button type="button" className="ib-btn ib-pri" ref={sendRef} onClick={() => void send()} disabled={sending} aria-describedby={footStatusIds}>
                   <Icon name="send" size={15} />
-                  Send
+                  发送
                 </button>
               )}
               <button
@@ -5822,7 +5819,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                 data-reply-hold={'onPointerDown' in replyHold.props ? '' : undefined}
                 data-holding={replyHold.holding ? '' : undefined}
                 // Its name starts with what it shows (WCAG 2.5.3): "Draft 2: 1 pick, 1 comment. Edit draft".
-                aria-label={phone && (waiting || draftKept) ? `Draft${draftCount > 0 ? ` ${formatCount(draftCount)}` : ''}: ${draftWords}. Edit draft` : undefined}
+                aria-label={phone && (waiting || draftKept) ? `草稿${draftCount > 0 ? ` ${formatCount(draftCount)}` : ''}：${draftWords}。编辑草稿` : undefined}
                 aria-describedby={waiting || draftKept ? footStatusIds : undefined}
                 aria-keyshortcuts={replyKeys}
               >
@@ -5833,7 +5830,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                 {waiting || draftKept ? (
                   phone ? (
                     <>
-                      <span aria-hidden="true">Draft</span>
+                      <span aria-hidden="true">草稿</span>
                       {draftCount > 0 && (
                         <span className="ib-draft-n" aria-hidden="true" data-draft-count="">
                           {formatCount(draftCount)}
@@ -5842,11 +5839,11 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                     </>
                   ) : (
                     <span>
-                      Edit<span className="ib-fl"> draft</span>
+                      编辑<span className="ib-fl">草稿</span>
                     </span>
                   )
                 ) : (
-                  'Reply'
+                  '回复'
                 )}
                 <ShortcutHint scope={inboxThreadShortcuts} action="reply" className="ib-kbd ib-btn-kbd" />
               </button>
@@ -5935,7 +5932,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
             )}
             {waiting && unanswered.length > 0 && (
               <span id={skipNoteId} hidden data-skip-note={keepOpen ? 'keep' : 'skip'}>
-                {keepOpen ? `${plural(unanswered.length, 'question')} ${unanswered.length === 1 ? 'stays' : 'stay'} open when you send` : `${plural(skipIds.size, 'question')} will be skipped when you send`}
+                {keepOpen ? `发送后仍有 ${plural(unanswered.length, '个问题', '个问题')}未回答` : `发送时将跳过 ${plural(skipIds.size, '个问题', '个问题')}`}
               </span>
             )}
             {/* A phone has no room to float the pill over the messages (it sat on a sender's row): it sits in this
@@ -5993,7 +5990,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         // Full screen opened from the thread alone: × and Escape close the file, back to the thread as it was.
         exitCloses={fullScreenExit(fullFromSide, phone || fileStacked) === 'close'}
         // A full screen opened over another file beside the thread goes back to that file: a comment not saved yet waits as the full screen file's draft.
-        exitLeavesFor={fullExitFile && fullExitFile !== openAttachment.id ? (allFiles.find((a) => a.id === fullExitFile)?.name ?? 'that file') : null}
+        exitLeavesFor={fullExitFile && fullExitFile !== openAttachment.id ? (allFiles.find((a) => a.id === fullExitFile)?.name ?? '该文件') : null}
         phone={phone}
         armedStart={htmlArmed.armedStart}
         onArmed={htmlArmed.onArmed}

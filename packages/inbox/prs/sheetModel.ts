@@ -267,42 +267,42 @@ export function statusParts(pull: InboxPull, now: number): Words {
 }
 
 function statusLine(pull: InboxPull, now: number): string | Words {
-  if (pull.state === 'merged') return pull.merged_at ? `Merged ${agoWords(pull.merged_at, now)}` : 'Merged';
-  if (pull.state === 'closed') return 'Closed';
+  if (pull.state === 'merged') return pull.merged_at ? `${agoWords(pull.merged_at, now)}合并` : '已合并';
+  if (pull.state === 'closed') return '已关闭';
   const you = needsYou(pull);
-  if (pull.state === 'draft') return you === 'review' ? 'Draft · waits on your review' : 'Draft';
-  if (you === 'review') return 'Waits on your review';
-  if (you === 'changes') return 'Changes requested';
-  if (pull.checks === 'failure') return 'Checks failing';
-  if (pull.conflicts === true) return 'Conflicts with its base';
-  if (pull.review === 'changes_requested') return 'Changes requested';
-  if (readyToLand(pull)) return 'Approved · ready to land';
-  if (pull.review === 'approved') return pull.checks === 'pending' ? 'Approved · checks running' : 'Approved';
-  if (pull.checks === 'pending') return 'Checks running';
-  if (pull.reviewers.length > 0) return ['Waits on ', person(pull.reviewers[0]!), ...(pull.reviewers.length > 1 ? [` and ${pull.reviewers.length - 1} more`] : [])];
-  return 'Waiting on review';
+  if (pull.state === 'draft') return you === 'review' ? '草稿 · 等待你评审' : '草稿';
+  if (you === 'review') return '等待你评审';
+  if (you === 'changes') return '已要求修改';
+  if (pull.checks === 'failure') return '检查失败';
+  if (pull.conflicts === true) return '与基础分支冲突';
+  if (pull.review === 'changes_requested') return '已要求修改';
+  if (readyToLand(pull)) return '已通过 · 可以合并';
+  if (pull.review === 'approved') return pull.checks === 'pending' ? '已通过 · 检查运行中' : '已通过';
+  if (pull.checks === 'pending') return '检查运行中';
+  if (pull.reviewers.length > 0) return ['等待 ', person(pull.reviewers[0]!), ...(pull.reviewers.length > 1 ? [` 和另外 ${pull.reviewers.length - 1} 人`] : [])];
+  return '等待评审';
 }
 
-/** "today", "2 days ago", "3 weeks ago". */
+/** "今天", "2 天前", "3 周前". */
 export function agoWords(iso: string, now: number): string {
   const days = Math.floor((now - Date.parse(iso)) / 86_400_000);
-  if (!Number.isFinite(days) || days <= 0) return 'today';
-  if (days === 1) return 'yesterday';
-  if (days < 14) return `${days} days ago`;
-  if (days < 60) return `${Math.floor(days / 7)} weeks ago`;
-  return `${Math.floor(days / 30)} months ago`;
+  if (!Number.isFinite(days) || days <= 0) return '今天';
+  if (days === 1) return '昨天';
+  if (days < 14) return `${days} 天前`;
+  if (days < 60) return `${Math.floor(days / 7)} 周前`;
+  return `${Math.floor(days / 30)} 个月前`;
 }
 
-/** "5d", "2w", "3mo": the stack view's Updated column. */
+/** "5 天", "2 周", "3 个月": the stack view's Updated column. */
 export function ageShort(iso: string, now: number): string {
   const days = Math.floor((now - Date.parse(iso)) / 86_400_000);
-  if (!Number.isFinite(days) || days <= 0) return 'today';
-  if (days < 14) return `${days}d`;
-  if (days < 60) return `${Math.floor(days / 7)}w`;
-  return `${Math.floor(days / 30)}mo`;
+  if (!Number.isFinite(days) || days <= 0) return '今天';
+  if (days < 14) return `${days} 天`;
+  if (days < 60) return `${Math.floor(days / 7)} 周`;
+  return `${Math.floor(days / 30)} 个月`;
 }
 
-/** The forge's closed search for the person, per host the list read ("Closed on GitHub ↗"). */
+/** The forge's closed search for the person, per host the list read ("在 GitHub 上已关闭 ↗"). */
 export function closedLinks(hosts: readonly { host: string; cli: 'gh' | 'glab' }[]): { host: string; label: string; url: string }[] {
   return hosts.map(({ host, cli }) => {
     const gitlab = cli === 'glab';
@@ -310,7 +310,7 @@ export function closedLinks(hosts: readonly { host: string; cli: 'gh' | 'glab' }
     const url = gitlab
       ? `https://${host}/dashboard/merge_requests?state=closed`
       : `https://${host}/pulls?q=${encodeURIComponent('is:pr is:closed involves:@me sort:updated-desc')}`;
-    return { host, label: `Closed on ${name}`, url };
+    return { host, label: `在 ${name} 上已关闭`, url };
   });
 }
 

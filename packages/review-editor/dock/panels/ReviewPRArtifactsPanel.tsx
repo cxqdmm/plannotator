@@ -51,7 +51,7 @@ type PendingComment = PendingCommentTarget & {
   readonly anchor: ArtifactAnnotationAnchor;
 };
 
-const ARTIFACT_TIMESTAMP_FORMATTER = new Intl.DateTimeFormat(undefined, {
+const ARTIFACT_TIMESTAMP_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
   month: 'short',
   day: 'numeric',
   hour: 'numeric',
@@ -86,7 +86,7 @@ function artifactGroups(artifacts: readonly PRArtifact[]): readonly ArtifactGrou
   return [
     {
       key: 'description',
-      label: 'PR description',
+      label: 'PR 描述',
       artifacts: artifacts.filter((artifact) => artifact.provenance.surface === 'description'),
     },
     {
@@ -153,7 +153,7 @@ function ImageArtifactStage({
     return (
       <ExternalArtifactState
         artifact={artifact}
-        message="This image could not be loaded inline. It may require GitHub authentication."
+        message="无法内联加载此图片。可能需要 GitHub 认证。"
       />
     );
   }
@@ -235,7 +235,7 @@ function VideoArtifactStage({
     return (
       <ExternalArtifactState
         artifact={artifact}
-        message="This video could not be loaded inline. It may require GitHub authentication."
+        message="无法内联加载此视频。可能需要 GitHub 认证。"
       />
     );
   }
@@ -355,7 +355,7 @@ function AnnotatableMarkdownStage({
           onAskAI={onAskAI}
           askAIContext={{
             kind: 'selection',
-            label: 'Artifact document',
+            label: '产物文档',
             text: hook.commentPopover.selectedText ?? hook.commentPopover.contextText,
           }}
         />,
@@ -390,7 +390,7 @@ function MarkdownArtifactStage({
     return (
       <ExternalArtifactState
         artifact={artifact}
-        message="This Markdown document could not be loaded inline. It may have moved or require different access."
+        message="无法内联加载此 Markdown 文档。它可能已被移动，或需要不同的访问权限。"
       />
     );
   }
@@ -433,7 +433,7 @@ function HtmlArtifactStage({
     return (
       <ExternalArtifactState
         artifact={artifact}
-        message="This HTML document could not be loaded inline. It may have moved or require different access."
+        message="无法内联加载此 HTML 文档。它可能已被移动，或需要不同的访问权限。"
       />
     );
   }
@@ -897,7 +897,7 @@ export const ReviewPRArtifactsPanel: React.FC<IDockviewPanelProps> = () => {
               <p>没有可见的产物。</p>
               {hiddenCatalogCount > 0 && (
                 <button type="button" className="mt-2 min-h-10 rounded-md px-3 text-foreground hover:bg-muted" onClick={() => setHidden(() => new Set())}>
-                  Restore hidden artifacts
+                  恢复隐藏的产物
                 </button>
               )}
             </div>

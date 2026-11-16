@@ -13,13 +13,13 @@ import type { InboxMessageWire, InboxReplyQuote } from '@plannotator/core/inbox-
 /** The person-facing words of the quote (tooltips and what a screen reader hears). */
 export const REPLY_QUOTE_WORDS = {
   /** The × on the box's quote line. */
-  remove: 'Remove quote',
+  remove: '移除引用',
   /** The sent reply's quote line. */
-  goTo: 'Go to the message',
+  goTo: '前往该消息',
   /** What a screen reader hears for the quote: "Replying to Claude Code's message from 10:04 AM". */
-  label: (who: string, time: string, words: boolean) => `Replying to ${words ? 'words in ' : ''}${who === 'You' ? 'your message' : `${who}'s message`}${time ? ` from ${time}` : ''}`,
+  label: (who: string, time: string, words: boolean) => `正在回复${words ? '其中的文字：' : ''}${who === 'You' ? '你的消息' : `${who} 的消息`}${time ? `（${time}）` : ''}`,
   /** Said when the × takes the quote away. */
-  removed: 'Quote removed.',
+  removed: '引用已移除。',
 } as const;
 
 /** The most characters of selected words a quote keeps (the Inbox refuses more: INBOX_MESSAGE_COMMENT_QUOTE_MAX). */

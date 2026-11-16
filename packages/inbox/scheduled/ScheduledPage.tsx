@@ -94,16 +94,16 @@ export function ScheduledPage(props: ScheduledPageProps) {
       await scheduledApi.remove(row.id);
     } catch (cause) {
       void readScheduled();
-      throw new Error(`${row.name} was not deleted. ${errorText(cause, 'Try again.')}`);
+      throw new Error(`${row.name} 未能删除。${errorText(cause, '请重试。')}`);
     }
     putScheduled(null, row.id);
     if (openId === row.id) props.onOpen(null);
     const undo = () =>
       scheduledApi.restore(row.id).then(
         (answer) => putScheduled(answer.scheduled),
-        (cause: unknown) => props.onToast?.({ icon: 'warn', wrap: true, lead: `${row.name} could not be brought back. ${errorText(cause, 'Try again.')}` }),
+        (cause: unknown) => props.onToast?.({ icon: 'warn', wrap: true, lead: `${row.name} 未能恢复。${errorText(cause, '请重试。')}` }),
       );
-    props.onToast?.({ icon: 'check', lead: 'Routine deleted', phoneLead: 'Deleted', detail: row.name, onUndo: () => void undo() });
+    props.onToast?.({ icon: 'check', lead: '例行任务已删除', phoneLead: '已删除', detail: row.name, onUndo: () => void undo() });
   };
   const acts: RowActs = {
     open: (row) => props.onOpen(row.id),
@@ -137,35 +137,35 @@ export function ScheduledPage(props: ScheduledPageProps) {
   const short = !!openId || props.phone;
   return (
     <>
-      <section className={`ib-listcol st-list${openId ? ' st-list-split' : ''}`} aria-label="Routines" data-scheduled-page="">
+      <section className={`ib-listcol st-list${openId ? ' st-list-split' : ''}`} aria-label="例行任务" data-scheduled-page="">
         <div className="ib-lhead">
           <SidebarTrigger />
-          <h1 tabIndex={-1}>Routines</h1>
+          <h1 tabIndex={-1}>例行任务</h1>
           {on && (
-            <button type="button" className="ib-btn st-new" aria-label="New routine" onClick={() => props.onOpen('new')} data-scheduled-new="">
-              {props.phone ? 'New' : 'New routine'}
+            <button type="button" className="ib-btn st-new" aria-label="新建例行任务" onClick={() => props.onOpen('new')} data-scheduled-new="">
+              {props.phone ? '新建' : '新建例行任务'}
             </button>
           )}
         </div>
         <div className="ib-lbody st-lbody" aria-busy={props.switch === 'loading' || undefined}>
           {props.switch === 'loading' ? null : props.switch === 'unsupported' ? (
             <p className="st-note" data-scheduled-off-note="">
-              Routines aren't available on Windows.
+              Windows 上不支持例行任务。
             </p>
           ) : !on ? (
             <p className="st-note" data-scheduled-off-note="">
-              Routines are off on this computer.{' '}
+              这台计算机上已关闭例行任务。{' '}
               <button type="button" className="st-link" onClick={() => props.onSettings('capabilities')}>
-                Turn them on in Settings
+                在设置中开启
               </button>
             </p>
           ) : (
             <>
               {!snap.launchOn && (
                 <p className="st-note" data-scheduled-launch-off="">
-                  Starting agents is off, so nothing runs.{' '}
+                  启动 agent 已关闭，因此不会运行任何内容。{' '}
                   <button type="button" className="st-link" onClick={() => props.onSettings('agents')}>
-                    Turn it on in Settings
+                    在设置中开启
                   </button>
                 </p>
               )}
@@ -174,7 +174,7 @@ export function ScheduledPage(props: ScheduledPageProps) {
                   {actError ?? snap.error}
                 </p>
               )}
-              {snap.rows && rows.length === 0 && <p className="st-note">No routines yet.</p>}
+              {snap.rows && rows.length === 0 && <p className="st-note">还没有例行任务。</p>}
               <ScheduledTable rows={rows} acts={acts} short={short} selected={openId} />
             </>
           )}

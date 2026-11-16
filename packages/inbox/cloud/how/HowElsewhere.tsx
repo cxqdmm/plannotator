@@ -18,18 +18,18 @@ export function HowElsewhere() {
       <div className="ib-chow-win">
         <div className="ib-chow-win-h">
           <PlannotatorMark className="ib-chow-pmark" />
-          <span>Your Inbox</span>
+          <span>你的收件箱</span>
         </div>
         <div className="ib-chow-msg">
           <HostMark host="cloud-grok" />
           <span className="ib-chow-msg-b">
             <span className="ib-chow-who">
-              Nightly fixer <span>Grok Bot</span>
+              夜间修复机器人 <span>Grok Bot</span>
             </span>
-            <span className="ib-chow-said">The flaky test is fixed. Ship it tonight?</span>
+            <span className="ib-chow-said">不稳定的测试已修好。今晚可以发布吗？</span>
           </span>
         </div>
-        <div className="ib-chow-you">Yes, ship it.</div>
+        <div className="ib-chow-you">可以，发布吧。</div>
       </div>
     </div>
   );

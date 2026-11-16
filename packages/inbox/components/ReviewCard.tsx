@@ -24,10 +24,10 @@ export interface ReviewOutcome {
 
 /** The card's status words: who it waits on, or the verdict. */
 export function reviewOutcomeWords(outcome: ReviewOutcome | null): string {
-  if (!outcome) return 'Waiting on you';
+  if (!outcome) return '等待你处理';
   const { verdict, comments } = outcome.verdict;
-  if (verdict === 'approved') return `Approved ${whenTime(outcome.at)}`;
-  return comments > 0 ? `Changes requested · ${plural(comments, 'comment')}` : 'Changes requested';
+  if (verdict === 'approved') return `已通过 ${whenTime(outcome.at)}`;
+  return comments > 0 ? `已要求修改 · ${plural(comments, '条评论', '条评论')}` : '已要求修改';
 }
 
 /** `verdict: false`: a review of a teammate's pull request (`InboxThread.pull_theirs`) or a walkthrough, which waits on no verdict. */
@@ -38,7 +38,7 @@ export function ReviewCard({ guide, outcome, verdict = true, onOpen, onInReviews
       <div className="ib-rvc-top">
         <span className="ib-rvc-kind">
           <Icon name="code" size={14} />
-          {guide.walkthrough ? 'Walkthrough' : 'Review'}
+          {guide.walkthrough ? '引导式评审' : '评审'}
         </span>
         {(verdict || outcome) && (
           <span className="ib-rvc-state" data-verdict={outcome?.verdict.verdict ?? undefined}>
@@ -51,26 +51,26 @@ export function ReviewCard({ guide, outcome, verdict = true, onOpen, onInReviews
         <bdi>{inboxReviewTitleLine(guide.title)}</bdi>
       </div>
       <div className="ib-rvc-meta">
-        {plural(guide.files, 'file')}
+        {plural(guide.files, '个文件', '个文件')}
         {!guide.walkthrough && (
           <>
             {' '}
             <span className="ib-add">+{formatCount(guide.additions)}</span> <span className="ib-del">-{formatCount(guide.deletions)}</span>
           </>
         )}
-        {chapters > 0 && <> · {plural(chapters, 'chapter')}</>}
+        {chapters > 0 && <> · {plural(chapters, '个章节', '个章节')}</>}
       </div>
       <div className="ib-rvc-foot">
         <button type="button" className={`ib-btn${outcome ? '' : ' ib-pri'}`} onClick={onOpen} data-review-start="">
-          {guide.walkthrough ? 'Open walkthrough' : outcome ? 'Open review' : 'Start review'}
+          {guide.walkthrough ? '打开引导式评审' : outcome ? '打开评审' : '开始评审'}
         </button>
         {onInReviews && (
           <button type="button" className="ib-rvc-link" onClick={onInReviews} data-review-in-reviews="">
             <Icon name="reviews" size={14} />
-            In Reviews
+            在评审中
           </button>
         )}
-        {outcome && <span className="ib-rvc-note">Your verdict is in your reply below.</span>}
+        {outcome && <span className="ib-rvc-note">你的评审结论在下方你的回复中。</span>}
       </div>
     </div>
   );

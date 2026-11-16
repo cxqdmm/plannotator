@@ -160,7 +160,7 @@ export function InboxAnnouncementDialog({ isOpen, onDismiss }: InboxAnnouncement
         <div className="flex min-h-0 flex-col gap-5 overflow-y-auto px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:gap-8 sm:px-7 sm:py-6">
           <div className="min-w-0">
             <DialogTitle className="text-balance text-xl font-semibold tracking-tight sm:text-2xl">
-              The Plannotator Inbox
+              Plannotator 收件箱
             </DialogTitle>
             <DialogDescription className="mt-1.5 max-w-xl text-pretty leading-relaxed">
               agent 工作时，来自它们的问题、阻塞和评审会汇入同一个收件箱，你的回答会送回给它们。

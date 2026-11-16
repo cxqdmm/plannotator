@@ -60,7 +60,7 @@ export function peekRows(steps: readonly AttachmentStep[], counts: ReadonlyMap<s
       tile: peekTile(attachment),
       count: counts.get(attachment.path) ?? 0,
       attached: !step.inline,
-      ...(changed ? { detail: changed.toLowerCase() } : {}),
+      ...(changed ? { detail: changed } : {}),
     });
   }
   return rows;
@@ -106,33 +106,33 @@ export function FilePeek(props: {
   const stepping = props.within ?? { steps, index, noun: 'file' as const };
   const prev = stepping.steps[stepping.index - 1];
   const next = stepping.steps[stepping.index + 1];
-  const noun = stepping.noun;
+  const noun = stepping.noun === 'option' ? '选项' : '文件';
   const header =
     phone && onStep ? (
-      <div className="ib-peekstep" role="group" aria-label={`Step through the ${noun}s`} data-peek-step="">
+      <div className="ib-peekstep" role="group" aria-label={`逐个切换${noun}`} data-peek-step="">
         <button
           type="button"
           className="ib-peekstep-b"
-          aria-label={prev ? `Previous ${noun}: ${prev.attachment.name}` : `Previous ${noun}: this is the first`}
+          aria-label={prev ? `上一个${noun}：${prev.attachment.name}` : `上一个${noun}：这是第一个`}
           aria-disabled={prev ? undefined : true}
           onClick={() => onStep(-1)}
           data-peek-step-prev=""
         >
           <Icon name="chevL" size={18} />
-          <span>Previous</span>
+          <span>上一个</span>
         </button>
         <span className="ib-peekstep-n" aria-hidden="true">
-          {stepping.index + 1} of {stepping.steps.length}
+          第 {stepping.index + 1} 个，共 {stepping.steps.length} 个
         </span>
         <button
           type="button"
           className="ib-peekstep-b"
-          aria-label={next ? `Next ${noun}: ${next.attachment.name}` : `Next ${noun}: this is the last`}
+          aria-label={next ? `下一个${noun}：${next.attachment.name}` : `下一个${noun}：这是最后一个`}
           aria-disabled={next ? undefined : true}
           onClick={() => onStep(1)}
           data-peek-step-next=""
         >
-          <span>Next</span>
+          <span>下一个</span>
           <Icon name="chevR" size={18} />
         </button>
       </div>
@@ -142,7 +142,7 @@ export function FilePeek(props: {
       id={props.id}
       rows={rows}
       current={steps[index]?.attachment.id ?? null}
-      label="Files in this thread"
+      label="此会话中的文件"
       variant={phone ? 'sheet' : 'popover'}
       onClose={props.onClose}
       onPick={(key) => {
@@ -210,9 +210,9 @@ export function AttachmentStepper(props: AttachmentStepperProps) {
     props.onMenuOpenChange(false);
   };
 
-  const prevLabel = prev ? `Previous file: ${prev.attachment.name}` : 'Previous file';
-  const nextLabel = next ? `Next file: ${next.attachment.name}` : 'Next file';
-  const label = `${index + 1} of ${total}, ${current.attachment.name}. Show every file in this thread`;
+  const prevLabel = prev ? `上一个文件：${prev.attachment.name}` : '上一个文件';
+  const nextLabel = next ? `下一个文件：${next.attachment.name}` : '下一个文件';
+  const label = `第 ${index + 1} 个，共 ${total} 个，${current.attachment.name}。显示此会话中的所有文件`;
   const onLabelKey = (event: React.KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === 'ArrowDown' && !menuOpen) {
       event.preventDefault();
@@ -230,9 +230,9 @@ export function AttachmentStepper(props: AttachmentStepperProps) {
   );
 
   return (
-    <nav className="ib-stepper" aria-label="Files in this thread" data-attachment-stepper="">
+    <nav className="ib-stepper" aria-label="此会话中的文件" data-attachment-stepper="">
       <span className="ib-stepbox">
-        <StepTip text={prev ? `Previous: ${prev.attachment.name}` : 'This is the first file'} action="previous">
+        <StepTip text={prev ? `上一个：${prev.attachment.name}` : '这是第一个文件'} action="previous">
           <button type="button" className="ib-stepbtn" aria-label={prevLabel} aria-disabled={prev ? undefined : 'true'} onClick={() => props.onStep(-1, 'button')} data-step-prev="">
             <Icon name="chevL" size={15} />
           </button>
@@ -251,7 +251,7 @@ export function AttachmentStepper(props: AttachmentStepperProps) {
           data-peek-opener=""
         >
           <span className="ib-stepn">
-            {index + 1} of {total}
+            第 {index + 1} 个，共 {total} 个
           </span>
           <span className="ib-stepn" aria-hidden="true">
             ·
@@ -263,7 +263,7 @@ export function AttachmentStepper(props: AttachmentStepperProps) {
             <Icon name="chevD" size={13} />
           </span>
         </button>
-        <StepTip text={next ? `Next: ${next.attachment.name}` : 'This is the last file'} action="next">
+        <StepTip text={next ? `下一个：${next.attachment.name}` : '这是最后一个文件'} action="next">
           <button type="button" className="ib-stepbtn" aria-label={nextLabel} aria-disabled={next ? undefined : 'true'} onClick={() => props.onStep(1, 'button')} data-step-next="">
             <Icon name="chevR" size={15} />
           </button>

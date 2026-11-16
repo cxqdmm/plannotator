@@ -119,7 +119,7 @@ test.skipIf(!hasDom)('a name that only starts the subject mid-word still shows, 
 
 test.skipIf(!hasDom)("the pin's ⋯ is labelled with the same label as the row", () => {
   draw(row('session-refresh'));
-  expect(host!.querySelector('[data-pin-more]')!.getAttribute('aria-label')).toBe('session-refresh options');
+  expect(host!.querySelector('[data-pin-more]')!.getAttribute('aria-label')).toBe('session-refresh 选项');
   draw(row(null));
-  expect(host!.querySelector('[data-pin-more]')!.getAttribute('aria-label')).toBe(`${SUBJECT} options`);
+  expect(host!.querySelector('[data-pin-more]')!.getAttribute('aria-label')).toBe(`${SUBJECT} 选项`);
 });

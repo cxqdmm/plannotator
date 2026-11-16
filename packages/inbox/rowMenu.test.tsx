@@ -267,7 +267,7 @@ test('the link is the Inbox one address plus #thread=, and the items follow the 
 test.skipIf(!hasDom)('a right-click opens the menu on that row, without opening the thread; Copy link writes its address', async () => {
   await renderApp();
   await openMenu(ids.waiting);
-  expect(items()).toEqual(['Select', 'Star thread', 'Add to Priority', 'Add tag', 'Copy thread', 'Copy link', 'Copy thread ID', 'Snooze', 'Mark read', 'Archive']);
+  expect(items()).toEqual(['选择', '星标会话', '加入优先', 'Add tag', '复制会话', '复制链接', '复制会话 ID', '稍后处理', '标为已读', '归档']);
   expect(menu()!.querySelector('[role="separator"]')).not.toBeNull();
   // The row keeps a muted background while its menu is open; nothing opened, nothing selected.
   expect(rowWrap(ids.waiting)!.hasAttribute('data-menu')).toBe(true);
@@ -334,7 +334,7 @@ test.skipIf(!hasDom)('Mark read leaves the row in place, read, with its toast; i
   });
   await until(() => !!rowButton(ids.waiting), 'the row in Quiet');
   await openMenu(ids.waiting);
-  expect(items()).toEqual(['Select', 'Star thread', 'Add to Priority', 'Add tag', 'Copy thread', 'Copy link', 'Copy thread ID', 'Snooze', 'Mark unread', 'Move back', 'Archive']);
+  expect(items()).toEqual(['选择', '星标会话', '加入优先', 'Add tag', '复制会话', '复制链接', '复制会话 ID', '稍后处理', '标为未读', '移回', '归档']);
   const before = JSON.parse((await loopback(`/api/inbox/threads/${ids.waiting}`)).text) as { thread: { messages: { questions?: { state: string }[] }[] } };
   await choose('mark-unread');
   expect(posted.some((p) => p.path === `/api/inbox/threads/${ids.waiting}/mark-unread`)).toBe(true);
@@ -371,7 +371,7 @@ test.skipIf(!hasDom)('a row Mark unread brought back keeps Move back in its menu
   await loopback(`/api/inbox/threads/${ids.waiting}/mark-unread`, 'POST', '{}');
   await renderApp();
   await openMenu(ids.waiting);
-  expect(items()).toEqual(['Select', 'Star thread', 'Add to Priority', 'Add tag', 'Copy thread', 'Copy link', 'Copy thread ID', 'Snooze', 'Mark read', 'Move back', 'Archive']);
+  expect(items()).toEqual(['选择', '星标会话', '加入优先', 'Add tag', '复制会话', '复制链接', '复制会话 ID', '稍后处理', '标为已读', '移回', '归档']);
   await choose('unread');
   await until(async () => (await serverSections()).get(ids.waiting) === 'waiting', 'the question reopened');
   const thread = JSON.parse((await loopback(`/api/inbox/threads/${ids.waiting}`)).text) as { thread: { messages: { questions?: { state: string }[] }[] } };
@@ -384,10 +384,10 @@ test.skipIf(!hasDom)('Archive shows the row archived in place, faded, with the A
   await choose('archive');
   await until(() => !!toast(), 'the toast');
   expect(posted.some((p) => p.path === `/api/inbox/messages/${ids.waiting}/resolve` && p.body.resolved === true)).toBe(true);
-  expect(toast()!.textContent).toContain('Archived');
+  expect(toast()!.textContent).toContain('已归档');
   // The list holds still (approval "inbox-list-view", R7): the row stays where it was, faded, reading Archived.
   await until(() => rowWrap(ids.waiting)?.hasAttribute('data-archived') === true, 'the row archived in place');
-  expect(rowWrap(ids.waiting)!.textContent).toContain('Archived');
+  expect(rowWrap(ids.waiting)!.textContent).toContain('已归档');
   // The tidy (the list's title refreshes it): the row leaves.
   await act(async () => document.querySelector<HTMLButtonElement>('[data-list-refresh]')!.click());
   await until(() => !rowButton(ids.waiting), 'the row to leave');
@@ -572,18 +572,18 @@ test.skipIf(!hasDom)('with a thread open: Archive from another row keeps it in p
   const subject = rowButton(ids.waiting)!.querySelector('.ib-title')!.textContent!;
   await openMenu(ids.waiting);
   await choose('archive');
-  await until(() => toast()?.textContent?.includes('Archived') === true, 'the toast');
+  await until(() => toast()?.textContent?.includes('已归档') === true, 'the toast');
   expect(toast()!.textContent).toContain(`“${subject}”`);
   expect(posted.some((p) => p.path === `/api/inbox/messages/${ids.waiting}/resolve` && p.body.resolved === true)).toBe(true);
   // The list holds still while the thread is open: the row stays where it was, shown archived.
-  await until(() => rowButton(ids.waiting)?.querySelector('.ib-c .ib-cs')?.textContent === 'Archived', 'the row shown archived');
+  await until(() => rowButton(ids.waiting)?.querySelector('.ib-c .ib-cs')?.textContent === '已归档', 'the row shown archived');
   expect(placed()).toEqual(before);
   expect(window.location.hash).toContain(`thread=${ids.stopped}`);
   await act(async () => {
     toast()!.querySelector<HTMLButtonElement>('[data-toast-undo]')!.click();
   });
   await until(async () => (await serverSections()).get(ids.waiting) === 'waiting', 'the thread unarchived');
-  await until(() => rowButton(ids.waiting)?.querySelector('.ib-c .ib-cs')?.textContent !== 'Archived', 'the row no longer shown archived');
+  await until(() => rowButton(ids.waiting)?.querySelector('.ib-c .ib-cs')?.textContent !== '已归档', 'the row no longer shown archived');
   expect(placed()).toEqual(before);
 });
 
@@ -607,7 +607,7 @@ test.skipIf(!hasDom)('with a thread open, Archive from the menu then a mouse clo
   const next = order[order.indexOf(ids.waiting) + 1]!;
   await openMenu(ids.waiting);
   await choose('archive');
-  await until(() => rowButton(ids.waiting)?.querySelector('.ib-c .ib-cs')?.textContent === 'Archived', 'the row shown archived');
+  await until(() => rowButton(ids.waiting)?.querySelector('.ib-c .ib-cs')?.textContent === '已归档', 'the row shown archived');
   // A mouse close moves nothing (App's rule); the list settles and the archived row leaves.
   mouseClick(document.querySelector<HTMLElement>('section.ib-pane [aria-label="Close the thread"]')!);
   await until(() => !rowButton(ids.waiting), 'the archived row to leave once the thread closed');

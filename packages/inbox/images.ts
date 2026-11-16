@@ -224,7 +224,7 @@ const MORE_ATTR = 'data-ib-imgmore';
 
 /** What a picture is called in its control's name: its alt text, else "this picture". */
 function pictureName(img: HTMLImageElement): string {
-  return img.alt.trim() || 'this picture';
+  return img.alt.trim() || '此图片';
 }
 
 /** The key a picture's "Show all" is remembered under while its message is on screen: the src as the body wrote it. */
@@ -265,9 +265,9 @@ export function syncMessageImages(body: HTMLElement, recordedOf: (img: HTMLImage
       img.after(more);
     }
     const button = more.firstElementChild as HTMLButtonElement;
-    const label = isOpen ? 'Show less' : 'Show all';
+    const label = isOpen ? '收起' : '显示全部';
     if (button.getAttribute('data-label') !== label) button.setAttribute('data-label', label);
-    const name = `${label} of ${pictureName(img)}`;
+    const name = `${label}：${pictureName(img)}`;
     if (button.getAttribute('aria-label') !== name) button.setAttribute('aria-label', name);
     button.setAttribute('aria-expanded', String(isOpen));
     more.toggleAttribute('data-open', isOpen);

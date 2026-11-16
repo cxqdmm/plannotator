@@ -89,6 +89,9 @@ export interface CardPanelProps {
  * Send to an agent for a Backlog or Todo card nobody was asked about,
  * Restore on a Cancelled card.
  */
+/** How the agent's session reads in the who line. */
+const STATE_WORDS = { working: '工作中', idle: '空闲', ended: '已结束' } as const;
+
 export function CardPanel(props: CardPanelProps) {
   const { card, phone } = props;
   const headingId = useId();
@@ -173,12 +176,12 @@ export function CardPanel(props: CardPanelProps) {
         {phone && (
           <button type="button" className="ib-bback" onClick={props.onClose} data-card-back="">
             <Icon name="chevL" size={16} />
-            <span className="ib-bback-l">Board</span>
+            <span className="ib-bback-l">看板</span>
           </button>
         )}
         <ColumnMenu card={card} sent={sent !== null} onColumn={props.onColumn} onRestore={props.onRestore} />
         {threadAt ? (
-          <Tip content={props.rowOf(threadAt)?.subject ?? 'The card’s thread'}>
+          <Tip content={props.rowOf(threadAt)?.subject ?? '卡片的会话'}>
             <button
               type="button"
               className={`ib-btn ib-sm ib-crdp-open${you ? ' ib-pri' : ''}`}
@@ -187,7 +190,7 @@ export function CardPanel(props: CardPanelProps) {
               aria-describedby={you ? `${headingId}-you` : undefined}
               onClick={() => props.onOpenThread(threadAt)}
             >
-              <span className="ib-crdp-open-l">Open thread</span>
+              <span className="ib-crdp-open-l">打开会话</span>
               <Icon name="arrowUpRight" size={14} />
             </button>
           </Tip>
@@ -195,8 +198,8 @@ export function CardPanel(props: CardPanelProps) {
           <CreateThreadButton primary={you !== null} disabled={!props.canAsk} onCreate={props.onCreateThread} />
         ) : null}
         {!phone && (
-          <Tip content="Close">
-            <button type="button" className="ib-crdp-x" aria-label="Close the card" onClick={props.onClose} data-card-close="">
+          <Tip content="关闭">
+            <button type="button" className="ib-crdp-x" aria-label="关闭卡片" onClick={props.onClose} data-card-close="">
               <Icon name="x" size={16} />
             </button>
           </Tip>
@@ -219,7 +222,7 @@ export function CardPanel(props: CardPanelProps) {
                   <span className="ib-tdot" aria-hidden="true" />
                   <span className="ib-crdp-state" data-agent-state={props.state}>
                     <span className="ib-crdp-sdot" aria-hidden="true" />
-                    {props.state}
+                    {STATE_WORDS[props.state]}
                   </span>
                 </>
               )}
@@ -231,7 +234,7 @@ export function CardPanel(props: CardPanelProps) {
               {notSent && (
                 <>
                   <span className="ib-tdot" aria-hidden="true" />
-                  <span>Not sent</span>
+                  <span>未发送</span>
                 </>
               )}
             </>
@@ -245,20 +248,20 @@ export function CardPanel(props: CardPanelProps) {
         </div>
         {you && (
           <p className="ib-crdp-you" data-card-you="" id={`${headingId}-you`}>
-            <b>You:</b> {text(you)}
+            <b>你：</b> {text(you)}
           </p>
         )}
         {card.column === 'dropped' && card.dropped && (
           <p className="ib-crdp-dropped">
-            Cancelled {whenTime(card.dropped.at)} by {card.dropped.by.kind === 'person' ? 'you' : inboxAgentName(card.dropped.by)}
-            {card.dropped.reason ? `: ${card.dropped.reason}` : ''}
+            已取消（{whenTime(card.dropped.at)}，操作者：{card.dropped.by.kind === 'person' ? '你' : inboxAgentName(card.dropped.by)}）
+            {card.dropped.reason ? `：${card.dropped.reason}` : ''}
           </p>
         )}
         <Notes card={card} onSave={props.onNotes} text={text} />
         {card.threads.length > 0 && (
-          <section className="ib-crdp-sec" aria-label="Threads">
+          <section className="ib-crdp-sec" aria-label="会话">
             <h3>
-              Threads <span className="ib-lane-n">{card.threads.length}</span>
+              会话 <span className="ib-lane-n">{card.threads.length}</span>
             </h3>
             <ul className="ib-crdp-threads">
               {card.threads.map((threadId) => (
@@ -267,9 +270,9 @@ export function CardPanel(props: CardPanelProps) {
             </ul>
           </section>
         )}
-        <section className="ib-crdp-sec" aria-label="Links">
+        <section className="ib-crdp-sec" aria-label="链接">
           <h3>
-            Links {refs.length > 0 && <span className="ib-lane-n">{refs.length}</span>}
+            链接 {refs.length > 0 && <span className="ib-lane-n">{refs.length}</span>}
           </h3>
           {refs.length > 0 && (
             <ul className="ib-crdp-refs">
@@ -280,23 +283,23 @@ export function CardPanel(props: CardPanelProps) {
           )}
           <LinkField onLink={props.onLink} phone={props.phone} />
         </section>
-        <section className="ib-crdp-sec" aria-label="History">
+        <section className="ib-crdp-sec" aria-label="历史">
           <h3 className="ib-crdp-hhead">
-            History
+            历史
             {askable && (
               <AskButton
                 disabled={!props.canAsk}
                 note={props.canAsk ? (props.askNote ?? null) : null}
-                agentName={agent ? inboxAgentName(agent) : 'an agent'}
+                agentName={agent ? inboxAgentName(agent) : '一个 agent'}
                 onAsk={async () => {
                   const failed = await props.onAsk();
-                  setSaid(failed ?? `Asked ${agent ? inboxAgentName(agent) : 'an agent'} for an update on “${card.title}”.`);
+                  setSaid(failed ?? `已向 ${agent ? inboxAgentName(agent) : '一个 agent'} 询问“${card.title}”的进展。`);
                 }}
               />
             )}
           </h3>
           {props.history === null ? (
-            <p className="ib-lane-empty">Reading…</p>
+            <p className="ib-lane-empty">读取中…</p>
           ) : (
             <ol className="ib-crdp-hist">
               {props.history.map((entry, index) => {
@@ -315,7 +318,7 @@ export function CardPanel(props: CardPanelProps) {
                       )}
                     </span>
                     <Tip content={fullTime(entry.at)}>
-                      <span className="ib-crdp-hat">{cardAge(entry.at, props.now).short.replace(' ago', '')}</span>
+                      <span className="ib-crdp-hat">{cardAge(entry.at, props.now).short}</span>
                     </Tip>
                   </li>
                 );
@@ -335,12 +338,12 @@ export function CardPanel(props: CardPanelProps) {
           }}
         >
           <label htmlFor={`${headingId}-reason`} dir="auto">
-            Cancel “{card.title}”
+            取消“{card.title}”
           </label>
           <input
             id={`${headingId}-reason`}
             type="text"
-            placeholder="Why (optional)"
+            placeholder="原因（可选）"
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             ref={reasonField}
@@ -357,11 +360,11 @@ export function CardPanel(props: CardPanelProps) {
           />
           <div className="ib-crdp-dropacts">
             <button type="button" className="ib-btn ib-ghost" onClick={stopDropping}>
-              Keep
+              保留
             </button>
             <button type="submit" className="ib-btn ib-danger" data-drop-confirm="">
               <Icon name="xCircle" size={15} />
-              Cancel card
+              取消卡片
             </button>
           </div>
         </form>
@@ -370,7 +373,7 @@ export function CardPanel(props: CardPanelProps) {
           {foot.primary === 'send' && (
             <button type="button" className="ib-btn ib-pri" onClick={props.onSend} data-card-send="">
               <Icon name="send" size={15} />
-              Send to an agent
+              发送给 agent
             </button>
           )}
           {foot.primary === 'start' && (
@@ -378,20 +381,20 @@ export function CardPanel(props: CardPanelProps) {
               disabled={!props.canAsk}
               onStart={async () => {
                 const failed = await props.onStart();
-                setSaid(failed ?? `Asked ${agent ? inboxAgentName(agent) : 'an agent'} to start “${card.title}”.`);
+                setSaid(failed ?? `已让 ${agent ? inboxAgentName(agent) : '一个 agent'} 开始处理“${card.title}”。`);
               }}
             />
           )}
           {foot.primary === 'ship' && (
             <button type="button" className="ib-btn ib-soft" onClick={props.onShip} data-card-ship="">
               <Icon name="checkCircle" size={15} />
-              Mark done
+              标记为完成
             </button>
           )}
           {foot.primary === 'restore' && (
             <OnceButton className="ib-btn ib-soft" onClick={props.onRestore} data-card-restore={card.id}>
               <Icon name="replay" size={15} />
-              Restore to {INBOX_CARD_COLUMN_LABELS[card.aside_from ?? 'backlog']}
+              恢复到 {INBOX_CARD_COLUMN_LABELS[card.aside_from ?? 'backlog']}
             </OnceButton>
           )}
           <span className="ib-bsp" />
@@ -404,7 +407,7 @@ export function CardPanel(props: CardPanelProps) {
               data-card-drop=""
             >
               <Icon name="xCircle" size={15} />
-              Cancel…
+              取消…
             </button>
           )}
         </div>
@@ -427,26 +430,26 @@ function ColumnMenu({ card, sent, onColumn, onRestore }: { card: InboxCardWire; 
   const lanes = INBOX_CARD_LIVE_COLUMNS.length;
   return (
     <Menu.Root open={open} onOpenChange={setOpen} modal={false}>
-      <Menu.Trigger ref={trigger} className="ib-crdp-col" aria-label={`Column: ${INBOX_CARD_COLUMN_LABELS[card.column]}${sent ? ', sent' : ''}. Move`} data-card-column={card.column}>
+      <Menu.Trigger ref={trigger} className="ib-crdp-col" aria-label={`列：${INBOX_CARD_COLUMN_LABELS[card.column]}${sent ? '，已发送' : ''}。移动`} data-card-column={card.column}>
         <span className="ib-lane-dot" data-col={card.column} aria-hidden="true" />
         <b className="ib-crdp-col-l">{INBOX_CARD_COLUMN_LABELS[card.column]}</b>
-        {sent && <span className="ib-crdp-colsent">· sent</span>}
+        {sent && <span className="ib-crdp-colsent">· 已发送</span>}
         <Icon name="chevD" size={14} />
       </Menu.Trigger>
       <Menu.Portal container={portal ?? undefined}>
         <Menu.Positioner className="ib-pm-pos" side="bottom" align="start" sideOffset={4}>
-          <Menu.Popup className="ib-pm" aria-label="Move the card" data-card-menu={card.id}>
+          <Menu.Popup className="ib-pm" aria-label="移动卡片" data-card-menu={card.id}>
             {aside && (
               <>
-                <Menu.Item className="ib-pmi" label="Restore" onClick={onRestore} data-card-action="restore">
+                <Menu.Item className="ib-pmi" label="恢复" onClick={onRestore} data-card-action="restore">
                   <Icon name="replay" size={15} />
-                  Restore to {INBOX_CARD_COLUMN_LABELS[card.aside_from ?? 'backlog']}
+                  恢复到 {INBOX_CARD_COLUMN_LABELS[card.aside_from ?? 'backlog']}
                 </Menu.Item>
                 <Menu.Separator className="ib-pm-sep" />
               </>
             )}
             {/* One choice, so radio items: a screen reader hears the card's column as checked. */}
-            <Menu.RadioGroup value={card.column} onValueChange={(value: InboxCardColumn) => value !== card.column && onColumn(value)} aria-label="Column">
+            <Menu.RadioGroup value={card.column} onValueChange={(value: InboxCardColumn) => value !== card.column && onColumn(value)} aria-label="列">
               {choices.slice(0, lanes).map((choice) => (
                 <Menu.RadioItem key={choice.column} value={choice.column} closeOnClick className="ib-pmi" label={choice.label} data-card-move-to={choice.column}>
                   <span className="ib-lane-dot" data-col={choice.column} aria-hidden="true" />
@@ -485,10 +488,10 @@ function StartButton({ disabled, onStart }: { disabled: boolean; onStart: () => 
       }}
     >
       <Icon name="play" size={15} />
-      Start
+      开始
     </button>
   );
-  return disabled ? <Tip content="No agent is running in this project.">{button}</Tip> : button;
+  return disabled ? <Tip content="此项目中没有正在运行的 agent。">{button}</Tip> : button;
 }
 
 /**
@@ -499,7 +502,7 @@ function StartButton({ disabled, onStart }: { disabled: boolean; onStart: () => 
 function AskButton({ disabled, note, agentName, onAsk }: { disabled: boolean; note: string | null; agentName: string; onAsk: () => Promise<void> }) {
   const [busy, setBusy] = useState(false);
   return (
-    <Tip content={disabled ? 'No agent is running in this project.' : (note ?? `Asks ${agentName} to move the card or say where it stands`)}>
+    <Tip content={disabled ? '此项目中没有正在运行的 agent。' : (note ?? `请 ${agentName} 移动卡片或说明进展`)}>
       <button
         type="button"
         className="ib-crdp-ask"
@@ -512,7 +515,7 @@ function AskButton({ disabled, note, agentName, onAsk }: { disabled: boolean; no
           setBusy(false);
         }}
       >
-        Ask for an update
+        询问进展
       </button>
     </Tip>
   );
@@ -521,7 +524,7 @@ function AskButton({ disabled, note, agentName, onAsk }: { disabled: boolean; no
 /** Create thread: a card that links no thread starts one, in compose, to its agent; the Send links it to the card. */
 function CreateThreadButton({ primary, disabled, onCreate }: { primary: boolean; disabled: boolean; onCreate: (opener: HTMLElement) => void }) {
   return (
-    <Tip content={disabled ? 'No agent is running in this project.' : 'A new thread to the card’s agent, linked to this card'}>
+    <Tip content={disabled ? '此项目中没有正在运行的 agent。' : '给该卡片的 agent 新建一个会话，并与该卡片关联'}>
       <button
         type="button"
         className={`ib-btn ib-sm ib-crdp-open${primary ? ' ib-pri' : ''}`}
@@ -530,7 +533,7 @@ function CreateThreadButton({ primary, disabled, onCreate }: { primary: boolean;
         onClick={(event) => onCreate(event.currentTarget)}
       >
         <Icon name="plus" size={14} />
-        <span className="ib-crdp-open-l">Create thread</span>
+        <span className="ib-crdp-open-l">新建会话</span>
       </button>
     </Tip>
   );
@@ -564,7 +567,7 @@ function Notes({ card, onSave, text: render }: { card: InboxCardWire; onSave: (n
         }}
       >
         <label className="ib-sr" htmlFor={`ib-notes-${card.id}`}>
-          Notes
+          备注
         </label>
         <textarea
           id={`ib-notes-${card.id}`}
@@ -583,15 +586,15 @@ function Notes({ card, onSave, text: render }: { card: InboxCardWire; onSave: (n
         />
         {failed && (
           <p className="ib-error" role="alert">
-            The notes were not saved. Try again.
+            备注未保存，请重试。
           </p>
         )}
         <div className="ib-crdp-notesacts">
           <button type="button" className="ib-btn ib-ghost ib-sm" onClick={() => setEditing(false)}>
-            Cancel
+            取消
           </button>
           <button type="submit" className="ib-btn ib-pri ib-sm" data-card-notes-save="">
-            Save
+            保存
           </button>
         </div>
       </form>
@@ -606,38 +609,38 @@ function Notes({ card, onSave, text: render }: { card: InboxCardWire; onSave: (n
           </p>
         ))
       ) : (
-        <p className="ib-crdp-nonotes">No notes.</p>
+        <p className="ib-crdp-nonotes">没有备注。</p>
       )}
       <button ref={edit} type="button" className="ib-lnk" onClick={() => setEditing(true)} data-card-notes-edit="">
-        {card.notes ? 'Edit notes' : 'Add notes'}
+        {card.notes ? '编辑备注' : '添加备注'}
       </button>
     </div>
   );
 }
 
 function ThreadRow({ threadId, row, sent, now, onOpen }: { threadId: string; row: InboxListRow | null; sent: boolean; now: number; onOpen: () => void }) {
-  const subject = row?.subject ?? 'A thread';
+  const subject = row?.subject ?? '一个会话';
   const section = row ? (INBOX_SECTIONS.find((s) => s.id === row.section)?.label ?? null) : null;
   const waiting = row ? row.section === 'stopped' || row.section === 'holding' || row.section === 'waiting' : false;
   return (
     <li>
-      <button type="button" className="ib-crdp-thread" onClick={onOpen} data-card-thread={threadId} aria-label={`Open the thread “${subject}”${section ? `, ${section}` : ''}`}>
+      <button type="button" className="ib-crdp-thread" onClick={onOpen} data-card-thread={threadId} aria-label={`打开会话“${subject}”${section ? `，${section}` : ''}`}>
         <span className="ib-crdp-tt" dir="auto">
           {subject}
         </span>
         <span className="ib-crdp-tm">
           {row?.thread_name && <span className="ib-key">{row.thread_name}</span>}
-          {sent && !waiting ? <span>Sent</span> : section && <span className={waiting ? 'ib-crdp-wait' : undefined}>{section === 'Quiet' ? 'Read' : section}</span>}
-          {row && <span>· {row.message_count === 1 ? '1 message' : `${row.message_count} messages`}</span>}
+          {sent && !waiting ? <span>已发送</span> : section && <span className={waiting ? 'ib-crdp-wait' : undefined}>{section === 'Quiet' ? '已读' : section}</span>}
+          {row && <span>· {row.message_count === 1 ? '1 条消息' : `${row.message_count} 条消息`}</span>}
         </span>
-        {row && <span className="ib-crdp-tat">{cardAge(row.last_at, now).short.replace(' ago', '')}</span>}
+        {row && <span className="ib-crdp-tat">{cardAge(row.last_at, now).short}</span>}
       </button>
     </li>
   );
 }
 
 /** What a link-only source's key is called, for its link's accessible name. */
-const LINK_ONLY_KIND: Record<string, string> = { jira: 'Jira issue', youtrack: 'YouTrack issue', web: 'Link' };
+const LINK_ONLY_KIND: Record<string, string> = { jira: 'Jira 问题', youtrack: 'YouTrack 问题', web: '链接' };
 
 /** One link: its number and, once read, its title and live state (open, draft, checks, merged or closed, with dates). */
 function RefRow({ cardId, refItem, resolved, loading }: { cardId: string; refItem: InboxCardRef; resolved: ForgeRefCardResult | null; loading: boolean }) {
@@ -646,7 +649,7 @@ function RefRow({ cardId, refItem, resolved, loading }: { cardId: string; refIte
   // A link-only source (a Jira or YouTrack issue, any web link): the key or label links, beside the source's mark; no state is read.
   const linkOnly = inboxCardRefIsLinkOnly(refItem);
   const web = refItem.source === 'web';
-  const kind = LINK_ONLY_KIND[refItem.source] ?? (refItem.kind === 'pr' ? 'Pull request' : refItem.kind === 'issue' ? 'Issue' : refItem.kind);
+  const kind = LINK_ONLY_KIND[refItem.source] ?? (refItem.kind === 'pr' ? 'PR' : refItem.kind === 'issue' ? '问题' : refItem.kind);
   // A web link reads as its short label (host and path, cut in the middle), drawn from the URL.
   const number = web ? inboxCardLinkLabel(refItem.url) : refItem.ref.replace(/^.*?(?=[#!]\d+$)/, '');
   const link = (
@@ -844,13 +847,13 @@ function LinkField({ onLink, phone }: { onLink: (ref: string) => Promise<string 
       }}
     >
       <label className="ib-sr" htmlFor="ib-card-link">
-        Add a link
+        添加链接
       </label>
       <input
         id="ib-card-link"
         type="text"
         // Any web link, or GitHub's owner/repo#123; a phone's narrow field keeps the short form whole.
-        placeholder={phone ? 'Paste a link' : 'Paste a link, or owner/repo#123'}
+        placeholder={phone ? '粘贴链接' : '粘贴链接，或 owner/repo#123'}
         value={text} onChange={(event) => setText(event.target.value)} data-card-link-field="" />
       {error && (
         <p className="ib-error" role="alert">

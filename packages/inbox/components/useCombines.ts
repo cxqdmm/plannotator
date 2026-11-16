@@ -8,7 +8,6 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { InboxCombineRecord, InboxListRow } from '@plannotator/core/inbox-types';
-import { plural } from '@plannotator/core/inbox-format';
 import { bulkWrites, type BulkHost, type BulkWrites } from '../bulkWrites';
 import { combineApi } from '../combineApi';
 import { rememberMachine } from '../inboxUrl';
@@ -64,9 +63,9 @@ const tellKey = (record: InboxCombineRecord) => `${record.id}:${record.state}`;
 const tell = (record: InboxCombineRecord) => writeList(TOLD_KEY, [...told().filter((t) => t !== tellKey(record)), tellKey(record)].slice(-TOLD_KEPT));
 
 const FAILED: Record<NonNullable<InboxCombineRecord['reason']>, string> = {
-  ended: 'Its session ended. Nothing was archived.',
-  nothing: 'It finished without writing the new thread. Nothing was archived.',
-  timeout: 'It never wrote the new thread. Nothing was archived.',
+  ended: '它的会话已结束。没有归档任何内容。',
+  nothing: '它已完成，但未写入新会话。没有归档任何内容。',
+  timeout: '它始终没有写入新会话。没有归档任何内容。',
 };
 
 /** A watched Combine's machine can be read now: this one, or a linked one there that takes Combines. */
@@ -97,9 +96,9 @@ export function useCombines(bulk: BulkWrites | undefined, machines: MachinesMode
         await host.restoreSnooze(row.thread_id, row.snoozed);
         await host.restorePriority(row.thread_id, row.priority);
       }
-      host.say('Combine undone.');
+      host.say('已撤销合并。');
     } catch (cause) {
-      host.showToast(errorToast(cause, 'The threads did not come back.'));
+      host.showToast(errorToast(cause, '会话没有回来。'));
     }
     void host.afterWrite(t.record.threads.map((thread) => thread.id));
   }, []);
@@ -115,14 +114,14 @@ export function useCombines(bulk: BulkWrites | undefined, machines: MachinesMode
       if (next.state !== 'failed') unwatch(next.id);
       if (!host || told().includes(tellKey(next)) || (next.state !== 'done' && next.state !== 'failed') || was === next.state) return;
       tell(next);
-      const n = plural(next.threads.length, 'thread');
+      const n = `${next.threads.length} 个会话`;
       if (next.state === 'done' && next.thread) {
         const opened = next.thread.id;
         if (t.machine) rememberMachine([opened], t.machine);
-        host.showToast({ icon: 'check', lead: `Combined ${n}`, phoneLead: 'Combined', detail: `into “${next.thread.subject}”`, onUndo: () => void undo(t), action: { label: 'Open', onPress: () => host.openThread(opened) } });
+        host.showToast({ icon: 'check', lead: `已合并 ${n}`, phoneLead: '已合并', detail: `并入“${next.thread.subject}”`, onUndo: () => void undo(t), action: { label: '打开', onPress: () => host.openThread(opened) } });
         void host.afterWrite(next.threads.map((thread) => thread.id));
       } else if (next.state === 'failed') {
-        host.showToast({ icon: 'warn', lead: `${next.name} did not combine the ${n}`, detail: FAILED[next.reason ?? 'timeout'], wrap: true });
+        host.showToast({ icon: 'warn', lead: `${next.name} 未能合并 ${n}`, detail: FAILED[next.reason ?? 'timeout'], wrap: true });
       }
     },
     [undo],
@@ -183,7 +182,7 @@ export function useCombines(bulk: BulkWrites | undefined, machines: MachinesMode
     watch({ id: record.id, machine, at: record.at });
     setFollowing(true);
     sync();
-    host?.showToast({ icon: 'clock', lead: `Asked ${record.name} to combine ${plural(record.threads.length, 'thread')}`, phoneLead: 'Combining', onUndo: () => void stop(record.id) });
+    host?.showToast({ icon: 'clock', lead: `已请 ${record.name} 合并 ${record.threads.length} 个会话`, phoneLead: '正在合并', onUndo: () => void stop(record.id) });
   };
   /** Stop one still waiting (its toast's Undo, or a row's Stop combining). */
   const stop = async (id: string) => {
@@ -195,9 +194,9 @@ export function useCombines(bulk: BulkWrites | undefined, machines: MachinesMode
       const { combine } = await combineApi.change(id, 'cancel', t.machine);
       settle(t, combine);
       sync();
-      host.say('Combine stopped.');
+      host.say('合并已停止。');
     } catch (cause) {
-      host.showToast(errorToast(cause, 'The Combine did not stop.'));
+      host.showToast(errorToast(cause, '合并未能停止。'));
     }
   };
   return { waiting, begin, stop };

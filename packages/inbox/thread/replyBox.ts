@@ -12,7 +12,7 @@ export const SHOW_NEW_MESSAGE_BUTTON = false;
 export const REPLY_FILES_SUMMARY_FROM = 7;
 /** `/side`, the reply box's built-in command for the side chat: its name in the "/" list and the list's one line. */
 export const SIDE_COMMAND_NAME = 'side';
-export const SIDE_COMMAND_DESCRIPTION = 'Start a side conversation with your agent';
+export const SIDE_COMMAND_DESCRIPTION = '与你的 agent 开始侧边对话';
 /** How long "No skills are installed" stays in the reply box's row after a press on Skills with none to pick. */
 export const NO_SKILLS_HINT_MS = 2000;
 
@@ -45,4 +45,4 @@ export function focusReplyFromBox(event: ReactMouseEvent<HTMLElement>, field: HT
   field.setSelectionRange(end, end);
 }
 
-export const THREAD_GONE_TEXT = 'This thread was deleted, so nothing was sent.';
+export const THREAD_GONE_TEXT = '此会话已被删除，未发送任何内容。';

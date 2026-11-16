@@ -22,8 +22,8 @@ import { Icon } from '../icons';
 import { useInboxPalettes } from '../theme';
 
 const HALVES: { id: ThemeHalf; label: string; icon: 'sun' | 'moon' }[] = [
-  { id: 'light', label: 'Light', icon: 'sun' },
-  { id: 'dark', label: 'Dark', icon: 'moon' },
+  { id: 'light', label: '浅色', icon: 'sun' },
+  { id: 'dark', label: '深色', icon: 'moon' },
 ];
 
 const PALETTE_LIST_ID = 'ib-palette-list';
@@ -88,10 +88,10 @@ export function PaletteRow() {
       <div className="ib-prow ib-palhead">
         <span className="ib-txt">
           <span className="ib-l" id="ib-colors-label">
-            Colors
+            配色
           </span>
           <span className="ib-desc" data-palette-summary="">
-            Light: {nameOf(pair.light)} · Dark: {nameOf(pair.dark)}. {shown === half ? 'On screen now.' : `Shows when the Inbox is ${half}.`}
+            浅色：{nameOf(pair.light)} · 深色：{nameOf(pair.dark)}。{shown === half ? '当前显示中。' : `在收件箱为${half === 'light' ? '浅色' : '深色'}时显示。`}
           </span>
         </span>
         <span className="ib-ctl">
@@ -109,7 +109,7 @@ export function PaletteRow() {
                   data-half={choice.id}
                   aria-selected={on}
                   aria-controls={PALETTE_LIST_ID}
-                  aria-label={`${choice.label} half`}
+                  aria-label={`${choice.label}半`}
                   tabIndex={on ? 0 : -1}
                   onClick={() => setHalf(choice.id)}
                 >
@@ -126,7 +126,7 @@ export function PaletteRow() {
         id={PALETTE_LIST_ID}
         className="ib-pals"
         role="radiogroup"
-        aria-label={`Palettes for the ${half} half`}
+        aria-label={`${half === 'light' ? '浅色' : '深色'}半的配色`}
         data-palette-half={half}
         onKeyDown={onTileKey}
       >

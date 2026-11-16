@@ -25,14 +25,14 @@ import { REVEAL_TIMES, claimRevealOnce, noteOneTimeDialogShown, oneTimeDialogSho
 import { newUuid } from './uuid';
 
 export const SIDEBAR_TIP_WORDS = {
-  eyebrow: 'New',
-  title: 'Make the sidebar yours',
-  line: 'Hide what you don’t use and reorder the rest. Right-click the sidebar to start.',
-  ok: 'Got it',
+  eyebrow: '新',
+  title: '打造你的侧边栏',
+  line: '隐藏不用的项目，重新排列其余项目。右键点击侧边栏开始。',
+  ok: '知道了',
 } as const;
 
 /** What a screen reader hears once, through the window's polite region. */
-export const SIDEBAR_TIP_SAID = `${SIDEBAR_TIP_WORDS.eyebrow}: ${SIDEBAR_TIP_WORDS.title}. ${SIDEBAR_TIP_WORDS.line}`;
+export const SIDEBAR_TIP_SAID = `${SIDEBAR_TIP_WORDS.eyebrow}：${SIDEBAR_TIP_WORDS.title}。${SIDEBAR_TIP_WORDS.line}`;
 
 /** The card's timings, ms. A test shrinks them (and puts them back). */
 export const SIDEBAR_TIP_TIMES = {

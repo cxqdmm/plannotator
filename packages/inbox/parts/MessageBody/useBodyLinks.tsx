@@ -72,14 +72,14 @@ export function useBodyLinks({
         const path = attachmentDisplayPath(file, projectRoot);
         return {
           kind: 'open',
-          title: version === 'sent' ? `Open the sent version of ${path} beside the thread` : openAttachmentTitle(path),
+          title: version === 'sent' ? `在会话旁打开 ${path} 的已发送版本` : openAttachmentTitle(path),
           href: attachmentDeepLink(message.thread_id, file.id, version),
           open: () => openReplyFileRef.current?.(file, version),
         };
       }
       if (replyLink?.kind === 'markup') {
         const src = replyLink.src;
-        return { kind: 'open', title: 'Show the drawing', href: src, open: () => setFallback({ src, alt: 'Your drawing' }) };
+        return { kind: 'open', title: '显示绘图', href: src, open: () => setFallback({ src, alt: '你的绘图' }) };
       }
       const attachment = attachmentForLink(href, { attachments: message.attachments ?? [], root: projectRoot, base: message.base_path ?? null });
       const named = !attachment && refsOn ? projectFileOfLink(href) : null;

@@ -18,7 +18,7 @@ import { pinnedState, type PinnedState } from './pins';
 export const STARRED_ABOVE_COOKIE = 'plannotator-inbox-starred-above';
 
 /** The ⋮ menu item's words. */
-export const STARRED_ABOVE_LABEL = 'Keep starred above the list';
+export const STARRED_ABOVE_LABEL = '在列表上方保留星标';
 
 /** The remembered choice; anything but "1" (or no cookie) is off. */
 export function readStarredAbove(): boolean {
@@ -113,7 +113,7 @@ export function starredPills(rows: readonly InboxListRow[], labelOf: (row: Inbox
  * its glyph alone), so a pill that waits says "1 question", as the sidebar's starred row does.
  */
 export function pillStateWords(state: PinnedState): string {
-  return state.words || (state.kind === 'wait' ? '1 question' : '');
+  return state.words || (state.kind === 'wait' ? '1 个问题' : '');
 }
 
 /**
@@ -121,13 +121,13 @@ export function pillStateWords(state: PinnedState): string {
  * built from the parts that say something, so a state with no words never leaves an empty ", ," in it.
  */
 export function pillName(pill: StarredPill): string {
-  return [pill.label, pill.project, pillStateWords(pill.state), 'starred'].filter((part) => part.trim() !== '').join(', ');
+  return [pill.label, pill.project, pillStateWords(pill.state), '已星标'].filter((part) => part.trim() !== '').join('，');
 }
 
 /** The "+N" pill's accessible name: "22 more starred", and ", 1 waiting on you" when a hidden one waits. */
 export function moreName(hidden: readonly StarredPill[]): string {
   const waiting = hidden.filter((pill) => pillWaits(pill.state)).length;
-  return `${hidden.length} more starred${waiting > 0 ? `, ${waiting} waiting on you` : ''}`;
+  return `另外 ${hidden.length} 个已星标${waiting > 0 ? `，${waiting} 个等你处理` : ''}`;
 }
 
 /**

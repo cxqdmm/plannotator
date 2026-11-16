@@ -7,7 +7,7 @@ import { errorText, noEnter } from './cloudShared';
 function KindPicker({ value, disabled, onChange }: { value: InboxCloudPreset; disabled: boolean; onChange: (preset: InboxCloudPreset) => void }) {
   return (
     <fieldset className="ib-cl-kinds-f" disabled={disabled}>
-      <legend className="ib-l">Kind</legend>
+      <legend className="ib-l">类型</legend>
       <div className="ib-cl-kinds">
         {INBOX_CLOUD_PRESETS.map((id) => (
           <label key={id} className="ib-cl-kind" data-on={value === id ? '' : undefined} data-cloud-kind={id}>
@@ -51,14 +51,14 @@ export function CloudPairForm({
 
   return (
     <div className="ib-mform ib-cl-pair" data-cloud-pair-form="">
-      <span className="ib-cl-step-t">Pair a cloud agent</span>
+      <span className="ib-cl-step-t">配对云端 agent</span>
       <KindPicker value={preset} disabled={busy} onChange={setPreset} />
       <label className="ib-mfield">
-        <span className="ib-l">Name</span>
-        <input ref={first} type="text" className="ib-fbk-contact" placeholder="Nightly fixer" maxLength={60} autoComplete="off" value={name} readOnly={busy} onChange={(event) => setName(event.target.value)} onKeyDown={noEnter} data-cloud-name="" />
+        <span className="ib-l">名称</span>
+        <input ref={first} type="text" className="ib-fbk-contact" placeholder="夜间修复机器人" maxLength={60} autoComplete="off" value={name} readOnly={busy} onChange={(event) => setName(event.target.value)} onKeyDown={noEnter} data-cloud-name="" />
       </label>
       <span className="ib-cl-note">
-        It can read and write across this Inbox, under its own name.
+        它可以在这整个收件箱中读写，且始终以自己的名义。
       </span>
       {error && (
         <div className="ib-callout ib-err" role="alert" data-cloud-pair-error="">
@@ -68,10 +68,10 @@ export function CloudPairForm({
       )}
       <div className="ib-mform-f">
         <button type="button" className="ib-btn ib-ghost" onClick={onCancel} disabled={busy}>
-          Cancel
+          取消
         </button>
         <button type="button" className={`ib-btn ib-pri${ready ? '' : ' ib-dim'}`} aria-disabled={!ready} onClick={() => void submit()} data-cloud-pair-submit="">
-          {busy ? 'Pairing…' : 'Pair'}
+          {busy ? '正在配对…' : '配对'}
         </button>
       </div>
     </div>

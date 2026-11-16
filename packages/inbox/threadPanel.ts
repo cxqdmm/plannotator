@@ -18,7 +18,7 @@ import { storage } from '@plannotator/ui/utils/storage';
 export const THREAD_PANEL_COOKIE = 'plannotator-inbox-thread-panel';
 
 /** The ⋮ menu item's words. */
-export const THREAD_PANEL_LABEL = 'Keep thread panel open';
+export const THREAD_PANEL_LABEL = '保持会话面板打开';
 
 /** The remembered choice; anything but "1" (or no cookie) is off. */
 export function readThreadPanel(): boolean {

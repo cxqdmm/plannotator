@@ -8,7 +8,7 @@ export async function restartInbox(before: string | undefined, viaTailnet: boole
   setRestarting(true);
   const notBack = () => {
     setRestarting(false);
-    if (viaTailnet) showToast({ icon: 'warn', lead: 'The Inbox hasn’t come back yet. If it stays away, start it on the computer.', wrap: true }, RESTART_NOT_BACK_MS);
+    if (viaTailnet) showToast({ icon: 'warn', lead: '收件箱尚未恢复。如果一直没有恢复，请在计算机上启动它。', wrap: true }, RESTART_NOT_BACK_MS);
   };
   try {
     await inboxApi.restart();

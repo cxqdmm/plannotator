@@ -38,7 +38,7 @@ import {
 import { all, born, clearFlip, easeOut, FULL_LINES, FULL_WORDS, placesOf, startFlip, type Flip } from './flip.ts';
 import { KeyCard, NotesCard } from './cards.tsx';
 import { applyChange, applyTouches, hasSteps, type ChangeView, type Touch } from '../change/apply.ts';
-import { changeSummary, isRevision, type ChangeFile } from '../change/summary.ts';
+import { changeSummary, isRevision, type ChangeFile, CHANGE_IS_WORDS } from '../change/summary.ts';
 import { PartsList } from './PartsList.tsx';
 import { StepsStage } from './StepsStage.tsx';
 
@@ -373,7 +373,7 @@ export function SystemView({
       // no window to climb into: the sheet around comes back at once
       setCur(P.pcode);
       camRef.current = Bout;
-      name(P.pcode, `Out to ${scopeLabel(model, model.sheets[P.pcode]!.scope)}`);
+      name(P.pcode, `返回 ${scopeLabel(model, model.sheets[P.pcode]!.scope)}`);
       draw(false);
       then?.();
       return;
@@ -389,7 +389,7 @@ export function SystemView({
       part: P.part, code: c1, r, s: sc, t: 1, t0: 0, leg: { x0: 1, w0: 1, to: 0 }, A: Bout, B: c2, then, done: false, S: { x: 1, v: 0, to: 1 },
       restIn: () => c,
       onIn: () => landIn(P.part, c1, r, sc, P.pcode!), // turned back in
-      onOut: () => { putDive(null); name(P.pcode!, `Out to ${scopeLabel(model, model.sheets[P.pcode!]!.scope)}`); draw(false); if (D.then) setTimeout(D.then, 40); },
+      onOut: () => { putDive(null); name(P.pcode!, `返回 ${scopeLabel(model, model.sheets[P.pcode!]!.scope)}`); draw(false); if (D.then) setTimeout(D.then, 40); },
     };
     putDive(D);
     diveTo(D, 0);
@@ -422,7 +422,7 @@ export function SystemView({
           camRef.current = { ...c, k: c.k / P.s, cx: P.r.x + c.cx * P.s, cy: P.r.y + c.cy * P.s };
           setCur(P.pcode);
           near.current = P.part;
-          name(P.pcode, `Out to ${scopeLabel(model, model.sheets[P.pcode]!.scope)}`);
+          name(P.pcode, `返回 ${scopeLabel(model, model.sheets[P.pcode]!.scope)}`);
           draw();
           return true;
         }
@@ -842,16 +842,16 @@ export function SystemView({
   ) : null;
   const legend = change && summary && layout === 'window' && vw === 'after' ? (
     plan ? (
-      <div className="sys-legend sys-legend-key" aria-label="Key to the plan">
-        <span className="sys-lg-i"><span className="sys-sw sys-sw-added" aria-hidden="true" />new, proposed</span>
-        <span className="sys-lg-i"><span className="sys-sw sys-sw-changed" aria-hidden="true" />changes, proposed</span>
-        <span className="sys-lg-i"><span className="sys-sw" aria-hidden="true" />as built today</span>
+      <div className="sys-legend sys-legend-key" aria-label="计划图例">
+        <span className="sys-lg-i"><span className="sys-sw sys-sw-added" aria-hidden="true" />新增，尚未实现</span>
+        <span className="sys-lg-i"><span className="sys-sw sys-sw-changed" aria-hidden="true" />改动，尚未实现</span>
+        <span className="sys-lg-i"><span className="sys-sw" aria-hidden="true" />当前已实现</span>
       </div>
     ) : (
-      <ol className="sys-legend" aria-label="The change on this sheet">
+      <ol className="sys-legend" aria-label="此图纸上的改动">
         {summary.parts.map((p, i) => (
-          <li key={p.id} className={'sys-lg-i sys-ink-' + p.is + (L?.parts[p.id] ? '' : ' sys-lg-off')} title={L?.parts[p.id] ? undefined : 'On another sheet'}>
-            <span className="sys-lg-n">{i + 1}</span>{p.name} {p.is}
+          <li key={p.id} className={'sys-lg-i sys-ink-' + p.is + (L?.parts[p.id] ? '' : ' sys-lg-off')} title={L?.parts[p.id] ? undefined : '在另一张图纸上'}>
+            <span className="sys-lg-n">{i + 1}</span>{p.name} {CHANGE_IS_WORDS[p.is]}
             {p.files[0] && <span className="sys-mono sys-lg-f">{p.files[0].split('/').slice(-2).join('/')}</span>}
           </li>
         ))}
@@ -861,7 +861,7 @@ export function SystemView({
   ) : null;
 
   const crumbs = (
-    <nav className="sys-crumbs" aria-label="Where this sheet is">
+    <nav className="sys-crumbs" aria-label="当前图纸的位置">
       {projectCrumb && <span className="sys-crumb">{projectCrumb}</span>}
       {path.map(([id, label], i) => {
         const here = i === path.length - 1;
@@ -871,7 +871,7 @@ export function SystemView({
             {here ? (
               <span className="sys-crumb sys-here" aria-current="location">{label}</span>
             ) : (
-              <button type="button" className="sys-crumb sys-crumb-b" title={`Up to ${label}`} onClick={() => travel(childFor(id) ?? model.root)}>{label}</button>
+              <button type="button" className="sys-crumb sys-crumb-b" title={`返回 ${label}`} onClick={() => travel(childFor(id) ?? model.root)}>{label}</button>
             )}
           </span>
         );
@@ -923,10 +923,10 @@ export function SystemView({
             )
           )}
           {rev && onView && (
-            <div className="sys-seg" role="radiogroup" aria-label={plan ? 'As built or as planned' : 'Before or after'}>
+            <div className="sys-seg" role="radiogroup" aria-label={plan ? '已实现或按计划' : '改动前或改动后'}>
               {(['before', 'after', ...(canSteps ? ['steps' as const] : [])] as const).map((v) => (
                 <button key={v} type="button" role="radio" aria-checked={vw === v} className="sys-seg-o" data-on={vw === v ? '' : undefined} onClick={() => vw !== v && onView(v)}>
-                  {v === 'steps' ? 'Steps' : v === 'before' ? (plan ? 'As built' : 'Before') : plan ? 'As planned' : 'After'}
+                  {v === 'steps' ? '步骤' : v === 'before' ? (plan ? '已实现' : '改动前') : plan ? '按计划' : '改动后'}
                 </button>
               ))}
             </div>
@@ -935,11 +935,11 @@ export function SystemView({
           {layout === 'pane' && onOpenFull && (
             <button type="button" className="sys-btn" onClick={() => onOpenFull()}>
               <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4M13.5 2.5L8 8M6.5 3.5h-3v9h9v-3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              Open full window
+              打开全窗口
             </button>
           )}
           {onClose && (
-            <button type="button" className="sys-icon-btn" aria-label="Close" onClick={() => onClose()}>
+            <button type="button" className="sys-icon-btn" aria-label="关闭" onClick={() => onClose()}>
               <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
             </button>
           )}
@@ -998,20 +998,20 @@ export function SystemView({
             )}
           </div>
         )}
-        {!s && <div className="sys-empty">This drawing has no sheet {sheet ? `called ${sheet}` : 'yet'}.</div>}
+        {!s && <div className="sys-empty">这张图没有{sheet ? `名为 ${sheet} 的图纸` : '任何图纸'}。</div>}
         {s && (
-          <div className="sys-zoom" role="group" aria-label="Zoom">
-            <button type="button" onClick={() => zoomBy(1 / ZOOM_STEP)} aria-label="Zoom out" title="Zoom out (-)">
+          <div className="sys-zoom" role="group" aria-label="缩放">
+            <button type="button" onClick={() => zoomBy(1 / ZOOM_STEP)} aria-label="缩小" title="缩小 (-)">
               <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
             </button>
-            <button type="button" className="sys-pct" onClick={fit} aria-label={`Sheet at ${pct} percent. Fit the sheet`} title="Fit the sheet (F)">{pct}%</button>
-            <button type="button" onClick={() => zoomBy(ZOOM_STEP)} aria-label="Zoom in" title="Zoom in (+)">
+            <button type="button" className="sys-pct" onClick={fit} aria-label={`图纸缩放 ${pct}%。适应图纸`} title="适应图纸 (F)">{pct}%</button>
+            <button type="button" onClick={() => zoomBy(ZOOM_STEP)} aria-label="放大" title="放大 (+)">
               <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6h8M6 2v8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
             </button>
             <span className="sys-zsep" aria-hidden="true" />
-            <button type="button" aria-expanded={keyOpen} onClick={() => { setKeyOpen((v) => !v); setNotesOpen(false); }} title="Symbols and keys">Key</button>
+            <button type="button" aria-expanded={keyOpen} onClick={() => { setKeyOpen((v) => !v); setNotesOpen(false); }} title="符号与键">图例</button>
             {!!L?.notes.length && (
-              <button ref={notesBtn} type="button" aria-expanded={notesOpen} onClick={() => { setNotesOpen((v) => !v); setKeyOpen(false); }} title={keys ? 'Every note of this sheet (N)' : 'Every note of this sheet'}>Notes</button>
+              <button ref={notesBtn} type="button" aria-expanded={notesOpen} onClick={() => { setNotesOpen((v) => !v); setKeyOpen(false); }} title={keys ? '此图纸的所有注释 (N)' : '此图纸的所有注释'}>注释</button>
             )}
           </div>
         )}

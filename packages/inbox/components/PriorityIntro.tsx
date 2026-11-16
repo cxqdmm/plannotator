@@ -17,13 +17,13 @@ import { Modal } from './Updates';
 import type { PriorityIntroPicture } from '../priorityIntro';
 
 export const PRIORITY_INTRO_COPY = {
-  title: 'Put a thread first in your list',
-  body: 'Pick Add to Priority on any thread. It stays above everything else until you remove it or archive it.',
-  howComputer: 'Right-click a thread, or open its ⋯ menu, and pick',
-  howPhone: 'Press and hold a thread, then pick',
-  item: 'Add to Priority',
-  gotIt: 'Got it',
-  tryIt: 'Try it',
+  title: '将会话置顶到列表最前',
+  body: '在任意会话上选择“添加到优先级”。它会一直排在最前面，直到你移除或归档它。',
+  howComputer: '右键点击会话，或打开它的 ⋯ 菜单，然后选择',
+  howPhone: '长按会话，然后选择',
+  item: '添加到优先级',
+  gotIt: '知道了',
+  tryIt: '试一试',
 } as const;
 
 const noop = () => {};
@@ -46,7 +46,7 @@ function MenuItems({ phone }: { phone: boolean }) {
     <>
       <div className="ib-pmi">
         <Icon name="star" size={15} />
-        Star thread
+        星标会话
       </div>
       <div className="ib-pmi" data-highlighted="" data-priority-intro-item="">
         <Icon name="toTop" size={15} />
@@ -58,7 +58,7 @@ function MenuItems({ phone }: { phone: boolean }) {
           <div className="ib-pm-sep" />
           <div className="ib-pmi">
             <Icon name="stack" size={15} />
-            Copy thread
+            复制会话
           </div>
         </>
       )}
@@ -130,7 +130,7 @@ export function PriorityIntro({ picture, projectNames, phone, onGotIt, onTry, on
           <section className={`ib-listcol${phone ? '' : ' ib-narrow'} ib-pqi-list`}>
             <div className="ib-lbody">
               <div className="ib-group" data-section-id="priority">
-                <Band label="Priority" count={1} />
+                <Band label="优先级" count={1} />
                 <Row row={landed} project={name(landed)} drawn="priority" phone={phone} />
               </div>
               {below && !phone && (
@@ -144,7 +144,7 @@ export function PriorityIntro({ picture, projectNames, phone, onGotIt, onTry, on
         </div>
       </div>
       <div className="ib-lo-text">
-        <div className="ib-zx-new">New</div>
+        <div className="ib-zx-new">新</div>
         <h2 id="ib-pqi-title">{PRIORITY_INTRO_COPY.title}</h2>
         <p id="ib-pqi-desc">{PRIORITY_INTRO_COPY.body}</p>
         <p className="ib-zx-hint">
@@ -152,7 +152,7 @@ export function PriorityIntro({ picture, projectNames, phone, onGotIt, onTry, on
             <Icon name="toTop" size={14} />
           </span>
           <span>
-            {phone ? PRIORITY_INTRO_COPY.howPhone : PRIORITY_INTRO_COPY.howComputer} <b>{PRIORITY_INTRO_COPY.item}</b>.
+            {phone ? PRIORITY_INTRO_COPY.howPhone : PRIORITY_INTRO_COPY.howComputer} <b>{PRIORITY_INTRO_COPY.item}</b>。
           </span>
         </p>
       </div>

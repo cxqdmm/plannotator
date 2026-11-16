@@ -17,14 +17,14 @@ type PageSettings = Pick<SettingsModel, 'via'> | null;
 export function sidebarUpdateNotice(state: UpdateState | null | undefined, restarting: boolean, checkFailing = false): SidebarToggleNotice | null {
   if (restarting) return null;
   // Checking has failed for hours: the quiet "Can't check for updates" row is in the sidebar too (neutral, like Failed).
-  if (!state) return checkFailing ? { tone: 'neutral', label: "can't check for updates" } : null;
+  if (!state) return checkFailing ? { tone: 'neutral', label: '无法检查更新' } : null;
   switch (state) {
     case 'available':
-      return { tone: 'primary', label: 'update available' };
+      return { tone: 'primary', label: '有可用更新' };
     case 'ready':
-      return { tone: 'primary', label: 'update ready' };
+      return { tone: 'primary', label: '更新已就绪' };
     case 'failed':
-      return { tone: 'neutral', label: 'update failed' };
+      return { tone: 'neutral', label: '更新失败' };
     default:
       return null;
   }

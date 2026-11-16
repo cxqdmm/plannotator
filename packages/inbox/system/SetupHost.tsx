@@ -54,8 +54,8 @@ export function SystemSetupHost({ settings, phone, showToast, api }: SystemSetup
         showToast(
           {
             icon: 'check',
-            lead: 'Prompt copied',
-            phoneLead: 'Copied',
+            lead: '提示词已复制',
+            phoneLead: '已复制',
             detail: `Paste it into ${SYSTEM_AGENT_NAMES[saved.agent]} in ${project.name}`,
             speech: `Prompt copied. Paste it into ${SYSTEM_AGENT_NAMES[saved.agent]} in ${project.name}: it draws the first drawing.`,
           },

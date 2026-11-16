@@ -19,7 +19,7 @@ export const DRAWING_SCREEN = {
   escapeCancels: true,
   hint: (
     <>
-      <kbd className="ib-markkey">Enter</kbd> or ✓ adds to your reply · <kbd className="ib-markkey">Esc</kbd> cancels
+      <kbd className="ib-markkey">Enter</kbd> 或 ✓ 添加到回复 · <kbd className="ib-markkey">Esc</kbd> 取消
     </>
   ),
 } as const;
@@ -38,7 +38,7 @@ export function OverWindow({ children }: { children: ReactNode }) {
 
 /** "Markup added to your reply · Undo": the window's toast, its Undo (and Z, where the toast takes it) removing the comment. */
 export function markupAddedToast(onUndo: () => void): Omit<InboxToastModel, 'id'> {
-  return { icon: 'check', lead: 'Markup added to your reply', phoneLead: 'Added to your reply', speech: 'Markup added to your reply.', onUndo };
+  return { icon: 'check', lead: '涂鸦已添加到回复', phoneLead: '已添加到回复', speech: '涂鸦已添加到回复。', onUndo };
 }
 
 /**
@@ -49,16 +49,16 @@ export function markupAddedToast(onUndo: () => void): Omit<InboxToastModel, 'id'
 export function KeptMarkup({ image, onRedraw, onRemove, wide = false }: { image: ImageAttachment; onRedraw: () => void; onRemove: () => void; wide?: boolean }) {
   return (
     <span className={`ib-kept${wide ? ' ib-kept-wide' : ''}`} data-markup-kept="">
-      <Tip content="In your reply · Draw again">
-        <button type="button" className="ib-kept-img" onClick={onRedraw} aria-label="Your drawing is in your reply. Draw again" data-markup-redraw="">
+      <Tip content="已在回复中 · 重新绘制">
+        <button type="button" className="ib-kept-img" onClick={onRedraw} aria-label="你的涂鸦已在回复中。重新绘制" data-markup-redraw="">
           <img src={getImageSrc(image.path)} alt="" />
           <span className="ib-kept-ok" aria-hidden="true">
             <Icon name="check" size={9} />
           </span>
         </button>
       </Tip>
-      <Tip content="Remove from your reply">
-        <button type="button" className="ib-kept-x" onClick={onRemove} aria-label="Remove the drawing from your reply" data-markup-remove="">
+      <Tip content="从回复中移除">
+        <button type="button" className="ib-kept-x" onClick={onRemove} aria-label="从回复中移除涂鸦" data-markup-remove="">
           <Icon name="x" size={10} />
         </button>
       </Tip>

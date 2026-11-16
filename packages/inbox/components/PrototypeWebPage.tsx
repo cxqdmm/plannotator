@@ -47,7 +47,7 @@ export function WebPage(props: {
       });
       props.onSaved(answer.annotation);
     } catch (cause) {
-      setError(cause instanceof InboxApiError ? cause.message : 'The comment was not saved.');
+      setError(cause instanceof InboxApiError ? cause.message : '评论未能保存。');
     }
   };
 
@@ -68,11 +68,11 @@ export function WebPage(props: {
         />
       ) : (
         <p className="ib-pw-line" data-prototype-not-framed="">
-          {hostOf(props.url)} does not let other pages show it.{' '}
+          {hostOf(props.url)} 不允许其他页面显示它。{' '}
           <a className="ib-pw-again" href={props.url} target="_blank" rel="noopener noreferrer">
-            Open it in a new tab
+            在新标签页中打开
           </a>
-          , then come back to pick.
+          ，然后返回这里挑选。
         </p>
       )}
       {props.commentAnchor &&

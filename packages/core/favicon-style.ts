@@ -21,9 +21,9 @@ export const DEFAULT_FAVICON_STYLE: FaviconStyle = 'glass';
 
 /** The choices, in the order they are shown, with the names people see. */
 export const FAVICON_STYLE_CHOICES: readonly { id: FaviconStyle; label: string }[] = [
-  { id: 'glass', label: 'Glass' },
-  { id: 'yellow', label: 'Yellow' },
-  { id: 'totman', label: 'Face' },
+  { id: 'glass', label: '玻璃' },
+  { id: 'yellow', label: '黄色' },
+  { id: 'totman', label: '人脸' },
 ];
 
 export function isFaviconStyle(value: unknown): value is FaviconStyle {

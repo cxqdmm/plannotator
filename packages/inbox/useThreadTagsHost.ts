@@ -86,9 +86,9 @@ const [tagPatches, setTagPatches] = useState<ReadonlyMap<string, readonly string
     }
     showToast({
       icon: 'check',
-      lead: on ? 'Tagged' : 'Removed',
-      detail: on ? tag.name : `from ${tag.name}`,
-      speech: on ? `Tagged ${tag.name}.` : `Removed from ${tag.name}.`,
+      lead: on ? '已添加标签' : '已移除标签',
+      detail: on ? tag.name : `已从 ${tag.name} 移除`,
+      speech: on ? `已添加标签 ${tag.name}。` : `已从 ${tag.name} 移除。`,
       onUndo: () => void setThreadTag(threadId, tag, !on, false),
     });
   };

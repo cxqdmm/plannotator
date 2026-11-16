@@ -240,10 +240,10 @@ export function useReplyFloaters(options: ReplyFloatersOptions): { layer: ReactN
       unfloatThread(id);
       toast({
         icon: 'check',
-        lead: 'Stays in Drafts',
-        speech: 'It stopped floating. The reply stays in Drafts.',
+        lead: '留在草稿中',
+        speech: '已停止悬浮。回复会留在草稿中。',
         action: {
-          label: 'Drafts',
+          label: '草稿',
           onPress: () => {
             dismissToast();
             openDrafts();
@@ -269,11 +269,11 @@ export function useReplyFloaters(options: ReplyFloatersOptions): { layer: ReactN
       void refresh.current();
       toast({
         icon: 'check',
-        lead: `Sent to ${agent}`,
-        detail: `in ${row.project.name}`,
-        speech: `Sent to ${agent} in ${row.project.name}.`,
+        lead: `已发送给 ${agent}`,
+        detail: `在 ${row.project.name} 中`,
+        speech: `已发送给 ${row.project.name} 中的 ${agent}。`,
         action: {
-          label: 'Open',
+          label: '打开',
           onPress: () => {
             dismissToast();
             openThread(row.thread_id);
@@ -291,7 +291,7 @@ export function useReplyFloaters(options: ReplyFloatersOptions): { layer: ReactN
       void refresh.current();
       toast({
         icon: 'check',
-        lead: 'Reply discarded',
+        lead: '回复已丢弃',
         onUndo: () => {
           dismissToast();
           // The words and the files come back together (their uploads are kept until the sweep).
@@ -303,7 +303,7 @@ export function useReplyFloaters(options: ReplyFloatersOptions): { layer: ReactN
               floatThread(row.thread_id);
               return refresh.current();
             })
-            .catch(() => toast({ icon: 'warn', lead: 'The reply could not be restored.', wrap: true }));
+            .catch(() => toast({ icon: 'warn', lead: '无法恢复该回复。', wrap: true }));
         },
       });
       focusLauncher();
@@ -336,7 +336,7 @@ export function useReplyFloaters(options: ReplyFloatersOptions): { layer: ReactN
         kind: 'draft',
         mark: draftMark(row),
         name: floaterName(row),
-        label: `Reply to ${row.author?.kind === 'agent' ? row.author.name : 'the agent'}: ${row.subject ?? floaterName(row)}${row.unseen > 0 ? '. New message.' : ''}`,
+        label: `回复 ${row.author?.kind === 'agent' ? row.author.name : 'agent'}：${row.subject ?? floaterName(row)}${row.unseen > 0 ? '。有新消息。' : ''}`,
         onOpen: () => openBox(row.thread_id),
         onPutAway: () => putAway(row.thread_id),
       }),
@@ -436,7 +436,7 @@ function Stack({ style, items, menu, setMenu, onAll }: StackProps) {
   const shown = items.slice(0, items.length > 6 ? 5 : 6);
   const more = items.length - shown.length;
   const drafts = items.filter((item) => item.kind === 'draft').length;
-  const groupName = items.some((item) => item.kind === 'ask') ? 'Ask AI and draft replies' : 'Draft replies';
+  const groupName = items.some((item) => item.kind === 'ask') ? 'Ask AI 和回复草稿' : '回复草稿';
   return (
     <div
       ref={wrap}
@@ -461,7 +461,7 @@ function Stack({ style, items, menu, setMenu, onAll }: StackProps) {
     >
       {more > 0 && (
         <button type="button" className="ib-rf-card ib-rf-morecard" style={{ '--i': shown.length } as CSSProperties} tabIndex={menu ? 0 : -1} aria-hidden={!menu} onClick={onAll} data-rf-more="">
-          <span className="ib-rf-cardname">{more} more in Drafts</span>
+          <span className="ib-rf-cardname">草稿中还有 {more} 个</span>
         </button>
       )}
       {[...shown].reverse().map((item) => {
@@ -499,7 +499,7 @@ function Stack({ style, items, menu, setMenu, onAll }: StackProps) {
               </span>
             </button>
             {item.onPutAway && (
-              <button type="button" className="ib-rf-ic ib-rf-cardx" aria-label={`Stop floating: ${item.name}`} tabIndex={menu ? 0 : -1} onClick={item.onPutAway}>
+              <button type="button" className="ib-rf-ic ib-rf-cardx" aria-label={`停止悬浮：${item.name}`} tabIndex={menu ? 0 : -1} onClick={item.onPutAway}>
                 <Icon name="x" size={13} />
               </button>
             )}
@@ -530,7 +530,7 @@ function PhoneCorner({ style, items, menu, setMenu, onAll }: StackProps) {
         type="button"
         className="ib-rf-round"
         style={style}
-        aria-label={withAsk ? (drafts.length > 0 ? `Ask AI and ${drafts.length === 1 ? '1 draft reply' : `${drafts.length} draft replies`}` : front.label) : items.length === 1 ? front.label : `Draft replies, ${items.length}`}
+        aria-label={withAsk ? (drafts.length > 0 ? `Ask AI 和 ${drafts.length === 1 ? '1 条回复草稿' : `${drafts.length} 条回复草稿`}` : front.label) : items.length === 1 ? front.label : `回复草稿，${items.length} 条`}
         data-rf-launcher=""
         data-rf-corner=""
         onClick={press}
@@ -539,10 +539,10 @@ function PhoneCorner({ style, items, menu, setMenu, onAll }: StackProps) {
         {(items.length > 1 || (withAsk && drafts.length > 0)) && <span className="ib-rf-badge">{drafts.length || items.length}</span>}
       </button>
       {menu && (
-        <div className="ib-rf-sheetwrap" role="dialog" aria-modal="true" aria-label={withAsk ? 'Ask AI and drafts' : 'Draft replies'} data-popover-layer="" data-chat-window="" data-rf-sheet="">
+        <div className="ib-rf-sheetwrap" role="dialog" aria-modal="true" aria-label={withAsk ? 'Ask AI 和草稿' : '回复草稿'} data-popover-layer="" data-chat-window="" data-rf-sheet="">
           <div className="ib-rf-sheethead">
-            <span className="ib-rf-sheettitle">{withAsk ? 'Ask AI and drafts' : 'Drafts'}</span>
-            <button type="button" className="ib-rf-ic" aria-label="Close" onClick={() => setMenu(false)} autoFocus>
+            <span className="ib-rf-sheettitle">{withAsk ? 'Ask AI 和草稿' : '草稿'}</span>
+            <button type="button" className="ib-rf-ic" aria-label="关闭" onClick={() => setMenu(false)} autoFocus>
               <Icon name="x" size={18} />
             </button>
           </div>
@@ -555,7 +555,7 @@ function PhoneCorner({ style, items, menu, setMenu, onAll }: StackProps) {
                     <span className="ib-rf-rowname" dir="auto">
                       {item.name}
                     </span>
-                    <span className="ib-rf-rowsub">{item.kind === 'ask' ? 'Chat about this thread' : 'Your reply'}</span>
+                    <span className="ib-rf-rowsub">{item.kind === 'ask' ? '聊聊这个会话' : '你的回复'}</span>
                   </span>
                   <span className="ib-rf-cardkind" aria-hidden="true">
                     {item.kind === 'ask' ? <AskSparkle size={15} className="ib-ic" /> : <Icon name="pen" size={15} />}
@@ -564,7 +564,7 @@ function PhoneCorner({ style, items, menu, setMenu, onAll }: StackProps) {
               </div>
             ))}
             <button type="button" className="ib-rf-all" onClick={onAll} data-rf-all="">
-              All drafts
+              所有草稿
             </button>
           </div>
         </div>

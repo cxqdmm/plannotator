@@ -12,59 +12,59 @@ export type InboxAppAction = 'openMap' | 'goInbox' | 'goBoard' | 'goPulls' | 'go
 export function buildInboxAppShortcuts(extras: InboxShortcutExtras = INBOX_SHORTCUT_EXTRAS) {
   const goTo: Partial<Record<InboxAppAction, ShortcutDefinition>> = extras.goTo
     ? {
-        goInbox: { description: 'Go to the Inbox', bindings: ['G I'], section: 'Everywhere', hint: 'Focus lands on the first row, or the open thread’s row.', preventDefault: true, displayOrder: 2 },
-        goBoard: { description: 'Go to the Board', bindings: ['G B'], section: 'Everywhere', hint: 'When the Board is on.', preventDefault: true, displayOrder: 3 },
+        goInbox: { description: '前往收件箱', bindings: ['G I'], section: '全局', hint: '焦点落在第一行，或已打开会话所在的那一行。', preventDefault: true, displayOrder: 2 },
+        goBoard: { description: '前往看板', bindings: ['G B'], section: '全局', hint: '看板开启时。', preventDefault: true, displayOrder: 3 },
         // G P and G D (approval "inbox-keyboard-keys-2026-11-07", item 5): each only while its sidebar row shows.
-        goPulls: { description: 'Go to Reviews (pull requests)', bindings: ['G P'], section: 'Everywhere', hint: 'When Code review is on.', preventDefault: true, displayOrder: 3.1 },
-        goDrafts: { description: 'Go to Drafts', bindings: ['G D'], section: 'Everywhere', hint: 'When you have drafts.', preventDefault: true, displayOrder: 3.2 },
-        goSettings: { description: 'Go to Settings', bindings: ['G S'], section: 'Everywhere', preventDefault: true, displayOrder: 4 },
+        goPulls: { description: '前往评审（PR）', bindings: ['G P'], section: '全局', hint: '代码评审开启时。', preventDefault: true, displayOrder: 3.1 },
+        goDrafts: { description: '前往草稿', bindings: ['G D'], section: '全局', hint: '有草稿时。', preventDefault: true, displayOrder: 3.2 },
+        goSettings: { description: '前往设置', bindings: ['G S'], section: '全局', preventDefault: true, displayOrder: 4 },
       }
     : {};
   return defineShortcutScope({
     id: 'inbox-app',
-    title: 'Everywhere',
+    title: '全局',
     lettersByCode: true,
     shortcuts: {
       openMap: {
-        description: 'Keyboard shortcuts',
+        description: '键盘快捷键',
         bindings: ['?'],
-        section: 'Everywhere',
-        hint: 'Again, or Escape, closes it.',
+        section: '全局',
+        hint: '再按一次或按 Escape 关闭。',
         preventDefault: true,
         displayOrder: 1,
       },
       ...goTo,
       compose: {
         // App.tsx: the sidebar pencil's path (approval "inbox-keyboard-keys-2026-11-07", item 4; Gmail's and Linear's C).
-        description: 'New message',
+        description: '新消息',
         bindings: ['C'],
-        section: 'Everywhere',
-        hint: 'Opens a new message to an agent.',
+        section: '全局',
+        hint: '打开一条发给 agent 的新消息。',
         preventDefault: true,
         displayOrder: 4.5,
       },
       refresh: {
         // App.tsx: the list header's ↻ (approval "inbox-refresh-key"; "R for refresh", beside ⌘R; plain R stays Reply).
-        description: 'Refresh',
+        description: '刷新',
         bindings: ['Shift+R'],
-        section: 'Everywhere',
-        hint: 'The Inbox or the project on screen, as the list’s ↻ does. On the Board and Reviews, their own refresh.',
+        section: '全局',
+        hint: '刷新屏幕上的收件箱或项目，与列表的 ↻ 相同。在看板和评审页则刷新该页面自身。',
         preventDefault: true,
         displayOrder: 4.6,
       },
       toggleSidebar: {
         // Wired in shell/sidebar.tsx (the sidebar primitive's own listener, unchanged); listed here for the map.
-        description: 'Show or hide the sidebar',
+        description: '显示或隐藏侧边栏',
         bindings: ['Mod+B'],
-        section: 'Everywhere',
+        section: '全局',
         preventDefault: true,
         displayOrder: 5,
       },
       leavePage: {
-        description: 'Close, one layer at a time',
+        description: '关闭，一次一层',
         bindings: ['Escape'],
-        section: 'Everywhere',
-        hint: 'Settings and What’s new go back to where you were.',
+        section: '全局',
+        hint: '设置和“最新动态”会返回你之前所在的位置。',
         displayOrder: 9,
       },
       // With an extra off its actions are simply absent: the registry lists entries, and a handler for an absent one never runs.

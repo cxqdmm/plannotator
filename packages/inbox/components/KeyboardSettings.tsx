@@ -25,16 +25,16 @@ export function KeyboardSettings() {
   const map = bindingOf({ scope: inboxAppShortcuts, action: 'openMap' });
   return (
     <section className="ib-sgroup" data-settings-keyboard="" aria-labelledby="ib-g-keyboard">
-      <h2 id="ib-g-keyboard">Keyboard</h2>
+      <h2 id="ib-g-keyboard">键盘</h2>
       <div className="ib-card">
         <div className="ib-prow">
           <span className="ib-txt">
             <span className="ib-l" id="ib-single-keys-label">
-              Single-key shortcuts
+              单键快捷键
             </span>
             <span className="ib-desc" id="ib-single-keys-desc">
-              {letters} and the others ({shifted} too) work when you are not typing. Turn them off if you use speech input or your screen reader&apos;s quick keys. {chords} and Escape always
-              work.
+              不输入文字时，{letters} 和其他按键（包括 {shifted}）可用。如果你使用语音输入或读屏器的快速键，请关闭它们。{chords} 和 Escape 始终
+              可用。
             </span>
           </span>
           <span className="ib-ctl">
@@ -53,11 +53,11 @@ export function KeyboardSettings() {
         <div className="ib-prow">
           <span className="ib-txt">
             <span className="ib-l" id="ib-key-hints-label">
-              Show keys on buttons
+              在按钮上显示按键
             </span>
             <span className="ib-desc" id="ib-key-hints-desc">
-              The key beside a button or in its tooltip, like the E on Mark read. Every key is listed under {map} and behind the keyboard button by the light and dark
-              switch.
+              在按钮旁或其工具提示中显示按键，例如标为已读按钮旁显示的 E。所有按键都列在 {map} 下，以及明暗切换旁的键盘
+              按钮中。
             </span>
           </span>
           <span className="ib-ctl">

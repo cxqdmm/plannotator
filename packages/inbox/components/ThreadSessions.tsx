@@ -22,10 +22,10 @@ import { Tip } from './Tip';
 
 /** What each session is doing, in the opened line. */
 export const SESSION_STATE_WORDS: Record<NonNullable<ThreadSession['state']>, string> = {
-  waiting: 'waiting on you',
-  working: 'working',
-  idle: 'idle',
-  ended: 'ended',
+  waiting: '正在等你',
+  working: '正在工作',
+  idle: '空闲',
+  ended: '已结束',
 };
 
 /** The most marks the closed pile draws. */
@@ -84,7 +84,7 @@ export function ThreadSessions({ sessions, phone = false, agentFilter = null, on
   }, [open]);
 
   if (sessions.length < 2) return null;
-  const count = `${sessions.length} sessions`;
+  const count = `${sessions.length} 个会话`;
   const pile = pileSessions(looks);
   const mark = (i: number) => <HostMark key={sessions[i]!.session} host={sessions[i]!.host} agent={sessions[i]!.session} />;
 

@@ -136,7 +136,7 @@ describe('the walk', () => {
     s = tourReducer(s, { type: 'open', thread: TOUR_FILM_THREAD });
     expect(tourCoach(s, names)!.target).toBe('film-tile');
     s = tourReducer(s, { type: 'openFile', id: fileNamed('guides-vscode.mp4').id, full: false });
-    expect(tourCoach(s, names, {}, { pinnedAt: '0:07' } satisfies TourUi)!.text).toContain('Pinned at 0:07');
+    expect(tourCoach(s, names, {}, { pinnedAt: '0:07' } satisfies TourUi)!.text).toContain('固定在 0:07');
     s = tourReducer(s, { type: 'comment', record: fileComment('guides-vscode.mp4', { inboxVideo: { time: 7.2 } }) });
     expect(tourCoach(s, names)!.key).toBe('8-send');
     s = tourReducer(s, { type: 'filmSend' });
@@ -155,11 +155,11 @@ describe('the walk', () => {
     expect(tourCoach(s, names)).toMatchObject({ key: '9-loop', next: true });
     s = tourReducer(s, { type: 'next' });
     expect(tourCoach(s, names)).toMatchObject({ key: '9-also', next: true });
-    expect(tourCoach(s, names)!.items!.map((i) => i.title)).toEqual(['Star a thread', 'Snooze', 'Looks good', 'Re-ask', 'Send now']);
+    expect(tourCoach(s, names)!.items!.map((i) => i.title)).toEqual(['给会话加星', '稍后提醒', '看起来不错', '重新提问', '立即发送']);
     // "Make it yours" comes after the replay, over the thread with pictures, with Skip and a Next that names what comes next; then the person's own Inbox.
     s = tourReducer(s, { type: 'next' });
     expect(s).toMatchObject({ step: TOUR_SETTINGS_STEP, route: TOUR_THREAD, file: null });
-    expect(tourCoach(s, names)).toMatchObject({ key: '10-yours', picture: 'settings', next: true, nextLabel: 'Connect agents next', nextArrow: true, skip: true, target: null });
+    expect(tourCoach(s, names)).toMatchObject({ key: '10-yours', picture: 'settings', next: true, nextLabel: '下一步：连接 agent', nextArrow: true, skip: true, target: null });
     expect(tourCoach(s, names)?.action).toBeUndefined();
     s = tourReducer(s, { type: 'next' });
     expect(s).toMatchObject({ step: TOUR_STEPS, route: 'list' });
@@ -332,7 +332,7 @@ describe('your turn', () => {
   test('every card that asks for an action says "Your turn"; Next and replay cards do not', () => {
     const turn = tourCoach(tourReducer(TOUR_START, { type: 'next' }), names)!;
     expect(tourYourTurn(turn)).toBe(true);
-    expect(tourCoachSpeech(turn, 1)).toContain('Your turn: Open the question it came back with.');
+    expect(tourCoachSpeech(turn, 1)).toContain('轮到你了：打开它带回来的那个问题。');
     expect(tourYourTurn(tourCoach(TOUR_START, names)!)).toBe(false);
     const waiting = tourCoach(run([{ type: 'warmPick', label: WARM }, { type: 'warmSend' }], tourStateAt(2, REAL, fixture)), names)!;
     expect(tourYourTurn(waiting)).toBe(false);

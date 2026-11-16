@@ -8,8 +8,8 @@ import { defineShortcutScope } from '@plannotator/ui/shortcuts';
  */
 export const inboxListPickShortcuts = defineShortcutScope({
   id: 'inbox-list-pick',
-  title: 'List',
+  title: '列表',
   shortcuts: {
-    leavePicks: { description: 'Close, one layer at a time', bindings: ['Escape'], section: 'Everywhere', preventDefault: true, displayOrder: 9 },
+    leavePicks: { description: '关闭，一次一层', bindings: ['Escape'], section: '全局', preventDefault: true, displayOrder: 9 },
   },
 });

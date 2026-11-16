@@ -11,7 +11,7 @@ type Slot = 'shared' | InboxPromptHost;
 
 const AGENT_NAME: Record<InboxPromptHost, string> = { 'claude-code': 'Claude Code', pi: 'Pi', opencode: 'OpenCode' };
 const SLOTS: Slot[] = ['shared', ...INBOX_PROMPT_HOSTS];
-const slotName = (slot: Slot) => (slot === 'shared' ? 'All agents' : AGENT_NAME[slot]);
+const slotName = (slot: Slot) => (slot === 'shared' ? '所有 agent' : AGENT_NAME[slot]);
 
 export function AgentRulesSection({
   rules,
@@ -30,8 +30,8 @@ export function AgentRulesSection({
 
   return (
     <section className="ib-sgroup ib-sgroup-first" aria-labelledby={`${id}-h`} data-rules-section="">
-      <h2 id={`${id}-h`}>Rules for your agents</h2>
-      <p>Your own words, added to what agents are told. Plannotator's text stays.</p>
+      <h2 id={`${id}-h`}>给你的 agent 的规则</h2>
+      <p>你写的话会附加在 agent 被告知的内容里。Plannotator 的原文保持不变。</p>
       <div className="ib-card">
         {set.length === 0 ? (
           <div className="ar-empty">
@@ -39,20 +39,20 @@ export function AgentRulesSection({
               <Icon name="prompt" size={17} />
             </span>
             <span className="ar-t">
-              <span className="ar-l">No rules yet</span>
+              <span className="ar-l">还没有规则</span>
             </span>
             <button type="button" className="ib-btn ib-sm ib-pri" onClick={() => setEditing('shared')} data-rules-add="">
-              Add rules
+              添加规则
             </button>
           </div>
         ) : (
           set.map((slot) => (
             <div className="pm-shared ar-slot" key={slot} data-rules-slot={slot}>
               <div className="pm-head">
-                {slot === 'shared' ? <span className="ib-chip pm-custom">All agents</span> : <span className="ar-who"><HostMark host={slot} />{AGENT_NAME[slot]}</span>}
+                {slot === 'shared' ? <span className="ib-chip pm-custom">所有 agent</span> : <span className="ar-who"><HostMark host={slot} />{AGENT_NAME[slot]}</span>}
                 <span className="pm-sp" />
-                <button type="button" className="ib-btn ib-sm" onClick={() => setEditing(slot)} data-rules-edit={slot} aria-label={`Edit the rules for ${slotName(slot).toLowerCase()}`}>
-                  Edit
+                <button type="button" className="ib-btn ib-sm" onClick={() => setEditing(slot)} data-rules-edit={slot} aria-label={`编辑 ${slotName(slot)} 的规则`}>
+                  编辑
                 </button>
               </div>
               <p className="pm-text" data-rules-text={slot}>
@@ -73,7 +73,7 @@ function DroppedNote({ hosts }: { hosts: InboxPromptHost[] }) {
   if (hosts.length === 0) return null;
   return (
     <p className="pm-over" data-rules-dropped="">
-      Not sent to {hosts.map((host) => AGENT_NAME[host]).join(', ')}: with the reminder they are too long. Shorten one.
+      未发送给 {hosts.map((host) => AGENT_NAME[host]).join('、')}：加上提醒后太长了。请缩短一条。
     </p>
   );
 }
@@ -101,7 +101,7 @@ function RulesEditor({ rules, first, onClose, onPrompts }: { rules: Rules; first
       onPrompts?.(next.prompts);
       onClose();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'The rules were not saved.');
+      setError(cause instanceof Error ? cause.message : '规则未能保存。');
       setSaving(false);
     }
   };
@@ -114,20 +114,20 @@ function RulesEditor({ rules, first, onClose, onPrompts }: { rules: Rules; first
   return (
     <Modal labelledBy="ar-ed-title" describedBy="ar-ed-desc" testId="rules-editor" onClose={onClose} ownKeys initialFocus=".pm-area" className={`ib-bi ar-ed${phone ? ' ib-bi-phone' : ''}`}>
       <div className="ib-bi-text">
-        <h2 id="ar-ed-title">Rules for your agents</h2>
-        <p id="ar-ed-desc">Added to what agents are told about your Inbox. Plannotator's own text stays.</p>
+        <h2 id="ar-ed-title">给你的 agent 的规则</h2>
+        <p id="ar-ed-desc">附加在 agent 被告知的收件箱说明里。Plannotator 的原文保持不变。</p>
         <textarea
           ref={field}
           className="pm-area ar-area"
           value={draft}
           rows={4}
-          placeholder="Write your rules, one per line"
-          aria-label={`Rules for ${slotName(slot).toLowerCase()}`}
+          placeholder="写下你的规则，每行一条"
+          aria-label={`${slotName(slot)} 的规则`}
           aria-invalid={over || undefined}
           onChange={(event) => setDraft(event.target.value)}
           data-rules-field=""
         />
-        <div className="ar-lbl" id="ar-for">For</div>
+        <div className="ar-lbl" id="ar-for">适用于</div>
         <div className="ar-seg" role="group" aria-labelledby="ar-for">
           {SLOTS.map((which) => (
             <button type="button" key={which} aria-pressed={which === slot} onClick={() => pick(which)} data-rules-for={which}>
@@ -136,11 +136,11 @@ function RulesEditor({ rules, first, onClose, onPrompts }: { rules: Rules; first
           ))}
         </div>
         <p className="ar-quiet">
-          {slot === 'shared' ? 'Each agent gets them from its next session.' : `${AGENT_NAME[slot]} gets these instead of the ones for all agents, from its next session.`}
+          {slot === 'shared' ? '每个 agent 会在下一次会话中获得这些规则。' : `${AGENT_NAME[slot]} 会从下一次会话起使用这些规则，而不再使用所有 agent 的规则。`}
           {length >= room - RULES_COUNT_WITHIN && (
             <span className="pm-count" data-over={over || undefined} data-rules-count="">
               {' '}
-              {length.toLocaleString('en-US')} / {room.toLocaleString('en-US')}
+              {length.toLocaleString('zh-CN')} / {room.toLocaleString('zh-CN')}
             </span>
           )}
         </p>
@@ -153,15 +153,15 @@ function RulesEditor({ rules, first, onClose, onPrompts }: { rules: Rules; first
       <div className="ib-bi-acts">
         {own && (
           <button type="button" className="ib-btn ib-ghost" disabled={saving} onClick={() => void write(null)} data-rules-reset="">
-            Back to default
+            恢复默认
           </button>
         )}
         <span className="ib-bsp" />
         <button type="button" className="ib-btn ib-ghost" onClick={onClose} data-rules-cancel="">
-          Cancel
+          取消
         </button>
         <button type="button" className="ib-btn ib-pri" disabled={!can} onClick={() => void write(draft.trim())} data-rules-save="">
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? '保存中…' : '保存'}
         </button>
       </div>
     </Modal>

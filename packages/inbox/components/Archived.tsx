@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { InboxListRow } from '@plannotator/core/inbox-types';
 import { inboxApi, type ArchivedModel } from '../api';
-import { agentName, dayWords, formatCount, plural } from '../format';
+import { agentName, dayWords, formatCount } from '../format';
 import { AuthorMark, Icon } from '../icons';
 import { Tip } from './Tip';
 
@@ -42,7 +42,7 @@ async function readArchived(count: number): Promise<Loaded> {
 
 /** One archived thread: no project label, since a header names it when several projects have some. */
 function ArchivedRow({ row, busy, onUnarchive }: { row: InboxListRow; busy: boolean; onUnarchive: () => void }) {
-  const subject = row.subject ?? '(no subject)';
+  const subject = row.subject ?? '（无主题）';
   return (
     <li className="ib-srow ib-arcrow" data-archived-thread={row.thread_id}>
       <AuthorMark author={row.author} />
@@ -60,7 +60,7 @@ function ArchivedRow({ row, busy, onUnarchive }: { row: InboxListRow; busy: bool
           </Tip>
         </span>
         <span className="ib-d">
-          {agentName(row.author)} · Archived {row.resolved_at ? dayWords(row.resolved_at) : ''} · {plural(row.message_count, 'message')}
+          {agentName(row.author)} · 归档于 {row.resolved_at ? dayWords(row.resolved_at) : ''} · {formatCount(row.message_count)} 条消息
         </span>
       </span>
       <span className="ib-r">
@@ -68,11 +68,11 @@ function ArchivedRow({ row, busy, onUnarchive }: { row: InboxListRow; busy: bool
           type="button"
           className="ib-btn ib-sm"
           disabled={busy}
-          aria-label={`Unarchive ${subject}`}
+          aria-label={`取消归档：${subject}`}
           data-archived-unarchive=""
           onClick={onUnarchive}
         >
-          Unarchive
+          取消归档
         </button>
       </span>
     </li>
@@ -172,37 +172,37 @@ export function ArchivedBlock({ refreshKey, onUnarchive }: ArchivedBlockProps) {
     <div className="ib-arcblock" data-settings-archived={loaded ? loaded.total : ''}>
       {loaded && loaded.total > 0 && (
         <p className="ib-arcnone" data-archived-count="">
-          {plural(loaded.total, 'archived thread')}
+          {formatCount(loaded.total)} 个已归档会话
         </p>
       )}
       {loaded && loaded.rows.length === 0 && (
         <div className="ib-card ib-sempty" data-archived-empty="">
           <Icon name="archive" />
-          Nothing archived. Archive a thread from its header to move it here.
+          没有已归档的会话。从会话顶部归档后，它会移到此处。
         </div>
       )}
-      {loaded && loaded.rows.length > 0 && !grouped && renderRows(loaded.rows, 'Archived threads')}
+      {loaded && loaded.rows.length > 0 && !grouped && renderRows(loaded.rows, '已归档的会话')}
       {loaded &&
         grouped &&
         groupByProject(loaded.rows).map((group) => {
           const count = loaded.projects.find((p) => p.id === group.id)?.archived ?? group.rows.length;
           return (
-            <section key={group.id} className="ib-arcgroup" data-archived-group={group.id} aria-label={`${group.name}, ${plural(count, 'archived thread')}`}>
+            <section key={group.id} className="ib-arcgroup" data-archived-group={group.id} aria-label={`${group.name}，${formatCount(count)} 个已归档会话`}>
               <h3 className="ib-arcghead">
                 <span dir="auto">{group.name}</span> <span className="ib-d">· {formatCount(count)}</span>
               </h3>
-              {renderRows(group.rows, `Archived in ${group.name}`)}
+              {renderRows(group.rows, `已归档：${group.name}`)}
             </section>
           );
         })}
       {loaded && left > 0 && (
         <div className="ib-srow">
           <span className="ib-d" data-archived-shown="">
-            Showing {formatCount(loaded.rows.length)} of {formatCount(loaded.total)}
+            已显示 {formatCount(loaded.rows.length)} 条，共 {formatCount(loaded.total)} 条
           </span>
           <span className="ib-r">
             <button type="button" className="ib-btn ib-sm" disabled={more} data-archived-more="" onClick={() => void showMore()}>
-              Show {Math.min(ARCHIVED_PAGE, left)} more
+              再显示 {Math.min(ARCHIVED_PAGE, left)} 个
             </button>
           </span>
         </div>

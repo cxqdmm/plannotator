@@ -127,7 +127,7 @@ export function useListShown({ latest, projects, route, thread, threadRow, rowPa
     listSections.every((section) => section.id === 'snoozed' || section.threads.length === 0) &&
     listFilterRows.some((row) => !row.snoozed);
   // The list's name: Inbox, or the project's window name (or the machine's, or the agent's); its back buttons read the same.
-  const listTitle = filterProject ? (projectNames.get(filterProject.id) ?? filterProject.name) : filterMachine ? filterMachine.name : filterAgent ? filterAgent.name : filterTag ? filterTag.name : 'Inbox';
+  const listTitle = filterProject ? (projectNames.get(filterProject.id) ?? filterProject.name) : filterMachine ? filterMachine.name : filterAgent ? filterAgent.name : filterTag ? filterTag.name : '收件箱';
   const heldNews = shown && latest ? heldNotice(filterShown(shown), filterShown(latestGroups), openedHere.current, heldOpen(), projectNames) : null;
   // Show opens the groups the rows it brings in land in (held.ts showLandsIn), so they are on screen.
   // `news`: the same threads, for the pill at the list's edge while the line is out of view (ListNewPill.tsx).

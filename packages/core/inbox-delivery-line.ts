@@ -200,33 +200,33 @@ export interface UndeliveredWords {
 function undeliveredAge(since: string, now: number): { short: string; long: string } | null {
   const minutes = wholeMinutes(since, now);
   if (minutes < 1) return null;
-  if (minutes < 60) return { short: `${minutes}m`, long: `${minutes} min` };
+  if (minutes < 60) return { short: `${minutes} 分钟`, long: `${minutes} 分钟` };
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return { short: `${hours}h`, long: `${hours} hour${hours === 1 ? '' : 's'}` };
+  if (hours < 24) return { short: `${hours} 小时`, long: `${hours} 小时` };
   const days = Math.floor(hours / 24);
-  return { short: `${days}d`, long: `${days} day${days === 1 ? '' : 's'}` };
+  return { short: `${days} 天`, long: `${days} 天` };
 }
 
 /** "Undelivered 3 min", "Undelivered 2 hours", "Undelivered 1 day" ("Undelivered" under a minute). */
 export function undeliveredLabel(since: string, now: number): string {
   const age = undeliveredAge(since, now);
-  return age ? `Undelivered ${age.long}` : 'Undelivered';
+  return age ? `未送达 ${age.long}` : '未送达';
 }
 
 /** The list row's short form (approval "inbox-row-byline", option A): "Undelivered 3m", "Undelivered 2h", "Undelivered 1d". */
 export function undeliveredShort(since: string, now: number): string {
   const age = undeliveredAge(since, now);
-  return age ? `Undelivered ${age.short}` : 'Undelivered';
+  return age ? `未送达 ${age.short}` : '未送达';
 }
 
 export function undeliveredWords(wait: NonNullable<DeliveryLine['wait']>, now: number): UndeliveredWords {
   const label = undeliveredLabel(wait.since, now);
   if (wait.autoSendAt) {
     const left = inboxAutoSendInMinutes(wait.autoSendAt, now);
-    const next = left === null ? 'goes in by itself now' : left === 0 ? 'goes in by itself in under a minute' : `goes in by itself in ${left} min`;
+    const next = left === null ? '现在自行送入' : left === 0 ? '不到一分钟内自行送入' : `${left} 分钟后自行送入`;
     return { label, next, auto: true };
   }
-  return { label, next: 'it gets this when its turn ends', auto: false };
+  return { label, next: '本轮结束时送入', auto: false };
 }
 
 export interface DeliveryLineInput {
@@ -337,44 +337,44 @@ export function deliveryText(
   switch (reason) {
     case 'delivered': {
       // Honest about a reply no connection wakes: another agent read it, which is not the agent it was for taking it.
-      if (words.readBy && words.at) return `Read by ${words.readBy}, ${words.time(words.at)}`;
-      const base = words.at ? `Delivered to ${name}, ${words.time(words.at)}` : `Delivered to ${name}`;
+      if (words.readBy && words.at) return `已由 ${words.readBy} 阅读，${words.time(words.at)}`;
+      const base = words.at ? `已送达给 ${name}，${words.time(words.at)}` : `已送达给 ${name}`;
       if (words.autoAfterMin !== undefined) return `${base} · ${autoAfterText(words.autoAfterMin)}`;
       return words.turnEnded ? `${base} · ${TURN_ENDED_TEXT}` : base;
     }
     case 'undelivered':
-      return `Not delivered. That ${words.undeliveredHost} session stopped before it took this. If it is resumed, it still gets it.`;
+      return `未送达。${words.undeliveredHost} 会话在收到这条消息前已停止。如果恢复，它仍会收到。`;
     case 'stuck':
-      return `Not delivered. ${name} stopped while it was taking this, so it may not have it.`;
+      return `未送达。${name} 在接收这条消息时停止了，所以它可能没收到。`;
     case 'ended':
-      return `Saved for ${words.endedName}. That session has ended; it gets this only if it's resumed.`;
+      return `已为 ${words.endedName} 保存。该会话已结束；只有恢复后它才会收到。`;
     case 'reads':
-      return `Saved for ${name}. It sees it when it next reads this thread.`;
+      return `已为 ${name} 保存。它下次读取这个会话时会看到。`;
     case 'sending_now':
-      return `Sending to ${name} now…`;
+      return `正在发送给 ${name}…`;
     case 'working': {
-      if (!words.wait) return `Queued · ${name} is working; it gets this when its turn ends.`;
+      if (!words.wait) return `已排队 · ${name} 正在工作；本轮结束时它会收到。`;
       const parts = undeliveredWords(words.wait, words.now ?? Date.now());
-      return `${parts.label} · ${name} is working · ${parts.next}`;
+      return `${parts.label} · ${name} 正在工作 · ${parts.next}`;
     }
     case 'idle':
-      return `Sending to ${name}…`;
+      return `正在发送给 ${name}…`;
     case 'away':
-      return `Queued for ${name}; it gets this when its session is back.`;
+      return `已为 ${name} 排队；它的会话回来后就会收到。`;
     case 'next_turn':
-      return `Queued for ${name}; it gets this as its next turn.`;
+      return `已为 ${name} 排队；它会在下一轮收到。`;
     case 'ack_pending':
-      return `Goes to ${name} in a few seconds`;
+      return `几秒后发送给 ${name}`;
     case 'stopped':
       return INBOX_STOPPED_REPLY_TEXT;
     case 'handed':
-      return `Handed to ${name}; it takes this at its next step.`;
+      return `已交给 ${name}；它会在下一步收到。`;
   }
 }
 
 /** The Sent row's line in the list, which knows no connection: queued for a waking agent, saved otherwise. */
 export function sentRowLine(name: string, wakes: boolean | undefined): string {
-  return wakes === true ? `Queued for ${name}; it gets this as its next turn.` : `Saved for ${name}. It sees it when it next reads this thread.`;
+  return wakes === true ? `已为 ${name} 排队；它会在下一轮收到。` : `已为 ${name} 保存。它下次读取这个会话时会看到。`;
 }
 
 /**
@@ -382,8 +382,8 @@ export function sentRowLine(name: string, wakes: boolean | undefined): string {
  * "inbox-reask"): it stays Sent until the agent asks again, read or not.
  */
 export function reaskRowLine(name: string, checkedAt: string | null, wakes: boolean | undefined): string {
-  if (checkedAt) return `Asked ${name} to re-ask; waiting for its message.`;
-  return wakes === true ? `Re-ask queued for ${name}; it gets this as its next turn.` : `Re-ask saved for ${name}. It sees it when it next reads this thread.`;
+  if (checkedAt) return `已请 ${name} 重新询问；正在等待它的消息。`;
+  return wakes === true ? `重新询问已为 ${name} 排队；它会在下一轮收到。` : `重新询问已为 ${name} 保存。它下次读取这个会话时会看到。`;
 }
 
 /**
@@ -391,12 +391,12 @@ export function reaskRowLine(name: string, checkedAt: string | null, wakes: bool
  * goes in once they type there (approval "inbox-stopped-reply", the owner's
  * exact words).
  */
-export const INBOX_STOPPED_REPLY_TEXT = 'Stopped: goes in when you type in that session';
+export const INBOX_STOPPED_REPLY_TEXT = '已停止：你在这个会话里输入后才会送入';
 
 /** An item the Inbox marked to go in by itself that waited for the turn to end (its own Ask question held it). */
-export const TURN_ENDED_TEXT = 'went in when its turn ended';
+export const TURN_ENDED_TEXT = '在本轮结束时送入';
 
 /** "went into its turn by itself after 5 min". */
 export function autoAfterText(minutes: number): string {
-  return `went into its turn by itself after ${minutes} min`;
+  return `${minutes} 分钟后自行进入本轮`;
 }

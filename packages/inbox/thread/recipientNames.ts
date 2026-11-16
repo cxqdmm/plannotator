@@ -13,7 +13,7 @@ import type { RecipientRow } from '../replyRecipients';
 import { labelOf, type SessionLabels } from '../sessionLabels';
 import { agentName } from '../tags';
 
-export const RECIPIENT_QUIET: Record<RecipientRow['state'], string | null> = { live: null, ended: 'ended', reader: 'Not woken', old: 'Update' };
+export const RECIPIENT_QUIET: Record<RecipientRow['state'], string | null> = { live: null, ended: '已结束', reader: '不会唤醒', old: '更新' };
 
 export interface RecipientName {
   /** The row's name: its title (with the fallback name after it when another row reads the same), else the fallback. */

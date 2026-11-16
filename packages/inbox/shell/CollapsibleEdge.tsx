@@ -36,7 +36,7 @@ const KEYBOARD_STEP = 10;
  */
 export function CollapsibleEdge({
 	onCollapse,
-	collapseTip = "Click to collapse, drag to resize",
+	collapseTip = "点击收起，拖动调整大小",
 	label,
 	controls,
 	isDragging,
@@ -100,7 +100,7 @@ export function CollapsibleEdge({
 					<Tooltip.Portal>
 						<Tooltip.Positioner side="bottom" sideOffset={14} className="ib-edge-tip-pos">
 							<Tooltip.Popup className="ib-edge-tip">
-								{onCollapse ? collapseTip : "Drag to resize"}
+								{onCollapse ? collapseTip : "拖动调整大小"}
 							</Tooltip.Popup>
 						</Tooltip.Positioner>
 					</Tooltip.Portal>

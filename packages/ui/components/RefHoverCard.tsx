@@ -177,7 +177,6 @@ function Avatar({ person, size = 18 }: { person: ForgeRefPerson; size?: number }
 /** "All 32 checks passed" / "Pipeline failed · 2 of 12 jobs". */
 export function checksText(checks: ForgeRefChecks, platform: ForgeRef['platform']): string {
   if (platform === 'gitlab') {
-    const jobs = (n: number) => `${n} 个任务`;
     if (checks.state === 'failure') return `流水线失败${checks.total ? ` · ${checks.failed} / ${checks.total} 个任务` : ''}`;
     if (checks.state === 'pending') return `流水线运行中${checks.total ? ` · 剩余 ${checks.pending} / ${checks.total} 个任务` : ''}`;
     return `流水线通过${checks.total ? ` · ${checks.total} 个任务` : ''}`;

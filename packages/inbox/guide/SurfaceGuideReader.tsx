@@ -63,7 +63,7 @@ export default function SurfaceGuideReader({ snapshot, reviewed, onReviewedChang
     const list: Page[] = guide.sections.map((s, i) => ({ section: s, files: resolved.sectionFiles[i] ?? [], reviewable: true }));
     if (resolved.unplacedFiles.length > 0) {
       list.push({
-        section: { title: 'Everything else', overview: "Changed files the guide didn't place into a section.", diffs: resolved.unplacedFiles.map((f) => ({ file: f.path })) },
+        section: { title: '其他所有文件', overview: '指南未归入任何章节的已更改文件。', diffs: resolved.unplacedFiles.map((f) => ({ file: f.path })) },
         files: resolved.unplacedFiles,
         reviewable: false,
       });
@@ -92,9 +92,9 @@ export default function SurfaceGuideReader({ snapshot, reviewed, onReviewedChang
         <h1 className="sf-gtitle">{guide.title}</h1>
         {guide.intent && <p className="sf-gintent">{renderInlineMarkdown(guide.intent)}</p>}
         <p className="sf-gcounts">
-          {guide.sections.length} section{guide.sections.length === 1 ? '' : 's'} · {files.length} file{files.length === 1 ? '' : 's'} · <Counts files={files} />
+          {guide.sections.length} 个章节 · {files.length} 个文件 · <Counts files={files} />
         </p>
-        <h2 className="sf-gsechead">Sections</h2>
+        <h2 className="sf-gsechead">章节</h2>
         <ol className="sf-gsections">
           {pages.map((p, i) => (
             <li key={`${p.section.title}:${i}`} className="sf-gsection" data-section={i}>
@@ -103,7 +103,7 @@ export default function SurfaceGuideReader({ snapshot, reviewed, onReviewedChang
                 <span className="sf-gtext">
                   <span className="sf-gname">{p.section.title}</span>
                   <span className="sf-gmeta">
-                    {p.files.length} file{p.files.length === 1 ? '' : 's'} · <Counts files={p.files} />
+                    {p.files.length} 个文件 · <Counts files={p.files} />
                   </span>
                 </span>
               </button>
@@ -112,7 +112,7 @@ export default function SurfaceGuideReader({ snapshot, reviewed, onReviewedChang
                   type="button"
                   className="sf-gtickbtn"
                   aria-pressed={ticks[i]}
-                  aria-label={`${two(i)} ${p.section.title}: reviewed`}
+                  aria-label={`${two(i)} ${p.section.title}：已评审`}
                   onClick={() => toggle(i)}
                 >
                   <Tick on={ticks[i]} />
@@ -123,7 +123,7 @@ export default function SurfaceGuideReader({ snapshot, reviewed, onReviewedChang
         </ol>
         <div className="sf-gfoot">
           <button type="button" className="sf-gcontinue" onClick={() => go(continueAt)}>
-            Continue with {two(continueAt)}
+            继续第 {two(continueAt)} 节
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M6 3.5L10.5 8 6 12.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -149,9 +149,9 @@ export default function SurfaceGuideReader({ snapshot, reviewed, onReviewedChang
             onRequestReveal={setFocusedFile}
           />
         </GuideViewportProvider>
-        <nav className="sf-gnav" aria-label="Sections">
+        <nav className="sf-gnav" aria-label="章节">
           {section > 0 ? (
-            <button type="button" className="sf-gnavbtn" onClick={() => go(section - 1)} aria-label={`Previous: ${two(section - 1)}`}>
+            <button type="button" className="sf-gnavbtn" onClick={() => go(section - 1)} aria-label={`上一节：${two(section - 1)}`}>
               <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M10 3.5L5.5 8 10 12.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -163,13 +163,13 @@ export default function SurfaceGuideReader({ snapshot, reviewed, onReviewedChang
           {page.reviewable ? (
             <button type="button" className="sf-gnavbtn sf-greviewed" aria-pressed={ticks[section]} onClick={() => toggle(section)}>
               <Tick on={ticks[section]} />
-              Reviewed
+              已评审
             </button>
           ) : (
             <span />
           )}
           {section < pages.length - 1 ? (
-            <button type="button" className="sf-gnavbtn" onClick={() => go(section + 1)} aria-label={`Next: ${two(section + 1)}`}>
+            <button type="button" className="sf-gnavbtn" onClick={() => go(section + 1)} aria-label={`下一节：${two(section + 1)}`}>
               {two(section + 1)}
               <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M6 3.5L10.5 8 6 12.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />

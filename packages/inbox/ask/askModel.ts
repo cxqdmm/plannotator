@@ -41,18 +41,18 @@ export function askRowState(chat: InboxAskChat, currentId: string): 'current' | 
 export function askChatTime(iso: string, now: number): string {
   const minutes = Math.floor((now - Date.parse(iso)) / 60_000);
   if (!Number.isFinite(minutes)) return '';
-  if (minutes < 1) return 'now';
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 1) return '刚刚';
+  if (minutes < 60) return `${minutes} 分钟前`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
+  if (hours < 24) return `${hours} 小时前`;
   const days = Math.floor(hours / 24);
-  if (days === 1) return 'yesterday';
-  if (days < 7) return `${days} days ago`;
-  if (days < 14) return 'last week';
+  if (days === 1) return '昨天';
+  if (days < 7) return `${days} 天前`;
+  if (days < 14) return '上周';
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-export const askChatName = (subject: string | null): string => subject ?? '(no subject)';
+export const askChatName = (subject: string | null): string => subject ?? '（无主题）';
 
 /** The turn still arriving in this window, with what its stream brought so far. */
 export interface AskLiveText {
@@ -69,9 +69,9 @@ export interface AskLiveText {
 export function askShownQuestion(turn: Pick<InboxAskTurnWire, 'question' | 'kind' | 'show_me'>): string {
   if (turn.kind !== 'show_me' || !turn.show_me) return turn.question;
   const { file, lines, words, part } = turn.show_me;
-  if (part) return `Show me on ${part.name}${words?.trim() ? `: ${words.trim()}` : ''}`;
-  const where = file ? `${file.slice(file.lastIndexOf('/') + 1)}${lines ? ` ${lines[0] === lines[1] ? 'line' : 'lines'} ${inboxReviewLines(lines)}` : ''}` : 'the whole review';
-  return `Show me on ${where}${words?.trim() ? `: ${words.trim()}` : ''}`;
+  if (part) return `给我看 ${part.name}${words?.trim() ? `：${words.trim()}` : ''}`;
+  const where = file ? `${file.slice(file.lastIndexOf('/') + 1)}${lines ? `第 ${inboxReviewLines(lines)} 行` : ''}` : '整个评审';
+  return `给我看 ${where}${words?.trim() ? `：${words.trim()}` : ''}`;
 }
 
 export const askUserId = (turnId: string): string => `q-${turnId}`;
@@ -96,9 +96,9 @@ export function askStopped(conversation: InboxAskConversationWire | null): Reado
 
 /** The note under a turn the file says did not end well, or null. */
 export function askTurnNote(turn: InboxAskTurnWire, agent: string): string | null {
-  if (turn.failure === 'gone') return `${agent} went away before it finished.`;
-  if (turn.failure === 'taken_over') return 'Another message took over the session, so this answer stops here.';
-  if (turn.failure === 'failed') return `${agent} could not finish this answer.`;
+  if (turn.failure === 'gone') return `${agent} 在完成前离开了。`;
+  if (turn.failure === 'taken_over') return '另一条消息接管了该会话，所以这个回答到此为止。';
+  if (turn.failure === 'failed') return `${agent} 无法完成这个回答。`;
   return null;
 }
 

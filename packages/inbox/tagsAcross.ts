@@ -87,7 +87,7 @@ export function tagsAcross(tags: readonly ListTag[], machines: MachinesModel): T
     tags,
     renameTaken: (tag, name) => {
       const taken = tagNamed(tags, name);
-      return taken && taken.id !== tag.id ? new InboxApiError(409, 'initiative_exists', `There is already a tag named ${taken.name}.`) : null;
+      return taken && taken.id !== tag.id ? new InboxApiError(409, 'initiative_exists', `已存在名为 ${taken.name} 的标签。`) : null;
     },
     change,
     restore: async (deleted) => {

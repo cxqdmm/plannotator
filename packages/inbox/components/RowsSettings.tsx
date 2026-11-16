@@ -73,9 +73,9 @@ function exampleRows(): RowsPreviewRow[] {
     sample({
       thread_id: 'rows-sample-stopped',
       project: { id: 'prj_billing', name: 'billing-svc' },
-      thread_name: 'Staging database upgrade',
-      subject: 'The staging password expired: can you rotate it?',
-      latest_preview: 'Asked: The staging password expired: can you rotate it?',
+      thread_name: '预发布数据库升级',
+      subject: '预发布环境的密码过期了：你能轮换一下吗？',
+      latest_preview: '问：预发布环境的密码过期了：你能轮换一下吗？',
       author: { kind: 'agent', host: 'codex', session: 'ses_b', name: null },
       section: 'stopped',
       unread: true,
@@ -84,9 +84,9 @@ function exampleRows(): RowsPreviewRow[] {
     }),
     sample({
       thread_id: 'rows-sample-named',
-      thread_name: 'Cart page refresh',
-      subject: 'Which cart layout should ship first?',
-      latest_preview: 'Asked: Which cart layout should ship first?',
+      thread_name: '购物车页面改版',
+      subject: '购物车布局先上线哪一种？',
+      latest_preview: '问：购物车布局先上线哪一种？',
       participants: [
         { host: 'claude-code', session: 'ses_a' },
         { host: 'codex', session: 'ses_c' },
@@ -100,7 +100,7 @@ function exampleRows(): RowsPreviewRow[] {
     sample({
       thread_id: 'rows-sample-new',
       project: { id: 'prj_docs', name: 'docs-site' },
-      subject: 'Install guide rewritten',
+      subject: '安装指南已重写',
       author: { kind: 'agent', host: 'opencode', session: 'ses_o', name: null },
       section: 'new',
       waiting_on_person: false,
@@ -110,8 +110,8 @@ function exampleRows(): RowsPreviewRow[] {
     sample({
       thread_id: 'rows-sample-drift',
       project: { id: 'prj_infra', name: 'infra' },
-      thread_name: 'Nightly Terraform drift',
-      subject: 'Drift in three modules; nothing to answer yet',
+      thread_name: '每夜的 Terraform 漂移',
+      subject: '三个模块出现漂移；暂时不需要回答',
       section: 'new',
       waiting_on_person: false,
       pulls: { count: 3, headline: { key: 'github.com/example/infra#88', state: 'draft' } },
@@ -119,9 +119,9 @@ function exampleRows(): RowsPreviewRow[] {
     }),
     sample({
       thread_id: 'rows-sample-plain',
-      subject: 'Tests pass on main after the retry fix',
+      subject: '重试修复后测试在 main 上通过',
       // The grey line is the latest message (approval "inbox-row-latest-preview"): here the person's reply.
-      latest_preview: 'You: Merge it once CI is green.',
+      latest_preview: '你：CI 通过后就合并。',
       author: { kind: 'agent', host: 'pi', session: 'ses_p', name: null },
       section: 'quiet',
       waiting_on_person: false,
@@ -408,26 +408,32 @@ export function RowsSection({ phone, onGeneral, rows, projectNames, awayMachines
         const words = rowsChangeWords(before, after);
         broughtProjects.current = false;
         setSteps((all) => [...all, { look: before, words, whole: !changed.every((control) => FLASH_PARTS[control.id]) }]);
-        setLast({ words, undone: false, by: { host: by.host, name: INBOX_HOST_NAMES[by.host] ?? 'An agent' } });
+        setLast({ words, undone: false, by: { host: by.host, name: INBOX_HOST_NAMES[by.host] ?? '一个 agent' } });
         setFlash((was) => ({ ids: changed.map((control) => control.id), n: was.n + 1, tint: changed.every((control) => FLASH_PARTS[control.id]) }));
       }),
     [],
   );
 
   const step = steps.at(-1);
-  const line = last ? `${last.undone ? 'Undid' : last.by ? `${last.by.name} changed` : 'Changed'}: ${last.words.join(', ')}` : '';
+  const line = last
+    ? last.undone
+      ? `已撤销：${last.words.join('、')}`
+      : last.by
+        ? `${last.by.name} 更改了：${last.words.join('、')}`
+        : `已更改：${last.words.join('、')}`
+    : '';
   const controlRow = (control: RowsControl) => <ControlRow key={control.id} control={control} look={look} onChoice={choose} />;
   return (
     <div className="ib-rws" data-settings-rows="" data-rows-preset={preset ?? 'none'}>
       {/* Settings draws no lede of its own for Rows: this one has Undo and Reset beside it. */}
       <div className="ib-rws-head">
-        <p className="ib-lede">How each thread looks in your list. Changes show at once, everywhere you use the Inbox.</p>
+        <p className="ib-lede">每个会话在你的列表中是什么样子。更改会立即生效，并在你使用收件箱的所有地方同步。</p>
         <span className="ib-rws-acts">
-          <button type="button" className="ib-btn ib-ghost" data-rows-undo="" disabled={!step} title={step ? `Undo: ${step.words.join(', ')}` : undefined} onClick={undo}>
-            <Icon name="reply" size={14} /> Undo
+          <button type="button" className="ib-btn ib-ghost" data-rows-undo="" disabled={!step} title={step ? `撤销：${step.words.join('、')}` : undefined} onClick={undo}>
+            <Icon name="reply" size={14} /> 撤销
           </button>
           <button type="button" className="ib-btn" data-rows-reset="" disabled={isDefaultListLook(look)} onClick={() => whole(LIST_LOOK_DEFAULT)}>
-            Reset to default
+            重置为默认
           </button>
         </span>
       </div>
@@ -435,7 +441,7 @@ export function RowsSection({ phone, onGeneral, rows, projectNames, awayMachines
         <div ref={sentinel} className="ib-rws-sentinel" aria-hidden="true" />
         <div ref={pin} className="ib-rws-pv" data-rows-pinned={phone ? '' : undefined}>
           <div className="ib-rws-pvhead">
-            <h2 id="ib-rows-yours">Your list</h2>
+            <h2 id="ib-rows-yours">你的列表</h2>
             {/* What the last change was, said to a screen reader as it happens; Undo beside it while there is one. */}
             <span className="ib-rws-last" data-rows-last="">
               {last?.by && !last.undone && <HostMark host={last.by.host} />}
@@ -444,20 +450,20 @@ export function RowsSection({ phone, onGeneral, rows, projectNames, awayMachines
               </span>
               {last && !last.undone && step && (
                 <button type="button" className="ib-lnk" data-rows-undo-last="" onClick={undo}>
-                  <Icon name="reply" size={13} /> Undo
+                  <Icon name="reply" size={13} /> 撤销
                 </button>
               )}
             </span>
           </div>
           <div ref={frame} className="ib-rws-frame" inert data-rows-preview={phone ? 'phone' : 'narrow'} data-rows-source={own ? 'own' : 'examples'}>
-            {!own && !phone && <p className="ib-rws-empty">You have no threads yet. These examples show the look.</p>}
+            {!own && !phone && <p className="ib-rws-empty">你还没有会话。这些示例展示了它的样子。</p>}
             <LookList rows={shown} look={look} phone={phone} examples={!own} projectNames={projectNames} awayMachines={awayMachines} />
           </div>
-          {!own && phone && <p className="ib-rws-empty">You have no threads yet. These examples show the look.</p>}
+          {!own && phone && <p className="ib-rws-empty">你还没有会话。这些示例展示了它的样子。</p>}
           {!phone && <RowsAsk />}
         </div>
         <div className="ib-rws-ctl">
-          <h2 id="ib-rows-preset">Start from</h2>
+          <h2 id="ib-rows-preset">从以下开始</h2>
           {/* Buttons, not radios: a radio group's arrow keys choose as they move, so one stray key would wipe a look of
               the person's own. Tab reaches each, and only Enter, Space or a click applies one; the pressed one is the
               look's, and a look that matches none has none pressed. */}
@@ -477,16 +483,16 @@ export function RowsSection({ phone, onGeneral, rows, projectNames, awayMachines
               </div>
             ))}
           </div>
-          <h2 id="ib-rows-choices">Choices</h2>
+          <h2 id="ib-rows-choices">选项</h2>
           <div className="ib-card" role="group" aria-labelledby="ib-rows-choices">
             {ROWS_MAIN_CONTROLS.map(controlRow)}
           </div>
           <button type="button" className="ib-rws-fold" aria-expanded={more} aria-controls="ib-rows-more" data-rows-more="" onClick={() => setMore((open) => !open)}>
             <Icon name="chevR" size={14} />
-            More choices <span className="ib-rws-fold-n">· {ROWS_MORE_CONTROLS.length}</span>
+            更多选项 <span className="ib-rws-fold-n">· {ROWS_MORE_CONTROLS.length}</span>
           </button>
           <div id="ib-rows-more" hidden={!more}>
-            <div className="ib-card" role="group" aria-label="More choices">
+            <div className="ib-card" role="group" aria-label="更多选项">
               {ROWS_MORE_CONTROLS.map(controlRow)}
             </div>
           </div>
@@ -494,17 +500,17 @@ export function RowsSection({ phone, onGeneral, rows, projectNames, awayMachines
           <div className="ib-note ib-rws-note">
             <Icon name="info" />
             <span>
-              Full width keeps one line.{' '}
+              全宽会保持在一行。{' '}
               {onGeneral ? (
                 <>
-                  Text size is in{' '}
+                  文字大小在{' '}
                   <button type="button" className="ib-lnk" onClick={onGeneral}>
-                    General
-                  </button>
-                  .
+                    通用
+                  </button>{' '}
+                  设置中。
                 </>
               ) : (
-                'Text size is in General.'
+                '文字大小在“通用”设置中。'
               )}
             </span>
           </div>
@@ -517,6 +523,6 @@ export function RowsSection({ phone, onGeneral, rows, projectNames, awayMachines
 /** The phone list's value beside Rows: the preset's name, or "Custom". */
 export function rowsSummary(look: ListLook): string {
   const preset = rowsPreset(look);
-  return preset ? ROWS_PRESETS.find((p) => p.id === preset)!.label : 'Custom';
+  return preset ? ROWS_PRESETS.find((p) => p.id === preset)!.label : '自定义';
 }
 

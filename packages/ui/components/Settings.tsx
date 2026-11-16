@@ -649,9 +649,7 @@ const ReviewTab: React.FC<{ sinceBaseUnavailable?: boolean }> = ({ sinceBaseUnav
                 silently falls back to Tree and the setting looks broken. */}
             {sinceBaseUnavailable && (
               <div className="text-xs text-warning mt-1">
-                Git status view isn't available in this repository (its base branch
-                couldn't be resolved) — reviews here open in Tree. The preference
-                still applies in repositories where it works.
+                此仓库无法使用 Git 状态视图（无法解析其基线分支）——这里的评审会以树形打开。该偏好仍会在此功能可用的仓库中生效。
               </div>
             )}
           </div>
@@ -912,9 +910,7 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
         <div>
           <div className="text-sm font-medium">悬停卡片</div>
           <div className="text-xs text-muted-foreground">
-            Rest the pointer on a symbol in a diff to see where it is defined and who
-            references it. Needs ripgrep and a local checkout; nothing appears when the
-            search comes back empty. {modKeyWord}+click still opens the References panel either way.
+            将指针停在 Diff 中的符号上，即可查看它的定义位置和引用者。需要 ripgrep 和本地检出；搜索无结果时不会显示任何内容。无论是否启用，{modKeyWord}+点击仍会打开「引用」面板。
           </div>
         </div>
         <SegmentedControl
@@ -998,8 +994,7 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
           <div className="text-xs text-muted-foreground">并排：左右分栏。统一：单列。</div>
           {isCompactTouchLayout && (
             <div className="text-xs text-muted-foreground mt-1">
-              This layout shows unified diffs for the session; your desktop
-              preference is unchanged.
+              此布局在本次会话中显示统一 Diff；你的桌面端偏好保持不变。
             </div>
           )}
         </div>
@@ -1189,9 +1184,7 @@ const CommentsTab: React.FC = () => {
         <div>
           <div className="text-sm font-medium">工作原理</div>
           <div className="text-xs text-muted-foreground leading-relaxed mt-1">
-            When enabled, a label picker appears above the comment input when annotating code.
-            Labels classify your feedback intent, making it clear whether a comment is a blocking issue,
-            a trivial nitpick, or praise.
+            启用后，在标注代码时评论输入框上方会出现标签选择器。标签用于归类反馈意图，清楚表明这条评论是阻塞性问题、无关紧要的小问题，还是赞赏。
           </div>
         </div>
 
@@ -2298,7 +2291,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                     {/* Plan Width */}
                     <div className="space-y-3">
                       <div>
-                        <div className="text-sm font-medium flex items-center gap-2">{mode === 'annotate' ? 'Document Width' : 'Plan Width'}</div>
+                        <div className="text-sm font-medium flex items-center gap-2">{mode === 'annotate' ? '文档宽度' : '计划宽度'}</div>
                         <div className="text-xs text-muted-foreground">
                           {mode === 'annotate' ? '文档卡片的最大宽度' : '计划卡片的最大宽度'}
                         </div>
@@ -2685,7 +2678,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                       <div>
                         <div className="text-sm font-medium">Obsidian 集成</div>
                         <div className="text-xs text-muted-foreground">
-                          {mode === 'annotate' ? 'Save documents to your vault from the Options menu. When on, plan review also saves each approved plan here.' : 'Auto-save approved plans to your vault'}
+                          {mode === 'annotate' ? '从选项菜单将文档保存到你的库。开启后，计划评审也会把每份通过的计划保存到这里。' : '自动保存通过的计划到你的库'}
                         </div>
                       </div>
                       <button
@@ -2888,7 +2881,7 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
                       <div>
                         <div className="text-sm font-medium">Bear Notes</div>
                         <div className="text-xs text-muted-foreground">
-                          {mode === 'annotate' ? 'Save documents to Bear from the Options menu. When on, plan review also saves each approved plan here.' : 'Auto-save approved plans to Bear'}
+                          {mode === 'annotate' ? '从选项菜单将文档保存到 Bear。开启后，计划评审也会把每份通过的计划保存到这里。' : '自动保存通过的计划到 Bear'}
                         </div>
                       </div>
                       <button
@@ -2919,7 +2912,7 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
                             className="w-full px-3 py-2 bg-muted rounded-lg text-xs font-mono placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
                           />
                           <div className="text-[10px] text-muted-foreground">
-                            Comma-separated, kebab-case. Leave empty for auto-generated tags.
+                            逗号分隔，使用 kebab-case。留空则自动生成标签。
                           </div>
                         </div>
                         <div className="space-y-1.5 pl-0.5">
@@ -2970,7 +2963,7 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
                       <div>
                         <div className="text-sm font-medium">Octarine</div>
                         <div className="text-xs text-muted-foreground">
-                          {mode === 'annotate' ? 'Save documents to Octarine from the Options menu. When on, plan review also saves each approved plan here.' : 'Auto-save approved plans to Octarine'}
+                          {mode === 'annotate' ? '从选项菜单将文档保存到 Octarine。开启后，计划评审也会把每份通过的计划保存到这里。' : '自动保存通过的计划到 Octarine'}
                         </div>
                       </div>
                       <button
@@ -3057,7 +3050,7 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
                       <div>
                         <div className="text-sm font-medium">Notion</div>
                         <div className="text-xs text-muted-foreground">
-                          {mode === 'annotate' ? 'Save documents to Notion from the Options menu. When on, plan review also saves each approved plan here.' : 'Save approved plans as Notion pages'}
+                          {mode === 'annotate' ? '从选项菜单将文档保存到 Notion。开启后，计划评审也会把每份通过的计划保存到这里。' : '将通过的计划保存为 Notion 页面'}
                         </div>
                       </div>
                       <button

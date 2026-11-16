@@ -26,14 +26,14 @@ export function sheetLayoutHash(layout: SheetLayout | undefined): string {
 /** A tile's or a row's name for a screen reader: its number, title, and what stands out. */
 export function pullWords(pull: InboxPull): string {
   const you = needsYou(pull);
-  return [inboxPullLabel(pull), pull.title, pull.state === 'draft' ? 'draft' : pull.state === 'merged' ? 'merged' : null, you === 'review' ? 'needs your review' : you === 'changes' ? 'changes requested' : null, checksLabel(pull.checks)]
+  return [inboxPullLabel(pull), pull.title, pull.state === 'draft' ? '草稿' : pull.state === 'merged' ? '已合并' : null, you === 'review' ? '需要你评审' : you === 'changes' ? '已要求修改' : null, checksLabel(pull.checks)]
     .filter(Boolean)
-    .join(', ');
+    .join('，');
 }
 
 /** The Checks column's word. */
-export function checksWord(checks: InboxPullChecks | null): 'Passed' | 'Running' | 'Failing' | null {
-  return checks === 'success' ? 'Passed' : checks === 'pending' ? 'Running' : checks === 'failure' ? 'Failing' : null;
+export function checksWord(checks: InboxPullChecks | null): '通过' | '运行中' | '失败' | null {
+  return checks === 'success' ? '通过' : checks === 'pending' ? '运行中' : checks === 'failure' ? '失败' : null;
 }
 
 export type SortKey = 'number' | 'title' | 'author' | 'state' | 'checks' | 'risk' | 'updated' | 'size';

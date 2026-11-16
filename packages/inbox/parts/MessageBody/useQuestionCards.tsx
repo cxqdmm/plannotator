@@ -14,7 +14,7 @@ import { useAcceptedUndo } from '../../useAcceptedUndo';
 
 /** An unsent pick's tag on its card (statusLabel). */
 // A pick saved and not sent is part of the person's draft (approval "inbox-reply-drafts": "Draft" replaces "Not sent").
-const NOT_SENT_STATUS = { label: 'Draft', tone: 'open' } as const;
+const NOT_SENT_STATUS = { label: '草稿', tone: 'open' } as const;
 
 /** What the body's question cards, action items and context notes draw from the host. */
 export function useQuestionCards({
@@ -88,7 +88,7 @@ export function useQuestionCards({
         const open = notesRef.current?.onOpen;
         return (
           <div className="ib-ctxn-msg" data-context-note-block="">
-            <ContextNoteChip file={note.file} lines={`${note.side === 'old' ? 'removed ' : ''}${rangeWord([note.lineStart, note.lineEnd])}`} {...(open ? { onOpen: () => open(note) } : {})} />
+            <ContextNoteChip file={note.file} lines={`${note.side === 'old' ? '已删除 ' : ''}${rangeWord([note.lineStart, note.lineEnd])}`} {...(open ? { onOpen: () => open(note) } : {})} />
             <div className="ib-ctxn-msg-t">
               <InlineMarkdown text={note.text} githubRepo={refRepo?.display} repoHost={refRepo?.host} />
             </div>

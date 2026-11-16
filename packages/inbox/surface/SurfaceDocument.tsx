@@ -285,17 +285,17 @@ export const SurfaceDocument = forwardRef<SurfaceDocumentHandle, Props>(function
             />
           </div>}
           {hasContents && (
-            <button type="button" className="sf-contents-open" onClick={() => setContentsOpen(true)} aria-label="Contents" aria-expanded={contentsOpen} data-contents-open="">
+            <button type="button" className="sf-contents-open" onClick={() => setContentsOpen(true)} aria-label="目录" aria-expanded={contentsOpen} data-contents-open="">
               <Icon name="contents" size={18} />
             </button>
           )}
           {hasContents && contentsOpen && (
             <>
-              <button type="button" className="sf-contents-scrim" aria-label="Close contents" tabIndex={-1} onClick={() => setContentsOpen(false)} />
-              <div className="sf-contents" role="dialog" aria-label="Contents" data-contents="sheet">
+              <button type="button" className="sf-contents-scrim" aria-label="关闭目录" tabIndex={-1} onClick={() => setContentsOpen(false)} />
+              <div className="sf-contents" role="dialog" aria-label="目录" data-contents="sheet">
                 <div className="sf-contents-h">
-                  <span>Contents</span>
-                  <button type="button" className="sf-contents-close" onClick={() => setContentsOpen(false)} aria-label="Close contents">
+                  <span>目录</span>
+                  <button type="button" className="sf-contents-close" onClick={() => setContentsOpen(false)} aria-label="关闭目录">
                     <Icon name="x" size={18} />
                   </button>
                 </div>

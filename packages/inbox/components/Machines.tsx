@@ -15,19 +15,19 @@ import { errorText } from '../toastError';
  */
 export function linkErrorText(error: unknown): string {
   // A fetch that never reached the Inbox (a phone on a dropped link) says so in plain words, never the browser's own.
-  if (!(error instanceof InboxApiError)) return errorText(error, 'The link did not go through.');
+  if (!(error instanceof InboxApiError)) return errorText(error, '链接未能建立。');
   if (error.code === 'validation_error') {
-    if (error.message.startsWith('address:')) return "Type the other machine's address on your tailnet, like mini.tail1234.ts.net:8443.";
-    if (error.message.startsWith('link:')) return 'That is not a link code. A link code starts with plannotator://link.';
-    return "Paste the other machine's link code, or type its address and six digits.";
+    if (error.message.startsWith('address:')) return '输入另一台机器在你 tailnet 上的地址，例如 mini.tail1234.ts.net:8443。';
+    if (error.message.startsWith('link:')) return '这不是链接码。链接码以 plannotator://link 开头。';
+    return '粘贴另一台机器的链接码，或输入其地址和六位数字。';
   }
-  if (error.code === 'no_way_back') return 'The other machine needs a way back to this one, and Tailscale could not publish this machine. Check Tailscale here, then link again.';
+  if (error.code === 'no_way_back') return '另一台机器需要一条回到这台机器的通路，而 Tailscale 无法发布这台机器。请在此检查 Tailscale，然后重新链接。';
   return error.message;
 }
 
 /** "2 waiting to send": what the outbox holds for a machine, said the same way in its line and in Unlink. */
 function waitingText(waiting: number): string {
-  return `${waiting} waiting to send`;
+  return `${waiting} 条待发送`;
 }
 
 /** The line under a linked machine: its state, what its update says when this page offers updates, then the answers waiting for it. */
@@ -87,15 +87,15 @@ export function MachinesSection({ machines, onChanged, onMachineUpdate }: Machin
 
   return (
     <section className="ib-sgroup" data-settings-machines="" aria-labelledby="ib-g-machines">
-      <h2 id="ib-g-machines">Linked machines</h2>
-      <p>A link works both ways, over your tailnet. Unlink removes it on both machines.</p>
+      <h2 id="ib-g-machines">已关联的机器</h2>
+      <p>链接在 tailnet 上双向生效。取消关联会在两台机器上移除它。</p>
       {doorError && (
         <div className="ib-callout ib-warn" role="alert" data-machines-door-error="">
           <Icon name="warn" />
-          <span>This machine is not on your tailnet, so linked machines cannot reach it: {doorError}</span>
+          <span>这台机器不在你的 tailnet 上，因此已关联的机器无法访问它：{doorError}</span>
         </div>
       )}
-      <div className="ib-card" aria-label="Linked machines">
+      <div className="ib-card" aria-label="已关联的机器">
         {linked.map((machine) => (
           <div className="ib-prow" key={machine.id} data-machine-row={machine.id} data-machine-state={machine.state}>
             <span className="ib-tile">
@@ -109,13 +109,13 @@ export function MachinesSection({ machines, onChanged, onMachineUpdate }: Machin
               {onMachineUpdate && <MachineUpdateButton machine={machine} onPress={() => onMachineUpdate(machine.id)} />}
               <UnlinkLink
                 name={machine.name}
-                warning={machine.waiting > 0 ? `${waitingText(machine.waiting)} will be lost.` : undefined}
+                warning={machine.waiting > 0 ? `${waitingText(machine.waiting)}将丢失。` : undefined}
                 onRemove={async () => {
                   setError(null);
                   setUnlinkedNote(null);
                   try {
                     const answer = await inboxApi.unlinkMachine(machine.id);
-                    if (!answer.told) setUnlinkedNote(`Unlinked here. ${machine.name} could not be reached, so it drops the link the next time it is in touch. This computer stays reachable on your tailnet for it for up to 7 days, until it hears.`);
+                    if (!answer.told) setUnlinkedNote(`已在此取消关联。无法联系到 ${machine.name}，因此它会在下次联系时断开链接。这台机器会在你的 tailnet 上对它保持可达最多 7 天，直到它收到消息。`);
                   } catch (cause) {
                     setError(linkErrorText(cause));
                   }
@@ -140,8 +140,8 @@ export function MachinesSection({ machines, onChanged, onMachineUpdate }: Machin
         ) : (
           <div className="ib-prow" data-machine-start="">
             <span className="ib-txt">
-              <span className="ib-l">{linked.length > 0 ? 'Link another machine' : 'No machine linked yet'}</span>
-              {linked.length === 0 && <span className="ib-desc">Make a link code on the other computer, then paste it here.</span>}
+              <span className="ib-l">{linked.length > 0 ? '关联另一台机器' : '尚未关联机器'}</span>
+              {linked.length === 0 && <span className="ib-desc">在另一台机器上生成链接码，然后粘贴到这里。</span>}
               {unlinkedNote && (
                 <span className="ib-desc" data-machine-unlinked="" role="status">
                   {unlinkedNote}
@@ -149,7 +149,7 @@ export function MachinesSection({ machines, onChanged, onMachineUpdate }: Machin
               )}
               {justLinked && (
                 <span className="ib-desc ib-paired" data-machine-linked="" role="status">
-                  <Icon name="check" size={13} /> Linked with {justLinked}.
+                  <Icon name="check" size={13} /> 已与 {justLinked} 关联。
                 </span>
               )}
             </span>
@@ -166,23 +166,23 @@ export function MachinesSection({ machines, onChanged, onMachineUpdate }: Machin
                 }}
                 data-machine-link=""
               >
-                Link a machine
+                关联机器
               </button>
             </span>
           </div>
         )}
         <div className="ib-prow" data-machine-offer-row="">
           <span className="ib-txt">
-            <span className="ib-l">This machine&apos;s link code</span>
+            <span className="ib-l">这台机器的链接码</span>
             <span className="ib-desc">
               {offer
-                ? `Paste it in Settings → Machines on the other computer before ${shortTime(offer.expires_at)}. Each code works once. This Inbox stays on your tailnet while a code is open or a machine is linked.`
-                : 'Showing a code puts this Inbox on your tailnet with Tailscale Serve, so the other computer can reach it.'}
+                ? `请在 ${shortTime(offer.expires_at)} 之前在另一台机器的设置 → 机器中粘贴。每个链接码只能使用一次。只要有链接码打开或有关联的机器，此收件箱就会保持在你的 tailnet 上。`
+                : '显示链接码会让此收件箱通过 Tailscale Serve 出现在你的 tailnet 上，以便另一台机器能够访问它。'}
             </span>
           </span>
           <span className="ib-ctl">
             <button type="button" className="ib-btn" disabled={offering} onClick={() => void showOffer()} data-machine-offer-start="">
-              {offer ? 'New code' : 'Show link code'}
+              {offer ? '新链接码' : '显示链接码'}
             </button>
           </span>
         </div>
@@ -192,14 +192,14 @@ export function MachinesSection({ machines, onChanged, onMachineUpdate }: Machin
               <div className="ib-callout ib-warn" data-machine-offer-tailnet="">
                 <Icon name="warn" />
                 <span>
-                  Tailscale did not publish this machine, so the other computer cannot reach it yet: {offer.tailnet_error}
+                  Tailscale 未能发布这台机器，因此另一台机器暂时无法访问它：{offer.tailnet_error}
                 </span>
               </div>
             )}
             <CodeBox text={offer.link} />
             {offer.tailnet && (
               <p className="ib-cnote">
-                Or type this machine&apos;s address, <code>{offer.tailnet}</code>, and <code className="ib-mcode-digits">{offer.code}</code>.
+                或者输入这台机器的地址 <code>{offer.tailnet}</code>，以及 <code className="ib-mcode-digits">{offer.code}</code>。
               </p>
             )}
           </div>
@@ -241,13 +241,13 @@ function UnsentWrites({ linked }: { linked: readonly MachineView[] }) {
   if (unsent.length === 0) return null;
   return (
     <>
-      <p className="ib-mnote">Not sent: these were waiting for a machine that is no longer linked. Copy the words to send them another way.</p>
-      <div className="ib-card" aria-label="Not sent" data-machines-unsent="">
+      <p className="ib-mnote">未发送：这些内容原本在等待一台已不再关联的机器。复制这些文字以通过其他方式发送。</p>
+      <div className="ib-card" aria-label="未发送" data-machines-unsent="">
         {unsent.map((entry) => (
           <div className="ib-prow" key={entry.key} data-unsent={entry.key}>
             <span className="ib-txt">
               <span className="ib-l">
-                {entry.notice?.kind === 'may_have_been_delivered' ? 'May have reached' : 'Not sent to'} {entry.machine_name ?? 'a machine no longer linked'} · {shortTime(entry.queued_at)}
+                {entry.notice?.kind === 'may_have_been_delivered' ? '可能已送达' : '未发送至'} {entry.machine_name ?? '一台已不再关联的机器'} · {shortTime(entry.queued_at)}
               </span>
               {entry.words ? (
                 <span className="ib-desc ib-held-words" dir="auto">
@@ -268,7 +268,7 @@ function UnsentWrites({ linked }: { linked: readonly MachineView[] }) {
                   void inboxApi.dismissOutbox(entry.key).catch(() => {});
                 }}
               >
-                Dismiss
+                忽略
               </button>
             </span>
           </div>
@@ -280,10 +280,10 @@ function UnsentWrites({ linked }: { linked: readonly MachineView[] }) {
 
 /** A held write with no words, said by what it did. */
 function unsentWhat(route: string): string {
-  if (/\/picks$/.test(route)) return 'A pick';
-  if (/\/(read|seen)$/.test(route)) return 'Mark read';
-  if (/\/resolve$/.test(route)) return 'Archive';
-  return 'A change';
+  if (/\/picks$/.test(route)) return '一个选择';
+  if (/\/(read|seen)$/.test(route)) return '标为已读';
+  if (/\/resolve$/.test(route)) return '归档';
+  return '一项更改';
 }
 
 /** Link a machine: paste its link code, or type its address and six digits. Only the Link button sends. */
@@ -320,7 +320,7 @@ function LinkForm({ onCancel, onLinked }: { onCancel: () => void; onLinked: (nam
   return (
     <div className="ib-mform" data-machine-link-form="">
       <label className="ib-mfield">
-        <span className="ib-l">Link code from the other computer</span>
+        <span className="ib-l">来自另一台机器的链接码</span>
         <input
           ref={first}
           type="text"
@@ -335,14 +335,14 @@ function LinkForm({ onCancel, onLinked }: { onCancel: () => void; onLinked: (nam
           data-machine-link-code=""
         />
       </label>
-      <div className="ib-mor">Or its address and six digits</div>
+      <div className="ib-mor">或输入其地址和六位数字</div>
       <div className="ib-mpair">
         <label className="ib-mfield">
-          <span className="ib-sr">Address</span>
+          <span className="ib-sr">地址</span>
           <input
             type="text"
             className="ib-fbk-contact"
-            placeholder="Its address, like mini.tail1234.ts.net:8443"
+            placeholder="其地址，例如 mini.tail1234.ts.net:8443"
             spellCheck={false}
             autoComplete="off"
             value={address}
@@ -353,13 +353,13 @@ function LinkForm({ onCancel, onLinked }: { onCancel: () => void; onLinked: (nam
           />
         </label>
         <label className="ib-mfield ib-mdigits">
-          <span className="ib-sr">Six digits</span>
+          <span className="ib-sr">六位数字</span>
           <input
             type="text"
             className="ib-fbk-contact ib-mono"
             inputMode="numeric"
             maxLength={6}
-            placeholder="Six digits"
+            placeholder="六位数字"
             autoComplete="one-time-code"
             value={code}
             readOnly={busy || pasted !== ''}
@@ -377,10 +377,10 @@ function LinkForm({ onCancel, onLinked }: { onCancel: () => void; onLinked: (nam
       )}
       <div className="ib-mform-f">
         <button type="button" className="ib-btn ib-ghost" onClick={onCancel} disabled={busy}>
-          Cancel
+          取消
         </button>
         <button type="button" className={`ib-btn ib-pri${ready ? '' : ' ib-dim'}`} aria-disabled={!ready} onClick={() => void submit()} data-machine-link-submit="">
-          {busy ? 'Linking…' : 'Link'}
+          {busy ? '正在关联…' : '关联'}
         </button>
       </div>
     </div>

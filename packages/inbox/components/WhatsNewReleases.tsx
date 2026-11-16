@@ -20,7 +20,7 @@ const RELEASES_URL = 'https://github.com/backnotprop/plannotator/releases';
 export function shortDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? null : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date);
+  return Number.isNaN(date.getTime()) ? null : new Intl.DateTimeFormat('zh-CN', { month: 'numeric', day: 'numeric' }).format(date);
 }
 
 /** A TL;DR line's words, its `code` in the mono face. */
@@ -40,7 +40,7 @@ function Dot({ kind }: { kind: string }) {
 export function TldrLedger({ lines }: { lines: TldrLine[] }) {
   return (
     <section className="ib-wn-tldr" aria-labelledby="ib-wn-tldr-h" data-whats-new-tldr="">
-      <h2 id="ib-wn-tldr-h">TL;DR</h2>
+      <h2 id="ib-wn-tldr-h">摘要</h2>
       <ul>
         {lines.map((line, i) => {
           const dot = tldrDot(line.label);
@@ -71,12 +71,12 @@ export function KnownLine({ row, loading }: { row: WhatsNewRelease | null; loadi
   if (row?.listed) {
     return (
       <section className="ib-wn-tldr" aria-labelledby="ib-wn-tldr-h" data-whats-new-known="">
-        <h2 id="ib-wn-tldr-h">TL;DR</h2>
+        <h2 id="ib-wn-tldr-h">摘要</h2>
         <p className="ib-wn-known">
           <TldrText text={row.listed.text} />
         </p>
         <p className="ib-wn-from">
-          From the release list in <span className="ib-wn-mono">{row.listed.in}</span>&apos;s notes
+          来自 <span className="ib-wn-mono">{row.listed.in}</span> 发布说明中的发布列表
         </p>
       </section>
     );
@@ -84,7 +84,7 @@ export function KnownLine({ row, loading }: { row: WhatsNewRelease | null; loadi
   if (!loading) return <div className="ib-wn-tldr ib-wn-tldr-empty" aria-hidden="true" />;
   return (
     <section className="ib-wn-tldr" aria-busy="true" aria-label="TL;DR">
-      <h2>TL;DR</h2>
+      <h2>摘要</h2>
       {[64, 52, 58].map((w) => (
         <span key={w} className="ib-wn-sk" style={{ width: `${w}%` }} />
       ))}
@@ -108,7 +108,7 @@ function RowWords({ row }: { row: WhatsNewRelease }) {
   }
   return (
     <p className="ib-wn-rp" data-whats-new-words={words.kind}>
-      {words.kind === 'none' ? 'No summary' : <TldrText text={words.text} />}
+      {words.kind === 'none' ? '无摘要' : <TldrText text={words.text} />}
     </p>
   );
 }
@@ -120,7 +120,7 @@ function VersionLine({ row, current }: { row: WhatsNewRelease; current: string }
       {mine && <Dot kind="yours" />}
       <span className="ib-wn-rv">
         {row.version}
-        {mine && <small className="ib-wn-yours">You have this</small>}
+        {mine && <small className="ib-wn-yours">你使用的是此版本</small>}
       </span>
       <span className="ib-wn-rd">{shortDate(row.published_at) ?? ''}</span>
     </>
@@ -148,7 +148,7 @@ function ReleasesList({ releases, showing, onOpen }: ReleasesListProps) {
   return (
     <>
       <div className="ib-wn-sub ib-wn-sub-first">
-        <span>Latest</span>
+        <span>最新</span>
       </div>
       <a
         href={`#whats-new=${top.version}`}
@@ -177,7 +177,7 @@ function ReleasesList({ releases, showing, onOpen }: ReleasesListProps) {
       {rest.length > 0 && (
         <>
           <div className="ib-wn-sub">
-            <span>Earlier releases</span>
+            <span>更早的版本</span>
             <span className="ib-wn-mono ib-wn-n">{formatCount(rest.length)}</span>
           </div>
           <ul className="ib-wn-rlist">
@@ -199,7 +199,7 @@ function ReleasesList({ releases, showing, onOpen }: ReleasesListProps) {
         </>
       )}
       <a className="ib-wn-more" href={RELEASES_URL} target="_blank" rel="noopener noreferrer">
-        Older releases on GitHub
+        GitHub 上的更早版本
         <Icon name="external" />
       </a>
     </>
@@ -232,7 +232,7 @@ export function ReleasesPanel(props: ReleasesListProps & { scrollRef?: RefObject
   return (
     <aside className="ib-wn-panel" aria-labelledby="ib-wn-rel-h" data-whats-new-panel="">
       <div className="ib-wn-phead">
-        <h2 id="ib-wn-rel-h">Releases</h2>
+        <h2 id="ib-wn-rel-h">版本</h2>
         <span className="ib-wn-mono ib-wn-n">{formatCount(props.releases.releases.length)}</span>
       </div>
       <div className="ib-wn-pscroll" ref={scroller}>
@@ -254,8 +254,8 @@ export function ReleasesSheet(props: ReleasesListProps & { onClose: () => void; 
       <div className="ib-wn-sheet-in" tabIndex={-1} data-whats-new-sheet="">
         <div className="ib-wn-grab" aria-hidden="true" />
         <div className="ib-wn-phead">
-          <h2 id="ib-wn-sheet-h">Releases</h2>
-          <button type="button" className="ib-wn-sheet-x" aria-label="Close" onClick={props.onClose}>
+          <h2 id="ib-wn-sheet-h">版本</h2>
+          <button type="button" className="ib-wn-sheet-x" aria-label="关闭" onClick={props.onClose}>
             <Icon name="x" />
           </button>
         </div>
@@ -294,25 +294,25 @@ export function NotesMissing({
   if (unreachable) {
     body = (
       <>
-        The notes for <span className="ib-wn-mono">{version}</span> aren&apos;t on this computer yet. They load the next time you open this release online.
+        此电脑上还没有 <span className="ib-wn-mono">{version}</span> 的发布说明。下次在线打开此版本时会加载。
       </>
     );
-  } else body = message ?? 'These release notes are not saved on this computer.';
+  } else body = message ?? '这些发布说明未保存在此电脑上。';
   return (
     <section className="ib-wn-off" role="status" data-whats-new-missing={unreachable ? 'unreachable' : 'not-found'}>
-      <span className="ib-wn-tl">Not saved</span>
+      <span className="ib-wn-tl">未保存</span>
       <div>
-        <h2>{unreachable ? "Can't reach GitHub" : 'Not on this computer'}</h2>
+        <h2>{unreachable ? '无法连接 GitHub' : '不在此电脑上'}</h2>
         <p>{body}</p>
         <div className="ib-wn-btns">
           {unreachable && onRetry && (
             <button type="button" className="ib-btn" onClick={onRetry} disabled={retrying} data-whats-new-retry="">
               <Icon name="refresh" />
-              Try again
+              重试
             </button>
           )}
           <a className="ib-btn" href={releaseUrl} target="_blank" rel="noopener noreferrer" data-whats-new-open-github="">
-            Open on GitHub
+            在 GitHub 上打开
             <Icon name="external" />
           </a>
         </div>

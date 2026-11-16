@@ -32,7 +32,7 @@ export const INBOX_SNOOZE_DAYS = 60;
 /** The longest delay `setTimeout` takes: past it the timer fires at once. */
 export const INBOX_SNOOZE_TIMER_MAX_MS = 2 ** 31 - 1;
 /** The Snoozed band under Quiet, in the list the window draws. Not a section a row is placed in. */
-export const INBOX_SNOOZED_BAND = { id: "snoozed", label: "Snoozed" } as const;
+export const INBOX_SNOOZED_BAND = { id: "snoozed", label: "稍后提醒" } as const;
 
 const LATER_TODAY_HOURS = 3;
 /** From this hour (6 PM) Later today is gone: three hours on is the night. */

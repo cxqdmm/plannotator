@@ -11,7 +11,7 @@ export interface SideButton {
 }
 
 /** Side with no agent mark to draw: the two bubbles, "Side chat". */
-const PLAIN: SideButton = { label: 'Side chat' };
+const PLAIN: SideButton = { label: '侧边对话' };
 
 /** The agent as the tooltip names it: Claude by its own name on every Claude host, the others by their host's name. */
 function agentName(host: string): string | null {
@@ -28,7 +28,7 @@ function agentName(host: string): string | null {
 export function sideButtonFor(host: string | null | undefined): SideButton {
   if (!host || !hostHasMark(host)) return PLAIN;
   const name = agentName(host);
-  return { icon: <HostMark host={host} />, label: name ? `Side chat with ${name}` : PLAIN.label };
+  return { icon: <HostMark host={host} />, label: name ? `与 ${name} 侧边对话` : PLAIN.label };
 }
 
 /**

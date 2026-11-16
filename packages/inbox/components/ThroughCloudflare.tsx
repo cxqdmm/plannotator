@@ -12,7 +12,7 @@ function AddressQr({ url }: { url: string }) {
   const path = useMemo(() => qrModules(url), [url]);
   return (
     <div className="ib-qr-wrap ib-cf-qr">
-      <svg className="ib-qr" viewBox={`-2 -2 ${path.size + 4} ${path.size + 4}`} role="img" aria-label="QR code of the Inbox address" data-cloudflare-qr="" shapeRendering="crispEdges">
+      <svg className="ib-qr" viewBox={`-2 -2 ${path.size + 4} ${path.size + 4}`} role="img" aria-label="收件箱地址的二维码" data-cloudflare-qr="" shapeRendering="crispEdges">
         <rect x={-2} y={-2} width={path.size + 4} height={path.size + 4} fill="#fff" />
         <path d={path.d} fill="#000" />
       </svg>
@@ -26,7 +26,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
     <button
       type="button"
       className="ib-btn ib-ghost"
-      aria-label={`Copy the ${label} address`}
+      aria-label={label === 'Inbox' ? '复制收件箱地址' : '复制会话地址'}
       onClick={() => {
         void navigator.clipboard?.writeText(text).then(() => {
           setCopied(true);
@@ -35,7 +35,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       }}
     >
       <Icon name={copied ? 'check' : 'copy'} size={13} />
-      {copied ? 'Copied' : 'Copy'}
+      {copied ? '已复制' : '复制'}
     </button>
   );
 }
@@ -45,18 +45,18 @@ function problemOf(view: CloudflareView): string | null {
   if (view.error) return view.error;
   const tunnel = view.tunnel;
   if (!tunnel) return null;
-  if (tunnel.state === 'missing') return tunnel.error ?? 'cloudflared is not installed.';
-  if (tunnel.state === 'retrying') return `The tunnel is not connected: ${tunnel.error ?? 'cloudflared stopped'}. It starts again by itself.`;
+  if (tunnel.state === 'missing') return tunnel.error ?? '未安装 cloudflared。';
+  if (tunnel.state === 'retrying') return `隧道未连接：${tunnel.error ?? 'cloudflared 已停止'}。它会自行重新启动。`;
   return null;
 }
 
 function tunnelLine(view: CloudflareView): string {
   const tunnel = view.tunnel;
-  if (!view.on) return 'tunnel stopped, setup kept';
-  if (!tunnel) return 'starting';
-  if (tunnel.state === 'connected') return 'tunnel connected';
-  if (tunnel.state === 'starting') return 'tunnel starting';
-  return 'tunnel not connected';
+  if (!view.on) return '隧道已停止，设置已保留';
+  if (!tunnel) return '正在启动';
+  if (tunnel.state === 'connected') return '隧道已连接';
+  if (tunnel.state === 'starting') return '隧道正在启动';
+  return '隧道未连接';
 }
 
 function RemoveForm({ onDone, onCancel }: { onDone: (view: CloudflareView) => void; onCancel: () => void }) {
@@ -72,7 +72,7 @@ function RemoveForm({ onDone, onCancel }: { onDone: (view: CloudflareView) => vo
     try {
       onDone(await postCloudflare('remove', { token: sent }));
     } catch (failure) {
-      setError(failure instanceof CloudflareRefusal ? failure.message : 'Could not reach this Inbox.');
+      setError(failure instanceof CloudflareRefusal ? failure.message : '无法连接到该收件箱。');
     } finally {
       setBusy(false);
     }
@@ -81,9 +81,9 @@ function RemoveForm({ onDone, onCancel }: { onDone: (view: CloudflareView) => vo
     <form className="ib-prow" onSubmit={(event) => void submit(event)} data-cloudflare-remove="">
       <span className="ib-txt">
         <label className="ib-l" htmlFor="ib-cf-remove-token">
-          Remove from Cloudflare
+          从 Cloudflare 移除
         </label>
-        <span className="ib-desc">Deletes the two addresses, the login gate and the tunnel. It needs an API token again; it is not kept.</span>
+        <span className="ib-desc">删除两个地址、登录验证和隧道。需要再次提供 API 令牌；令牌不会被保留。</span>
         {error && (
           <span className="ib-desc" role="alert">
             {error}
@@ -93,10 +93,10 @@ function RemoveForm({ onDone, onCancel }: { onDone: (view: CloudflareView) => vo
       <span className="ib-ctl ib-vkeyctl">
         <input id="ib-cf-remove-token" className="ib-vkey" type="password" autoComplete="new-password" spellCheck={false} value={token} onChange={(event) => setToken(event.target.value)} />
         <button type="submit" className="ib-btn ib-danger" disabled={busy || !token.trim()}>
-          Remove
+          移除
         </button>
         <button type="button" className="ib-btn ib-ghost" onClick={onCancel}>
-          Cancel
+          取消
         </button>
       </span>
     </form>
@@ -132,7 +132,7 @@ export function ThroughCloudflare() {
     return (
       <section className="ib-sgroup" data-settings-cloudflare="elsewhere" aria-labelledby="ib-g-cloudflare">
         <h2 id="ib-g-cloudflare">Cloudflare</h2>
-        <p>Change this on the computer itself or over your tailnet.</p>
+        <p>请在这台计算机上或通过你的 tailnet 修改。</p>
       </section>
     );
   }
@@ -156,11 +156,11 @@ export function ThroughCloudflare() {
     <section className="ib-sgroup" data-settings-cloudflare={state} aria-labelledby="ib-g-cloudflare">
       <h2 id="ib-g-cloudflare">Cloudflare</h2>
       <p>
-        Open the Inbox and sessions from your other devices with{' '}
+        用你自己的 Cloudflare 账户，通过{' '}
         <a href="https://www.cloudflare.com/products/access/" target="_blank" rel="noreferrer">
           Cloudflare Access
         </a>{' '}
-        and Cloudflare Tunnel, on your own Cloudflare account. Only your e-mail can sign in.
+        和 Cloudflare Tunnel，在你的其他设备上打开收件箱和会话。只有你的电子邮箱可以登录。
       </p>
       {showJob ? (
         <CloudflareProgress
@@ -186,13 +186,13 @@ export function ThroughCloudflare() {
               <CloudflareTileMark />
             </span>
             <span className="ib-txt">
-              <span className="ib-l">Reach the Inbox through Cloudflare</span>
-              <span className="ib-desc">Needs a Cloudflare account with a domain on it, Zero Trust turned on (the Free plan is enough) and cloudflared on this computer.</span>
+              <span className="ib-l">通过 Cloudflare 访问收件箱</span>
+              <span className="ib-desc">需要一个绑定了域名的 Cloudflare 账户、已开启 Zero Trust（免费计划即可），以及这台计算机上安装的 cloudflared。</span>
               <ul className="ib-checks ib-cf-need" data-cloudflared={view.cloudflared.found ? 'found' : 'missing'}>
                 <li className={view.cloudflared.found ? 'ib-ck-ok' : 'ib-ck-fail'}>
                   <Icon name={view.cloudflared.found ? 'checkCircle' : 'xCircle'} size={14} />
                   <span>
-                    {view.cloudflared.found ? 'cloudflared found on this computer' : 'cloudflared is not installed'}
+                    {view.cloudflared.found ? '已在这台计算机上找到 cloudflared' : '未安装 cloudflared'}
                     {!view.cloudflared.found && <span className="ib-fix">{view.cloudflared.install}</span>}
                   </span>
                 </li>
@@ -200,7 +200,7 @@ export function ThroughCloudflare() {
             </span>
             <span className="ib-ctl">
               <button type="button" className="ib-btn ib-pri" disabled={!view.cloudflared.found} onClick={() => setMode('form')} data-cloudflare-setup="">
-                Set up
+                设置
               </button>
             </span>
           </div>
@@ -213,11 +213,11 @@ export function ThroughCloudflare() {
             </span>
             <span className="ib-txt">
               <span className="ib-l">
-                <span id="ib-cf-label">Reach the Inbox through Cloudflare</span>
-                {problem && <span className="ib-chip ib-chip-err">Not working</span>}
+                <span id="ib-cf-label">通过 Cloudflare 访问收件箱</span>
+                {problem && <span className="ib-chip ib-chip-err">无法正常工作</span>}
               </span>
               <span className="ib-desc">
-                {view.on ? 'On' : 'Off'} · only {view.allowed.join(', ')} can sign in · {tunnelLine(view)}
+                {view.on ? '开' : '关'} · 仅 {view.allowed.join('、')} 可登录 · {tunnelLine(view)}
               </span>
             </span>
             <span className="ib-ctl">
@@ -232,7 +232,7 @@ export function ThroughCloudflare() {
               row.url && (
                 <div className="ib-prow" key={row.label} data-cloudflare-address={row.label}>
                   <span className="ib-txt">
-                    <span className="ib-l">{row.label === 'Inbox' ? 'Inbox address' : 'Sessions address'}</span>
+                    <span className="ib-l">{row.label === 'Inbox' ? '收件箱地址' : '会话地址'}</span>
                     <span className="ib-desc ib-mono">{row.label === 'Inbox' ? row.url : `${row.url}s/…`}</span>
                   </span>
                   <span className="ib-ctl">
@@ -245,7 +245,7 @@ export function ThroughCloudflare() {
             <div className="ib-prow ib-cf-on">
               <AddressQr url={view.url} />
               <span className="ib-txt">
-                <span className="ib-desc">Scan to open the Inbox on your phone, then sign in with the code Cloudflare e-mails you.</span>
+                <span className="ib-desc">扫描即可在手机上打开收件箱，然后使用 Cloudflare 发到你邮箱的验证码登录。</span>
               </span>
             </div>
           )}
@@ -266,11 +266,11 @@ export function ThroughCloudflare() {
           ) : (
             <div className="ib-prow">
               <span className="ib-txt">
-                <span className="ib-desc">The switch stops or starts the tunnel and keeps the setup. Remove deletes it from Cloudflare.</span>
+                <span className="ib-desc">开关会停止或启动隧道，并保留设置。“移除”会从 Cloudflare 删除它。</span>
               </span>
               <span className="ib-ctl">
                 <button type="button" className="ib-btn ib-ghost" onClick={() => setMode('remove')} data-cloudflare-remove-open="">
-                  Remove
+                  移除
                 </button>
               </span>
             </div>

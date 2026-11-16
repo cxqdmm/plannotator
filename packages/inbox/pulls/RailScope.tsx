@@ -18,27 +18,27 @@ const pill = (active: boolean) =>
 /** The review app's Changes | All files pills: Changes with its count, All files without. */
 export function RailScopeSwitch({ scope, changed, onSelect }: { scope: TreeScope; changed: number; onSelect: (scope: TreeScope) => void }) {
   return (
-    <div className="flex min-w-0 items-center ib-prp-scope" role="group" aria-label="Files shown in the tree" data-tree-scope-switch="">
+    <div className="flex min-w-0 items-center ib-prp-scope" role="group" aria-label="树中显示的文件" data-tree-scope-switch="">
       <button
         type="button"
         aria-pressed={scope === 'changes'}
         onClick={() => onSelect('changes')}
         data-tree-scope="changes"
-        title="The files this review changes"
+        title="这次评审改动的文件"
         className={`flex-shrink-0 px-2 ${pill(scope === 'changes')}`}
       >
-        <span>Changes</span>
-        <span className="tabular-nums text-[11px] font-normal text-muted-foreground">{changed.toLocaleString('en-US')}</span>
+        <span>改动</span>
+        <span className="tabular-nums text-[11px] font-normal text-muted-foreground">{changed.toLocaleString('zh-CN')}</span>
       </button>
       <button
         type="button"
         aria-pressed={scope === 'all'}
         onClick={() => onSelect('all')}
         data-tree-scope="all"
-        title="Every file of the repository at the revision the diff reads"
+        title="Diff 所读取修订版本上的仓库全部文件"
         className={`relative min-w-0 pl-1.5 pr-3 ${pill(scope === 'all')}`}
       >
-        <span className="truncate">All files</span>
+        <span className="truncate">所有文件</span>
       </button>
     </div>
   );
@@ -52,7 +52,7 @@ export function pullRepoFetch(key: string): typeof fetch {
   return ((input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     const asked = /^\/api\/(repo-files|repo-file)\?(.*)$/.exec(url);
-    if (!asked) return Promise.reject(new Error('The repository could not be listed.'));
+    if (!asked) return Promise.reject(new Error('无法列出这个仓库。'));
     return globalThis.fetch(pullUrl(`/pulls/${asked[1]}`, key, asked[2]), init);
   }) as typeof fetch;
 }

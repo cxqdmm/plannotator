@@ -163,11 +163,11 @@ export function useTourReplay(state: TourState, dispatch: (action: TourAction) =
     const timers = [
       setTimeout(() => {
         dispatch({ type: 'warmDelivered' });
-        say('Delivered to Claude Code.');
+        say('已送达 Claude Code。');
       }, t.delivered),
       setTimeout(() => {
         dispatch({ type: 'warmArrive' });
-        say('New message from Claude Code, replayed from the real thread: the evaluation, with pictures to choose from.');
+        say('来自 Claude Code 的新消息，回放自真实会话：评估，附有可选的图片。');
       }, t.reply),
     ];
     return () => timers.forEach(clearTimeout);
@@ -180,15 +180,15 @@ export function useTourReplay(state: TourState, dispatch: (action: TourAction) =
     const timers = [
       setTimeout(() => {
         dispatch({ type: 'delivered' });
-        say('Delivered to Claude Code.');
+        say('已送达 Claude Code。');
       }, t.delivered),
       setTimeout(() => {
         dispatch({ type: 'arrive' });
-        say('New message from Claude Code, replayed from the real thread.');
+        say('来自 Claude Code 的新消息，回放自真实会话。');
       }, t.first),
       setTimeout(() => {
         dispatch({ type: 'arrive' });
-        say('New message from Claude Code: the pull request, with screenshots in the message.');
+        say('来自 Claude Code 的新消息：PR，消息里带有截图。');
       }, t.second),
     ];
     return () => timers.forEach(clearTimeout);
@@ -200,11 +200,11 @@ export function useTourReplay(state: TourState, dispatch: (action: TourAction) =
     const timers = [
       setTimeout(() => {
         dispatch({ type: 'filmDelivered' });
-        say('Delivered to Claude Code.');
+        say('已送达 Claude Code。');
       }, t.delivered),
       setTimeout(() => {
         dispatch({ type: 'filmArrive' });
-        say('New message from Claude Code about the film, replayed from the real thread.');
+        say('来自 Claude Code 的新消息，关于影片，回放自真实会话。');
       }, t.reply),
     ];
     return () => timers.forEach(clearTimeout);
@@ -217,11 +217,11 @@ export function useTourReplay(state: TourState, dispatch: (action: TourAction) =
     const timers = [
       setTimeout(() => {
         dispatch({ type: 'newDelivered' });
-        say('Delivered to Claude Code.');
+        say('已送达 Claude Code。');
       }, t.delivered),
       setTimeout(() => {
         dispatch({ type: 'newArrive' });
-        say('New message from Claude Code in your new thread.');
+        say('你的新会话里有来自 Claude Code 的新消息。');
       }, t.reply),
     ];
     return () => timers.forEach(clearTimeout);
@@ -249,44 +249,44 @@ export function TourBar({
 }) {
   const real = step === TOUR_STEPS;
   return (
-    <div className={over ? 'ib-tour-bar ib-tour-bar-over' : 'ib-tour-bar'} role="region" aria-label="Tour" data-tour-bar={over ? undefined : ''} data-tour-bar-over={over ? '' : undefined}>
+    <div className={over ? 'ib-tour-bar ib-tour-bar-over' : 'ib-tour-bar'} role="region" aria-label="导览" data-tour-bar={over ? undefined : ''} data-tour-bar-over={over ? '' : undefined}>
       <span className="ib-tour-tag">
         <Icon name="map" size={13} />
-        Tour
+        导览
       </span>
       <span className="ib-tour-what">
         {step === TOUR_SETTINGS_STEP ? (
           <>
-            <b>Your settings</b>
-            <span className="ib-mut ib-tour-long"> · this step is real: what you pick here stays</span>
+            <b>你的设置</b>
+            <span className="ib-mut ib-tour-long"> · 这一步是真的：你在这里选的内容会保留</span>
           </>
         ) : real ? (
           <>
-            <b>Your own Inbox</b>
-            <span className="ib-mut ib-tour-long"> · this step is real: what you connect here stays connected</span>
+            <b>你自己的收件箱</b>
+            <span className="ib-mut ib-tour-long"> · 这一步是真的：你在这里连接的内容会保持连接</span>
           </>
         ) : (
           <>
-            <b>A replay</b>
-            <span className="ib-mut ib-tour-long"> of how we built the Inbox with the Inbox. What you do here stays here.</span>
+            <b>一次回放</b>
+            <span className="ib-mut ib-tour-long">，展示我们如何用收件箱搭建收件箱。你在这里做的操作只留在这里。</span>
           </>
         )}
       </span>
       {arrivals > 0 && (
-        <Tip content="Leave the tour and open your Inbox">
+        <Tip content="离开导览并打开你的收件箱">
           <button type="button" className="ib-tour-chip" onClick={onArrivals} data-tour-arrivals={arrivals}>
             <Icon name="inbox" size={14} />
-            {arrivals === 1 ? '1 new message in your Inbox' : `${arrivals} new messages in your Inbox`}
+            {arrivals === 1 ? '收件箱里有 1 条新消息' : `收件箱里有 ${arrivals} 条新消息`}
           </button>
         </Tip>
       )}
-      <span className="ib-tour-steps" role="img" aria-label={`Step ${step} of ${TOUR_STEPS}`}>
+      <span className="ib-tour-steps" role="img" aria-label={`第 ${step} 步，共 ${TOUR_STEPS} 步`}>
         {phone
           ? `${step}/${TOUR_STEPS}`
           : Array.from({ length: TOUR_STEPS }, (_, i) => <span key={i} className="ib-tour-dot" data-on={i + 1 === step ? '' : undefined} data-done={i + 1 < step ? '' : undefined} />)}
       </span>
       <button type="button" className="ib-tour-exit" onClick={onExit} data-tour-exit={real ? 'finish' : 'exit'}>
-        {real ? 'Finish the tour' : 'Exit tour'}
+        {real ? '结束导览' : '退出导览'}
       </button>
     </div>
   );
@@ -466,13 +466,13 @@ export function OrientPicture({ fixture, onNext }: { fixture: TourFixture; onNex
     <div
       className="ib-tour-orient"
       role="img"
-      aria-label="The Inbox in small: a project in the sidebar, one row per thread, a thread read like an email, its files as tiles."
+      aria-label="小尺寸的收件箱：侧边栏里一个项目，每个会话一行，会话像邮件一样阅读，文件以卡片呈现。"
       data-tour-orient=""
       onClick={onNext}
       style={onNext ? { cursor: 'pointer' } : undefined}
     >
       <div className="ib-to-side" aria-hidden="true">
-        <span className="ib-to-lbl">Projects</span>
+        <span className="ib-to-lbl">项目</span>
         <span className="ib-to-proj">
           <Icon name="folder" size={12} />
           {fixture.project}
@@ -490,7 +490,7 @@ export function OrientPicture({ fixture, onNext }: { fixture: TourFixture; onNex
         <span className="ib-to-from">
           <HostMark host="claude-code" />
           <b>Claude Code</b>
-          <span className="ib-mut">to you · {tourTime(ask?.time ?? '12:03')}</span>
+          <span className="ib-mut">发给你 · {tourTime(ask?.time ?? '12:03')}</span>
         </span>
         <span className="ib-to-line" />
         <span className="ib-to-line ib-short" />
@@ -670,7 +670,7 @@ export function TourCoach({
       ref={ref}
       className={`ib-tour-coach${coach.picture ? ' ib-tc-wide' : ''}${coach.picture === 'settings' ? ' ib-tc-settings' : ''}`}
       role="region"
-      aria-label={`Tour, step ${step} of ${TOUR_STEPS}`}
+      aria-label={`导览，第 ${step} 步，共 ${TOUR_STEPS} 步`}
       data-tour-coach={coach.key}
       data-your-turn={yourTurn ? '' : undefined}
       data-at={phone ? (place?.at ?? 'bottom') : undefined}
@@ -679,12 +679,12 @@ export function TourCoach({
     >
       <div className="ib-tc-eb">
         <span>
-          Step {step} of {TOUR_STEPS}
+          第 {step} 步，共 {TOUR_STEPS} 步
         </span>
         {yourTurn && (
           <span className="ib-tc-turn" data-tour-your-turn="">
             <Icon name="chevR" size={12} />
-            Your turn
+            轮到你了
           </span>
         )}
       </div>
@@ -723,10 +723,10 @@ export function TourCoach({
       <div className="ib-tc-acts">
         {canBack && (
           <button type="button" className="ib-tc-back" onClick={onBack} data-tour-back="">
-            Back
+            上一步
           </button>
         )}
-        {coach.wait && <span className="ib-tc-wait">Replaying…</span>}
+        {coach.wait && <span className="ib-tc-wait">正在回放…</span>}
         {coach.skip && onSkip && (
           <button
             type="button"
@@ -738,20 +738,20 @@ export function TourCoach({
             }}
             data-tour-skip=""
           >
-            Skip
+            跳过
           </button>
         )}
         <span className="ib-sp" />
         {coach.next ? (
           <button type="button" className="ib-tc-next" onClick={onNext} data-tour-next="">
-            {coach.nextLabel ?? 'Next'}
+            {coach.nextLabel ?? '下一步'}
             {coach.nextArrow && <Icon name="arrowRight" size={14} />}
           </button>
         ) : canForward && onForward ? (
-          <Tip content="Skip to the end of this step">
+          <Tip content="跳到这一步的结尾">
             <button type="button" className="ib-tc-ff" onClick={onForward} data-tour-forward="">
               <Icon name="fastForward" size={14} />
-              Fast-forward
+              快进
             </button>
           </Tip>
         ) : null}
@@ -876,8 +876,8 @@ export function TourViewer({ picture, onPick, onClose }: { picture: TourViewerPi
           <b>{picture.name}</b>
           <span className="ib-mut">{picture.caption}</span>
           <span className="ib-sp" />
-          <Tip content="Close">
-            <button ref={closeRef} type="button" className="ib-iconbtn" onClick={onClose} aria-label="Close" data-tour-viewer-close="">
+          <Tip content="关闭">
+            <button ref={closeRef} type="button" className="ib-iconbtn" onClick={onClose} aria-label="关闭" data-tour-viewer-close="">
               <Icon name="x" />
             </button>
           </Tip>
@@ -894,10 +894,10 @@ export function TourViewer({ picture, onPick, onClose }: { picture: TourViewerPi
         {picture.pick && (
           <footer>
             <button type="button" className="ib-btn ib-pri" onClick={() => onPick(picture.pick!)} data-tour-viewer-pick="">
-              Pick {picture.pick}
+              选择 {picture.pick}
             </button>
             <button type="button" className="ib-btn" onClick={onClose}>
-              Close
+              关闭
             </button>
           </footer>
         )}
@@ -942,7 +942,7 @@ export function TourNavigation({
         update={null}
         restarting={false}
         updated={null}
-        onSearch={() => say('Search finds your own threads; it is not part of the tour.')}
+        onSearch={() => say('搜索只会找到你自己的会话；它不属于这次导览。')}
         onCompose={onCompose}
         onInbox={() => dispatch({ type: 'list' })}
         onProject={() => dispatch({ type: 'list' })}
@@ -1067,7 +1067,7 @@ export function TourMain({ fixture, state, dispatch, phone, stacked, reduced, sa
       tourFileSource(fixture, {
         onSave: (record) => {
           live.current.dispatch({ type: 'comment', record }, { focusCoach: true });
-          live.current.say('Comment saved in the tour.');
+          live.current.say('评论已保存在导览中。');
         },
         onRemove: (id) => live.current.dispatch({ type: 'uncomment', id }),
         threadOf: (messageId) => fixture.threads.find((t) => t.messages.some((m) => m.id === messageId))?.id ?? TOUR_THREAD,
@@ -1115,7 +1115,7 @@ export function TourMain({ fixture, state, dispatch, phone, stacked, reduced, sa
     (attachment: InboxAttachmentState, view?: 'full' | 'side' | null) => {
       const full = phone || stacked.file ? true : (view ?? kindDefaultView(attachment)) === 'full';
       dispatch({ type: 'openFile', id: attachment.id, full }, { focusCoach: true });
-      say(`${attachment.name} is open${full ? ' full screen' : ' beside the thread'}.`);
+      say(`已打开 ${attachment.name}${full ? '（全屏）' : '（在会话旁）'}。`);
     },
     [dispatch, phone, stacked.file, say],
   );
@@ -1124,7 +1124,7 @@ export function TourMain({ fixture, state, dispatch, phone, stacked, reduced, sa
   const list = (
     <RowMarksScope look={null}>
       <InboxList
-        title="Inbox"
+        title="收件箱"
         path={null}
         sections={sections}
         filtered={false}
@@ -1278,14 +1278,14 @@ function MessageHead({ who, host, to, time, project, replay }: { who: string; ho
       <span className="ib-fl-chips" />
       <span className="ib-fl-tm">
         <span>{time}</span>
-        {replay && <span className="ib-tour-realtime">Replay</span>}
+        {replay && <span className="ib-tour-realtime">回放</span>}
       </span>
     </div>
   );
 }
 
 /** "Claude Code's message, 12:03 PM": how a reply's list names the message it answers. */
-const messageName = (time: string) => `Claude Code’s message, ${tourTime(time)}`;
+const messageName = (time: string) => `Claude Code 的消息，${tourTime(time)}`;
 
 function TourThreadPane({
   fixture,
@@ -1359,15 +1359,15 @@ function TourThreadPane({
   }, [arrivals]);
 
   const back = (
-    <button type="button" className="ib-pback" onClick={() => dispatch({ type: 'list' }, { focusCoach: true })} aria-label="Back to Inbox" data-tour-thread-back="">
+    <button type="button" className="ib-pback" onClick={() => dispatch({ type: 'list' }, { focusCoach: true })} aria-label="返回收件箱" data-tour-thread-back="">
       <Icon name="chevL" size={phone ? 18 : 16} />
-      <span className="ib-pback-l">Inbox</span>
+      <span className="ib-pback-l">收件箱</span>
     </button>
   );
   // The real header's icons (approval "inbox-thread-header"): each the person's own Inbox's, a nudge here.
   const offInTour = (label: string, icon: 'mailOpen' | 'clock' | 'archive') => (
-    <Tip content={`${label}: not in the tour`}>
-      <button type="button" className="ib-iconbtn" aria-disabled="true" aria-label={label} onClick={() => nudge(`${label} works in your own Inbox, after the tour.`)}>
+    <Tip content={`${label}：不在导览中`}>
+      <button type="button" className="ib-iconbtn" aria-disabled="true" aria-label={label} onClick={() => nudge(`${label}在导览结束后可用于你自己的收件箱。`)}>
         <Icon name={icon} size={icon === 'archive' ? 16 : 17} />
       </button>
     </Tip>
@@ -1385,11 +1385,11 @@ function TourThreadPane({
     <span className="ib-sp" />
   );
   const artifactsButton = artifacts.length > 0 && (
-    <Tip content={state.artifactsOpen ? 'Back to the thread' : 'Artifacts: every file, image and guided review in this thread'}>
+    <Tip content={state.artifactsOpen ? '回到会话' : '产物：这个会话里的每个文件、图片和引导式评审'}>
       <button
         type="button"
         className="ib-iconbtn ib-artbtn"
-        aria-label={`Artifacts, ${artifacts.length}`}
+        aria-label={`产物，${artifacts.length} 个`}
         aria-pressed={state.artifactsOpen}
         onClick={() => dispatch({ type: 'artifacts', open: !state.artifactsOpen }, { focusCoach: true })}
         data-artifacts-button=""
@@ -1415,10 +1415,10 @@ function TourThreadPane({
   const sendNow = () => {
     if (isA) {
       dispatch({ type: 'send' }, { focusCoach: true });
-      say('Sent. Sending to Claude Code.');
+      say('已发送。正在发送给 Claude Code。');
     } else {
       dispatch({ type: 'filmSend' }, { focusCoach: true });
-      say('Sent. Sending to Claude Code.');
+      say('已发送。正在发送给 Claude Code。');
     }
   };
   const editRecord = async (record: InboxAnnotationRecord, text: string) => {
@@ -1434,22 +1434,22 @@ function TourThreadPane({
     return messageName(m?.time ?? '12:03');
   };
   const sendButton = (attr: Record<string, string>) => (
-    <Tip content={sendReady ? 'Send it, in the tour: a replay of the real thread' : 'In the tour, Send comes after the comments'}>
-      <button type="button" className="ib-btn ib-pri" aria-disabled={!sendReady || undefined} onClick={() => (sendReady ? sendNow() : nudge('Send comes after the comments: the coach says when.'))} {...attr}>
+    <Tip content={sendReady ? '在导览中发送：这是真实会话的回放' : '在导览中，发送会排在评论之后'}>
+      <button type="button" className="ib-btn ib-pri" aria-disabled={!sendReady || undefined} onClick={() => (sendReady ? sendNow() : nudge('发送会排在评论之后：引导卡会告诉你什么时候。'))} {...attr}>
         <Icon name="send" size={15} />
-        Send
+        发送
       </button>
     </Tip>
   );
   const replyBox = boxOpen ? (
     <div className="ib-rbox ib-tour-rbox" data-tour-rbox="">
-      <textarea className="ib-rtext" readOnly rows={2} placeholder="Your words go here in a real reply." aria-label="Your reply (the tour carries no words)" />
+      <textarea className="ib-rtext" readOnly rows={2} placeholder="真实回复会写在这里。" aria-label="你的回复（导览不携带文字）" />
       {draftAnswers.length > 0 && <ReplyAnswers answers={draftAnswers} onJump={noop} />}
       <div className="ib-rfoot">
         {draftAnswers.length > 0 && (
           <span className="ib-rchip" data-picks-chip="">
             <Icon name="check" size={13} />
-            {plural(draftAnswers.length, 'pick')}
+            {plural(draftAnswers.length, '项选择', '项选择')}
           </span>
         )}
         <AnnotationsChip records={waiting} attachments={files} onEdit={editRecord} onRemove={removeRecord} onOpen={openRecord} messageName={chipName} />
@@ -1465,24 +1465,24 @@ function TourThreadPane({
     foot = (
       <div className="ib-acts ib-footrow" data-foot-row="">
         <div className="ib-footbtns" data-foot-buttons="">
-          <Tip content="Send it, in the tour">
+          <Tip content="在导览中发送">
             <button
               type="button"
               className="ib-btn ib-pri"
               data-tour-warm-send=""
               onClick={() => {
                 dispatch({ type: 'warmSend' }, { focusCoach: true });
-                say('Sent. Sending to Claude Code.');
+                say('已发送。正在发送给 Claude Code。');
               }}
             >
               <Icon name="send" size={15} />
-              Send
+              发送
             </button>
           </Tip>
         </div>
         <div className="ib-footstatus" data-foot-status="">
           <span className="ib-draft-foot">
-            <span className="ib-draft-pill">Draft</span> <span className="ib-st">{plural(1, 'pick')}</span>
+            <span className="ib-draft-pill">草稿</span> <span className="ib-st">{plural(1, '项选择', '项选择')}</span>
           </span>
         </div>
       </div>
@@ -1495,7 +1495,7 @@ function TourThreadPane({
           {sendButton(isA ? { 'data-tour-send': '' } : { 'data-tour-film-send': '' })}
           {isA && (
             <button type="button" className="ib-btn ib-ghost" onClick={() => dispatch({ type: 'reply', open: false })}>
-              Cancel
+              取消
             </button>
           )}
         </div>
@@ -1507,17 +1507,17 @@ function TourThreadPane({
         <div className="ib-footbtns" data-foot-buttons="">
           <button type="button" className="ib-btn ib-pri" data-tour-reply="" onClick={() => dispatch({ type: 'reply', open: true }, { focusCoach: true })}>
             <Icon name="send" size={15} />
-            Send
+            发送
           </button>
           <button type="button" className="ib-btn" onClick={() => dispatch({ type: 'reply', open: true })}>
             <Icon name="pen" size={15} />
-            Edit draft
+            编辑草稿
           </button>
         </div>
         {footStatus && (
           <div className="ib-footstatus" data-foot-status="">
             <span className="ib-draft-foot">
-              <span className="ib-draft-pill">Draft</span> <span className="ib-st">{footStatus}</span>
+              <span className="ib-draft-pill">草稿</span> <span className="ib-st">{footStatus}</span>
             </span>
           </div>
         )}
@@ -1530,12 +1530,12 @@ function TourThreadPane({
     (isFilm && state.filmSent && !state.filmArrived) ||
     (threadId === TOUR_NEW_THREAD && !state.newArrived);
   const replyWhy = onItsWay
-    ? 'Your reply is on its way; Claude Code’s answer comes next'
+    ? '你的回复正在发送；接下来是 Claude Code 的回答'
     : isA && !state.sent
-        ? 'In the tour, pick an answer above first'
+        ? '在导览中，请先在上面选择一个回答'
         : isFilm && !state.filmSent
-          ? 'Comment on the film first; the comment goes with the reply'
-          : 'Replies to this thread are not part of the tour';
+          ? '请先评论影片；评论会随回复一起发出'
+          : '对这个会话的回复不在导览范围内';
   if (!foot)
     foot = (
       <div className="ib-acts ib-footrow" data-foot-row="">
@@ -1543,7 +1543,7 @@ function TourThreadPane({
           <Tip content={replyWhy}>
             <button type="button" className="ib-btn" aria-disabled="true" onClick={() => nudge(replyWhy)}>
               <Icon name="reply" size={15} />
-              Reply
+              回复
             </button>
           </Tip>
         </div>
@@ -1560,7 +1560,7 @@ function TourThreadPane({
             {back}
             {headSubject}
             {artifactsButton}
-            {offInTour('Archive', 'archive')}
+            {offInTour('归档', 'archive')}
           </>
         ) : (
           <>
@@ -1570,16 +1570,16 @@ function TourThreadPane({
                 <span className="ib-vsep" aria-hidden="true" />
               </>
             )}
-            {offInTour('Mark read', 'mailOpen')}
-            {offInTour('Snooze', 'clock')}
+            {offInTour('标记为已读', 'mailOpen')}
+            {offInTour('稍后提醒', 'clock')}
             {headSubject}
             {artifactsButton}
-            {offInTour('Archive', 'archive')}
+            {offInTour('归档', 'archive')}
             {!stacked && (
               <>
                 <span className="ib-vsep" aria-hidden="true" />
-                <Tip content="Close">
-                  <button type="button" className="ib-iconbtn" onClick={() => dispatch({ type: 'list' }, { focusCoach: true })} aria-label="Close the thread">
+                <Tip content="关闭">
+                  <button type="button" className="ib-iconbtn" onClick={() => dispatch({ type: 'list' }, { focusCoach: true })} aria-label="关闭会话">
                     <Icon name="x" />
                   </button>
                 </Tip>
@@ -1618,7 +1618,7 @@ function TourThreadPane({
           {thread.person && (
             <p className="ib-tour-slice" data-tour-started="">
               <Icon name="pen" size={14} />
-              You started this thread · to Claude Code in {fixture.project}
+              你发起了这个会话 · 发送给 {fixture.project} 中的 Claude Code
             </p>
           )}
           {views.map((view, index) => {
@@ -1634,9 +1634,9 @@ function TourThreadPane({
             const footerFor = (key: string) => {
               const found = m.questions?.find((x) => x.key === key);
               if (!found?.answer) return null;
-              if (found.state === 'sent') return `Sent ${tourTime((warm ? thread.warmup_reply_time : thread.reply_time) ?? '12:17')}`;
-              if (found.answer.skipped) return 'Skipped · in your draft';
-              return tourPickOf(found.answer) ? 'Picked · in your draft' : 'Note · in your draft';
+              if (found.state === 'sent') return `已发送 ${tourTime((warm ? thread.warmup_reply_time : thread.reply_time) ?? '12:17')}`;
+              if (found.answer.skipped) return '已跳过 · 在草稿中';
+              return tourPickOf(found.answer) ? '已选择 · 在草稿中' : '备注 · 在草稿中';
             };
             const sentAnswers = view.reply && isA ? sentAnswersOf(m, wires, (a) => messageName(views.find((v) => v.wire.id === a.id)?.fixture?.time ?? '12:03')) : undefined;
             const messageComments = state.comments.filter((r) => r.message_id === m.id && r.message).map((r) => annotationOf(r) as Annotation);
@@ -1659,7 +1659,7 @@ function TourThreadPane({
                 {view.replay && (index === 0 || !views[index - 1]!.replay) && index >= replayAt && !thread.person && (
                   <div className="ib-tour-replay" role="note">
                     <Icon name="replay" size={14} />
-                    Replay of the real thread: what Claude Code did next
+                    真实会话的回放：Claude Code 接下来做了什么
                   </div>
                 )}
                 <article
@@ -1674,10 +1674,10 @@ function TourThreadPane({
                           if (!el.closest('.question-block') || el.closest('[data-question-zoom]')) return;
                           nudge(
                             (warm ? state.warmSent : state.sent)
-                              ? 'This answer was sent already; it went with your reply.'
+                              ? '这个回答已经发送过了；它随你的回复一起发出。'
                               : warm
-                                ? 'This one is answered; the next question is below.'
-                                : 'This question comes up in a later step.',
+                                ? '这个已经回答过了；下一个问题在下面。'
+                                : '这个问题会在后面的步骤中出现。',
                           );
                         }
                       : undefined
@@ -1689,12 +1689,12 @@ function TourThreadPane({
                   <div className="ib-msg">
                     {isA && fx?.after_warmup && warmDiffers(state, tourWarmAnswer(fixture)) && (
                       <p className="ib-tour-note" data-tour-differs="warm">
-                        {tourPickWords(state.warmPicked!)}. The tour goes on with the mockups, so you can see the pictures.
+                        {tourPickWords(state.warmPicked!)}。导览会继续使用这些效果图，好让你看到图片。
                       </p>
                     )}
                     {isA && fx?.replay === 1 && pickDiffers(state, realAnswer) && (
                       <p className="ib-tour-note" data-tour-differs="">
-                        {tourPickWords(state.picked!)}. In the real thread the answer was {realAnswer.split(' · ')[0]}, so this is what Claude Code built.
+                        {tourPickWords(state.picked!)}。在真实会话里，答案是 {realAnswer.split(' · ')[0]}，所以 Claude Code 构建的是那个方案。
                       </p>
                     )}
                     {(m.body || view.reply) && (
@@ -1739,7 +1739,7 @@ function TourThreadPane({
                                     },
                                     { focusCoach: true },
                                   );
-                                  say('Comment saved in the tour. It goes with your reply.');
+                                  say('评论已保存在导览中。它会随你的回复一起发出。');
                                   return true;
                                 },
                                 suggest: (selected) => {
@@ -1757,13 +1757,13 @@ function TourThreadPane({
                     {sentHere.length > 0 && (
                       <div className="ib-tour-sentcomments" data-tour-sent-comments="">
                         <Icon name="comment" size={13} />
-                        <span>{plural(sentHere.length, 'comment')} went with this reply</span>
+                        <span>{plural(sentHere.length, '条评论', '条评论')}随这条回复一起发出</span>
                         {sentHere
                           .map((r) => readInboxVideoTime(annotationOf(r)))
                           .filter((t): t is number => t !== null)
                           .map((t) => (
                             <span key={t} className="ib-tour-moment">
-                              at {formatInboxVideoTime(t)}, with its frame
+                              在 {formatInboxVideoTime(t)}，连带画面
                             </span>
                           ))}
                       </div>
@@ -1772,9 +1772,9 @@ function TourThreadPane({
                       <div className="ib-delivered" data-delivery={delivered ? 'delivered' : 'sending'} data-tour-delivered="" tabIndex={-1}>
                         <span className="ib-dl-main">
                           <Icon name={delivered ? 'check' : 'send'} size={14} />
-                          <span className="ib-dl-text">{delivered ? `Delivered to Claude Code, ${tourTime(replyTime)}` : 'Sending to Claude Code…'}</span>
+                          <span className="ib-dl-text">{delivered ? `已送达 Claude Code，${tourTime(replyTime)}` : '正在发送给 Claude Code…'}</span>
                         </span>
-                        <span className="ib-tour-realtime">Replay</span>
+                        <span className="ib-tour-realtime">回放</span>
                       </div>
                     )}
                   </div>
@@ -1805,11 +1805,11 @@ export function TourLoading() {
     if (!active || active === document.body || !active.isConnected) headingRef.current?.focus({ preventScroll: true });
   }, []);
   return (
-    <section className="ib-listcol" aria-label="Tour">
+    <section className="ib-listcol" aria-label="导览">
       <div className="ib-lbody">
         <div className="ib-empty" data-tour-loading="loading" aria-busy="true">
           <h2 ref={headingRef} tabIndex={-1}>
-            Loading the tour…
+            正在加载导览…
           </h2>
         </div>
       </div>

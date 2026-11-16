@@ -67,7 +67,7 @@ export interface NoteFile {
  */
 export function writerWord(note: Pick<ContextNote, 'writer' | 'agent'>): string {
   if (note.writer === 'thread') return note.agent || agentName(null);
-  return note.writer === 'guide' ? 'Review note' : note.writer === 'risk' ? 'Risk' : 'Picture';
+  return note.writer === 'guide' ? '评审备注' : note.writer === 'risk' ? '风险' : '图片';
 }
 
 /** "16–18", or "5". */
@@ -288,20 +288,20 @@ export function noteTime(iso: string | undefined, now = new Date()): string | nu
   const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const days = Math.round((day(now) - day(when)) / 86_400_000);
   if (days === 0) return when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  if (days === 1) return 'Yesterday';
+  if (days === 1) return '昨天';
   return when.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 /** The stale line, as Show me's corner card words it. */
 export function staleWords(note: ContextNote): string | null {
   if (!note.stale) return null;
-  const what = note.writer === 'thread' ? 'answer' : note.writer === 'picture' ? 'picture' : 'note';
-  return `The code here changed after this ${what} (${note.writer === 'picture' ? 'drawn' : 'written'} on round ${note.stale.round}, lines ${rangeWord(note.stale.lines)}).`;
+  const what = note.writer === 'thread' ? '回答' : note.writer === 'picture' ? '图片' : '备注';
+  return `此处代码在此${what}之后已更改（${note.writer === 'picture' ? '绘制' : '写'}于第 ${note.stale.round} 轮，第 ${rangeWord(note.stale.lines)} 行）。`;
 }
 
 /** What the Ask box starts with for "Ask again": the file and the lines where they are now. */
 export function askAgainWords(note: ContextNote): string {
-  return `${baseName(note.file)} ${note.lineStart === note.lineEnd ? 'line' : 'lines'} ${rangeWord([note.lineStart, note.lineEnd])}: `;
+  return `${baseName(note.file)} 第 ${rangeWord([note.lineStart, note.lineEnd])} 行：`;
 }
 
 /** How many places a judgment marks in its diff: a high one's `where`, else none. */
@@ -311,7 +311,7 @@ export function riskPlaceCount(judgment: InboxPullRiskJudgment | null | undefine
 
 /** "2 places", "1 place". */
 export function placesWord(count: number): string {
-  return `${count} ${count === 1 ? 'place' : 'places'}`;
+  return `${count} 处`;
 }
 
 /** How long a "See the N places" ask waits for the PR's diff to mount and take it. */

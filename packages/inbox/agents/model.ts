@@ -25,7 +25,7 @@ export interface AgentsGroup {
 }
 
 /** An agent's host in words ("Claude Code"); "An agent" when nothing said. */
-export const agentHostName = (host: string | null): string => (host ? (INBOX_HOST_NAMES[host] ?? host) : 'An agent');
+export const agentHostName = (host: string | null): string => (host ? (INBOX_HOST_NAMES[host] ?? host) : '一个 agent');
 
 const rowName = (row: InboxListRow) => (row.thread_name ?? row.subject ?? '').trim();
 
@@ -195,18 +195,18 @@ export function agentFacts(entry: AgentEntry, machine: MachineView | null, now: 
     away ??
     (agent.state === 'waiting'
       ? agent.waiting > 1
-        ? `${agent.waiting} threads waiting on you`
-        : 'Waiting on you'
+        ? `有 ${agent.waiting} 个会话在等你`
+        : '等待你处理'
       : agent.state === 'working'
-        ? 'Working'
+        ? '工作中'
         : agent.state === 'idle'
-          ? 'Idle'
-          : 'Ended');
+          ? '空闲'
+          : '已结束');
   const rows: [string, string][] = [];
-  if (agent.started_at) rows.push(['Started', agent.launch ? `From the Inbox, ${whenTime(agent.started_at, now)}` : whenTime(agent.started_at, now)]);
-  else if (agent.launch) rows.push(['Started', 'From the Inbox']);
-  if (agent.last_seen_at) rows.push(['Last heard', whenTime(agent.last_seen_at, now)]);
-  if (entry.thread?.subject && entry.thread.subject !== entry.name) rows.push(['Thread', entry.thread.subject]);
+  if (agent.started_at) rows.push(['开始于', agent.launch ? `来自收件箱，${whenTime(agent.started_at, now)}` : whenTime(agent.started_at, now)]);
+  else if (agent.launch) rows.push(['开始于', '来自收件箱']);
+  if (agent.last_seen_at) rows.push(['最近有消息', whenTime(agent.last_seen_at, now)]);
+  if (entry.thread?.subject && entry.thread.subject !== entry.name) rows.push(['会话', entry.thread.subject]);
   return { title: entry.name, sub, state, rows };
 }
 

@@ -19,7 +19,6 @@ import { createPortal } from 'react-dom';
 import { REF_CARD_CLOSE_MS, REF_CARD_DELAY_MS } from '@plannotator/ui/components/RefHoverCard';
 import { AuthorMark } from '../icons';
 import { cardAge } from '../board/model';
-import { plural } from '@plannotator/core/inbox-format';
 import { initiativePeekModel, type InitiativePeekModel, type PeekItem } from '../initiativePeek';
 import { initiativeHref, useInitiativeTags } from '../hashtags';
 import { tagById, tagHref, useThreadTags } from '../threadTags';
@@ -276,7 +275,7 @@ function PeekCard({
       className="ib-tagpeek fixed z-[120] flex flex-col overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-2xl"
       id={peekId}
       role="dialog"
-      aria-label={`Tag ${initiative.name}`}
+      aria-label={`标签 ${initiative.name}`}
       data-tag-peek={initiative.id}
       style={{ width: Math.min(WIDTH, window.innerWidth - EDGE * 2), left: pos?.left ?? -9999, top: pos?.top ?? -9999, maxHeight: 'min(560px, calc(100dvh - 24px))' }}
       onPointerEnter={onEnter}
@@ -333,7 +332,7 @@ const BADGE = 'ib-badge ib-b-mut ib-tagpeek-badge';
 
 /** The Board off: the tag's threads and "Show threads", its list. */
 function TagPeekView({ name, list, model, onGo }: { name: string; list: string; model: TagPeekModel; onGo: () => void }) {
-  const meta = ['Tag', model.projects.length ? model.projects.join(', ') : null, plural(model.total, 'thread')].filter(Boolean);
+  const meta = ['标签', model.projects.length ? model.projects.join('、') : null, `${model.total} 个会话`].filter(Boolean);
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex-none px-4 pb-4 pt-3.5" data-tag-peek-head="">
@@ -349,8 +348,8 @@ function TagPeekView({ name, list, model, onGo }: { name: string; list: string; 
       </div>
       {model.threads.length > 0 && (
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-3" data-tag-peek-body="">
-          <section aria-label="Threads" data-tag-peek-threads="">
-            <h3 className={`${GROUP} text-muted-foreground`}>Threads</h3>
+          <section aria-label="会话" data-tag-peek-threads="">
+            <h3 className={`${GROUP} text-muted-foreground`}>会话</h3>
             <ul>
               {model.threads.map((thread) => (
                 <li key={thread.id}>
@@ -363,14 +362,14 @@ function TagPeekView({ name, list, model, onGo }: { name: string; list: string; 
                 </li>
               ))}
             </ul>
-            {model.more > 0 ? <div className="pl-[26px] pt-1 text-[12px] leading-4 text-muted-foreground">+{model.more} more</div> : null}
+            {model.more > 0 ? <div className="pl-[26px] pt-1 text-[12px] leading-4 text-muted-foreground">另有 {model.more} 条</div> : null}
           </section>
         </div>
       )}
       <div className="flex flex-none items-center gap-2 border-t border-border px-4 py-2" data-tag-peek-foot="">
         <span className="min-w-0 flex-1" />
         <a href={list} onClick={onGo} className="inline-flex h-7 items-center gap-1.5 rounded-md bg-primary/10 px-2.5 text-[12px] font-medium text-primary no-underline hover:bg-primary/15" data-tag-peek-list="">
-          Show threads
+          显示会话
           <ArrowIcon />
         </a>
       </div>
@@ -382,7 +381,7 @@ function PeekView({ name, board, model, onGo }: { name: string; board: string; m
   const cardHref = (item: PeekItem) => `${board}&card=${encodeURIComponent(item.id)}`;
   const empty = model.cards === 0;
   const updated = model.updated ? cardAge(model.updated).short : null;
-  const meta = ['Tag', model.projects.length ? model.projects.join(', ') : null, empty ? 'no cards yet' : null, updated ? `updated ${updated}` : null].filter(Boolean);
+  const meta = ['标签', model.projects.length ? model.projects.join('、') : null, empty ? '暂无卡片' : null, updated ? `更新于 ${updated}` : null].filter(Boolean);
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex-none px-4 pb-4 pt-3.5" data-tag-peek-head="">
@@ -396,7 +395,7 @@ function PeekView({ name, board, model, onGo }: { name: string; board: string; m
           {meta.join(' · ')}
         </div>
         {model.byColumn.length > 0 ? (
-          <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Cards by column" data-tag-peek-columns="">
+          <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="按列分组的卡片" data-tag-peek-columns="">
             {model.byColumn.map((c) => (
               <li key={c.col} className={BADGE}>
                 {c.column}
@@ -414,7 +413,7 @@ function PeekView({ name, board, model, onGo }: { name: string; board: string; m
       {model.items.length === 0 && model.mentions.length === 0 ? null : (
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-3" data-tag-peek-body="">
           {model.items.length > 0 ? (
-            <ul aria-label="Cards">
+            <ul aria-label="卡片">
               {model.items.map((item) => (
                 <li key={item.id}>
                   <a className={ROW} href={cardHref(item)} onClick={onGo}>
@@ -425,10 +424,10 @@ function PeekView({ name, board, model, onGo }: { name: string; board: string; m
               ))}
             </ul>
           ) : null}
-          {model.moreItems > 0 ? <div className="pt-1 text-[12px] leading-4 text-muted-foreground">+{model.moreItems} more</div> : null}
+          {model.moreItems > 0 ? <div className="pt-1 text-[12px] leading-4 text-muted-foreground">另有 {model.moreItems} 张</div> : null}
           {model.mentions.length > 0 ? (
-            <section aria-label="Threads" className={model.items.length > 0 ? 'mt-4' : undefined} data-tag-peek-threads="">
-              <h3 className={`${GROUP} text-muted-foreground`}>Threads</h3>
+            <section aria-label="会话" className={model.items.length > 0 ? 'mt-4' : undefined} data-tag-peek-threads="">
+              <h3 className={`${GROUP} text-muted-foreground`}>会话</h3>
               <ul>
                 {model.mentions.map((thread) => (
                   <li key={thread.id}>
@@ -441,7 +440,7 @@ function PeekView({ name, board, model, onGo }: { name: string; board: string; m
                   </li>
                 ))}
               </ul>
-              {model.moreMentions > 0 ? <div className="pl-[26px] pt-1 text-[12px] leading-4 text-muted-foreground">+{model.moreMentions} more</div> : null}
+              {model.moreMentions > 0 ? <div className="pl-[26px] pt-1 text-[12px] leading-4 text-muted-foreground">另有 {model.moreMentions} 条</div> : null}
             </section>
           ) : null}
         </div>
@@ -455,7 +454,7 @@ function PeekView({ name, board, model, onGo }: { name: string; board: string; m
           className="inline-flex h-7 items-center gap-1.5 rounded-md bg-primary/10 px-2.5 text-[12px] font-medium text-primary no-underline hover:bg-primary/15"
           data-tag-peek-open=""
         >
-          Open on Board
+          在看板上打开
           <ArrowIcon />
         </a>
       </div>

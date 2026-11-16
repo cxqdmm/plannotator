@@ -13,7 +13,7 @@ export function LaunchChoiceButton({ choice, choices, open, onToggle, className 
       className={`${className} ib-cp-lchbtn`}
       aria-haspopup="true"
       aria-expanded={open}
-      aria-label={`Model and ${choices.effort_word.toLowerCase()}: ${words}. Change`}
+      aria-label={`模型与 ${choices.effort_word.toLowerCase()}：${words}。更改`}
       data-compose-choice={words}
       onClick={onToggle}
     >
@@ -84,7 +84,7 @@ export function LaunchChoiceMenu({
             }}
           >
             <span className="ib-cp-op">
-              {value === null ? 'Default' : show(value)}
+              {value === null ? '默认' : show(value)}
             </span>
             <span className="ib-cp-check" aria-hidden="true">
               {on && <Icon name="check" size={15} />}
@@ -97,21 +97,21 @@ export function LaunchChoiceMenu({
   const models = launchModelRows(choice, choices);
   const efforts = launchEffortsFor(choices, choice.model);
   return (
-    <div className="ib-cp-picker ib-cp-lch" ref={ref} role="menu" aria-label={`Model and ${effortWord.toLowerCase()}`} data-compose-choices="" data-phone={phone ? '' : undefined} onKeyDown={onKey}>
+    <div className="ib-cp-picker ib-cp-lch" ref={ref} role="menu" aria-label={`模型与 ${effortWord.toLowerCase()}`} data-compose-choices="" data-phone={phone ? '' : undefined} onKeyDown={onKey}>
       {phone && (
         <div className="ib-cp-pickhead">
           <button type="button" className="ib-cp-back" onClick={back}>
             <Icon name="chevL" size={16} />
-            Back
+            返回
           </button>
-          <span>Model and {effortWord.toLowerCase()}</span>
+          <span>模型与 {effortWord.toLowerCase()}</span>
         </div>
       )}
       <div className="ib-cp-lchcols">
         {models.length >= LAUNCH_MODEL_FILTER_FROM ? (
           <ModelFilterColumn models={models} picked={choice.model ?? null} onPick={(value) => onChoice(pickLaunchModel(choice, choices, value))} />
         ) : (
-          models.length > 0 && column('model', 'Model', models, shortLaunchModel)
+          models.length > 0 && column('model', '模型', models, shortLaunchModel)
         )}
         {efforts.length > 0 && column('effort', effortWord, efforts, (v) => v)}
       </div>
@@ -160,8 +160,8 @@ function ModelFilterColumn({ models, picked, onPick }: { models: string[]; picke
     }
   };
   return (
-    <div ref={list} className="ib-cp-list ib-cp-lchcol" role="group" aria-label="Model" data-compose-choice-menu="model" data-filterable="" data-typing={typing ? '' : undefined}>
-      <div className="ib-cp-cap">Model</div>
+    <div ref={list} className="ib-cp-list ib-cp-lchcol" role="group" aria-label="模型" data-compose-choice-menu="model" data-filterable="" data-typing={typing ? '' : undefined}>
+      <div className="ib-cp-cap">模型</div>
       <div className="ib-cp-filter ib-cp-lchfilter">
         <Icon name="search" size={14} />
         <input
@@ -171,8 +171,8 @@ function ModelFilterColumn({ models, picked, onPick }: { models: string[]; picke
           aria-autocomplete="list"
           aria-controls={`${uid}-rows`}
           aria-activedescendant={`${uid}-${hl}`}
-          aria-label="Find a model"
-          placeholder="Find a model"
+          aria-label="查找模型"
+          placeholder="查找模型"
           autoComplete="off"
           spellCheck={false}
           value={query}
@@ -198,7 +198,7 @@ function ModelFilterColumn({ models, picked, onPick }: { models: string[]; picke
             onClick={() => pick(value)}
           >
             <span className="ib-cp-op ib-cp-lchname">
-              <span>{value === null ? 'Default' : idOf(value)}</span>
+              <span>{value === null ? '默认' : idOf(value)}</span>
               {value !== null && providerOf(value) && <span className="ib-cp-lchprov">{providerOf(value)}</span>}
             </span>
             <span className="ib-cp-check" aria-hidden="true">
@@ -206,7 +206,7 @@ function ModelFilterColumn({ models, picked, onPick }: { models: string[]; picke
             </span>
           </button>
         ))}
-        {shown.length === 0 && <div className="ib-cp-none">No matching models</div>}
+        {shown.length === 0 && <div className="ib-cp-none">没有匹配的模型</div>}
       </div>
     </div>
   );

@@ -6,11 +6,11 @@ import { accountsFailure, SELF, useAccounts, type AccountsFailure, type AccountS
 import { CodeBox } from './ConnectPicker';
 
 export const FAILURE_TEXT: Record<AccountsFailure, string> = {
-  timed_out: 'claude-swap timed out.',
-  run_failed: 'claude-swap failed.',
-  bad_output: 'claude-swap gave an unreadable answer.',
-  unknown_schema: 'Update Plannotator and claude-swap.',
-  unreachable: 'The Inbox did not answer.',
+  timed_out: 'claude-swap 超时。',
+  run_failed: 'claude-swap 执行失败。',
+  bad_output: 'claude-swap 返回了无法读取的结果。',
+  unknown_schema: '请更新 Plannotator 和 claude-swap。',
+  unreachable: '收件箱没有响应。',
 };
 
 /**
@@ -32,7 +32,7 @@ const CLAUDE_CODE: AccountsTool = { host: 'claude-code', name: 'Claude Code', sw
 
 /** What an account is called: its alias, else the start of its address, else it has neither and is an API key. */
 function accountLabel(account: InboxAccount): string {
-  return account.alias || account.email?.split('@')[0] || 'API key';
+  return account.alias || account.email?.split('@')[0] || 'API 密钥';
 }
 
 /** A personal Claude organization is named after the address: it says nothing, and showing it would show the address. */
@@ -71,9 +71,9 @@ export const shownPct = (window: InboxUsageWindow) => Math.round(window.pct);
 export const isHigh = (window: InboxUsageWindow) => shownPct(window) >= HIGH_PCT;
 
 function ageText(seconds: number): string {
-  if (seconds < 3_600) return `${Math.floor(seconds / 60)}m`;
-  if (seconds < 172_800) return `${Math.floor(seconds / 3_600)}h`;
-  return `${Math.floor(seconds / 86_400)}d`;
+  if (seconds < 3_600) return `${Math.floor(seconds / 60)} 分钟`;
+  if (seconds < 172_800) return `${Math.floor(seconds / 3_600)} 小时`;
+  return `${Math.floor(seconds / 86_400)} 天`;
 }
 
 /** A limit as a row shows it. */
@@ -88,9 +88,9 @@ export function accountMeters(account: InboxAccount): Meter[] {
   const { usage } = account;
   if (!usage) return [];
   return [
-    ...(usage.fiveHour ? [{ label: '5h', window: usage.fiveHour }] : []),
+    ...(usage.fiveHour ? [{ label: '5 小时', window: usage.fiveHour }] : []),
     ...usage.scoped.map((window) => ({ label: window.name, window })),
-    ...(usage.sevenDay ? [{ label: 'week', window: usage.sevenDay, week: true }] : []),
+    ...(usage.sevenDay ? [{ label: '每周', window: usage.sevenDay, week: true }] : []),
   ];
 }
 
@@ -106,32 +106,32 @@ const NEEDS_A_PERSON = new Set(['relogin_required', 'no_credentials', 'foreign_c
 const trusted = (account: InboxAccount) => !isStale(account) && account.usageStatus !== 'relogin_required';
 
 function usageErrorText(kind: string | null): string {
-  if (kind === 'network') return 'Could not reach Anthropic';
-  if (kind === 'timeout') return 'Anthropic timed out';
-  if (kind === 'http-429') return 'Anthropic rate limit';
-  if (kind?.startsWith('http-')) return 'Anthropic refused';
-  return 'Usage check failed';
+  if (kind === 'network') return '无法连接 Anthropic';
+  if (kind === 'timeout') return 'Anthropic 超时';
+  if (kind === 'http-429') return 'Anthropic 速率限制';
+  if (kind?.startsWith('http-')) return 'Anthropic 拒绝请求';
+  return '用量检查失败';
 }
 
 /** Why an account has no reading, in plain words (`cswap`'s statuses, json_output.py). */
 function noReadingReason(account: InboxAccount): string {
   switch (account.usageStatus) {
     case 'ok':
-      return 'No limits reported';
+      return '未报告限额';
     case 'token_expired':
-      return 'Login renewing';
+      return '正在续期登录';
     case 'keychain_unavailable':
-      return 'Keychain unreadable';
+      return '无法读取钥匙串';
     case 'relogin_required':
-      return 'Sign in again';
+      return '请重新登录';
     case 'foreign_credential':
-      return 'Signed in to another account';
+      return '已登录到其他账户';
     case 'no_credentials':
-      return 'No saved login';
+      return '未保存登录';
   }
   const reason = usageErrorText(account.usageError);
   const retry = account.usageRetryAt ? new Date(account.usageRetryAt) : null;
-  return retry && retry.getTime() > Date.now() ? `${reason}. Try again after ${retry.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : reason;
+  return retry && retry.getTime() > Date.now() ? `${reason}。请在 ${retry.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} 后重试` : reason;
 }
 
 /** When a limit resets, in the person's own clock: a time today, a weekday this week, else a date. */
@@ -144,14 +144,14 @@ function resetText(window: InboxUsageWindow): string | null {
     if (at.getTime() - now.getTime() < 6 * 86_400_000) return `${at.toLocaleDateString([], { weekday: 'short' })} ${time}`;
     return `${at.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${time}`;
   }
-  return window.clock ?? (window.countdown ? `in ${window.countdown}` : null);
+  return window.clock ?? (window.countdown ? `${window.countdown} 后` : null);
 }
 
 /** One login across machines: its address and organization. An API key has no address, so it is no login another machine shares. */
 const loginOf = (account: InboxAccount) => (account.email ? `${account.email.toLowerCase()}\n${account.organizationName ?? ''}` : null);
 
-/** "Mac mini", "Mac mini and Studio", "A, B and C". */
-const names = (list: string[]) => (list.length <= 1 ? (list[0] ?? '') : `${list.slice(0, -1).join(', ')} and ${list.at(-1)}`);
+/** "Mac mini", "Mac mini 和 Studio", "A、B 和 C". */
+const names = (list: string[]) => (list.length <= 1 ? (list[0] ?? '') : `${list.slice(0, -1).join('、')} 和 ${list.at(-1)}`);
 
 /** A machine on the page: this computer first, then each linked one. */
 interface PageMachine {
@@ -205,15 +205,15 @@ export function mostRoom(inUse: InboxAccount | null, others: InboxAccount[]): In
  * the nearest one resets, an old reading's age, "most room", and "API key".
  */
 function rowDetail(account: InboxAccount, best: boolean): string {
-  if (account.usageStatus === 'api_key') return 'API key, billed per token';
+  if (account.usageStatus === 'api_key') return 'API 密钥，按 token 计费';
   const meters = accountMeters(account);
   const meter = tightest(account);
   const resets = meter ? resetText(meter.window) : null;
   return [
     meters.map(({ label, window }) => `${label} ${shownPct(window)}%`).join(' · '),
-    resets ? `${meter!.label} resets ${resets}` : null,
-    isStale(account) ? `Last read ${ageText(account.usageAgeSeconds!)} ago` : null,
-    best ? 'Most room' : null,
+    resets ? `${meter!.label} 将于 ${resets} 重置` : null,
+    isStale(account) ? `上次读取：${ageText(account.usageAgeSeconds!)}前` : null,
+    best ? '余量最多' : null,
   ]
     .filter(Boolean)
     .join('\n');
@@ -228,7 +228,7 @@ function UsageCluster({ account, inUse }: { account: InboxAccount; inUse: boolea
   return (
     <span className="ib-acct-use" data-account-use="bars" data-l={hot ? 'hot' : undefined} data-quiet={inUse ? undefined : ''} data-stale={isStale(account) ? '' : undefined}>
       <i aria-hidden="true" style={{ '--ib-acct-w': `${Math.min(Math.max(shown, 0), 100)}%` } as CSSProperties} />
-      <b data-usage={meter.label} aria-label={`${meter.label} ${shown}% used`}>
+      <b data-usage={meter.label} aria-label={`${meter.label} 已用 ${shown}%`}>
         {shown}%
       </b>
     </span>
@@ -237,20 +237,20 @@ function UsageCluster({ account, inUse }: { account: InboxAccount; inUse: boolea
 
 /** Why the last switch did not show in the read after it, in the page's few words. */
 function switchLineText(line: SwitchLine, label: string): string {
-  if (line === 'still_switching') return `Still switching to ${label}. Refresh in a moment.`;
-  if (line === 'unconfirmed') return `Switched to ${label}. Refresh to see it.`;
+  if (line === 'still_switching') return `正在切换到 ${label}。请稍后刷新。`;
+  if (line === 'unconfirmed') return `已切换到 ${label}。刷新后可见。`;
   const why: Record<Exclude<SwitchLine, 'still_switching' | 'unconfirmed'>, string> = {
-    run_failed: 'claude-swap failed.',
-    timed_out: 'claude-swap timed out.',
-    bad_output: 'claude-swap gave an unreadable answer.',
-    unknown_schema: 'Update Plannotator and claude-swap.',
-    changed: 'The accounts changed. Pick again.',
-    renumbered: 'The accounts changed during the switch. The list shows the one in use.',
-    busy: 'Another switch is going.',
-    not_installed: 'claude-swap is not installed.',
-    unreachable: 'The Inbox did not answer.',
+    run_failed: 'claude-swap 执行失败。',
+    timed_out: 'claude-swap 超时。',
+    bad_output: 'claude-swap 返回了无法读取的结果。',
+    unknown_schema: '请更新 Plannotator 和 claude-swap。',
+    changed: '账户已发生变化，请重新选择。',
+    renumbered: '切换期间账户发生了变化。列表显示的是当前使用的账户。',
+    busy: '另一个切换正在进行。',
+    not_installed: '未安装 claude-swap。',
+    unreachable: '收件箱没有响应。',
   };
-  return `Couldn't switch to ${label}. ${why[line]}`;
+  return `无法切换到 ${label}。${why[line]}`;
 }
 
 /** A tool's name kept on one line, as the mock sets it: a wrap never breaks "claude-swap" at its hyphen. */
@@ -272,7 +272,7 @@ function SwitchNote({ change, tool, onRetry }: { change: AccountSwitch; tool: Ac
       <span>{noBreak(switchLineText(line, change.label), tool.swap)}</span>
       {failed && onRetry && (
         <button type="button" className="ib-btn ib-ghost ib-sm" onClick={onRetry} data-accounts-retry="">
-          Try again
+          重试
         </button>
       )}
     </div>
@@ -293,14 +293,14 @@ function SwitchConfirm({ title, label, billed, onCancel, onSwitch }: { title: st
     <div className="ib-acct-confirm" role="dialog" aria-label={label} data-accounts-confirm="">
       <div>
         <b>{title}</b>
-        {billed && <small data-accounts-billed="">Billed per token</small>}
+        {billed && <small data-accounts-billed="">按 token 计费</small>}
       </div>
       <div className="ib-acct-confirm-acts">
         <button type="button" className="ib-btn ib-ghost ib-sm" ref={cancel} onClick={onCancel} data-accounts-cancel="">
-          Cancel
+          取消
         </button>
         <button type="button" className="ib-btn ib-pri ib-sm" onClick={onSwitch} data-accounts-switch-go="">
-          Switch
+          切换
         </button>
       </div>
     </div>
@@ -338,10 +338,10 @@ function rowOfLogin(accounts: InboxAccount[], login: Login): InboxAccount | null
 const RESTART_NOTE_MS = 6_000;
 
 /** What this machine is called until the Inbox knows its name. */
-const THIS_MACHINE = 'This machine';
+const THIS_MACHINE = '这台机器';
 
 /** A machine as a sentence names it. */
-const sayMachine = (machine: PageMachine) => (machine.key === SELF && machine.name === THIS_MACHINE ? 'this machine' : machine.name);
+const sayMachine = (machine: PageMachine) => (machine.key === SELF && machine.name === THIS_MACHINE ? '这台机器' : machine.name);
 
 /** A machine's list says this in place of rows. */
 function Quiet({ children, state }: { children: ReactNode; state: string }) {
@@ -353,8 +353,8 @@ function Quiet({ children, state }: { children: ReactNode; state: string }) {
 }
 
 const QUIET_WORDS: Record<string, string> = {
-  offline: 'Asleep',
-  needs_update: 'Update Plannotator',
+  offline: '休眠中',
+  needs_update: '请更新 Plannotator',
 };
 
 /** Whether `account` is the login a switch named. */
@@ -422,7 +422,7 @@ function ToolList({
     body = (
       <Quiet state="reading">
         <span role={self ? 'status' : undefined} data-accounts-wait="">
-          Reading accounts…
+          正在读取账户…
         </span>
       </Quiet>
     );
@@ -430,11 +430,11 @@ function ToolList({
     body = (
       <div className="ib-acct-miss" data-accounts-missing="">
         <div>
-          <b>{tool.swap}</b> isn't installed on {sayMachine(machine)}.
+          <b>{tool.swap}</b> 未安装在 {sayMachine(machine)} 上。
         </div>
         <CodeBox text={tool.install} />
         {/* The Inbox looks only on the PATH it started with, so a Refresh can't find what was installed after that. */}
-        <small>Already installed? Restart the Inbox there.</small>
+        <small>已经安装？请在那里重启收件箱。</small>
       </div>
     );
   } else if (read.state === 'offline' || read.state === 'needs_update') {
@@ -455,7 +455,7 @@ function ToolList({
   } else if (read.state === 'accounts' && read.accounts.length === 0) {
     body = (
       <div className="ib-acct-miss" data-accounts-none="">
-        <div>Sign in to {tool.name}, then save the account</div>
+        <div>登录 {tool.name}，然后保存账户</div>
         <CodeBox text={tool.add} />
       </div>
     );
@@ -473,8 +473,8 @@ function ToolList({
       const to = spokenName(nameOf(account));
       return (
         <SwitchConfirm
-          title={`Switch to ${to}?`}
-          label={`Switch ${tool.name} on ${sayMachine(machine)} to ${to}?`}
+          title={`切换到 ${to}？`}
+          label={`将 ${sayMachine(machine)} 上的 ${tool.name} 切换到 ${to}？`}
           billed={account.usageStatus === 'api_key'}
           onCancel={() => {
             onConfirm(null);
@@ -495,7 +495,7 @@ function ToolList({
           </p>
         )}
         {noteHere && !noteUnderRow && <SwitchNote change={noteHere} tool={tool} onRetry={null} />}
-        <div className="ib-acct-rows" role="group" aria-label={`${tool.name} on ${machine.name}`} aria-busy={self?.reading || going} ref={rowsRef} tabIndex={-1}>
+        <div className="ib-acct-rows" role="group" aria-label={`${machine.name} 上的 ${tool.name}`} aria-busy={self?.reading || going} ref={rowsRef} tabIndex={-1}>
           {[...(inUse ? [inUse] : []), ...others].map((account) => {
             const active = account === inUse;
             const name = nameOf(account);
@@ -507,9 +507,9 @@ function ToolList({
                 ...(name.organization ? [name.organization] : []),
                 ...(NEEDS_A_PERSON.has(status) || (!meter && status !== 'api_key') ? [noReadingReason(account)] : []),
                 // A phone has no hover to say a named row is a key: it says so here, quietly.
-                ...(phone && status === 'api_key' && name.label !== 'API key' ? ['API key'] : []),
+                ...(phone && status === 'api_key' && name.label !== 'API 密钥' ? ['API 密钥'] : []),
               ],
-              on: on.length > 0 ? `on ${names(on)}` : null,
+              on: on.length > 0 ? `也在 ${names(on)} 使用` : null,
             };
             const open = !active && confirming?.machine === machine.key && rowOfLogin(accounts, confirming.login) === account;
             const note = noteUnderRow === account ? noteHere : null;
@@ -532,7 +532,7 @@ function ToolList({
                     {open && confirmFor(account)}
                     {active && switched === account.number && (
                       <small className="ib-acct-after" role="status" data-accounts-restart="">
-                        Restart open sessions to use it
+                        重启已打开的会话以使用它
                       </small>
                     )}
                     {note &&<SwitchNote change={note} tool={tool} onRetry={() => onConfirm({ machine: machine.key, login: loginOfRow(account) })} />}
@@ -639,12 +639,12 @@ function AccountRow({
       {state.going ? (
         <span className="ib-acct-sw" data-going="">
           <span className="ib-spin" aria-hidden="true" />
-          {!phone && <span>Switching…</span>}
+          {!phone && <span>正在切换…</span>}
         </span>
       ) : (
         // The quiet "Switch" that hover shows: a phone has no hover, and its whole row is the tap target.
         <span className="ib-acct-sw" aria-hidden="true">
-          {!inUse && switchable && !phone ? 'Switch' : null}
+          {!inUse && switchable && !phone ? '切换' : null}
         </span>
       )}
     </>
@@ -671,7 +671,7 @@ export function AccountsRefresh() {
   return (
     <button type="button" className="ib-btn ib-ghost ib-sm ib-acct-refresh" disabled={reading} onClick={() => void read({ fresh: true })} data-accounts-refresh="">
       {reading ? <span className="ib-spin" aria-hidden="true" /> : <Icon name="refresh" size={13} />}
-      Refresh
+      刷新
     </button>
   );
 }

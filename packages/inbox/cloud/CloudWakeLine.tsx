@@ -26,7 +26,7 @@ export function CloudWakeLine({ wake, fallbackName, time }: { wake: InboxCloudWa
             <>
               {' · '}
               <a href={shown.run_url} target="_blank" rel="noreferrer noopener" data-cloud-run="">
-                Open the run
+                打开这次运行
               </a>
             </>
           )}
@@ -34,7 +34,7 @@ export function CloudWakeLine({ wake, fallbackName, time }: { wake: InboxCloudWa
             <>
               {' '}
               <a href="#settings/cloud-agents" data-cloud-rekey="">
-                Paste the new key
+                粘贴新密钥
               </a>
             </>
           )}

@@ -401,7 +401,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
   // The current file cannot be read (gone, or no longer the file that was sent): the sent version opens.
   const currentUnavailable = attachment.unavailable !== null;
   const effectiveVersion = currentUnavailable ? 'sent' : version;
-  const downloadName = `Download ${attachment.name}${effectiveVersion === 'sent' ? ' (the version it sent)' : ''}`;
+  const downloadName = `下载 ${attachment.name}${effectiveVersion === 'sent' ? '（它发送的版本）' : ''}`;
   // Images in a Markdown file load relative to its folder, for the version on screen (#2228); one
   // that cannot load is drawn as its alt text, as in a message body (Thread.tsx).
   const imageBaseDir = inboxMarkdownImageBase(attachment.id, effectiveVersion);
@@ -432,7 +432,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
       .catch((cause) => {
         if (cancelled) return;
         if (cause instanceof InboxApiError && cause.code === 'attachment_too_large') setTooLarge(true);
-        else setError(cause instanceof InboxApiError ? cause.message : 'The file could not be opened.');
+        else setError(cause instanceof InboxApiError ? cause.message : '无法打开该文件。');
       });
     return () => {
       cancelled = true;
@@ -802,14 +802,14 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
       if (toggled) {
         // The header that held Full screen is gone: focus on the toolbar's first button.
         sectionRef.current?.querySelector<HTMLElement>('[data-full-view-bar] button')?.focus({ preventScroll: true });
-        announce('Full screen. Side by side is in the toolbar.');
+        announce('全屏。并排显示在工具栏中。');
       }
       // A one-file thread has no step to name the file: the chip names it once as full screen starts.
       if (stepsRef.current.length < 2) showChipRef.current(null);
     } else if (toggled) {
       // The switch's pressed part, Side by side, which the person just chose (or Escape chose for them).
       sectionRef.current?.querySelector<HTMLElement>('.ib-vhead [data-view-side]')?.focus({ preventScroll: true });
-      announce('Side by side: the file is beside the thread.');
+      announce('并排：文件显示在会话旁边。');
     }
   }, [full, announce]);
   /** Open the file at `target` in `list` (the files stepped through; the sheet's `allSteps`). */
@@ -1041,7 +1041,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
         handle: (event) => {
           // A held chord toggles once: its repeats are swallowed (still cancelled, so the browser's ⌘⇧A stays shut).
           if (event.repeat) return;
-          announce(armed ? 'Interact: clicks reach the page.' : 'Annotate: click or select to comment.');
+          announce(armed ? '交互：点击会作用于页面。' : '标注：点击或选中以评论。');
           setArmed(!armed);
         },
       },
@@ -1141,7 +1141,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
         if (!area) return;
         // Typed words wait as the file's draft (as closing the file keeps them), back in the box when it opens again.
         if (area.value.trim() !== '' && setAsideRef.current(area)) {
-          announce('Comment closed. Your words are kept for when you open this file again.');
+          announce('评论已关闭。你的文字会保留，下次打开此文件时还在。');
           requestAnimationFrame(() => {
             const active = document.activeElement;
             if (!active || active === document.body || !active.isConnected) sectionRef.current?.focus({ preventScroll: true });
@@ -1149,13 +1149,13 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
           return;
         }
         dismissComposer(area);
-        announce('Comment closed.');
+        announce('评论已关闭。');
         return;
       }
       case 'field': {
         const fromReply = !!document.activeElement?.closest('[data-fcomp-field]');
         sectionRef.current?.focus({ preventScroll: true });
-        announce(fromReply ? 'Left the reply box. Your words are kept.' : 'Left the comment box.');
+        announce(fromReply ? '已离开回复框。你的文字会保留。' : '已离开评论框。');
         return;
       }
       case 'drawer':
@@ -1163,14 +1163,14 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
           if (drawerMode) setDrawer(false);
           else setSheet(false);
         } else closeSheet();
-        announce('Comments closed.');
+        announce('评论已关闭。');
         return;
       case 'linked':
         linkedBack();
         return;
       case 'annotate':
         setArmed(false);
-        announce('Interact: clicks reach the page.');
+        announce('交互：点击会作用于页面。');
         return;
       case 'leave':
         if (exitCloses) close();
@@ -1262,13 +1262,13 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
         if (page.html === null) await attachmentDrawReady('markdown', page.name, page.text);
         if (cancelled) return;
         setLinkedStack((stack) => [...stack.filter((p) => p.attachmentId === attachment.id), { ...page, relative, hash, attachmentId: attachment.id }]);
-        announce(`${page.name}. It is not attached, so comments are off.`);
+        announce(`${page.name}。它未附加，因此评论已关闭。`);
         // Back takes focus once React has drawn it (the layout effect below), never on a guessed frame.
         focusLinkedBack.current = true;
       })
       .catch((cause) => {
         if (cancelled) return;
-        showLinkNoteRef.current(cause instanceof InboxApiError ? cause.message : `${relative} could not be opened.`);
+        showLinkNoteRef.current(cause instanceof InboxApiError ? cause.message : `无法打开 ${relative}。`);
         // The address names a page that does not open: it goes back to what is on screen.
         const top = linkedStackRef.current.at(-1);
         onLinkedRef.current?.(top ? linkedValue(top.relative, top.hash) : null, { replace: true });
@@ -1326,7 +1326,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
     const stack = linkedStackRef.current;
     if (stack.length === 0) return;
     const before = stack.length > 1 ? stack[stack.length - 2]! : null;
-    announce(`Back on ${before ? before.name : attachment.name}.`);
+    announce(`已回到 ${before ? before.name : attachment.name}。`);
     props.onLinked?.(before ? linkedValue(before.relative, before.hash) : null, { back: true });
     requestAnimationFrame(() => sectionRef.current?.focus({ preventScroll: true }));
   };
@@ -1373,7 +1373,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
         if (link.id === attachment.id) {
           // The attached page itself (a linked page's way home): a new entry, as any link followed.
           if (link.hash) setLinkFragment({ id: link.id, hash: link.hash });
-          announce(`Back on ${attachment.name}.`);
+          announce(`已回到 ${attachment.name}。`);
           props.onLinked?.(null);
           return;
         }
@@ -1609,7 +1609,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
           props.onSaved(record);
           return true;
         } catch (cause) {
-          setError(cause instanceof InboxApiError ? cause.message : 'The annotation was not saved.');
+          setError(cause instanceof InboxApiError ? cause.message : '标注未保存。');
           return false;
         }
       })();
@@ -1656,7 +1656,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
     const next: PageSize = pageSize === 'desktop' ? 'phone' : 'desktop';
     writePageSize(attachment.path, next);
     setPickedNow({ file: attachment.path, size: next });
-    announce(next === 'desktop' ? 'Desktop size' : 'Phone size');
+    announce(next === 'desktop' ? '桌面尺寸' : '手机尺寸');
   };
   // The icon gets out of the way (sizeIconFade.ts): shown when the page opens, faded after about 3 seconds, back on a
   // scroll up or a tap near the top. Faded, it takes no taps, so they reach the page.
@@ -1762,7 +1762,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
       await source.removeAnnotation(id);
       props.onRemoved(id);
     } catch (cause) {
-      setError(cause instanceof InboxApiError ? cause.message : 'The annotation was not removed.');
+      setError(cause instanceof InboxApiError ? cause.message : '标注未移除。');
     }
   };
 
@@ -2111,7 +2111,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
       if (!setAsideRef.current(area)) return;
       event.preventDefault();
       event.stopPropagation();
-      announce('Comment closed. Your words are kept for when you open this file again.');
+      announce('评论已关闭。你的文字会保留，下次打开此文件时还在。');
       requestAnimationFrame(() => {
         const active = document.activeElement;
         if (!active || active === document.body || !active.isConnected) sectionRef.current?.focus({ preventScroll: true });
@@ -2199,7 +2199,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
     if (recordKey(record.path, record.version) === currentKey) setSelectedId(id);
     else {
       const owner = props.attachments.find((a) => a.id === record.attachment_id);
-      leave(owner?.name ?? 'that file', () => {
+      leave(owner?.name ?? '该文件', () => {
         // Picked in the open floating panel: the person is using it, so it stays open on the file it opens.
         if (drawerMode && drawer) keepPanelFor.current = id;
         props.onOpenAt(record.attachment_id, record.version === 'current' ? 'current' : 'sent', id);
@@ -2213,7 +2213,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
       props.onVersion(next);
     };
     // Comments are on a version: what is typed on this one waits for it, as for another file.
-    leave(`the ${next} version`, go);
+    leave(next === 'current' ? '当前版本' : '发送时的版本', go);
   };
   const close = () => leave(null, props.onClose);
   closeRef.current = close;
@@ -2237,21 +2237,21 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
   /** Its copy was taken the first time the thread was read (a message sent before capture), not when it was sent. */
   const onOpen = attachment.captured === 'on_open';
   /** Who sent the message the file is in: the agent, or the person themself. */
-  const sender = props.fromPerson ? 'you' : props.agent;
+  const sender = props.fromPerson ? '你' : props.agent;
   const firstOpened = whenTime(attachment.captured_at ?? attachment.sent_at);
   let line: React.ReactNode = null;
   if (currentUnavailable) {
     line = (
       <>
-        {attachment.unavailable!.message} {onOpen ? `This is the copy taken when you first opened it, ${firstOpened}.` : `This is the version ${sender} sent at ${sentAt}.`}
+        {attachment.unavailable!.message} {onOpen ? `这是你首次打开时保存的副本，${firstOpened}。` : `这是 ${sender} 于 ${sentAt} 发送的版本。`}
       </>
     );
   } else if (effectiveVersion === 'sent') {
     line = (
       <>
-        {onOpen ? `The copy taken when you first opened it, ${firstOpened}.` : `The version ${sender} sent at ${sentAt}.`}
+        {onOpen ? `你首次打开时保存的副本，${firstOpened}。` : `${sender} 于 ${sentAt} 发送的版本。`}
         <button type="button" className="ib-vlink" onClick={() => chooseVersion('current')}>
-          Open the file as it is now
+          打开文件当前的版本
         </button>
       </>
     );
@@ -2259,10 +2259,10 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
     const current = (view?.attachment ?? attachment).current;
     line = (
       <>
-        {onOpen ? 'Changed since you first opened it.' : `Changed since ${sender} sent it at ${sentAt}.`}
-        {current ? ` Edited ${whenTime(current.mtime)}.` : ''}
+        {onOpen ? '自你首次打开后已更改。' : `自 ${sender} 于 ${sentAt} 发送后已更改。`}
+        {current ? ` 编辑于 ${whenTime(current.mtime)}。` : ''}
         <button type="button" className="ib-vlink" onClick={() => chooseVersion('sent')}>
-          {onOpen ? 'Open the version you first saw' : props.fromPerson ? 'Open the version you sent' : 'Open the version it sent'}
+          {onOpen ? '打开你最初看到的版本' : props.fromPerson ? '打开你发送的版本' : '打开它发送的版本'}
         </button>
       </>
     );
@@ -2275,21 +2275,21 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
   let versionChip: { text: string; action: { label: string; to: 'current' | 'sent' } | null; full: string } | null = null;
   if (currentUnavailable) {
     versionChip = {
-      text: attachment.unavailable!.code === 'attachment_missing' ? 'The file is gone; showing the sent copy' : 'The file is not that kind any more; showing the sent copy',
+      text: attachment.unavailable!.code === 'attachment_missing' ? '文件已不存在，正在显示发送时的副本' : '文件已不再是该类型，正在显示发送时的副本',
       action: null,
-      full: `${attachment.unavailable!.message} ${onOpen ? `This is the copy taken when you first opened it, ${firstOpened}.` : `This is the version ${sender} sent at ${sentAt}.`}`,
+      full: `${attachment.unavailable!.message} ${onOpen ? `这是你首次打开时保存的副本，${firstOpened}。` : `这是 ${sender} 于 ${sentAt} 发送的版本。`}`,
     };
   } else if (effectiveVersion === 'sent') {
     versionChip = {
-      text: onOpen ? 'Showing the copy from when you first opened it' : 'Showing the sent version',
-      action: { label: 'Open the file as it is now', to: 'current' },
-      full: onOpen ? `The copy taken when you first opened it, ${firstOpened}.` : `The version ${sender} sent at ${sentAt}.`,
+      text: onOpen ? '正在显示你首次打开时的副本' : '正在显示发送时的版本',
+      action: { label: '打开文件现在的版本', to: 'current' },
+      full: onOpen ? `你首次打开时保存的副本，${firstOpened}。` : `${sender} 于 ${sentAt} 发送的版本。`,
     };
   } else if ((view?.attachment ?? attachment).changed_since_sent) {
     versionChip = {
-      text: onOpen ? 'Changed since you first opened it' : 'Changed since sent',
-      action: { label: onOpen ? 'Open the version you first saw' : props.fromPerson ? 'Open the version you sent' : 'Open the version it sent', to: 'sent' },
-      full: onOpen ? 'Changed since you first opened it.' : `Changed since ${sender} sent it at ${sentAt}.`,
+      text: onOpen ? '自你首次打开后已更改' : '自发送后已更改',
+      action: { label: onOpen ? '打开你最初看到的版本' : props.fromPerson ? '打开你发送的版本' : '打开它发送的版本', to: 'sent' },
+      full: onOpen ? '自你首次打开后已更改。' : `自 ${sender} 于 ${sentAt} 发送后已更改。`,
     };
   }
 
@@ -2473,7 +2473,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
               ? inboxVideoMeta(attachment)
               : // An image the message's text shows: whose message, and when (approval "inbox-image-viewer").
                 inline
-                ? `${props.fromPerson ? 'You' : props.agent} · ${sentAt}`
+                ? `${props.fromPerson ? '你' : props.agent} · ${sentAt}`
                 : `from ${props.agent} in ${props.projectName}`}
           </span>
           <span className="ib-sp" />
@@ -2513,24 +2513,24 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
           )}
           {!props.fullLocked && (
             // The view's two parts (fileView.ts), the one shown pressed. This header shows only while the file is side by side.
-            <div className="ib-seg ib-viewseg" role="group" aria-label="View" data-view-switch="">
-              <Tip content="Side by side: files open beside the thread until you choose again">
-                <button type="button" className="ib-seg-o" aria-pressed="true" data-on="" onClick={() => props.onKeepView?.()} aria-label={folded ? 'Side by side' : undefined} data-view-side="">
+            <div className="ib-seg ib-viewseg" role="group" aria-label="视图" data-view-switch="">
+              <Tip content="并排：文件在会话旁边打开，直到你再次选择">
+                <button type="button" className="ib-seg-o" aria-pressed="true" data-on="" onClick={() => props.onKeepView?.()} aria-label={folded ? '并排' : undefined} data-view-side="">
                   <Icon name="sideBySide" size={14} />
-                  {!folded && 'Side by side'}
+                  {!folded && '并排'}
                 </button>
               </Tip>
               {/* F names full screen here (approved hint placement); the key, unlike this button, saves nothing. */}
-              <Tip content={withShortcut('Full screen: files open this way until you choose again', { scope: inboxThreadShortcuts, action: 'fullScreen' })}>
-                <button type="button" className="ib-seg-o" aria-pressed="false" onClick={() => toggleFull()} aria-label={folded ? 'Full screen' : undefined} data-full-screen-toggle="">
+              <Tip content={withShortcut('全屏：文件以这种方式打开，直到你再次选择', { scope: inboxThreadShortcuts, action: 'fullScreen' })}>
+                <button type="button" className="ib-seg-o" aria-pressed="false" onClick={() => toggleFull()} aria-label={folded ? '全屏' : undefined} data-full-screen-toggle="">
                   <Icon name="frame" size={14} />
-                  {!folded && 'Full screen'}
+                  {!folded && '全屏'}
                 </button>
               </Tip>
             </div>
           )}
           <Tip content="Close">
-            <button type="button" className="ib-iconbtn" onClick={close} aria-label={`Close ${attachment.name}`}>
+            <button type="button" className="ib-iconbtn" onClick={close} aria-label={`关闭 ${attachment.name}`}>
               <Icon name="x" />
             </button>
           </Tip>
@@ -2650,8 +2650,8 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
                 // leaving lets it fade again only after keyboard focus held it (hold(false) wakes only then).
                 onFocus={(e) => (focusVisible(e.currentTarget) ? sizeIcon.hold(true) : sizeIcon.wake())}
                 onBlur={() => sizeIcon.hold(false)}
-                aria-label={pageSize === 'desktop' ? 'Phone size' : 'Desktop size'}
-                title={pageSize === 'desktop' ? 'Phone size' : 'Desktop size'}
+                aria-label={pageSize === 'desktop' ? '手机尺寸' : '桌面尺寸'}
+                title={pageSize === 'desktop' ? '手机尺寸' : '桌面尺寸'}
                 data-page-size-toggle={pageSize}
               >
                 <Icon name={pageSize === 'desktop' ? 'laptop' : 'phone'} size={18} />
@@ -2671,7 +2671,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
                 </span>
                 {linkedTop.url && (
                   <a className="ib-vlink ib-linkband-tab" href={linkedTop.url} target="_blank" rel="noopener noreferrer" data-linked-open-tab="">
-                    Open in new tab
+                    在新标签页中打开
                   </a>
                 )}
               </div>
@@ -2797,13 +2797,13 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
                 <span className="ib-att-text">
                   <FileName name={attachment.name} className="ib-nm" wrap />
                   <span className="ib-kd">
-                    {inboxAttachmentKindLabel(attachment.kind, attachment.name, attachment.media_type)}, {formatBytes(attachment.current?.size ?? attachment.size)}. {tooLarge ? 'It is too large to show here; download it to open it.' : 'Plannotator does not show this kind of file; download it to open it.'}
+                    {inboxAttachmentKindLabel(attachment.kind, attachment.name, attachment.media_type)}, {formatBytes(attachment.current?.size ?? attachment.size)}. {tooLarge ? '文件太大，无法在这里显示；请下载后打开。' : 'Plannotator 不显示这种文件；请下载后打开。'}
                   </span>
                 </span>
                 {source.writes && (
                   <a className="ib-btn ib-pri" href={source.downloadUrl(attachment, effectiveVersion)} download={attachment.name}>
                     <Icon name="download" size={14} />
-                    Download
+                    下载
                   </a>
                 )}
               </div>
@@ -2815,7 +2815,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
               <div className="ib-codehint" style={codeClear === null ? undefined : { paddingTop: codeClear }} data-code-row="">
                 <CopyFileButton text={view.text} name={attachment.name} sent={view.version !== 'current'} announce={announce} />
                 {!props.readOnly && (
-                  <span className="ib-codehint-t">{phone ? 'Tap a line to comment.' : 'Click a line number, drag across lines, or select code to comment.'}</span>
+                  <span className="ib-codehint-t">{phone ? '点按一行以评论。' : '点击行号、跨行拖动，或选中代码以评论。'}</span>
                 )}
               </div>
               <CodeFileView
@@ -2890,7 +2890,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
                 maxWidth={railGutter ? null : full ? 760 : 640}
                 stickyActions={false}
                 disableCodePathValidation
-                copyLabel="Copy file"
+                copyLabel="复制文件"
                 allowImages={pictures}
                 quickLabels={false}
                 onSide={sideFrom}
@@ -2939,11 +2939,11 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
           {/* The sheet's (and full screen's floating panel's) own title and close (a phone's touch presentation has neither). */}
           {(folded || full) && (
             <div className="ib-sheet-h">
-              <b>Comments</b>
+              <b>评论</b>
               {!onlyEarlier && <span className="ib-mut">{annotations.length}</span>}
               <span className="ib-sp" />
-              {isVideo && <span className="ib-mut ib-sheet-note">By time</span>}
-              <button type="button" className="ib-iconbtn" onClick={closeSheet} aria-label="Close the comments">
+              {isVideo && <span className="ib-mut ib-sheet-note">按时间</span>}
+              <button type="button" className="ib-iconbtn" onClick={closeSheet} aria-label="关闭评论">
                 <Icon name="x" />
               </button>
             </div>
@@ -2954,7 +2954,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
             // An edit kept when the file closed, back in its card's edit box.
             reopenEdit={panelReopenEdit}
             // A linked page takes no comments: the hint says where they can be written instead.
-            emptyHint={linkedTop ? `Comment on ${attachment.name}, not on this page` : isImage ? 'Comment below the image' : isVideo ? `Pause at a moment and comment below the ${kind === 'audio' ? 'player' : 'film'}` : isCode ? 'Click a line to comment' : undefined}
+            emptyHint={linkedTop ? `请评论 ${attachment.name}，而不是此页面` : isImage ? '在图片下方评论' : isVideo ? `暂停在某个时刻，在${kind === 'audio' ? '播放器' : '影片'}下方评论` : isCode ? '点击一行以评论' : undefined}
             isOpen
             hideEmptyMessage={earlierCount > 0}
             timelineFooter={
@@ -2983,7 +2983,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
                     const frame = annotation.images?.[0];
                     return (
                       <span className="ib-vcardtop">
-                        <Tip content={`Go to ${formatInboxVideoTime(time)}`}>
+                        <Tip content={`跳转到 ${formatInboxVideoTime(time)}`}>
                           <button
                             type="button"
                             className="ib-vtime"
@@ -2991,7 +2991,7 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
                               setSelectedId(annotation.id);
                               videoRef.current?.seekTo(annotation.id);
                             }}
-                            aria-label={`Go to ${formatInboxVideoTime(time)}`}
+                            aria-label={`跳转到 ${formatInboxVideoTime(time)}`}
                             data-video-card-time={annotation.id}
                           >
                             {formatInboxVideoTime(time)}
@@ -3022,9 +3022,9 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
               return wordless ? { quote: false, images: false, text: false } : {};
             }}
             renderCardBody={(annotation) => (isWordlessMarkup(annotation) ? <MarkupPicture image={annotation.images![0]!} /> : null)}
-            title="Comments"
+            title="评论"
             // A linked page takes no comments: the panel lists the attached page's, and says so.
-            titleNote={isVideo ? 'By time' : linkedTop ? `Off on ${linkedTop.name}` : undefined}
+            titleNote={isVideo ? '按时间' : linkedTop ? `${linkedTop.name} 已关闭` : undefined}
             onSelect={(id) => {
               // A card is a comment on the attached page: back to it first (a new entry, as a link followed).
               if (linkedTop) props.onLinked?.(null);
@@ -3076,14 +3076,14 @@ export const AttachmentPane = forwardRef<AttachmentPaneHandle, AttachmentPanePro
               )}
               {!(onlyEarlier && props.strip.picks === 0 && props.strip.annotations === 0) && (
               <p className="ib-fvsend" data-strip-chip="">
-                <b>{chipText}</b> {props.strip.picks === 0 && props.strip.annotations === 1 ? 'rides' : 'ride'} your next Send to {props.agent}.
-                {elsewhere > 0 && ` ${elsewhere} ${elsewhere === 1 ? 'is' : 'are'} on other files.`}
+                <b>{chipText}</b> 会随你下一次发送带给 {props.agent}。
+                {elsewhere > 0 && ` 还有 ${elsewhere} 个在其他文件上。`}
               </p>
               )}
               <div className="ib-fvacts">
                 <button type="button" className="ib-btn ib-sm ib-pri" onClick={() => leave(null, props.strip.onWriteReply)}>
                   <Icon name="reply" size={14} />
-                  Write the reply
+                  写回复
                 </button>
               </div>
             </div>

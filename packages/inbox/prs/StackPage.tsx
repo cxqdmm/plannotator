@@ -44,11 +44,11 @@ export function StackPage(props: StackPageProps) {
   // Choosing a range: `null` while not; else the ends picked so far.
   const [picked, setPicked] = useState<string[] | null>(null);
   const crumb = (
-    <nav className="ib-prst-crumb" aria-label="Breadcrumb">
+    <nav className="ib-prst-crumb" aria-label="面包屑">
       <SidebarTrigger />
       <button type="button" className="ib-bback" onClick={props.onBack} data-pr-stack-back="">
         <Icon name="chevL" size={15} />
-        Pull requests
+        PR
       </button>
       {props.repoLabel && <span className="ib-prst-repo">/ {props.repoLabel}</span>}
     </nav>
@@ -62,8 +62,8 @@ export function StackPage(props: StackPageProps) {
             <div className="ib-prs-loading" aria-busy="true" />
           ) : (
             <div className="ib-prs-empty">
-              <h1 id={titleId}>This stack isn’t open any more</h1>
-              <p>Its layers merged or closed, or the list no longer has them.</p>
+              <h1 id={titleId}>这个堆叠已不再开放</h1>
+              <p>它的各层已合并或关闭，或者列表中已没有它们。</p>
             </div>
           )}
         </div>
@@ -82,13 +82,13 @@ export function StackPage(props: StackPageProps) {
   const rangeable = stack.layers.filter(inboxPullIsOpen).length >= 3;
   const pick = (pull: InboxPull) => setPicked((was) => pickNext(stack, was ?? [], pull.key));
   const meta = [
-    counts.merged > 0 ? `${counts.merged} merged` : null,
-    `${counts.open} open`,
-    counts.needYou > 0 ? { you: `${counts.needYou} need you` } : null,
-    counts.failing > 0 ? { bad: `${counts.failing} failing` } : null,
-    changed > 0 ? { changed: `${changed} changed since you looked` } : null,
-    next ? `next to land ${inboxPullLabel(next)}` : null,
-    owner ? { by: ['by ', person(owner), ...(authors.length > 1 ? [` and ${authors.length - 1} ${authors.length === 2 ? 'other' : 'others'}`] : [])] as Words } : null,
+    counts.merged > 0 ? `已合并 ${counts.merged} 个` : null,
+    `开放 ${counts.open} 个`,
+    counts.needYou > 0 ? { you: `需要你处理 ${counts.needYou} 个` } : null,
+    counts.failing > 0 ? { bad: `${counts.failing} 个检查失败` } : null,
+    changed > 0 ? { changed: `${changed} 个自上次查看后有更新` } : null,
+    next ? `接下来合并 ${inboxPullLabel(next)}` : null,
+    owner ? { by: ['来自 ', person(owner), ...(authors.length > 1 ? [` 等 ${authors.length - 1} 人`] : [])] as Words } : null,
   ].filter(Boolean) as (string | { you: string } | { bad: string } | { changed: string } | { by: Words })[];
   return (
     <section className="ib-prs ib-prst" aria-labelledby={titleId} data-pr-stack-page={stack.id} data-phone={phone ? '' : undefined}>
@@ -96,7 +96,7 @@ export function StackPage(props: StackPageProps) {
         {crumb}
         <header className="ib-prst-head">
           <h1 id={titleId} tabIndex={-1}>
-            Stack of {stack.layers.length} into <code>{stack.base}</code>
+            堆叠共 {stack.layers.length} 层，合入 <code>{stack.base}</code>
           </h1>
           <p className="ib-prs-sum">
             {meta.map((m, i) =>
@@ -134,14 +134,14 @@ export function StackPage(props: StackPageProps) {
             onClear={() => setPicked(null)}
           />
         )}
-        <ol className="ib-prst-list" aria-label={`Layers, top of the stack first`} data-picking={picked ? '' : undefined}>
+        <ol className="ib-prst-list" aria-label={`层，堆叠顶部在前`} data-picking={picked ? '' : undefined}>
           {rows.map((pull) => {
             const at = stack.layers.indexOf(pull) + 1;
             const you = needsYou(pull);
             const open = inboxPullIsOpen(pull);
             const lands = next?.key === pull.key;
             const other = pull.author && pull.author !== owner ? pull.author : null;
-            const said: Words = lands && open && statusWords(pull, now) === 'Approved · ready to land' ? ['Approved · lands next'] : statusParts(pull, now);
+            const said: Words = lands && open && statusWords(pull, now) === '已通过 · 可以合并' ? ['已通过 · 接下来合并'] : statusParts(pull, now);
             const status = wordsText(said);
             const moved = !!changedSince(pull, looked);
             const ends = picked?.includes(pull.key) ?? false;
@@ -163,7 +163,7 @@ export function StackPage(props: StackPageProps) {
                     if (picked || (event.shiftKey && open && rangeable)) pick(pull);
                     else props.onOpenLayer(pull);
                   }}
-                  aria-label={`Layer ${at}: ${inboxPullLabel(pull)} ${pull.title}, ${status}${checksLabel(pull.checks) && open ? `, ${checksLabel(pull.checks)}` : ''}${moved ? ', changed since you looked' : ''}.${picked ? '' : ' Open it.'}`}
+                  aria-label={`第 ${at} 层：${inboxPullLabel(pull)} ${pull.title}，${status}${checksLabel(pull.checks) && open ? `，${checksLabel(pull.checks)}` : ''}${moved ? '，自上次查看后有更新' : ''}。${picked ? '' : '打开它。'}`}
                   data-pr-layer={pull.key}
                   data-pr-layer-changed={moved ? '' : undefined}
                 >
@@ -193,18 +193,18 @@ export function StackPage(props: StackPageProps) {
               </li>
             );
           })}
-          <li className="ib-prst-li ib-prst-base" aria-label={`${stack.base}, the base branch`}>
+          <li className="ib-prst-li ib-prst-base" aria-label={`${stack.base}，基础分支`}>
             <span className="ib-prst-at" />
             <span className="ib-prst-node" data-base="" aria-hidden="true" />
             <span className="ib-prst-basen">
-              <code>{stack.base}</code> · the base branch
+              <code>{stack.base}</code> · 基础分支
             </span>
           </li>
         </ol>
         {rangeable && !picked && (
           <p className="ib-prst-foot">
             <button type="button" className="ib-prst-choose" onClick={() => setPicked([])} data-pr-stack-choose="">
-              Choose a range
+              选择范围
             </button>
           </p>
         )}

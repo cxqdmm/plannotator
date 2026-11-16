@@ -158,9 +158,9 @@ export function ToPicker({
         <div className="ib-cp-pickhead">
           <button type="button" className="ib-cp-back" onClick={onClose}>
             <Icon name="chevL" size={16} />
-            Back
+            返回
           </button>
-          <span>To</span>
+          <span>发送给</span>
         </div>
       )}
       <div className="ib-cp-filter">
@@ -173,8 +173,8 @@ export function ToPicker({
           aria-autocomplete="list"
           aria-controls={`ib-cp-list-${uid}`}
           aria-activedescendant={hl >= 0 && options[hl] ? optionId(hl) : undefined}
-          aria-label="Find an agent or project"
-          placeholder="Find an agent or project"
+          aria-label="查找 agent 或项目"
+          placeholder="查找 agent 或项目"
           autoComplete="off"
           spellCheck={false}
           value={query}
@@ -187,10 +187,10 @@ export function ToPicker({
         className="ib-cp-list"
         role="listbox"
         id={`ib-cp-list-${uid}`}
-        aria-label="Live agent sessions"
+        aria-label="活跃的 agent 会话"
         data-session-labels={items.some((item) => item.type === 'session' && item.row.target.label) ? '' : undefined}
       >
-        {items.length === 0 && <div className="ib-cp-none">{typing && parts ? `Nothing matches “${query.trim()}”` : 'No live session matches.'}</div>}
+        {items.length === 0 && <div className="ib-cp-none">{typing && parts ? `没有匹配“${query.trim()}”的内容` : '没有匹配的活跃会话。'}</div>}
         {items.map((item) => {
           if (item.type === 'cap') {
             return (
@@ -205,7 +205,7 @@ export function ToPicker({
               <div key={item.key} className="ib-cp-mhd" aria-hidden="true" data-compose-machine-head={m.key}>
                 <Icon name={m.asleep ? 'moon' : 'laptop'} size={14} />
                 <bdi>{m.name}</bdi>
-                {(m.self || m.asleep) && <span>· {m.self ? 'this computer' : asleepSince(m)}</span>}
+                {(m.self || m.asleep) && <span>· {m.self ? '此计算机' : asleepSince(m)}</span>}
               </div>
             );
           }
@@ -224,7 +224,7 @@ export function ToPicker({
                   <Icon name="plus" size={12} />
                 </span>
                 <span className="ib-cp-stk">{item.name}</span>
-                <span className="ib-cp-stend">Not on {item.machine.name}</span>
+                <span className="ib-cp-stend">不在 {item.machine.name} 上</span>
               </div>
             );
           }
@@ -232,7 +232,7 @@ export function ToPicker({
             const { hl: on, ...props } = rowProps(item);
             return (
               <div key={item.key} {...props} className={`ib-cp-opt ib-cp-st ib-cp-more${on ? ' ib-hl' : ''}`} data-compose-more-running={item.machine.key}>
-                {item.count} more running
+                还有 {item.count} 个运行中
               </div>
             );
           }
@@ -244,7 +244,7 @@ export function ToPicker({
               <div
                 key={item.key}
                 {...props}
-                aria-label={`New ${s.name} session in ${s.project.name}${m.machine ? `, on ${m.name}` : `, ${tildePath(s.project.root, m.home)}`}`}
+                aria-label={`在 ${s.project.name} 中新建 ${s.name} 会话${m.machine ? `，位于 ${m.name}` : `，${tildePath(s.project.root, m.home)}`}`}
                 className={`ib-cp-opt ib-cp-st ib-cp-start${on ? ' ib-hl' : ''}`}
                 data-compose-start={s.agent}
                 data-compose-start-machine={m.key}
@@ -256,9 +256,9 @@ export function ToPicker({
                 <HostMark host={s.agent} />
                 <span className="ib-cp-stk">{s.name}</span>
                 <span className="ib-cp-stin" dir="auto">
-                  in {s.project.name}
+                  在 {s.project.name}
                 </span>
-                {m.asleep && !toItemOn(item, selected, typing) && <span className="ib-cp-stend">starts when it's back</span>}
+                {m.asleep && !toItemOn(item, selected, typing) && <span className="ib-cp-stend">恢复后启动</span>}
                 <span className="ib-cp-check" aria-hidden="true">
                   {toItemOn(item, selected, typing) && <Icon name="check" size={15} />}
                 </span>
@@ -275,7 +275,7 @@ export function ToPicker({
             <div
               key={item.key}
               {...(asleep ? { role: 'option' as const, 'aria-selected': false, 'aria-disabled': 'true' as const } : props)}
-              aria-label={`${hostLabel(target.host)}${target.label ? `, ${target.label},` : ''} in ${target.project.name}, ${folder}${started ? `, started ${started}` : ''}`}
+              aria-label={`${hostLabel(target.host)}${target.label ? `，${target.label}` : ''}，位于 ${target.project.name}，${folder}${started ? `，开始于 ${started}` : ''}`}
               className={`ib-cp-opt${on ? ' ib-hl' : ''}`}
               data-compose-session={target.session}
               data-compose-project={target.project.name}
@@ -296,13 +296,13 @@ export function ToPicker({
                 </span>
               )}
               <FolderPath path={folder} />
-              <Tip content={started ? `Started ${started}` : null}>
+              <Tip content={started ? `开始于 ${started}` : null}>
                 <span className="ib-cp-os" data-compose-started={started ?? undefined}>
                   {started ? `· ${started}` : null}
                 </span>
               </Tip>
               <span className="ib-cp-check" aria-hidden="true" data-compose-state={parts && !chosenRow ? '' : undefined}>
-                {chosenRow ? <Icon name="check" size={15} /> : parts ? (asleep ? 'asleep' : busyWord(target)) : null}
+                {chosenRow ? <Icon name="check" size={15} /> : parts ? (asleep ? '休眠' : busyWord(target)) : null}
               </span>
             </div>
           );

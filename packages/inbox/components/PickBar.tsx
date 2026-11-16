@@ -21,7 +21,7 @@ import { TagIcon } from './InitiativePeek';
 import { Tip } from './Tip';
 
 /** Combine… with one thread picked: greyed, and its tooltip says why. */
-export const COMBINE_NEEDS_TWO = 'Pick two or more threads to combine';
+export const COMBINE_NEEDS_TWO = '选择两个或更多会话才能合并';
 
 /** A box that picks: a row's, a group's, or the whole list's (half filled while only some of it is picked). */
 export function PickBox({ state, label, onPick, row }: { state: BoxState; label: string; onPick: (event: ReactMouseEvent) => void; row?: boolean }) {
@@ -91,15 +91,15 @@ export function WorkItems({ act, anchor }: { act: PickActions; anchor?: () => HT
   return (
     <>
       {act.tidy && (
-        <Menu.Item className="ib-pmi" label="Tidy…" onClick={() => act.tidy!(anchor?.() ?? null)} data-pick-work="tidy">
+        <Menu.Item className="ib-pmi" label="整理…" onClick={() => act.tidy!(anchor?.() ?? null)} data-pick-work="tidy">
           <Icon name="brush" size={15} />
-          Tidy…
+          整理…
         </Menu.Item>
       )}
       {act.combine && (
-        <Menu.Item className="ib-pmi" label="Combine…" disabled={!two} onClick={() => act.combine!()} data-pick-work="combine" title={two ? undefined : COMBINE_NEEDS_TWO}>
+        <Menu.Item className="ib-pmi" label="合并…" disabled={!two} onClick={() => act.combine!()} data-pick-work="combine" title={two ? undefined : COMBINE_NEEDS_TWO}>
           <Icon name="swap" size={15} />
-          Combine…
+          合并…
         </Menu.Item>
       )}
       <Menu.Separator className="ib-pm-sep" />
@@ -108,12 +108,12 @@ export function WorkItems({ act, anchor }: { act: PickActions; anchor?: () => HT
 }
 
 const ITEMS: { action: BulkAction; label: string; icon: IconName; iconClass?: string }[] = [
-  { action: 'read', label: 'Mark read', icon: 'checkCircle' },
-  { action: 'unread', label: 'Mark unread', icon: 'envelope' },
-  { action: 'star', label: 'Star threads', icon: 'star' },
-  { action: 'unstar', label: 'Unstar threads', icon: 'star', iconClass: 'ib-star-on' },
-  { action: 'priority-add', label: 'Add to Priority', icon: 'toTop' },
-  { action: 'priority-remove', label: 'Remove from Priority', icon: 'toBottom' },
+  { action: 'read', label: '标为已读', icon: 'checkCircle' },
+  { action: 'unread', label: '标为未读', icon: 'envelope' },
+  { action: 'star', label: '星标会话', icon: 'star' },
+  { action: 'unstar', label: '取消星标会话', icon: 'star', iconClass: 'ib-star-on' },
+  { action: 'priority-add', label: '添加到优先级', icon: 'toTop' },
+  { action: 'priority-remove', label: '从优先级中移除', icon: 'toBottom' },
 ];
 
 /** Runs one action on the rows it takes. */
@@ -149,9 +149,9 @@ export function BulkItems({ act, onTags }: { act: PickActions; onTags: () => voi
       ))}
       {tags && shown.length > 0 && <Menu.Separator className="ib-pm-sep" />}
       {tags && (
-        <Menu.Item className="ib-pmi" label="Add tag" closeOnClick={false} onClick={onTags} data-add-tag-item="">
+        <Menu.Item className="ib-pmi" label="添加标签" closeOnClick={false} onClick={onTags} data-add-tag-item="">
           <TagIcon size={15} />
-          Add tag
+          添加标签
           <span className="ib-zsub">
             <Icon name="chevR" size={13} />
           </span>
@@ -187,17 +187,17 @@ function BarMenu({ kind, act, phone, trigger, label, className }: { kind: 'snooz
       <Menu.Portal container={portal ?? undefined}>
         {phone && <Menu.Backdrop className="ib-pm-scrim" />}
         <Menu.Positioner className="ib-pm-pos" side={phone ? 'top' : 'bottom'} align={kind === 'more' ? 'end' : 'start'} sideOffset={4} data-phone={phone ? '' : undefined}>
-          <Menu.Popup className="ib-pm" aria-label={kind === 'snooze' ? `Snooze ${n === 1 ? '1 thread' : `${formatCount(n)} threads`}` : `${formatCount(n)} selected`} data-pick-popup={kind}>
+          <Menu.Popup className="ib-pm" aria-label={kind === 'snooze' ? `推迟 ${n === 1 ? '1 个会话' : `${formatCount(n)} 个会话`}` : `已选 ${formatCount(n)} 个`} data-pick-popup={kind}>
             {kind === 'snooze' ? (
               <>
-                {phone && <div className="ib-pm-title" aria-hidden="true">{`Snooze ${n === 1 ? '1 thread' : `${formatCount(n)} threads`}`}</div>}
+                {phone && <div className="ib-pm-title" aria-hidden="true">{`推迟 ${n === 1 ? '1 个会话' : `${formatCount(n)} 个会话`}`}</div>}
                 <SnoozeTimes view={view} onView={setView} onPick={(until) => runBulk(act, 'snooze', until)} onClose={() => setOpen(false)} />
               </>
             ) : tags ? (
               <BulkTagList threadIds={act.rows.map((row) => row.thread_id)} onBack={() => setTags(false)} />
             ) : (
               <>
-                {phone && <div className="ib-pm-title" aria-hidden="true">{n === 1 ? '1 thread' : `${formatCount(n)} threads`}</div>}
+                {phone && <div className="ib-pm-title" aria-hidden="true">{n === 1 ? '1 个会话' : `${formatCount(n)} 个会话`}</div>}
                 {act.narrow && !phone && <WorkItems act={act} anchor={() => anchor.current} />}
                 <BulkItems act={act} onTags={() => setTags(true)} />
               </>
@@ -224,18 +224,18 @@ export function PickBar({ act, all, onAll, onDone, phone }: PickBarProps) {
   const archives = bulkTargets(act.rows, 'archive', act.rules).length > 0;
   const snoozes = act.snoozes && bulkTargets(act.rows, 'snooze', act.rules).length > 0;
   return (
-    <div className="ib-lhead ib-pickbar" role="toolbar" aria-label="Selected threads" data-pick-bar="" data-long={n >= 100 ? '' : undefined}>
-      <PickBox state={all} label="Select all" onPick={onAll} />
+    <div className="ib-lhead ib-pickbar" role="toolbar" aria-label="所选会话" data-pick-bar="" data-long={n >= 100 ? '' : undefined}>
+      <PickBox state={all} label="全选" onPick={onAll} />
       {/* The count is a live region: each pick is said, as the bar shows it. */}
       <span className="ib-pick-n" role="status" data-pick-count={n}>
-        {n > 0 ? `${formatCount(n)} selected` : <span className="ib-pick-hint">{phone ? 'Tap threads to select them' : 'Click threads to select them'}</span>}
+        {n > 0 ? `已选 ${formatCount(n)} 个` : <span className="ib-pick-hint">{phone ? '点按会话以选择' : '点击会话以选择'}</span>}
       </span>
       {n > 0 && !phone && (
         <>
           {archives && (
-            <button type="button" className="ib-pick-btn" aria-label="Archive" data-bulk-action="archive" onClick={() => runBulk(act, 'archive')}>
+            <button type="button" className="ib-pick-btn" aria-label="归档" data-bulk-action="archive" onClick={() => runBulk(act, 'archive')}>
               <Icon name="archive" size={15} className="ib-pick-i" />
-              <span className="ib-pick-l">Archive</span>
+              <span className="ib-pick-l">归档</span>
             </button>
           )}
           {snoozes && (
@@ -243,33 +243,33 @@ export function PickBar({ act, all, onAll, onDone, phone }: PickBarProps) {
               kind="snooze"
               act={act}
               phone={false}
-              label="Snooze"
+              label="推迟"
               className="ib-pick-btn"
               trigger={
                 <>
                   <Icon name="clock" size={15} className="ib-pick-i" />
-                  <span className="ib-pick-l">Snooze</span>
+                  <span className="ib-pick-l">推迟</span>
                 </>
               }
             />
           )}
           {!act.narrow && act.tidy && (
             <button type="button" className="ib-pick-btn" onClick={(event) => act.tidy!(event.currentTarget)} data-pick-tidy="">
-              Tidy…
+              整理…
             </button>
           )}
           {!act.narrow && act.combine && (
             <Tip content={COMBINE_NEEDS_TWO} when={() => n < 2}>
               <button type="button" className="ib-pick-btn" aria-disabled={n < 2 || undefined} onClick={() => n >= 2 && act.combine!()} data-pick-combine="">
-                Combine…
+                合并…
               </button>
             </Tip>
           )}
-          <BarMenu kind="more" act={act} phone={false} label="More for the selected threads" className="ib-pick-btn ib-pick-ico" trigger={<Icon name="dots" size={16} />} />
+          <BarMenu kind="more" act={act} phone={false} label="所选会话的更多操作" className="ib-pick-btn ib-pick-ico" trigger={<Icon name="dots" size={16} />} />
         </>
       )}
       <button type="button" className="ib-pick-btn ib-pick-end" onClick={onDone} data-pick-done="">
-        Done
+        完成
       </button>
     </div>
   );
@@ -282,22 +282,22 @@ export function PickSheet({ act }: { act: PickActions }) {
   const snoozes = act.snoozes && bulkTargets(act.rows, 'snooze', act.rules).length > 0;
   if (act.rows.length === 0) return null;
   return (
-    <div ref={sheet} className="ib-picksheet" role="toolbar" aria-label="Selected threads" data-pick-sheet="">
+    <div ref={sheet} className="ib-picksheet" role="toolbar" aria-label="所选会话" data-pick-sheet="">
       <button type="button" className="ib-pick-tool" disabled={!archives} onClick={() => runBulk(act, 'archive')} data-bulk-action="archive">
         <Icon name="archive" size={20} />
-        Archive
+        归档
       </button>
       {snoozes && (
         <BarMenu
           kind="snooze"
           act={act}
           phone
-          label="Snooze"
+          label="推迟"
           className="ib-pick-tool"
           trigger={
             <>
               <Icon name="clock" size={20} />
-              Snooze
+              推迟
             </>
           }
         />
@@ -305,25 +305,25 @@ export function PickSheet({ act }: { act: PickActions }) {
       {act.tidy && (
         <button type="button" className="ib-pick-tool" onClick={(event) => act.tidy!(event.currentTarget)} data-pick-tidy="">
           <Icon name="brush" size={20} />
-          Tidy
+          整理
         </button>
       )}
       {act.combine && (
         <button type="button" className="ib-pick-tool" disabled={act.rows.length < 2} onClick={() => act.combine!()} data-pick-combine="">
           <Icon name="swap" size={20} />
-          Combine
+          合并
         </button>
       )}
       <BarMenu
         kind="more"
         act={act}
         phone
-        label="More"
+        label="更多"
         className="ib-pick-tool"
         trigger={
           <>
             <Icon name="dots" size={20} />
-            More
+            更多
           </>
         }
       />

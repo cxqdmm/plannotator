@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { InboxApiError, inboxApi } from './api';
 
-const NOT_SENT = 'It was not sent now. Try again.';
+const NOT_SENT = '未能立即发送。请重试。';
 
 export function useSendNow(lastId: string, changed: () => Promise<void>, reloadLive: () => unknown, reloadTags: () => unknown) {
   const [sendNowState, setSendNowState] = useState<{ id: string; busy: boolean; error: string | null } | null>(null);

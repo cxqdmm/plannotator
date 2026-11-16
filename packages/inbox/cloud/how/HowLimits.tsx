@@ -1,23 +1,23 @@
 import { HostMark, Icon, type IconName } from '../../icons';
 
 const SEES: { host: string; why: string }[] = [
-  { host: 'cloud-grok', why: 'It started' },
-  { host: 'claude-code', why: 'Another agent’s' },
-  { host: 'codex', why: 'Another project' },
+  { host: 'cloud-grok', why: '它创建的' },
+  { host: 'claude-code', why: '其他 agent 的' },
+  { host: 'codex', why: '其他项目' },
 ];
 
 const CANNOT: { icon: IconName; label: string }[] = [
-  { icon: 'questionBubble', label: 'Answer your questions' },
-  { icon: 'checkCircle', label: 'Approve anything' },
-  { icon: 'terminal', label: 'Run anything on your computer' },
-  { icon: 'folder', label: 'Open your files' },
+  { icon: 'questionBubble', label: '回答你的问题' },
+  { icon: 'checkCircle', label: '批准任何操作' },
+  { icon: 'terminal', label: '在你的计算机上运行任何东西' },
+  { icon: 'folder', label: '打开你的文件' },
 ];
 
 export function HowLimits() {
   return (
     <div className="ib-chow-p ib-chow-limits">
       <div className="ib-chow-col">
-        <span className="ib-chow-col-t">It sees</span>
+        <span className="ib-chow-col-t">它能看到</span>
         <div className="ib-chow-threads">
           {SEES.map((thread) => (
             <span key={thread.why} className="ib-chow-thread">
@@ -29,7 +29,7 @@ export function HowLimits() {
         </div>
       </div>
       <div className="ib-chow-col">
-        <span className="ib-chow-col-t">It can’t</span>
+        <span className="ib-chow-col-t">它不能</span>
         <div className="ib-chow-cannot">
           {CANNOT.map((item) => (
             <span key={item.icon} className="ib-chow-no">

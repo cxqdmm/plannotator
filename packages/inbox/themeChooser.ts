@@ -101,8 +101,8 @@ export type ThemeChooserHalf = 'light' | 'dark';
 
 /** The two theme cards, in the fan's order; the third card is "Choose your own". */
 export const THEME_CHOOSER_THEMES = [
-  { id: 'plannotator', name: 'Original', line: 'Violet on slate' },
-  { id: 'plannotator-modern', name: 'Modern', line: 'White and true black, Inter' },
+  { id: 'plannotator', name: '原版', line: '石板灰上的紫罗兰' },
+  { id: 'plannotator-modern', name: '现代', line: '白色与纯黑，Inter' },
 ] as const;
 export type ThemeChooserThemeId = (typeof THEME_CHOOSER_THEMES)[number]['id'];
 /** A card of the fan: a theme, or "Choose your own". */
@@ -127,25 +127,27 @@ export const THEME_CHOOSER_TILES: readonly { theme: string; light: boolean }[] =
 ];
 
 /** The dialog's words (the approved mock's; the card lines and the "follows your system" line still need the owner's OK). */
+const halfWord = (half: ThemeChooserHalf): string => (half === 'light' ? '浅色' : '深色');
+
 export const THEME_CHOOSER_WORDS = {
   /** The heading as a screen reader hears it; on screen it is the six lettered tiles. */
-  title: 'Themes',
+  title: '主题',
   lettering: 'themes',
-  close: 'Close',
+  close: '关闭',
   brand: 'Plannotator',
-  inUse: 'In use',
-  followsSystem: 'follows your system',
-  always: (half: ThemeChooserHalf) => `always ${half}`,
-  keep: (name: string) => `Keep ${name}`,
-  use: (name: string, half: ThemeChooserHalf) => `Use ${name}, ${half}`,
+  inUse: '使用中',
+  followsSystem: '跟随系统',
+  always: (half: ThemeChooserHalf) => `始终${halfWord(half)}`,
+  keep: (name: string) => `保留 ${name}`,
+  use: (name: string, half: ThemeChooserHalf) => `使用 ${name}，${halfWord(half)}`,
   /** The corner of the sheet behind: its visible word, and its name. */
-  corner: (half: ThemeChooserHalf) => half,
-  cornerLabel: (name: string, half: ThemeChooserHalf) => `Show Plannotator ${name} in ${half}`,
-  sheetAlt: (name: string, half: ThemeChooserHalf) => `The Inbox in Plannotator ${name}, ${half}`,
-  own: 'Choose your own',
-  ownLine: (more: number) => `${more} more themes, one for light and one for dark`,
-  ownAlt: (name: string) => `The Inbox in ${name}`,
-  openSettings: 'Open Settings',
+  corner: (half: ThemeChooserHalf) => halfWord(half),
+  cornerLabel: (name: string, half: ThemeChooserHalf) => `以${halfWord(half)}模式显示 Plannotator ${name}`,
+  sheetAlt: (name: string, half: ThemeChooserHalf) => `使用 Plannotator ${name}（${halfWord(half)}）的收件箱`,
+  own: '自己选择',
+  ownLine: (more: number) => `另有 ${more} 个主题，浅色和深色各一个`,
+  ownAlt: (name: string) => `收件箱使用 ${name}`,
+  openSettings: '打开设置',
 } as const;
 
 export const otherHalf = (half: ThemeChooserHalf): ThemeChooserHalf => (half === 'light' ? 'dark' : 'light');

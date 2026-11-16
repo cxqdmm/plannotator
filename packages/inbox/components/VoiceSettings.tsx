@@ -15,41 +15,39 @@ function Toggle({ on, labelledBy, onClick }: { on: boolean; labelledBy: string; 
   return <button type="button" role="switch" className="ib-sw" aria-checked={on} aria-labelledby={labelledBy} onClick={onClick} />;
 }
 
-const ROUTE_LINE = 'Your audio goes to OpenAI through your ChatGPT login in Codex. This route isn’t an official OpenAI API, so it can stop working without notice.';
-const TERMS_LINE = 'OpenAI’s terms for your ChatGPT account apply.';
-
-const planName = (plan: string | null) => (plan ? `${plan.charAt(0).toUpperCase()}${plan.slice(1)} plan, through` : 'Through');
+const ROUTE_LINE = '你的音频会通过 Codex 中的 ChatGPT 登录发送给 OpenAI。这条通道不是 OpenAI 官方 API，可能随时停止工作。';
+const TERMS_LINE = 'OpenAI 针对你 ChatGPT 账户的条款适用。';
 
 function CodexStatus({ where, status, checking }: { where: string; status: InboxVoiceStatus | null; checking: boolean }) {
   const line = (): { label: ReactNode; desc: ReactNode; ok?: boolean } => {
-    if (checking || !status) return { label: 'Checking Codex', desc: `Asking Codex on ${where} who is signed in.` };
+    if (checking || !status) return { label: '正在检查 Codex', desc: `正在询问 ${where} 上的 Codex 谁已登录。` };
     switch (status.state) {
       case 'ready':
-        return { ok: true, label: 'Signed in with ChatGPT', desc: `${planName(status.plan)} Codex on ${where}.` };
+        return { ok: true, label: '已使用 ChatGPT 登录', desc: `${where} 上的 Codex 已登录${status.plan ? `，套餐为 ${status.plan.charAt(0).toUpperCase()}${status.plan.slice(1)}` : ''}。` };
       case 'missing':
-        return { label: 'Codex isn’t installed', desc: `Install Codex on ${where}, then check again. Or use an OpenAI API key.` };
+        return { label: 'Codex 未安装', desc: `请先在 ${where} 上安装 Codex，然后重新检查。也可以使用 OpenAI API 密钥。` };
       case 'signedout':
         return {
-          label: 'Codex isn’t signed in',
+          label: 'Codex 未登录',
           desc: (
             <>
-              Run <code>codex login</code> on {where} and choose ChatGPT, then check again.
+              请在 {where} 上运行 <code>codex login</code> 并选择 ChatGPT，然后重新检查。
             </>
           ),
         };
       case 'apikey':
         return {
-          label: 'Codex is using an API key',
+          label: 'Codex 正在使用 API 密钥',
           desc: (
             <>
-              Voice through Codex needs a ChatGPT login. <code>codex login</code> changes the login Codex itself uses, so you may prefer an OpenAI API key here.
+              通过 Codex 使用语音需要 ChatGPT 登录。<code>codex login</code> 会更改 Codex 自身使用的登录方式，因此这里可能更适合使用 OpenAI API 密钥。
             </>
           ),
         };
       case 'other':
-        return { label: 'Codex is signed in another way', desc: 'Voice through Codex needs a ChatGPT login. Or use an OpenAI API key.' };
+        return { label: 'Codex 使用了其他登录方式', desc: '通过 Codex 使用语音需要 ChatGPT 登录。也可以使用 OpenAI API 密钥。' };
       default:
-        return { label: 'Codex didn’t answer', desc: `Check again, or see that Codex runs on ${where}. Or use an OpenAI API key.` };
+        return { label: 'Codex 没有响应', desc: `请重新检查，或确认 Codex 可在 ${where} 上运行。也可以使用 OpenAI API 密钥。` };
     }
   };
   const state = line();
@@ -73,7 +71,7 @@ function CodexStatus({ where, status, checking }: { where: string; status: Inbox
           <span className="ib-spin" />
         ) : (
           <button type="button" className="ib-btn" onClick={() => void checkVoiceStatus(true)} data-voice-check="">
-            Check again
+            重新检查
           </button>
         )}
       </span>
@@ -97,7 +95,7 @@ function ApiKey({ onError }: { onError: (message: string | null) => void }) {
       setReplacing(false);
       setTyped('');
     } catch (cause) {
-      onError(cause instanceof Error ? cause.message : 'The key was not saved.');
+      onError(cause instanceof Error ? cause.message : '密钥未保存。');
     } finally {
       setSaving(false);
     }
@@ -106,8 +104,8 @@ function ApiKey({ onError }: { onError: (message: string | null) => void }) {
     return (
       <div className="ib-prow" data-voice-key="env">
         <span className="ib-txt">
-          <span className="ib-l">Using OPENAI_API_KEY</span>
-          <span className="ib-desc">It is set in this Inbox’s environment, so there is nothing to paste here.</span>
+          <span className="ib-l">正在使用 OPENAI_API_KEY</span>
+          <span className="ib-desc">它已在此收件箱的环境中设置，因此无需在此粘贴。</span>
         </span>
       </div>
     );
@@ -118,17 +116,17 @@ function ApiKey({ onError }: { onError: (message: string | null) => void }) {
           <span className="ib-l">
             <span className="ib-paired">
               <Icon name="check" size={14} />
-              Key saved, ending in {key.last4}
+              密钥已保存，结尾为 {key.last4}
             </span>
           </span>
-          <span className="ib-desc">Kept on {voiceWhere(voice)}. It is never shown again or sent to any page.</span>
+          <span className="ib-desc">保存在 {voiceWhere(voice)} 上。之后不会再显示，也不会发送到任何页面。</span>
         </span>
         <span className="ib-ctl">
           <button type="button" className="ib-btn" onClick={() => setReplacing(true)} data-voice-key-replace="">
-            Replace
+            替换
           </button>
           <button type="button" className="ib-btn ib-ghost" disabled={saving} onClick={() => void save(null)} data-voice-key-remove="">
-            Remove
+            移除
           </button>
         </span>
       </div>
@@ -141,14 +139,14 @@ function ApiKey({ onError }: { onError: (message: string | null) => void }) {
     <form className="ib-prow ib-vkeyrow" onSubmit={submit} data-voice-key="empty">
       <span className="ib-txt">
         <label className="ib-l" htmlFor="ib-vkey">
-          API key
+          API 密钥
         </label>
-        <span className="ib-desc">Kept on {voiceWhere(voice)}. It is never shown again or sent to any page.</span>
+        <span className="ib-desc">保存在 {voiceWhere(voice)} 上。之后不会再显示，也不会发送到任何页面。</span>
       </span>
       <span className="ib-ctl ib-vkeyctl">
         <input id="ib-vkey" className="ib-vkey" type="password" autoComplete="new-password" spellCheck={false} placeholder="sk-…" value={typed} onChange={(event) => setTyped(event.target.value)} />
         <button type="submit" className="ib-btn" disabled={saving || !typed.trim()}>
-          Save
+          保存
         </button>
       </span>
     </form>
@@ -178,19 +176,19 @@ export function VoiceSettings() {
       adoptVoiceSettings((await inboxApi.saveVoice(change)).voice);
     } catch (cause) {
       adoptVoiceSettings(voice);
-      setError(cause instanceof Error ? cause.message : 'The setting was not saved.');
+      setError(cause instanceof Error ? cause.message : '设置未保存。');
     }
   };
   return (
     <>
-      <section className="ib-sgroup ib-sgroup-first" data-settings-voice="" aria-label="Voice">
+      <section className="ib-sgroup ib-sgroup-first" data-settings-voice="" aria-label="语音">
         <div className="ib-card">
           <div className="ib-prow">
             <span className="ib-txt">
               <span className="ib-l" id="ib-voice-label">
-                Voice
+                语音
               </span>
-              <span className="ib-desc">Adds a microphone to the reply box. Hold it to talk, or tap it. Your words land in the box, and you press Send.</span>
+              <span className="ib-desc">在回复框中添加麦克风。按住说话，或点按它。你的话会出现在输入框中，然后你按下发送。</span>
             </span>
             <span className="ib-ctl">
               <Toggle on={on} labelledBy="ib-voice-label" onClick={() => void save({ on: !on })} />
@@ -200,9 +198,9 @@ export function VoiceSettings() {
             <div className="ib-prow">
               <span className="ib-txt">
                 <span className="ib-l" id="ib-voice-phones-label">
-                  Phones only
+                  仅手机
                 </span>
-                <span className="ib-desc">Hides the microphone on computers. The phone records, and {where} turns the audio into text.</span>
+                <span className="ib-desc">在电脑上隐藏麦克风。手机负责录音，由 {where} 将音频转成文字。</span>
               </span>
               <span className="ib-ctl">
                 <Toggle on={voice.phones_only} labelledBy="ib-voice-phones-label" onClick={() => void save({ phones_only: !voice.phones_only })} />
@@ -212,27 +210,27 @@ export function VoiceSettings() {
         </div>
         {!on && (
           <p className="ib-vpage-note">
-            {ROUTE_LINE} {TERMS_LINE} Nothing runs while this is off.
+            {ROUTE_LINE} {TERMS_LINE} 关闭时不会运行任何内容。
           </p>
         )}
       </section>
       {on && (
         <section className="ib-sgroup" aria-labelledby="ib-g-voice-engine">
-          <h2 id="ib-g-voice-engine">Transcription</h2>
-          <p>{engine === 'codex' ? `${ROUTE_LINE} ${TERMS_LINE}` : 'Your audio goes to OpenAI’s public speech-to-text API under your own key. OpenAI bills your API account for each minute of audio.'}</p>
+          <h2 id="ib-g-voice-engine">转写</h2>
+          <p>{engine === 'codex' ? `${ROUTE_LINE} ${TERMS_LINE}` : '你的音频会使用你自己的密钥发送到 OpenAI 的公开语音转文字 API。OpenAI 会按音频分钟数向你的 API 账户计费。'}</p>
           <div className="ib-card">
             <div className="ib-prow">
               <span className="ib-txt">
                 <span className="ib-l" id="ib-voice-engine-label">
-                  Transcribed by
+                  转写方式
                 </span>
               </span>
               <span className="ib-ctl">
                 <span className="ib-seg" role="radiogroup" aria-labelledby="ib-voice-engine-label">
                   {(
                     [
-                      ['codex', 'Codex login'],
-                      ['api', 'OpenAI API key'],
+                      ['codex', 'Codex 登录'],
+                      ['api', 'OpenAI API 密钥'],
                     ] as const
                   ).map(([id, label]) => (
                     <label key={id} className="ib-seg-o" data-on={engine === id ? '' : undefined}>

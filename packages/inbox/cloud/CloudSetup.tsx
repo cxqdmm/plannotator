@@ -11,7 +11,7 @@ function CopyBox({ text, data, label, primary }: { text: string; data: string; l
       <div className="ib-cl-box-bar">
         <span className="ib-cl-note">{label}</span>
         <button type="button" className={`ib-btn ib-cl-copy-b${primary ? ' ib-pri' : ''}`} onClick={() => void copyTextToClipboard(text).then((ok) => setCopied(ok))} data-cloud-copy={data}>
-          <Icon name={copied ? 'check' : 'copy'} size={14} /> {copied ? 'Copied' : 'Copy'}
+          <Icon name={copied ? 'check' : 'copy'} size={14} /> {copied ? '已复制' : '复制'}
         </button>
       </div>
       <pre className="ib-cl-block">{text}</pre>
@@ -27,34 +27,34 @@ export function CloudSetup({ agent, setup, busy, onRetry, onDone }: { agent: Inb
     <div className="ib-cl-step" data-cloud-setup={setup ? setup.kind : 'no-relay'} tabIndex={-1} ref={head}>
       {!setup ? (
         <>
-          <p className="ib-cl-step-t">Nothing to send {agent.name} yet</p>
+          <p className="ib-cl-step-t">暂时没有可发送给 {agent.name} 的内容</p>
           <p className="ib-cl-p" role="alert" data-cloud-no-relay="">
-            This computer could not reach the relay. Check that this computer is online, then try again.
+            这台计算机无法连接中继。请确认它已联网，然后重试。
           </p>
         </>
       ) : setup.kind === 'message' ? (
         <>
-          <p className="ib-cl-step-t">Send this to {agent.name}. It sets itself up.</p>
-          <CopyBox text={setup.message} data="message" label="Shown only now." primary={!connected} />
+          <p className="ib-cl-step-t">把它发送给 {agent.name}，它会自行完成设置。</p>
+          <CopyBox text={setup.message} data="message" label="仅显示这一次。" primary={!connected} />
         </>
       ) : (
         <>
-          <p className="ib-cl-step-t">Add these to {agent.name}’s routine</p>
-          <p className="ib-cl-p">In the routine: Edit → Advanced settings → Cloud environment → its settings icon. Then Save changes.</p>
-          <CopyBox text={setup.variable} data="variable" label="Environment variables · shown only now" />
-          <CopyBox text={setup.domains} data="domains" label="Network access: Limited. Allowed domains" />
-          <CopyBox text={setup.instructions} data="instructions" label="Add to the routine’s instructions" />
+          <p className="ib-cl-step-t">把以下内容添加到 {agent.name} 的例行任务中</p>
+          <p className="ib-cl-p">在例行任务中依次打开：编辑 → 高级设置 → 云端环境 → 其设置图标，然后保存更改。</p>
+          <CopyBox text={setup.variable} data="variable" label="环境变量 · 仅显示这一次" />
+          <CopyBox text={setup.domains} data="domains" label="网络访问：受限。允许的域名" />
+          <CopyBox text={setup.instructions} data="instructions" label="添加到例行任务的说明中" />
         </>
       )}
       <div className="ib-cl-step-f">
         {setup && <CloudStatus agent={agent} />}
         <span className="ib-cl-step-acts">
           <button type="button" className={`ib-btn${connected ? ' ib-pri' : ' ib-ghost'}`} onClick={onDone} data-cloud-done="">
-            Done
+            完成
           </button>
           {!setup && (
             <button type="button" className="ib-btn ib-pri" disabled={busy} onClick={onRetry} data-cloud-retry="">
-              {busy ? 'Trying…' : 'Try again'}
+              {busy ? '正在尝试…' : '重试'}
             </button>
           )}
         </span>

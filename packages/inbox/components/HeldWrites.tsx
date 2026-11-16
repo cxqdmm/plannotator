@@ -23,7 +23,7 @@ export function HeldWrites({ entries, machine, onDismiss }: { entries: readonly 
             </span>
             {line.tone === 'failed' && onDismiss && (
               <button type="button" className="ib-sendnow" data-outbox-dismiss="" onClick={() => onDismiss(entry.key)}>
-                Dismiss
+                忽略
               </button>
             )}
           </div>
@@ -35,7 +35,7 @@ export function HeldWrites({ entries, machine, onDismiss }: { entries: readonly 
               <span className="ib-mk ib-big" aria-hidden="true">
                 <Icon name="reply" />
               </span>
-              <span className="ib-fl-nm ib-who">You</span>
+              <span className="ib-fl-nm ib-who">你</span>
             </div>
             <div className="ib-msg">
               <p className="ib-held-words" dir="auto">

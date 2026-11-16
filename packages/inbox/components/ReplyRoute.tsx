@@ -198,7 +198,7 @@ export function SessionEndedMark() {
     <>
       {' · '}
       <span className="ib-gone" data-session-ended="">
-        session ended
+        会话已结束
       </span>
     </>
   );
@@ -211,11 +211,11 @@ export function AskerEndedNote({ asking, project, anyLive }: { asking: AskingSes
       <Icon name="info" size={15} />
       {anyLive ? (
         <span>
-          <b>This {asking.name} session has ended.</b> Send your reply to another session, or archive it if it's done.
+          <b>这个 {asking.name} 会话已结束。</b>请把回复发送给另一个会话，或者如果它已完成就归档。
         </span>
       ) : (
         <span>
-          <b>This {asking.name} session has ended</b>, and no agent is running in {project} now. A reply waits here until that session is resumed.
+          <b>这个 {asking.name} 会话已结束</b>，且 {project} 中当前没有正在运行的 agent。回复会在这里等待，直到该会话恢复。
         </span>
       )}
     </p>
@@ -270,7 +270,7 @@ export function RouteChoice({
   const hidden = state.rows.length - visible.length;
   const target = state.selected === LEAVE ? null : (selectedRow?.live ?? null);
   const reask = kind === 'reask';
-  const primary = target ? (reask ? `Ask ${hostName(target.host)} to re-ask` : `Send to ${hostName(target.host)}`) : 'Leave it for the next agent';
+  const primary = target ? (reask ? `让 ${hostName(target.host)} 重新询问` : `发送给 ${hostName(target.host)}`) : '留给下一个 agent';
   const whyId = `${name}-why`;
   const labelId = `${name}-gl`;
 
@@ -300,15 +300,15 @@ export function RouteChoice({
       }}
     >
       <fieldset className="ib-route" aria-describedby={whyId}>
-        <legend>{reask ? 'Who should ask again?' : 'Where should this reply go?'}</legend>
+        <legend>{reask ? '应由谁重新询问？' : '这条回复应发送到哪里？'}</legend>
         <p className="ib-why" id={whyId}>
           {reask
-            ? `The ${asking.name} session that asked has ended. The session you pick reads this thread, then asks ${reaskCount === 1 ? 'the open question again' : `the ${reaskCount} open questions again in one message`}.`
-            : `The ${asking.name} session that asked has ended. Your reply stays as you wrote it.`}
+            ? `提问的 ${asking.name} 会话已结束。你选择的会话会读取此会话，然后${reaskCount === 1 ? '再次询问那个未解决的问题' : `在一条消息中再次询问 ${reaskCount} 个未解决的问题`}。`
+            : `提问的 ${asking.name} 会话已结束。你的回复会保持你写的样子。`}
         </p>
         {state.rows.length > 0 && (
           <div className="ib-gl" id={labelId}>
-            Send to a live session in {project}
+            发送给 {project} 中一个正在运行的会话
           </div>
         )}
         {visible.map((row) => (
@@ -326,15 +326,15 @@ export function RouteChoice({
             <HostMark host={row.live.host} agent={row.live.session} />
             <span>
               <span className="ib-t">
-                {hostName(row.live.host)} · {row.asker ? 'the session that asked' : `started ${whenTime(row.live.started_at)}`}
+                {hostName(row.live.host)} · {row.asker ? '提问的会话' : `启动于 ${whenTime(row.live.started_at)}`}
               </span>
-              <span className="ib-d">{row.ended ? 'Ended just now.' : sessionWords(row.live)}</span>
+              <span className="ib-d">{row.ended ? '刚刚结束。' : sessionWords(row.live)}</span>
             </span>
           </label>
         ))}
         {hidden > 0 && (
           <button type="button" className="ib-more" onClick={onShowAll}>
-            Show {hidden} more
+            显示另外 {hidden} 个
           </button>
         )}
         {state.rows.length > 0 && <hr />}
@@ -344,8 +344,8 @@ export function RouteChoice({
             <Icon name="clock" size={16} />
           </span>
           <span>
-            <span className="ib-t">Leave it for the next agent</span>
-            <span className="ib-d">It waits in this thread until an agent reads it.</span>
+            <span className="ib-t">留给下一个 agent</span>
+            <span className="ib-d">它会留在此会话中，直到有 agent 读取。</span>
           </span>
         </label>
       </fieldset>
@@ -360,7 +360,7 @@ export function RouteChoice({
           {primary}
         </button>
         <button type="button" className="ib-btn ib-ghost" onClick={onBack}>
-          {reask ? 'Cancel' : 'Back to the reply'}
+          {reask ? '取消' : '返回回复'}
         </button>
         <span className="ib-sp" />
         <EscNote />
@@ -379,17 +379,17 @@ export function routeRace(state: RouteState, ended: string, sent: { went: number
   const rows = state.rows.map((row) => (row.live.session === ended ? { ...row, ended: true } : row));
   const gone = state.rows.find((row) => row.live.session === ended);
   const next = rows.find((row) => !row.ended) ?? null;
-  const error = `${raceWhat(gone?.live.host ?? null, sent)} ${next ? `${hostName(next.live.host)} is selected now.` : 'Leave it for the next agent, or start a session.'}`;
+  const error = `${raceWhat(gone?.live.host ?? null, sent)} ${next ? `现在已选择 ${hostName(next.live.host)}。` : '留给下一个 agent，或启动一个会话。'}`;
   return { ...state, rows, selected: next?.live.session ?? LEAVE, error, focus: state.focus + 1 };
 }
 
 /** The race's first words: the session ended before the reply (or all of it) went, and what went. */
 export function raceWhat(host: string | null, sent: { went: number; total: number }): string {
   // "That Codex session"; with no host known, "That session".
-  const name = host ? `${hostName(host)} ` : '';
+  const who = host ? `那个 ${hostName(host)} 会话` : '那个会话';
   return sent.went > 0
-    ? `That ${name}session ended before all of your reply went. ${sent.went} of ${sent.total} agents got their reply; the rest did not.`
-    : `That ${name}session ended before your reply went. Nothing was sent.`;
+    ? `${who}在你整条回复送出前结束了。${sent.went}/${sent.total} 个 agent 收到了回复，其余没有。`
+    : `${who}在你的回复送出前结束了。没有发送任何内容。`;
 }
 
 /**
@@ -401,7 +401,7 @@ export function redirectedName(to: { host: string; session: string }, asked: Inb
   const name = hostName(to.host);
   if (!asked || asked.author.kind !== 'agent') return name;
   const sameHost = asked.author.host !== null && hostName(asked.author.host) === name;
-  return sameHost && asked.author.session !== to.session ? `${name} (another session)` : name;
+  return sameHost && asked.author.session !== to.session ? `${name}（另一个会话）` : name;
 }
 
 /** Whether the person's reply went to another session than the one that asked. */
@@ -413,7 +413,7 @@ function EscNote() {
   if (!useShortcutHintShown({ scope: inboxAppShortcuts, action: 'leavePage' })) return null;
   return (
     <span className="ib-esc">
-      <ShortcutHint scope={inboxAppShortcuts} action="leavePage" className="" /> goes back
+      <ShortcutHint scope={inboxAppShortcuts} action="leavePage" className="" /> 返回
     </span>
   );
 }

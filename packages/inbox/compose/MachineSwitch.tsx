@@ -101,7 +101,7 @@ export function MachineSwitch({ machines, chosen, onChoose }: { machines: readon
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => setMoreOpen((open) => !open)}
             >
-              <span className="ib-cp-mswn">{rest.length} more</span>
+              <span className="ib-cp-mswn">还有 {rest.length} 台</span>
               <Icon name="chevD" size={13} />
             </button>
             {moreOpen && (
@@ -128,7 +128,7 @@ export function MachineSwitch({ machines, chosen, onChoose }: { machines: readon
           </span>
         ))}
         <span className="ib-seg-o ib-cp-mswb ib-cp-mswmore" data-measure-more="">
-          <span className="ib-cp-mswn">{machines.length} more</span>
+          <span className="ib-cp-mswn">还有 {machines.length} 台</span>
           <Icon name="chevD" size={13} />
         </span>
       </div>

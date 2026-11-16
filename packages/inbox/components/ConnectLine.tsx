@@ -30,11 +30,11 @@ export function ConnectLine({
   const added = notes.length > 0 ? notesAddedParts(notes) : null;
   const toSettings = (
     <button type="button" className="ib-lnk" onClick={onSettings}>
-      Settings → Agents
+      设置 → Agents
     </button>
   );
   return (
-    <div className="ib-askline ib-askquiet ib-cline" role="region" aria-label="Your agents" data-connect-line="">
+    <div className="ib-askline ib-askquiet ib-cline" role="region" aria-label="你的 agent" data-connect-line="">
       <div className="ib-cline-in">
         <div className="ib-cline-lines" role="status">
           {band?.connected && (
@@ -50,7 +50,7 @@ export function ConnectLine({
                 {added.before}
                 {added.names.map((name, index) => (
                   <Fragment key={name.agent}>
-                    {index > 0 && (index === added.names.length - 1 ? ' and ' : ', ')}
+                    {index > 0 && (index === added.names.length - 1 ? ' 和 ' : '、')}
                     <Tip content={<code dir="ltr">{name.path}</code>}>
                       <span className="ib-cline-agent" data-note-agent={name.agent} data-note-path={name.path}>
                         {name.label}
@@ -59,7 +59,7 @@ export function ConnectLine({
                   </Fragment>
                 ))}
                 {added.after}
-                <span className="ib-sr"> ({added.files})</span>.
+                <span className="ib-sr"> ({added.files})</span>。
               </span>
             </p>
           )}
@@ -109,7 +109,7 @@ export function ConnectLine({
         </div>
         <div className="ib-ask-acts">
           <button type="button" className="ib-btn ib-ghost ib-sm" onClick={onDismiss}>
-            Got it
+            知道了
           </button>
         </div>
       </div>

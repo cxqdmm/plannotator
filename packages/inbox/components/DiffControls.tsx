@@ -56,15 +56,15 @@ export function DiffControls({
   if (phone) return null;
   const folded = collapseAll?.collapsed === true;
   return (
-    <span className="ib-dctl" role="group" aria-label="Diff display" data-diff-controls="">
+    <span className="ib-dctl" role="group" aria-label="Diff 显示" data-diff-controls="">
       {layout && (
         <Tip content={diffLayoutToggleTip(style)} side="bottom">
           <DiffLayoutToggle className="ib-iconbtn ib-dctl-b ib-dctl-layout" value={style} onChange={(next) => chooseDiffOption('diffStyle', next)} nativeTitle={false} />
         </Tip>
       )}
       {files > 1 && (
-        <Tip content={folded ? 'Expand all files' : 'Collapse all files'} side="bottom">
-          <button type="button" className="ib-iconbtn ib-dctl-b" onClick={onCollapseAll} aria-label={folded ? 'Expand all files' : 'Collapse all files'} data-diff-collapse-all={folded ? 'collapsed' : 'open'}>
+        <Tip content={folded ? '展开所有文件' : '折叠所有文件'} side="bottom">
+          <button type="button" className="ib-iconbtn ib-dctl-b" onClick={onCollapseAll} aria-label={folded ? '展开所有文件' : '折叠所有文件'} data-diff-collapse-all={folded ? 'collapsed' : 'open'}>
             {folded ? UNFOLD : FOLD}
           </button>
         </Tip>

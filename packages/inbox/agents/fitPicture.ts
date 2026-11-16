@@ -48,7 +48,7 @@ export function fittedSize(width: number, height: number, side = ICON_PICTURE_SI
   return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
 }
 
-const TYPE_REFUSAL = 'Picture: a PNG, JPEG, GIF, WebP or SVG image.';
+const TYPE_REFUSAL = '图片：仅支持 PNG、JPEG、GIF、WebP 或 SVG。';
 
 /**
  * The file to send: the picked one, or a still over the limit shrunk. A big file the browser cannot open is refused

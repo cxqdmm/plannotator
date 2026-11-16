@@ -18,5 +18,5 @@ export function PinMark({ threadId, press = false }: { threadId: string; press?:
 
 /** The end of a pinned row's accessible name. */
 export function PinnedWords() {
-  return <span className="ib-sr">, starred</span>;
+  return <span className="ib-sr">，已星标</span>;
 }

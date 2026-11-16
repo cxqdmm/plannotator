@@ -15,23 +15,22 @@ export function BoardOff({ onTurnOn, error }: { onTurnOn: () => void; error: str
       <div className="ib-bhead">
         <SidebarTrigger />
         <h1 id={titleId} tabIndex={-1}>
-          Board
+          看板
         </h1>
       </div>
       <div className="ib-boff" data-board-off="">
         <span className="ib-boff-icon" aria-hidden="true">
           <Icon name="board" size={22} />
         </span>
-        <h2>The Board is off</h2>
+        <h2>看板已关闭</h2>
         <p>
-          Turn it on for a page of the work in flight: one card per piece of work, in the column of its stage, that your agents keep current. Agents pick it up
-          in their next session. Turned off again, every card is kept.
+          开启后会有一页进行中的工作：每项工作一张卡片，按阶段放在对应的列里，由你的 agent 保持更新。agent 会在下一次会话中开始使用它。再次关闭时，所有卡片都会保留。
         </p>
         <button type="button" className="ib-btn ib-pri" onClick={onTurnOn} data-board-turn-on="">
-          Turn it on
+          开启
         </button>
         <p className="ib-boff-note" data-board-settings-link="">
-          The same switch is in <a href="#settings/capabilities">Settings → Capabilities</a>.
+          同一个开关也位于<a href="#settings/capabilities">设置 → 能力</a>。
         </p>
         {error && (
           <p className="ib-error" role="alert">

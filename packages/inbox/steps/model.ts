@@ -44,11 +44,11 @@ export function stepsListLabels(lists: readonly Pick<InboxStepsWire, 'id' | 'age
 
 /** How a step reads to a screen reader after its text. */
 export const STEP_STATUS_WORDS: Record<InboxStepStatus, string> = {
-  todo: 'not started',
-  doing: 'in progress',
-  done: 'done',
-  waiting: 'waiting on you',
-  dropped: 'dropped',
+  todo: '未开始',
+  doing: '进行中',
+  done: '已完成',
+  waiting: '等你处理',
+  dropped: '已放弃',
 };
 
 /** A row's right side: a done step's time, a note, "Waiting on you ›", or nothing. */
@@ -77,7 +77,7 @@ export function stepsCount(list: Pick<InboxStepsWire, 'steps'>): { done: number;
 /** The button's and the panel's name: "Claude Code's checklist: 3 of 6 steps done" (owner, 2026-11-03: on screen it is the checklist; each line a step). */
 export function stepsName(agent: string, list: Pick<InboxStepsWire, 'steps'>): string {
   const { done, total } = stepsCount(list);
-  return `${agent}'s checklist: ${done} of ${total} steps done`;
+  return `${agent} 的清单：${total} 步中已完成 ${done} 步`;
 }
 
 /** Where "Waiting on you ›" goes: an open question, or else an open action item, of that session first. */
@@ -168,5 +168,5 @@ export function stepsButtonSig(lists: readonly InboxStepsWire[], answeredSince: 
 /** The waiting step the button's name adds ("; waiting on you: Pick the window"), while its list waits; else "". */
 export function stepsWaitingNameTail(list: Pick<InboxStepsWire, 'steps' | 'presence' | 'updated_at'>, answeredSince: StepsAnsweredSince = nobodyAnswered): string {
   const step = stepsListWaits(list, answeredSince) ? list.steps.find((one) => one.status === 'waiting') : undefined;
-  return step ? `; waiting on you: ${step.step}` : '';
+  return step ? `；等你处理：${step.step}` : '';
 }

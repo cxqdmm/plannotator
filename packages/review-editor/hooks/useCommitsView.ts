@@ -92,7 +92,7 @@ export function useCommitsView({
       const res = await fetch(`/api/commits?${params}`);
       const data = (await res.json()) as CommitHistoryPage & { error?: string };
       if (generation !== generationRef.current) return;
-      if (!res.ok || data.error) throw new Error(data.error || 'Failed to load commits');
+      if (!res.ok || data.error) throw new Error(data.error || '加载提交记录失败');
       setCommits((prev) => {
         if (!before) return data.commits;
         // Append, deduping on sha — a concurrent refresh or a history that
@@ -104,7 +104,7 @@ export function useCommitsView({
       setHasMore(data.hasMore);
     } catch (err) {
       if (generation !== generationRef.current) return;
-      setError(err instanceof Error ? err.message : 'Failed to load commits');
+      setError(err instanceof Error ? err.message : '加载提交记录失败');
     } finally {
       if (generation === generationRef.current) setBusy(false);
     }

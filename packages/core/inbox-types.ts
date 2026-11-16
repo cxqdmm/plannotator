@@ -129,13 +129,13 @@ const THREAD_NAME_INVISIBLE = /\p{Default_Ignorable_Code_Point}/gu;
  * only of zero-width characters is empty).
  */
 export function checkInboxThreadName(value: unknown): { ok: true; name: string } | { ok: false; message: string } {
-  if (typeof value !== "string") return { ok: false, message: "must be a string." };
+  if (typeof value !== "string") return { ok: false, message: "必须是一个字符串。" };
   const name = value.trim();
   const length = [...name].length;
-  if (length === 0 || inboxThreadNameKey(name) === "") return { ok: false, message: "must not be empty." };
-  if (length > INBOX_THREAD_NAME_MAX) return { ok: false, message: `at most ${INBOX_THREAD_NAME_MAX} characters.` };
-  if (THREAD_NAME_CONTROL.test(name)) return { ok: false, message: "must not contain control characters or line breaks." };
-  if (THREAD_NAME_BIDI.test(name)) return { ok: false, message: "must not contain bidirectional control characters." };
+  if (length === 0 || inboxThreadNameKey(name) === "") return { ok: false, message: "不能为空。" };
+  if (length > INBOX_THREAD_NAME_MAX) return { ok: false, message: `最多 ${INBOX_THREAD_NAME_MAX} 个字符。` };
+  if (THREAD_NAME_CONTROL.test(name)) return { ok: false, message: "不能包含控制字符或换行。" };
+  if (THREAD_NAME_BIDI.test(name)) return { ok: false, message: "不能包含双向控制字符。" };
   return { ok: true, name };
 }
 
@@ -172,9 +172,9 @@ export function checkInboxProjectName(value: unknown): { ok: true; name: string 
   if (typeof value !== "string") return { ok: false, message: "must be a string or null." };
   if (THREAD_NAME_CONTROL.test(value.replace(/[\t\n\r]/g, " "))) return { ok: false, message: "must not contain control characters." };
   const name = value.normalize("NFC").replace(/\s+/g, " ").trim();
-  if (name === "" || inboxThreadNameKey(name) === "") return { ok: false, message: "must not be empty." };
+  if (name === "" || inboxThreadNameKey(name) === "") return { ok: false, message: "不能为空。" };
   if ([...name].length > INBOX_PROJECT_NAME_MAX) return { ok: false, message: `at most ${INBOX_PROJECT_NAME_MAX} characters.` };
-  if (THREAD_NAME_BIDI.test(name)) return { ok: false, message: "must not contain bidirectional control characters." };
+  if (THREAD_NAME_BIDI.test(name)) return { ok: false, message: "不能包含双向控制字符。" };
   return { ok: true, name };
 }
 
@@ -210,7 +210,7 @@ const SUBJECT_TOOL_MARKUP =
  */
 export function checkInboxSubject(value: unknown): { ok: true; subject: string | null } | { ok: false; message: string } {
   if (value === undefined || value === null) return { ok: true, subject: null };
-  if (typeof value !== "string") return { ok: false, message: "must be a string." };
+  if (typeof value !== "string") return { ok: false, message: "必须是一个字符串。" };
   const subject = value.trim();
   if (subject === "") return { ok: true, subject: null };
   if (SUBJECT_TOOL_MARKUP.test(subject)) {
@@ -224,7 +224,7 @@ export function checkInboxSubject(value: unknown): { ok: true; subject: string |
     return { ok: false, message: "must be one line; it contains a line break. Send a short one-line subject; put the rest in body." };
   }
   if (THREAD_NAME_CONTROL.test(subject)) return { ok: false, message: "must not contain control characters." };
-  if (THREAD_NAME_BIDI.test(subject)) return { ok: false, message: "must not contain bidirectional control characters." };
+  if (THREAD_NAME_BIDI.test(subject)) return { ok: false, message: "不能包含双向控制字符。" };
   return { ok: true, subject };
 }
 
@@ -1739,13 +1739,13 @@ export interface InboxThreadSummary {
 export type InboxSectionId = "stopped" | "holding" | "waiting" | "new" | "sent" | "quiet";
 
 export const INBOX_SECTIONS: readonly { readonly id: InboxSectionId; readonly label: string }[] = [
-  { id: "stopped", label: "Stopped on you" },
-  { id: "holding", label: "Holding up work" },
-  { id: "waiting", label: "Waiting on you" },
-  { id: "new", label: "New since you looked" },
+  { id: "stopped", label: "在你这里停住了" },
+  { id: "holding", label: "阻碍工作" },
+  { id: "waiting", label: "等待你处理" },
+  { id: "new", label: "自你上次查看后新增" },
   // Sent waits on the agent, not on the person: below what is new to them.
-  { id: "sent", label: "Sent" },
-  { id: "quiet", label: "Quiet" },
+  { id: "sent", label: "已发送" },
+  { id: "quiet", label: "安静" },
 ];
 
 /**

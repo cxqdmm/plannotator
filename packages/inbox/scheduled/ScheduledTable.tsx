@@ -38,19 +38,19 @@ const stopClick = (fn: () => void) => (event: MouseEvent) => {
 
 function RunButton({ row, acts, short }: { row: InboxScheduledRow; acts: RowActs; short: boolean }) {
   const running = row.state === 'running';
-  const label = running ? `Stop ${row.name}` : `Run ${row.name} now`;
+  const label = running ? `停止 ${row.name}` : `立即运行 ${row.name}`;
   return (
     <button
       type="button"
       className={`st-run${short ? ' st-run-ic' : ''}`}
       data-off={row.state === 'off' ? '' : undefined}
       aria-label={label}
-      title={short ? (running ? 'Stop' : 'Run now') : undefined}
+      title={short ? (running ? '停止' : '立即运行') : undefined}
       onClick={stopClick(() => (running ? acts.stop(row) : acts.run(row)))}
       data-scheduled-run={running ? 'stop' : 'run'}
     >
       {running ? <span className="st-stop" aria-hidden="true" /> : <Icon name="scheduled" />}
-      {!short && (running ? 'Stop' : 'Run')}
+      {!short && (running ? '停止' : '运行')}
     </button>
   );
 }
@@ -64,7 +64,7 @@ function RowMenu({ row, acts }: { row: InboxScheduledRow; acts: RowActs }) {
   const on = row.state !== 'off';
   return (
     <Menu.Root modal={false}>
-      <Menu.Trigger ref={anchor} className="st-more" aria-label={`More for ${row.name}`} onClick={(event) => event.stopPropagation()} data-scheduled-menu="">
+      <Menu.Trigger ref={anchor} className="st-more" aria-label={`${row.name} 的更多操作`} onClick={(event) => event.stopPropagation()} data-scheduled-menu="">
         <Icon name="dots" />
       </Menu.Trigger>
       <Menu.Portal container={portal ?? undefined}>
@@ -74,11 +74,11 @@ function RowMenu({ row, acts }: { row: InboxScheduledRow; acts: RowActs }) {
           <Menu.Popup className="ib-pm" aria-label={row.name} onClick={(event) => event.stopPropagation()}>
             {row.state !== 'done' && (
               <Menu.Item className="ib-pmi" onClick={() => acts.turn(row, !on)} data-scheduled-turn={on ? 'off' : 'on'}>
-                <span className="ib-pmi-l">{on ? 'Turn off' : 'Turn on'}</span>
+                <span className="ib-pmi-l">{on ? '关闭' : '开启'}</span>
               </Menu.Item>
             )}
             <Menu.Item className="ib-pmi" onClick={() => acts.remove(row)} data-scheduled-delete="">
-              <span className="ib-pmi-l">Delete</span>
+              <span className="ib-pmi-l">删除</span>
             </Menu.Item>
           </Menu.Popup>
         </Menu.Positioner>
@@ -92,13 +92,13 @@ function lastCell(row: InboxScheduledRow, now: number): ReactNode {
     return (
       <span className="st-live" role="status">
         <RunningDots />
-        <span>Running · {elapsedWords(row.running_since, now)}</span>
+        <span>运行中 · {elapsedWords(row.running_since, now)}</span>
       </span>
     );
   if (!row.last_run) return '';
   const when = lastRunWords(row.last_run.started_at, new Date(now));
   // A run that didn't start says so here too; its time is in the tooltip and the editor's Runs.
-  return row.last_run.outcome === 'didnt_start' ? <span className="st-bad" title={when} data-scheduled-last="didnt_start">Didn't start</span> : when;
+  return row.last_run.outcome === 'didnt_start' ? <span className="st-bad" title={when} data-scheduled-last="didnt_start">未启动</span> : when;
 }
 
 function WideRow({ row, acts, now }: { row: InboxScheduledRow; acts: RowActs; now: number }) {
@@ -115,7 +115,7 @@ function WideRow({ row, acts, now }: { row: InboxScheduledRow; acts: RowActs; no
       </span>
       <span role="cell">{formatCount(row.runs)}</span>
       <span role="cell">{lastCell(row, now)}</span>
-      <span role="cell" className={/^In /.test(next) ? undefined : 'st-dim'} data-scheduled-next="">
+      <span role="cell" className={next === '已关闭' || next === '已完成' || next === '无' ? 'st-dim' : undefined} data-scheduled-next="">
         {next}
       </span>
       <span role="cell">{createdWords(row.created_at, now)}</span>
@@ -154,7 +154,7 @@ function ShortRow({ row, acts, now, selected }: { row: InboxScheduledRow; acts: 
 
 const sortMark = (
   <span className="st-sort">
-    Last run
+    最近运行
     <Icon name="chevD" size={12} />
   </span>
 );
@@ -164,18 +164,18 @@ export function ScheduledTable({ rows, acts, short, selected }: { rows: readonly
   const now = useTick(rows.some((row) => row.state === 'running'));
   if (short) {
     return (
-      <div className="st-short" role="table" aria-label="Routines">
+      <div className="st-short" role="table" aria-label="例行任务">
         <div className="st-shead st-scols" role="row">
-          <span role="columnheader" className="st-sname">Routine</span>
-          <span role="columnheader" className="st-sbtn" aria-label="Run" />
-          <span role="columnheader" className="st-num st-count">Runs</span>
-          <span role="columnheader" className="st-num st-last" aria-sort="descending">Last run</span>
+          <span role="columnheader" className="st-sname">例行任务</span>
+          <span role="columnheader" className="st-sbtn" aria-label="运行" />
+          <span role="columnheader" className="st-num st-count">运行次数</span>
+          <span role="columnheader" className="st-num st-last" aria-sort="descending">最近运行</span>
           <span className="st-end" />
         </div>
         {on.map((row) => <ShortRow key={row.id} row={row} acts={acts} now={now} selected={row.id === selected} />)}
         {off.length > 0 && (
           <h3 className="st-offh st-offh-short" role="presentation">
-            Off<span className="ib-n">{formatCount(off.length)}</span>
+            已关闭<span className="ib-n">{formatCount(off.length)}</span>
           </h3>
         )}
         {off.map((row) => <ShortRow key={row.id} row={row} acts={acts} now={now} selected={row.id === selected} />)}
@@ -186,14 +186,14 @@ export function ScheduledTable({ rows, acts, short, selected }: { rows: readonly
     <div className="st-wide">
       <div className="st-wgrid">
         {on.length > 0 && (
-          <div className="st-table" role="table" aria-label="Routines">
+          <div className="st-table" role="table" aria-label="例行任务">
             <div className="st-head st-cols" role="row">
-              <span role="columnheader">Name</span>
-              <span role="columnheader" aria-label="Run" />
-              <span role="columnheader">Runs</span>
+              <span role="columnheader">名称</span>
+              <span role="columnheader" aria-label="运行" />
+              <span role="columnheader">运行次数</span>
               <span role="columnheader" aria-sort="descending">{sortMark}</span>
-              <span role="columnheader">Next run</span>
-              <span role="columnheader">Created</span>
+              <span role="columnheader">下次运行</span>
+              <span role="columnheader">创建时间</span>
               <span />
             </div>
             {on.map((row) => <WideRow key={row.id} row={row} acts={acts} now={now} />)}
@@ -202,7 +202,7 @@ export function ScheduledTable({ rows, acts, short, selected }: { rows: readonly
         {off.length > 0 && (
           <>
             <h3 className="st-offh" id="st-offh">
-              Off<span className="ib-n">{formatCount(off.length)}</span>
+              已关闭<span className="ib-n">{formatCount(off.length)}</span>
             </h3>
             <div className="st-table st-table-off" role="table" aria-labelledby="st-offh" data-scheduled-off="">
               {off.map((row) => <WideRow key={row.id} row={row} acts={acts} now={now} />)}

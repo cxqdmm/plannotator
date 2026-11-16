@@ -240,7 +240,7 @@ export function ThreadSlot({ paneId, threadId, active, held: given, host }: Thre
             host.panesOnScreen.set(paneId, state);
             if (paneId === MAIN_PANE) host.setOpenThreadCovered(state?.covered ?? false);
           }}
-          backLabel={fromCard ? 'Board' : route.reviews ? 'Reviews' : listTitle}
+          backLabel={fromCard ? '看板' : route.reviews ? '评审' : listTitle}
           cardChip={fromCard ? <CardChip card={host.cards?.cards.find((c) => c.id === fromCard) ?? null} onOpen={host.backToCard} /> : undefined}
           phone={phone}
           stacked={stack.thread || !!fromCard}

@@ -19,17 +19,17 @@ export function ChecklistIntro({ phone, onClose, onTurnOn }: { phone: boolean; o
     <Modal labelledBy="ib-ci-title" describedBy="ib-ci-desc" testId="checklist-intro" onClose={onClose} ownKeys className={`ib-bi ib-ci${phone ? ' ib-bi-phone' : ''}`}>
       <ChecklistIntroArt />
       <div className="ib-bi-text">
-        <h2 id="ib-ci-title">Checklist</h2>
-        <p id="ib-ci-desc">For longer work, agents keep a checklist at the foot of the thread and tick off steps as they go.</p>
-        <p className="ib-bi-q">It starts with their next session after you turn it on. A tick never notifies you.</p>
+        <h2 id="ib-ci-title">清单</h2>
+        <p id="ib-ci-desc">对于较长的工作，agent 会在会话底部维护一份清单，并随进度逐项勾选。</p>
+        <p className="ib-bi-q">开启后，会从它们下一次会话开始。勾选不会通知你。</p>
       </div>
       <div className="ib-bi-acts">
         <button type="button" className="ib-btn ib-ghost" onClick={onClose} data-checklist-intro-close="">
-          Not now
+          暂不开启
         </button>
         <span className="ib-bsp" />
         <button type="button" className="ib-btn ib-pri ib-bi-copy" onClick={onTurnOn} data-checklist-intro-on="">
-          Turn it on
+          开启
         </button>
       </div>
     </Modal>
@@ -37,7 +37,7 @@ export function ChecklistIntro({ phone, onClose, onTurnOn }: { phone: boolean; o
 }
 
 /** The picture's steps: an invoice fix, each short enough for one line at 320 px. */
-const STEPS = ['Reproduce the bug', 'Find the extra line', 'Fix the PDF template', 'Run the invoice tests'];
+const STEPS = ['复现这个 bug', '找到多余的那一行', '修复 PDF 模板', '运行发票测试'];
 /** When each step was ticked: minutes past 2 PM today. */
 const DONE_AT = [8, 14, 21, 26];
 
@@ -114,7 +114,7 @@ function ChecklistIntroArt() {
           <div className="ib-footbtns">
             <span className="ib-btn">
               <Icon name="reply" size={15} />
-              Reply
+              回复
             </span>
             <span className="ib-ci-anchor">
               <span className="ib-btn ib-st-btn ib-st-working" data-popup-open={open ? '' : undefined}>

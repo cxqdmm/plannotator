@@ -25,11 +25,11 @@ const Row = ({ children }: { children: ReactNode }) => <div className="ib-cp-to 
 
 function SummaryLine({ summary }: { summary: ReviewSummary }) {
   if (!summary) return null;
-  if (!summary.git) return <span className="ib-cp-rvsize" data-review-size="">Not a git repository</span>;
-  if (summary.files === 0) return <span className="ib-cp-rvsize" data-review-size="">No changes</span>;
+  if (!summary.git) return <span className="ib-cp-rvsize" data-review-size="">不是 git 仓库</span>;
+  if (summary.files === 0) return <span className="ib-cp-rvsize" data-review-size="">没有更改</span>;
   return (
     <span className="ib-cp-rvsize" data-review-size="">
-      {plural(summary.files, 'file')} <b className="ib-add">+{summary.additions}</b> <b className="ib-del">-{summary.deletions}</b>
+      {plural(summary.files, '个文件', '个文件')} <b className="ib-add">+{summary.additions}</b> <b className="ib-del">-{summary.deletions}</b>
     </span>
   );
 }
@@ -43,7 +43,7 @@ function LinkReadLine({ read, inReview }: { read: InboxReviewLinkAnswer; inRevie
     <p className={read.ok ? 'ib-cp-rvreadok' : undefined} role="status" data-review-link-read={read.ok ? 'ok' : read.reason}>
       {read.ok && <Icon name="check" size={13} />}
       {reviewLinkWords(read)}
-      {inReview ? ' · Already in review' : ''}
+      {inReview ? ' · 已在评审中' : ''}
     </p>
   );
 }
@@ -94,9 +94,9 @@ function PullMenu({ pulls, read, link, linkRead, linkInReview, onLink, onUseLink
         <div className="ib-cp-pickhead">
           <button type="button" className="ib-cp-back" onClick={onClose}>
             <Icon name="chevL" size={16} />
-            Back
+            返回
           </button>
-          <span>Pull request</span>
+          <span>PR</span>
         </div>
       )}
       <div className="ib-cp-filter">
@@ -109,8 +109,8 @@ function PullMenu({ pulls, read, link, linkRead, linkInReview, onLink, onUseLink
           aria-autocomplete="list"
           aria-controls={`ib-cp-plist-${uid}`}
           aria-activedescendant={at >= 0 ? optionId(at) : undefined}
-          aria-label="Find a pull request, or paste a link"
-          placeholder="Find a pull request, or paste a link"
+          aria-label="查找 PR，或粘贴链接"
+          placeholder="查找 PR，或粘贴链接"
           autoComplete="off"
           spellCheck={false}
           value={query}
@@ -122,8 +122,8 @@ function PullMenu({ pulls, read, link, linkRead, linkInReview, onLink, onUseLink
           }}
         />
       </div>
-      <div className="ib-cp-list" role="listbox" id={`ib-cp-plist-${uid}`} aria-label="Pull requests">
-        {asLink && !linkRead && <div className="ib-cp-none" data-review-link-reading="">Reading the link…</div>}
+      <div className="ib-cp-list" role="listbox" id={`ib-cp-plist-${uid}`} aria-label="PR">
+        {asLink && !linkRead && <div className="ib-cp-none" data-review-link-reading="">正在读取链接…</div>}
         {asLink && linkRead && !linkRead.ok && <div className="ib-cp-none"><LinkReadLine read={linkRead} inReview={false} /></div>}
         {asLink && linkRead?.ok && (
           <>
@@ -138,20 +138,20 @@ function PullMenu({ pulls, read, link, linkRead, linkInReview, onLink, onUseLink
               <RefMarkIcon kind="pr" state={linkStateWord(linkRead) ?? 'open'} size={14} />
               <span className="ib-cp-rvlabel">{inboxPullLabel(linkRead.pull)}</span>
               <span className="ib-cp-op" dir="auto">{linkRead.pull.title}</span>
-              <span className="ib-cp-rvwhere">{linkInReview ? 'open it' : (linkStateWord(linkRead) ?? linkRead.pull.repo)}</span>
+              <span className="ib-cp-rvwhere">{linkInReview ? '打开' : (linkStateWord(linkRead) ?? linkRead.pull.repo)}</span>
             </div>
             <div className="ib-cp-rvread"><LinkReadLine read={linkRead} inReview={linkInReview} /></div>
           </>
         )}
         {!asLink && options.length === 0 && (
           <div className="ib-cp-none" data-review-pulls-none={read}>
-            {pulls.length > 0 ? 'No pull request matches.' : read === 'reading' ? 'Reading your pull requests…' : read === 'failed' ? "Couldn't read your pull requests." : 'No open pull requests.'}
+            {pulls.length > 0 ? '没有匹配的 PR。' : read === 'reading' ? '正在读取你的 PR…' : read === 'failed' ? '无法读取你的 PR。' : '没有打开的 PR。'}
           </div>
         )}
         {options.map((pull, i) => (
           <div key={pull.id}>
-            {i === 0 && firstInReview !== 0 && <div className="ib-cp-cap">Not reviewed yet</div>}
-            {i === firstInReview && <div className="ib-cp-cap">Already in review</div>}
+            {i === 0 && firstInReview !== 0 && <div className="ib-cp-cap">尚未评审</div>}
+            {i === firstInReview && <div className="ib-cp-cap">已在评审中</div>}
             <div
               id={optionId(i)}
               role="option"
@@ -166,7 +166,7 @@ function PullMenu({ pulls, read, link, linkRead, linkInReview, onLink, onUseLink
               <RefMarkIcon kind="pr" state="open" size={14} />
               <span className="ib-cp-rvlabel">{pull.label}</span>
               <span className="ib-cp-op" dir="auto">{pull.title}</span>
-              <span className="ib-cp-rvwhere">{pull.thread ? `${pull.thread.agent ? `with ${pull.thread.agent} · ` : ''}open it` : pull.project}</span>
+              <span className="ib-cp-rvwhere">{pull.thread ? `${pull.thread.agent ? `与 ${pull.thread.agent} · ` : ''}打开` : pull.project}</span>
               <span className="ib-cp-check" aria-hidden="true">
                 {pull.id === selected && <Icon name="check" size={15} />}
               </span>
@@ -208,17 +208,17 @@ export function ReviewRows(props: {
   return (
     <>
       <Row>
-        <Choices label="Review" name="kind" value={kind} onChange={props.onKind} options={[['local', 'Local'], ['pr', 'Pull request'], ['walkthrough', 'Walkthrough']]} />
+        <Choices label="评审" name="kind" value={kind} onChange={props.onKind} options={[['local', '本地'], ['pr', 'PR'], ['walkthrough', '引导式评审']]} />
       </Row>
       {kind === 'local' ? (
         <Row>
-          <Choices label="Changes" name="changes" value={props.changes} onChange={props.onChanges} options={[['uncommitted', 'Uncommitted'], ['last', 'Last commit'], ['branch', 'Whole branch']]} />
+          <Choices label="更改" name="changes" value={props.changes} onChange={props.onChanges} options={[['uncommitted', '未提交'], ['last', '最近一次 commit'], ['branch', '整个分支']]} />
           <SummaryLine summary={props.summary} />
         </Row>
       ) : kind === 'walkthrough' ? null : (
         <>
           <Row>
-            <button ref={button} type="button" className="ib-cp-tobtn ib-cp-rvpick" aria-haspopup="listbox" aria-expanded={menu} aria-label={`Pull request: ${linkPull ? `${linkPull.pull.repo} ${inboxPullLabel(linkPull.pull)} ${linkPull.pull.title}` : linkChosen ? props.link : pick ? `${pick.label} ${pick.title}` : 'none chosen'}`} data-review-pick={linkPull?.pull.key ?? pick?.id ?? 'choose'} onClick={() => onMenu(!menu)}>
+            <button ref={button} type="button" className="ib-cp-tobtn ib-cp-rvpick" aria-haspopup="listbox" aria-expanded={menu} aria-label={`PR：${linkPull ? `${linkPull.pull.repo} ${inboxPullLabel(linkPull.pull)} ${linkPull.pull.title}` : linkChosen ? props.link : pick ? `${pick.label} ${pick.title}` : '未选择'}`} data-review-pick={linkPull?.pull.key ?? pick?.id ?? 'choose'} onClick={() => onMenu(!menu)}>
               {linkPull ? (
                 <>
                   <RefMarkIcon kind="pr" state={linkStateWord(linkPull) ?? 'open'} size={14} />
@@ -236,7 +236,7 @@ export function ReviewRows(props: {
                   <b dir="auto">{pick.title}</b>
                 </>
               ) : (
-                <span className="ib-cp-tod">Choose or paste a pull request</span>
+                <span className="ib-cp-tod">选择或粘贴 PR</span>
               )}
               <Icon name="chevD" size={15} />
             </button>

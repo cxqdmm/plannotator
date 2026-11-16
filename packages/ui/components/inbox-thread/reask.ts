@@ -13,7 +13,7 @@
 
 import type { InboxMessageWire, InboxQuestion } from '@plannotator/core/inbox-types';
 import { isInboxPermissionSession } from '@plannotator/core/inbox-permission';
-import { agentName, plural } from '@plannotator/core/inbox-format';
+import { agentName } from '@plannotator/core/inbox-format';
 
 /** One session's part of a Re-ask. */
 export interface ReaskTarget {
@@ -152,8 +152,8 @@ export function reaskOffered(targets: readonly ReaskTarget[], messages?: readonl
 export function reaskWho(targets: readonly ReaskTarget[]): string {
   const names = targets.filter((t) => t.kind === 'reask').map((t) => t.name);
   if (names.length === 1) return names[0]!;
-  if (new Set(names).size < names.length) return `${names.length} sessions`;
-  return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+  if (new Set(names).size < names.length) return `${names.length} 个会话`;
+  return `${names.slice(0, -1).join('、')} 和 ${names.at(-1)}`;
 }
 
 /**
@@ -162,9 +162,9 @@ export function reaskWho(targets: readonly ReaskTarget[]): string {
  */
 export function reaskItems(open: number, actions: number): string {
   const questions = open - actions;
-  if (actions === 0) return open === 1 ? 'the open question' : `the ${open} open questions`;
-  if (questions === 0) return actions === 1 ? 'the open action item' : `the ${actions} open action items`;
-  return `the ${plural(questions, 'open question')} and ${plural(actions, 'action item')}`;
+  if (actions === 0) return open === 1 ? '未回答的问题' : `${open} 个未回答的问题`;
+  if (questions === 0) return actions === 1 ? '未完成的待办项' : `${actions} 个未完成的待办项`;
+  return `${questions} 个未回答的问题和 ${actions} 个待办项`;
 }
 
 /** The button's tooltip: what pressing it does. */
@@ -173,18 +173,18 @@ export function reaskTooltip(targets: readonly ReaskTarget[]): string {
   const actions = targets.reduce((n, t) => n + (t.actions ?? 0), 0);
   const picks = targets.reduce((n, t) => n + t.picked, 0);
   const several = targets.filter((t) => t.kind === 'reask').length > 1;
-  const pickWords = picks > 0 ? ` Your ${plural(picks, 'pick')} ${picks === 1 ? 'is' : 'are'} sent too.` : '';
+  const pickWords = picks > 0 ? ` 你的 ${picks} 个选择也会一并发送。` : '';
   // One open question or action item: singular words, nothing to put "together".
   if (open === 1) {
-    const item = actions === 1 ? 'the open action item' : 'the open question';
-    return `Ask ${reaskWho(targets)} to ask ${item} again, with fresh context. If it no longer applies, it is closed; until then it stays open here.${pickWords}`;
+    const item = actions === 1 ? '这个待办项' : '这个问题';
+    return `让 ${reaskWho(targets)} 带上最新上下文再问一次${item}。如果它已不适用，就会被关闭；在此之前它会一直留在这里。${pickWords}`;
   }
   if (actions > 0) {
-    const items = reaskItems(open, actions).replace(/^the /, several ? 'their ' : 'the ');
-    return `Ask ${reaskWho(targets)} to ask ${items} again, ${several ? 'each together in one message' : 'together in one message'} with fresh context. Those that no longer apply are closed; until then they stay open here.${pickWords}`;
+    const items = reaskItems(open, actions);
+    return `让 ${reaskWho(targets)} 带上最新上下文再问一次${items}${several ? '，每个单独一条消息' : '，放在同一条消息里'}。已不适用的会被关闭；在此之前它们会一直留在这里。${pickWords}`;
   }
-  const what = `${several ? 'their' : 'the'} ${open} open questions again, ${several ? 'each together in one message' : 'together in one message'} with fresh context`;
-  return `Ask ${reaskWho(targets)} to ask ${what}. Questions that no longer apply are closed; until then they stay open here.${pickWords}`;
+  const what = `这 ${open} 个未回答的问题${several ? '，每个单独一条消息' : '，放在同一条消息里'}`;
+  return `让 ${reaskWho(targets)} 带上最新上下文再问一次${what}。已不适用的会被关闭；在此之前它们会一直留在这里。${pickWords}`;
 }
 
 /** The note's line in the thread. `picks`: answers that went with it; `actions`: how many of `asked` are action items. */
@@ -193,15 +193,15 @@ export function reaskNoteSentence(agent: string, asked: number, picks: number, a
     const items = reaskItems(asked, actions);
     const line =
       asked === 1
-        ? `You asked ${agent} to ask ${items} again. It stays open here until it does.`
-        : `You asked ${agent} to ask ${items} again, together in one message. They stay open here until it does.`;
-    return picks > 0 ? `${line} Your ${plural(picks, 'pick')} went with it.` : line;
+        ? `你让 ${agent} 再问一次${items}。在它这样做之前，它会一直留在这里。`
+        : `你让 ${agent} 再问一次${items}，放在同一条消息里。在它这样做之前，它们会一直留在这里。`;
+    return picks > 0 ? `${line} 你的 ${picks} 个选择也一并发送了。` : line;
   }
   const head =
     asked === 1
-      ? `You asked ${agent} to ask the open question again. It stays open here until it does.`
-      : `You asked ${agent} to ask the ${asked} open questions again, together in one message. They stay open here until it does.`;
-  return picks > 0 ? `${head} Your ${plural(picks, 'pick')} went with it.` : head;
+      ? `你让 ${agent} 再问一次未回答的问题。在它这样做之前，它会一直留在这里。`
+      : `你让 ${agent} 再问一次这 ${asked} 个未回答的问题，放在同一条消息里。在它这样做之前，它们会一直留在这里。`;
+  return picks > 0 ? `${head} 你的 ${picks} 个选择也一并发送了。` : head;
 }
 
 /**

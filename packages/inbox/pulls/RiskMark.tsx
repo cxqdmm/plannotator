@@ -5,7 +5,7 @@ import { Tip } from '../components/Tip';
 import { riskLevelWord } from './risk';
 import { placesWord, riskPlaceCount } from '../contextNotes/model';
 
-export const COULD_NOT_RANK = 'Couldn\u2019t rank';
+export const COULD_NOT_RANK = '\u65e0\u6cd5\u8bc4\u7ea7';
 
 /**
  * A pull request's risk: high stands out, medium is quiet, low is quietest. One that
@@ -19,7 +19,7 @@ export function RiskMark({ judgment, failed }: { judgment?: InboxPullRiskJudgmen
   const level = judgment?.level ?? 'failed';
   // A high judgment's places (context notes): the sentence says how many the diff marks.
   const places = riskPlaceCount(judgment);
-  const why = (judgment?.why ?? failed ?? '') + (places > 0 ? ` ${placesWord(places)} marked in the diff.` : '');
+  const why = (judgment?.why ?? failed ?? '') + (places > 0 ? ` Diff 中标记了 ${placesWord(places)}。` : '');
   useEffect(() => {
     if (!tapped) return;
     const away = (event: PointerEvent) => {
@@ -44,7 +44,7 @@ export function RiskMark({ judgment, failed }: { judgment?: InboxPullRiskJudgmen
       >
         {judgment ? riskLevelWord[judgment.level] : COULD_NOT_RANK}
         <span className="ib-sr">
-          {judgment ? ' risk' : ''}: {why}
+          {judgment ? ' 风险' : ''}：{why}
         </span>
       </span>
     </Tip>

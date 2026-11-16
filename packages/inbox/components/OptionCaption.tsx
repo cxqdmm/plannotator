@@ -81,7 +81,7 @@ export function OptionCaption({ set, index, phone = false, onStep }: { set: Opti
     <button
       type="button"
       className="ib-optcap-step"
-      aria-label={to ? `${dir < 0 ? 'Previous' : 'Next'} option: ${to.label}` : `${dir < 0 ? 'Previous' : 'Next'} option: this is the ${dir < 0 ? 'first' : 'last'}`}
+      aria-label={to ? `${dir < 0 ? '上一个' : '下一个'}选项：${to.label}` : `${dir < 0 ? '上一个' : '下一个'}选项：已经是${dir < 0 ? '第一个' : '最后一个'}`}
       aria-disabled={to ? undefined : true}
       onClick={() => to && onStep?.(dir)}
       data-option-step={dir < 0 ? 'prev' : 'next'}
@@ -97,12 +97,12 @@ export function OptionCaption({ set, index, phone = false, onStep }: { set: Opti
         </span>
       )}
       <b className="ib-optcap-label" ref={spacer ? undefined : label}>
-        {!spacer && !c.lettered && <span className="sr-only">{`Option ${c.letter}: `}</span>}
+        {!spacer && !c.lettered && <span className="sr-only">{`选项 ${c.letter}：`}</span>}
         {c.label}
       </b>
       {c.recommended && (
         <span className="ib-optcap-rec" data-option-recommended={spacer ? undefined : ''}>
-          Recommended
+          推荐
         </span>
       )}
     </>

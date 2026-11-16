@@ -45,105 +45,105 @@ const showSwitch = (id: RowsControlId, key: ListLookKey, label: string, desc?: s
 export const ROWS_MAIN_CONTROLS: readonly RowsControl[] = [
   seg({
     id: 'spacing',
-    label: 'Spacing',
+    label: '间距',
     keys: ['compact', 'roomy'],
-    desc: (look) => (look.compact ? 'Project and name share the first line' : undefined),
+    desc: (look) => (look.compact ? '项目与名称共用第一行' : undefined),
     choices: [
-      { id: 'compact', label: 'Compact' },
-      { id: 'comfortable', label: 'Comfortable' },
-      { id: 'roomy', label: 'Roomy' },
+      { id: 'compact', label: '紧凑' },
+      { id: 'comfortable', label: '舒适' },
+      { id: 'roomy', label: '宽松' },
     ],
     get: (look) => (look.compact ? 'compact' : look.roomy ? 'roomy' : 'comfortable'),
     set: (value) => ({ compact: value === 'compact', roomy: value === 'roomy' }),
   }),
   seg({
     id: 'preview',
-    label: 'Grey line under the name',
+    label: '名称下方的灰线',
     keys: ['hidePreview', 'previewTwo'],
     choices: [
-      { id: 'none', label: 'None' },
-      { id: 'one', label: '1 line' },
-      { id: 'two', label: '2 lines' },
+      { id: 'none', label: '无' },
+      { id: 'one', label: '1 行' },
+      { id: 'two', label: '2 行' },
     ],
     get: (look) => (look.hidePreview ? 'none' : look.previewTwo ? 'two' : 'one'),
     set: (value) => ({ hidePreview: value === 'none', previewTwo: value === 'two' }),
   }),
   seg({
     id: 'first',
-    label: 'First on the row',
+    label: '行首',
     keys: ['titleFirst'],
     choices: [
-      { id: 'project', label: 'Project' },
-      { id: 'name', label: 'Thread name' },
+      { id: 'project', label: '项目' },
+      { id: 'name', label: '会话名称' },
     ],
     get: (look) => (look.titleFirst ? 'name' : 'project'),
     set: (value) => ({ titleFirst: value === 'name' }),
   }),
   seg({
     id: 'time',
-    label: 'Time',
+    label: '时间',
     keys: ['relativeTime'],
     choices: [
-      { id: 'clock', label: '9:12 PM' },
-      { id: 'relative', label: '10m ago' },
+      { id: 'clock', label: '21:12' },
+      { id: 'relative', label: '10 分钟前' },
     ],
     get: (look) => (look.relativeTime ? 'relative' : 'clock'),
     set: (value) => ({ relativeTime: value === 'relative' }),
   }),
   seg({
     id: 'needs',
-    label: 'When a thread needs you',
+    label: '会话需要你时',
     keys: ['statusMark'],
     choices: [
-      { id: 'count', label: 'Question count' },
-      { id: 'mark', label: 'One mark' },
+      { id: 'count', label: '问题数量' },
+      { id: 'mark', label: '单个标记' },
     ],
     get: (look) => (look.statusMark ? 'mark' : 'count'),
     set: (value) => ({ statusMark: value === 'mark' }),
   }),
-  showSwitch('agents', 'hideAgents', 'Agent icons'),
-  showSwitch('project', 'hideProject', 'Project name'),
-  showSwitch('pulls', 'hidePulls', 'Pull requests', 'Their state at the end of the row'),
+  showSwitch('agents', 'hideAgents', 'agent 图标'),
+  showSwitch('project', 'hideProject', '项目名称'),
+  showSwitch('pulls', 'hidePulls', 'PR', '在行末显示其状态'),
 ];
 
 /** Under "More choices": nine choices over the other twelve options. */
 export const ROWS_MORE_CONTROLS: readonly RowsControl[] = [
   seg({
     id: 'newer',
-    label: 'New threads',
+    label: '新会话',
     keys: ['smallNames', 'unreadDot'],
     choices: [
-      { id: 'larger', label: 'Bigger name' },
-      { id: 'bold', label: 'Bold name' },
-      { id: 'dot', label: 'Dot' },
+      { id: 'larger', label: '较大的名称' },
+      { id: 'bold', label: '粗体名称' },
+      { id: 'dot', label: '圆点' },
     ],
     get: (look) => (look.unreadDot ? 'dot' : look.smallNames ? 'bold' : 'larger'),
     set: (value) => ({ smallNames: value !== 'larger', unreadDot: value === 'dot' }),
   }),
-  onSwitch('boldAll', 'boldNames', 'Every thread name in bold', 'Read ones too'),
-  onSwitch('pill', 'highlight', 'Thread name in a grey pill'),
-  onSwitch('dividers', 'dividers', 'Lines between rows'),
+  onSwitch('boldAll', 'boldNames', '所有会话名称加粗', '已读的也加粗'),
+  onSwitch('pill', 'highlight', '会话名称置于灰色胶囊中'),
+  onSwitch('dividers', 'dividers', '行间分隔线'),
   seg({
     id: 'timeAt',
-    label: 'Where the time sits',
+    label: '时间位置',
     keys: ['timeBelow'],
-    desc: (look) => (look.compact ? 'Only on rows that are not Compact' : undefined),
+    desc: (look) => (look.compact ? '仅适用于非紧凑行' : undefined),
     choices: [
-      { id: 'top', label: 'Top right' },
-      { id: 'below', label: 'Under the row' },
+      { id: 'top', label: '右上角' },
+      { id: 'below', label: '行下方' },
     ],
     get: (look) => (look.timeBelow ? 'below' : 'top'),
     set: (value) => ({ timeBelow: value === 'below' }),
   }),
   seg({
     id: 'badges',
-    label: 'Letter badges',
+    label: '字母标记',
     keys: ['marksThreads', 'marksProjects'],
     choices: [
-      { id: 'off', label: 'Off' },
-      { id: 'threads', label: 'Threads' },
-      { id: 'projects', label: 'Projects' },
-      { id: 'both', label: 'Both' },
+      { id: 'off', label: '关闭' },
+      { id: 'threads', label: '会话' },
+      { id: 'projects', label: '项目' },
+      { id: 'both', label: '两者' },
     ],
     get: (look) => lookMarks(look).what,
     set: (value) => marksWhatLook(value as MarksWhat),
@@ -151,19 +151,19 @@ export const ROWS_MORE_CONTROLS: readonly RowsControl[] = [
   // Nothing is picked while badges are off (core drops the shape then); picking one turns thread badges on.
   seg({
     id: 'shape',
-    label: 'Badge shape',
+    label: '标记形状',
     keys: ['markInline', 'markDot'],
-    desc: (look) => (lookMarks(look).what === 'off' ? 'Picking one turns thread badges on' : undefined),
+    desc: (look) => (lookMarks(look).what === 'off' ? '选择一项会开启会话标记' : undefined),
     choices: [
-      { id: 'avatar', label: 'Big, at the left' },
-      { id: 'inline', label: 'Small, in the line' },
-      { id: 'dot', label: 'A dot' },
+      { id: 'avatar', label: '左侧大图标' },
+      { id: 'inline', label: '行内小图标' },
+      { id: 'dot', label: '圆点' },
     ],
     get: (look) => (lookMarks(look).what === 'off' ? null : lookMarks(look).style),
     set: (value, look) => markStyleLook(value as MarkStyle, look),
   }),
-  onSwitch('logo', 'repoLogo', 'Repo logo on project badges', 'Stays on this computer'),
-  onSwitch('github', 'githubPictures', 'GitHub pictures on project badges', 'Asks GitHub once a week'),
+  onSwitch('logo', 'repoLogo', '项目标记使用仓库 logo', '仅保存在这台计算机上'),
+  onSwitch('github', 'githubPictures', '项目标记使用 GitHub 图片', '每周向 GitHub 请求一次'),
 ];
 
 export const ROWS_CONTROLS: readonly RowsControl[] = [...ROWS_MAIN_CONTROLS, ...ROWS_MORE_CONTROLS];
@@ -197,12 +197,12 @@ export type RowsPreset = 'balanced' | 'dense' | 'minimal' | 'detailed';
  * pressed.
  */
 export const ROWS_PRESETS: readonly { id: RowsPreset; label: string; look: ListLook }[] = [
-  { id: 'balanced', label: 'Balanced', look: LIST_LOOK_DEFAULT },
-  { id: 'dense', label: 'Dense', look: { ...LIST_LOOK_OFF, compact: true, smallNames: true, relativeTime: true, dividers: true, statusMark: true } },
+  { id: 'balanced', label: '均衡', look: LIST_LOOK_DEFAULT },
+  { id: 'dense', label: '密集', look: { ...LIST_LOOK_OFF, compact: true, smallNames: true, relativeTime: true, dividers: true, statusMark: true } },
   // Minimal (approval "inbox-rows-dialog", round 7b): the two-line title-first row, no preview, no dot, clock times.
-  { id: 'minimal', label: 'Minimal', look: { ...LIST_LOOK_OFF, titleFirst: true, hidePreview: true, smallNames: true } },
+  { id: 'minimal', label: '极简', look: { ...LIST_LOOK_OFF, titleFirst: true, hidePreview: true, smallNames: true } },
   // Detailed (approval "inbox-letter-marks"): letter badges on, both kinds as the big one, the repo's logo on.
-  { id: 'detailed', label: 'Detailed', look: { ...LIST_LOOK_OFF, roomy: true, previewTwo: true, marksThreads: true, marksProjects: true, repoLogo: true } },
+  { id: 'detailed', label: '详细', look: { ...LIST_LOOK_OFF, roomy: true, previewTwo: true, marksThreads: true, marksProjects: true, repoLogo: true } },
 ];
 
 export function rowsPreset(look: ListLook): RowsPreset | null {
@@ -211,9 +211,9 @@ export function rowsPreset(look: ListLook): RowsPreset | null {
 
 /** A control's value in the change line's words: a choice's label, "on" or "off". */
 function valueWords(control: RowsControl, look: ListLook): string {
-  if (control.kind === 'switch') return control.get(look) ? 'on' : 'off';
+  if (control.kind === 'switch') return control.get(look) ? '开启' : '关闭';
   const value = control.get(look);
-  return control.choices.find((choice) => choice.id === value)?.label ?? 'off';
+  return control.choices.find((choice) => choice.id === value)?.label ?? '关闭';
 }
 
 /** The controls whose value differs between two looks, in the page's order. */

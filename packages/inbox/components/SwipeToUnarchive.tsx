@@ -82,7 +82,7 @@ export function SwipeToUnarchive({ row, onUnarchive, children }: { row: InboxLis
     >
       <div className="ib-arcswipe-under" aria-hidden="true">
         <Icon name="archive" size={16} />
-        Unarchive
+        取消归档
       </div>
       <div ref={face} className="ib-arcswipe-face">
         {children}

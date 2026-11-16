@@ -33,7 +33,7 @@ import type { InboxLaunchRecord, InboxRun } from "./inbox-types";
  * run line ("Claude Code couldn't answer. Your message is kept.") and in the notification for it
  * ("<project>: Codex couldn't answer").
  */
-export const INBOX_TURN_FAILED_WORDS = "couldn't answer";
+export const INBOX_TURN_FAILED_WORDS = "无法回答";
 
 /** A start that has not connected within this long is not "starting" any more. */
 export const INBOX_RUN_START_GRACE_MS = 60_000;

@@ -98,7 +98,7 @@ export function useCallFlowInstall(
     const timer = window.setInterval(() => {
       fetch('/api/call-flow/install-status')
         .then((response) => {
-          if (!response.ok) throw new Error('Call-flow install status is temporarily unavailable.');
+          if (!response.ok) throw new Error('调用流安装状态暂时不可用。');
           return response.json() as Promise<CallFlowInstallStatus>;
         })
         .then((next) => {

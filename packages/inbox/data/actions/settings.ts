@@ -18,7 +18,7 @@ export function settingsSaver(host: SettingsHost) {
       landed?.();
       host.setSettings((current) => (current ? adopt(current, saved) : current));
     } catch (cause) {
-      host.setError(cause instanceof Error ? cause.message : 'The setting was not saved.');
+      host.setError(cause instanceof Error ? cause.message : '设置未能保存。');
       void host.refresh();
     }
   };
@@ -83,7 +83,7 @@ export function useSettingsSaves(
       const saved = await inboxApi.saveTailscale(next, replaceExposed);
       setSettings((current) => (current ? { ...current, tailscale: saved.tailscale } : current));
     } catch (cause) {
-      setSettingsError(cause instanceof Error ? cause.message : 'The setting was not saved.');
+      setSettingsError(cause instanceof Error ? cause.message : '设置未能保存。');
       void refreshSettings();
     } finally {
       setTailscaleBusy(false);
@@ -95,7 +95,7 @@ export function useSettingsSaves(
     try {
       adoptStore((await inboxApi.deleteThread(threadId)).store);
     } catch (cause) {
-      setSettingsError(cause instanceof Error ? cause.message : 'The thread was not deleted.');
+      setSettingsError(cause instanceof Error ? cause.message : '会话未能删除。');
       readStore();
     }
     await refreshList(true);
@@ -105,7 +105,7 @@ export function useSettingsSaves(
     try {
       adoptStore((await inboxApi.deleteProject(projectId)).store);
     } catch (cause) {
-      setSettingsError(cause instanceof Error ? cause.message : 'The project was not deleted.');
+      setSettingsError(cause instanceof Error ? cause.message : '项目未能删除。');
       readStore();
     }
     await refreshList(true);

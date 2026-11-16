@@ -38,7 +38,7 @@ export function replyStartOf(block: InboxComposeLaunch | null | undefined, threa
   const project = (own ? there.find((p) => p.root === own) : undefined) ?? there.find((p) => p.id === thread.project.id || p.root === thread.project.root);
   if (!project) return null;
   const last = agent.choices?.last;
-  const label = `New ${agent.name} session`;
+  const label = `新建 ${agent.name} 会话`;
   return {
     row: { session: `${START_PREFIX}${agent.agent}`, host: agent.agent, label, short: label, state: 'live', start: { project: project.name, asleep } },
     to: { launch: { agent: agent.agent, project_id: project.id, ...(last?.model ? { model: last.model } : {}), ...(last?.effort ? { effort: last.effort } : {}) } },

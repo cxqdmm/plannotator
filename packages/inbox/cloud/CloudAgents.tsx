@@ -45,7 +45,7 @@ export function CloudAgentsSection() {
   const empty = model.agents.length === 0;
 
   return (
-    <section className="ib-sgroup ib-sgroup-first" data-settings-cloud="" aria-label="Cloud agents">
+    <section className="ib-sgroup ib-sgroup-first" data-settings-cloud="" aria-label="云端 agent">
       <div className="ib-agents ib-cl-card">
         {model.agents.map((agent) => (
           <CloudAgentCard
@@ -73,18 +73,18 @@ export function CloudAgentsSection() {
           <div className="ib-prow">
             <HostMark host="cloud" big />
             <span className="ib-txt">
-              <span className="ib-l">No cloud agent paired yet</span>
-              <span className="ib-desc">Each one posts under its own name and can read and write across this Inbox.</span>
+              <span className="ib-l">尚未配对云端 agent</span>
+              <span className="ib-desc">每个都以自己的名义发消息，并可以在这整个收件箱中读写。</span>
             </span>
             <span className="ib-ctl">
               <button ref={addButton} type="button" className="ib-btn ib-pri" onClick={() => setAdding(true)} data-cloud-pair-start="">
-                Pair a cloud agent
+                配对云端 agent
               </button>
             </span>
           </div>
         ) : (
           <button ref={addButton} type="button" className="ib-cl-add" onClick={() => setAdding(true)} data-cloud-pair-start="">
-            <Icon name="plus" size={15} /> Pair another cloud agent
+            <Icon name="plus" size={15} /> 再配对云端 agent
           </button>
         )}
       </div>

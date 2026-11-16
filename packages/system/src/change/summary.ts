@@ -13,6 +13,8 @@ import type { ChangeIs } from './marks.ts';
 /** One file of a pull request: what `git diff --numstat` and `--name-status` say about it. */
 export type ChangeFile = { path: string; status?: 'A' | 'M' | 'D' | 'R'; from?: string; additions?: number; deletions?: number };
 
+export const CHANGE_IS_WORDS: Record<ChangeIs, string> = { added: '新增', changed: '改动', removed: '移除' };
+
 export type ChangePart = {
   id: string;
   name: string;
@@ -59,7 +61,7 @@ export function linesOf(files: ChangeFile[]): string | undefined {
   if (!files.length) return undefined;
   const add = files.reduce((n, f) => n + (f.additions ?? 0), 0);
   const del = files.reduce((n, f) => n + (f.deletions ?? 0), 0);
-  const name = base(files[0]!.path) + (files.length > 1 ? ` and ${files.length - 1} more` : '');
+  const name = base(files[0]!.path) + (files.length > 1 ? ` 等 ${files.length} 个文件` : '');
   const counts = [add ? `+${add}` : '', del ? `${MINUS}${del}` : ''].filter(Boolean).join(' ');
   return counts ? `${name} · ${counts}` : name;
 }
@@ -142,9 +144,9 @@ export function changeWords(s: ChangeSummary): string {
   const gonePart = s.parts.filter((p) => p.is === 'removed').length;
   const goneLine = s.removed - gonePart;
   const out: string[] = [];
-  if (s.added) out.push(`${plural(s.added, 'part')} added`);
-  if (s.changed) out.push(`${out.length ? s.changed : plural(s.changed, 'part')} changed`);
-  if (gonePart) out.push(`${out.length ? gonePart : plural(gonePart, 'part')} removed`);
-  if (goneLine) out.push(`${plural(goneLine, 'line')} removed`);
-  return out.length ? out.join(', ') : 'No drawn part changed';
+  if (s.added) out.push(`新增 ${plural(s.added, '个部分')}`);
+  if (s.changed) out.push(out.length ? `${s.changed} 个有改动` : `修改 ${plural(s.changed, '个部分')}`);
+  if (gonePart) out.push(out.length ? `${gonePart} 个被移除` : `移除 ${plural(gonePart, '个部分')}`);
+  if (goneLine) out.push(`移除 ${plural(goneLine, '行')}`);
+  return out.length ? out.join('，') : '绘制的部分没有变化';
 }

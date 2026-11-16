@@ -248,7 +248,7 @@ export function createVoiceSession(deps: VoiceDeps, late?: (outcome: VoiceLate) 
     run++;
     release();
     clip = null;
-    set({ ...IDLE, said: 'Cancelled' });
+    set({ ...IDLE, said: '已取消' });
     if (!field) return;
     if (before && field.text() === before.text) field.select(before.start, before.end);
     if (refocus && !keepFocus) field.focus();
@@ -306,7 +306,7 @@ export function createVoiceSession(deps: VoiceDeps, late?: (outcome: VoiceLate) 
     lastVoiceAt = Number.NEGATIVE_INFINITY;
     clearOpenTimers();
     // The prompt took the press away, or the finger came up while the mic opened: a tap.
-    set({ phase: 'listening', prompting: false, slow: false, mode: view.prompting || !pressed ? 'tap' : null, said: 'Listening' });
+    set({ phase: 'listening', prompting: false, slow: false, mode: view.prompting || !pressed ? 'tap' : null, said: '正在听' });
     stopTicking = deps.every(TICK_MS, tick);
   };
 
@@ -337,12 +337,12 @@ export function createVoiceSession(deps: VoiceDeps, late?: (outcome: VoiceLate) 
       opening = Promise.reject(cause);
     }
     void deps.prompts().then((prompts) => {
-      if (prompts && mine === run && view.phase === 'opening') set({ prompting: true, said: 'Asking for the microphone' });
+      if (prompts && mine === run && view.phase === 'opening') set({ prompting: true, said: '正在请求麦克风' });
     });
     clearOpenTimers();
     openTimers.push(
       deps.after(VOICE_OPENING_SLOW_MS, () => {
-        if (mine === run && view.phase === 'opening') set({ slow: true, said: 'Opening the microphone' });
+        if (mine === run && view.phase === 'opening') set({ slow: true, said: '正在打开麦克风' });
       }),
     );
     // A microphone that never answers (seen on iOS) ends with the "didn't start" note, so the box is never left
@@ -352,7 +352,7 @@ export function createVoiceSession(deps: VoiceDeps, late?: (outcome: VoiceLate) 
       if (mine !== run || view.phase !== 'opening' || (unlessAsking && view.prompting)) return;
       run++;
       release();
-      set({ ...IDLE, trouble: 'micfailed', said: 'The microphone did not start' });
+      set({ ...IDLE, trouble: 'micfailed', said: '麦克风没有启动' });
     };
     openTimers.push(
       deps.after(VOICE_OPENING_GIVE_UP_MS, () => giveUp(true)),
@@ -375,7 +375,7 @@ export function createVoiceSession(deps: VoiceDeps, late?: (outcome: VoiceLate) 
         if (mine !== run) return;
         release();
         const name = (cause as { name?: string } | null)?.name;
-        set({ ...IDLE, trouble: name === 'NotAllowedError' || name === 'SecurityError' ? 'blocked' : 'micfailed', said: 'The microphone did not start' });
+        set({ ...IDLE, trouble: name === 'NotAllowedError' || name === 'SecurityError' ? 'blocked' : 'micfailed', said: '麦克风没有启动' });
       },
     );
   };
@@ -392,10 +392,10 @@ export function createVoiceSession(deps: VoiceDeps, late?: (outcome: VoiceLate) 
     if (recording === handle) recording = null;
     if (!meter.voiceSeen) {
       taken.abort();
-      set({ ...IDLE, trouble: 'notheard', said: 'Nothing was sent' });
+      set({ ...IDLE, trouble: 'notheard', said: '没有发送任何内容' });
       return;
     }
-    set({ phase: 'sending', mode: null, clipMs: meter.elapsedMs, said: 'Transcribing' });
+    set({ phase: 'sending', mode: null, clipMs: meter.elapsedMs, said: '正在转写' });
     void taken
       .stop()
       .then((chunks) => {
@@ -414,7 +414,7 @@ export function createVoiceSession(deps: VoiceDeps, late?: (outcome: VoiceLate) 
         run++;
         release();
         clip = null;
-        if (!failedUnseen(false)) set({ ...IDLE, trouble: 'badclip', said: 'Dictation failed' });
+        if (!failedUnseen(false)) set({ ...IDLE, trouble: 'badclip', said: '听写失败' });
       });
   };
 
@@ -425,7 +425,7 @@ export function createVoiceSession(deps: VoiceDeps, late?: (outcome: VoiceLate) 
     abort = leaving;
     if (view.phase !== 'sending') {
       const selection = field?.selection();
-      set({ phase: 'sending', trouble: null, kept: false, caret: selection?.start ?? 0, said: 'Transcribing' });
+      set({ phase: 'sending', trouble: null, kept: false, caret: selection?.start ?? 0, said: '正在转写' });
     }
     let answer: VoiceAnswer;
     try {
@@ -444,7 +444,7 @@ export function createVoiceSession(deps: VoiceDeps, late?: (outcome: VoiceLate) 
       }
       const place = field.insert(answer.text);
       clip = null;
-      set({ ...IDLE, wash: { ...place, fading: false }, said: 'Text added at the cursor' });
+      set({ ...IDLE, wash: { ...place, fading: false }, said: '已在光标处加入文字' });
       washTimers = [
         deps.after(WASH_FADES_MS, () => {
           if (view.wash) set({ wash: { ...view.wash, fading: true } });
@@ -459,7 +459,7 @@ export function createVoiceSession(deps: VoiceDeps, late?: (outcome: VoiceLate) 
     if (answer.code === 'voice_not_ready' && answer.reason) deps.notReady(answer.reason);
     if (failedUnseen(known.keeps)) return;
     if (!known.keeps) clip = null;
-    set({ ...IDLE, trouble: known.trouble, engine: answer.engine ?? null, kept: known.keeps, clipMs: view.clipMs, said: 'Dictation failed' });
+    set({ ...IDLE, trouble: known.trouble, engine: answer.engine ?? null, kept: known.keeps, clipMs: view.clipMs, said: '听写失败' });
   };
 
   /** Each input with the state it met, so a tap that did nothing shows in the log; a pointer's adds its offset from the button's centre. */

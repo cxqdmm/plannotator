@@ -56,8 +56,8 @@ export function ForgeMarkdown({ markdown, layer, headSha }: { markdown: string; 
     const forge = layer.platform === 'gitlab' ? 'GitLab' : 'GitHub';
     return (href) => {
       const url = forgeFileUrl(layer, headSha, href);
-      if (!url) return { kind: 'unavailable', title: `Not a file on ${forge}` };
-      return { kind: 'open', href: url, title: `Open on ${forge}`, open: () => window.open(url, '_blank', 'noopener,noreferrer') };
+      if (!url) return { kind: 'unavailable', title: `不是 ${forge} 上的文件` };
+      return { kind: 'open', href: url, title: `在 ${forge} 上打开`, open: () => window.open(url, '_blank', 'noopener,noreferrer') };
     };
   }, [layer, headSha]);
   return (
@@ -104,7 +104,7 @@ export function PullDescription({ markdown, layer, headSha }: { markdown: string
   return (
     <section
       className="ib-prr-desc"
-      aria-label="Description"
+      aria-label="描述"
       data-pull-description={folded ? 'folded' : open && long ? 'open' : 'whole'}
       onClick={folded ? () => setOpen(true) : undefined}
       onClickCapture={(event) => {
@@ -127,7 +127,7 @@ export function PullDescription({ markdown, layer, headSha }: { markdown: string
             setOpen(!open);
           }}
         >
-          {open ? 'Show less' : 'Show more'}
+          {open ? '收起' : '展开'}
         </button>
       )}
     </section>

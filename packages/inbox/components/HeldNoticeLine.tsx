@@ -7,13 +7,13 @@ import { isTextCut, Tip } from './Tip';
  * while it is cut the whole line is the tooltip.
  */
 export function HeldNoticeLine({ count, project, onShow }: { count: number; project: string | null; onShow: () => void }) {
-  const full = project ? `${count} new in ${project}` : `${count} new`;
+  const full = project ? `${project} 有 ${count} 条新消息` : `${count} 条新消息`;
   return (
     <Tip content={full} when={(button) => isTextCut(button.querySelector('.ib-notice-proj'))}>
       <button type="button" className="ib-notice" onClick={onShow} data-inbox-notice="">
         <Icon name="inbox" size={15} />
         <span className="ib-notice-text">
-          <span className="ib-notice-n">{project ? `${count} new in` : `${count} new`}</span>
+          <span className="ib-notice-n">{project ? `${count} 条新消息，来自` : `${count} 条新消息`}</span>
           {/* A space for the line's text and accessible name; the flex gap draws it. */}
           {project && ' '}
           {project && (
@@ -22,7 +22,7 @@ export function HeldNoticeLine({ count, project, onShow }: { count: number; proj
             </bdi>
           )}
         </span>
-        <b>Show</b>
+        <b>显示</b>
       </button>
     </Tip>
   );

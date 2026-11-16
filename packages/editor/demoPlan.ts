@@ -1,10 +1,10 @@
-export const DEMO_PLAN_CONTENT = `# Implementation Plan: Real-time Collaboration
+export const DEMO_PLAN_CONTENT = `# 实施计划：实时协作
 
-## Context
+## 背景
 
-This proposal introduces real-time collaborative editing to the Plannotator editor, letting reviewers annotate the same plan simultaneously with sub-second visibility of each other's cursors and edits. We are targeting **production-grade concurrency** for up to 50 active collaborators per document, with end-to-end edit-to-visible latency under 150ms at the 95th percentile. The implementation uses operational transforms running on a dedicated Node.js gateway that speaks \`WebSocket\` to clients and \`gRPC\` to the storage tier. See [the technical design doc](https://docs.example.com/realtime-v2) for the full rationale and rollout plan. The editor entry point is [App.tsx](packages/editor/App.tsx) and the server config lives in [server/index.ts](packages/server/index.ts).
+本提案为 Plannotator 编辑器引入实时协作编辑，让多位评审者可以同时标注同一份计划，并以亚秒级延迟看到彼此的光标和编辑。我们的目标是**生产级并发**：每份文档最多 50 位活跃协作者，端到端「编辑到可见」延迟在 95 分位下低于 150ms。实现采用操作变换（operational transform），运行在专用的 Node.js 网关上；网关对客户端使用 \`WebSocket\`，对存储层使用 \`gRPC\`。完整理由和发布计划见[技术设计文档](https://docs.example.com/realtime-v2)。编辑器入口是 [App.tsx](packages/editor/App.tsx)，服务端配置位于 [server/index.ts](packages/server/index.ts)。
 
-Runtime parameters for phase one:
+第一阶段的运行时参数：
 
 \`\`\`typescript
 export const COLLAB_CONFIG = {
@@ -15,31 +15,31 @@ export const COLLAB_CONFIG = {
 } as const;
 \`\`\`
 
-### Configuration reference
+### 配置参考
 
-| Parameter | Value | Description |
+| 参数 | 值 | 说明 |
 | --- | --- | --- |
-| \`maxCollaborators\` | 50 | Hard ceiling per document before the gateway rejects new joins |
-| \`heartbeatIntervalMs\` | 5 000 ms | Ping cadence; three missed heartbeats trigger a reconnect |
-| \`operationBatchSize\` | 32 | Max ops coalesced into a single WebSocket frame |
-| \`gateway\` | \`wss://collab.plannotator.ai\` | Regional edge endpoint; clients are routed by latency |
+| \`maxCollaborators\` | 50 | 每份文档的硬性上限，超过后网关拒绝新的加入请求 |
+| \`heartbeatIntervalMs\` | 5 000 ms | 心跳间隔；连续三次未收到心跳即触发重连 |
+| \`operationBatchSize\` | 32 | 合并进单个 WebSocket 帧的最大操作数 |
+| \`gateway\` | \`wss://collab.plannotator.ai\` | 区域边缘端点；客户端按延迟路由 |
 
-### Key files
+### 关键文件
 
-| File | Role |
+| 文件 | 作用 |
 | --- | --- |
-| \`packages/editor/App.tsx\` | Editor entry point |
-| \`packages/shared/resolve-file.ts\` | Path resolution |
-| \`packages/fake/nope.ts\` | Should fail silently |
-| \`package.json\` | Root config |
+| \`packages/editor/App.tsx\` | 编辑器入口 |
+| \`packages/shared/resolve-file.ts\` | 路径解析 |
+| \`packages/fake/nope.ts\` | 应当静默失败 |
+| \`package.json\` | 根配置 |
 
-## Overview
-Add real-time collaboration features to the editor using _**[WebSocket API](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API)**_ and *[operational transforms](https://en.wikipedia.org/wiki/Operational_transformation)*. The core rendering logic is in \`packages/ui/components/Viewer.tsx:140-180\` and the block parser at \`packages/ui/utils/parser.ts:261-286\`.
+## 概述
+使用 _**[WebSocket API](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API)**_ 和 *[操作变换](https://en.wikipedia.org/wiki/Operational_transformation)* 为编辑器添加实时协作功能。核心渲染逻辑位于 \`packages/ui/components/Viewer.tsx:140-180\`，块解析器位于 \`packages/ui/utils/parser.ts:261-286\`。
 
-## Phase 1: Infrastructure
+## 第一阶段：基础设施
 
-### WebSocket Server
-Set up a WebSocket server to handle concurrent connections:
+### WebSocket 服务器
+搭建一个处理并发连接的 WebSocket 服务器：
 
 \`\`\`typescript
 const server = new WebSocketServer({ port: 8080 });
@@ -54,21 +54,21 @@ server.on('connection', (socket, request) => {
 });
 \`\`\`
 
-### Client Connection
-- Establish persistent connection on document load
-  - Initialize WebSocket with authentication token
-  - Set up heartbeat ping/pong every 30 seconds
-  - Handle connection state changes (connecting, open, closing, closed)
-- Implement reconnection logic with exponential backoff
-  - Start with 1 second delay
-  - Double delay on each retry (max 30 seconds)
-  - Reset delay on successful connection
-- Handle offline state gracefully
-  - Queue local changes in IndexedDB
-  - Show offline indicator in UI
-  - Sync queued changes on reconnect
+### 客户端连接
+- 文档加载时建立持久连接
+  - 使用认证令牌初始化 WebSocket
+  - 每 30 秒发送一次心跳 ping/pong
+  - 处理连接状态变化（connecting、open、closing、closed）
+- 实现带指数退避的重连逻辑
+  - 初始延迟 1 秒
+  - 每次重试延迟翻倍（最长 30 秒）
+  - 连接成功后重置延迟
+- 优雅处理离线状态
+  - 将本地更改排队到 IndexedDB
+  - 在界面中显示离线指示
+  - 重连后同步排队的更改
 
-### Database Schema
+### 数据库 Schema
 
 \`\`\`sql
 CREATE TABLE documents (
@@ -91,28 +91,28 @@ CREATE TABLE collaborators (
 CREATE INDEX idx_collaborators_document ON collaborators(document_id);
 \`\`\`
 
-## Phase 2: Operational Transforms
+## 第二阶段：操作变换
 
-> The key insight is that we need to transform operations against concurrent operations to maintain consistency.
+> 关键洞察是：需要针对并发操作变换操作，才能保持一致性。
 
-Key requirements:
-- Transform insert against insert
-  - Same position: use user ID for deterministic ordering
-  - Different positions: adjust offset of later operation
-- Transform insert against delete
-  - Insert before delete: no change needed
-  - Insert inside deleted range: special handling required
-    - Option A: Move insert to delete start position
-    - Option B: Discard the insert entirely
-  - Insert after delete: adjust insert position
-- Transform delete against delete
-  - Non-overlapping: adjust positions
-  - Overlapping: merge or split operations
-- Maintain cursor positions across transforms
-  - Track cursor as a zero-width insert operation
-  - Update cursor position after each transform
+关键要求：
+- 插入对插入的变换
+  - 相同位置：用用户 ID 做确定性排序
+  - 不同位置：调整较后操作的偏移量
+- 插入对删除的变换
+  - 删除之前插入：无需改动
+  - 在删除范围内插入：需要特殊处理
+    - 方案 A：把插入移到删除起始位置
+    - 方案 B：完全丢弃这次插入
+  - 删除之后插入：调整插入位置
+- 删除对删除的变换
+  - 不重叠：调整位置
+  - 重叠：合并或拆分操作
+- 在变换之间保持光标位置
+  - 把光标当作零宽插入操作来跟踪
+  - 每次变换后更新光标位置
 
-### Transform Implementation
+### 变换实现
 
 \`\`\`typescript
 interface Operation {
@@ -161,31 +161,31 @@ class OperationalTransform {
 }
 \`\`\`
 
-## Phase 3: UI Updates
+## 第三阶段：界面更新
 
-1. Show collaborator cursors in real-time
-   - Render cursor as colored vertical line
-   - Add name label above cursor
-   - Animate cursor movement smoothly
-2. Display presence indicators
-   - Avatar stack in header
-   - Dropdown with full collaborator list
-     - Show online/away status
-     - Display last activity time
-     - Allow @mentioning collaborators
-3. Add conflict resolution UI
-   - Highlight conflicting regions
-   - Show diff comparison panel
-   - Provide merge options:
-     - Accept mine
-     - Accept theirs
-     - Manual merge
-4. Implement undo/redo stack per user
-   - Track operations by user ID
-   - Allow undoing only own changes
-   - Show undo history in sidebar
+1. 实时显示协作者光标
+   - 将光标渲染为彩色竖线
+   - 在光标上方添加名字标签
+   - 平滑地为光标移动添加动画
+2. 显示在线状态指示
+   - 在页眉中显示头像堆叠
+   - 用下拉菜单列出全部协作者
+     - 显示在线/离开状态
+     - 显示最近活动时间
+     - 允许 @ 提及协作者
+3. 添加冲突解决界面
+   - 高亮冲突区域
+   - 显示 Diff 对比面板
+   - 提供合并选项：
+     - 采用我的版本
+     - 采用对方的版本
+     - 手动合并
+4. 为每位用户实现撤销/重做栈
+   - 按用户 ID 跟踪操作
+   - 只允许撤销自己的更改
+   - 在侧栏中显示撤销历史
 
-### React Component for Cursors
+### 光标的 React 组件
 
 \`\`\`tsx
 import React, { useEffect, useState } from 'react';
@@ -243,7 +243,7 @@ export const CursorOverlay: React.FC<CursorOverlayProps> = ({
 };
 \`\`\`
 
-### Configuration
+### 配置
 
 \`\`\`json
 {
@@ -263,72 +263,72 @@ export const CursorOverlay: React.FC<CursorOverlayProps> = ({
 
 ---
 
-## Pre-launch Checklist
+## 发布前检查清单
 
-- [ ] Infrastructure ready
-  - [x] WebSocket server deployed
-  - [x] Database migrations applied
-  - [ ] Load balancer configured
-    - [ ] SSL certificates installed
-    - [ ] Health checks enabled
-      - [ ] /health endpoint returns 200
-      - [ ] /ready endpoint checks DB connection
-        - [ ] Primary database
-        - [ ] Read replicas
-          - [ ] us-east-1 replica
-          - [ ] eu-west-1 replica
-- [ ] Security audit complete
-  - [x] Authentication flow reviewed
-  - [ ] Rate limiting implemented
-    - [x] 100 req/min for anonymous users
-    - [ ] 1000 req/min for authenticated users
-  - [ ] Input sanitization verified
-- [x] Documentation updated
-  - [x] API reference generated
-  - [x] Integration guide written
-  - [ ] Video tutorials recorded
+- [ ] 基础设施就绪
+  - [x] WebSocket 服务器已部署
+  - [x] 数据库迁移已应用
+  - [ ] 负载均衡器已配置
+    - [ ] SSL 证书已安装
+    - [ ] 健康检查已启用
+      - [ ] /health 端点返回 200
+      - [ ] /ready 端点检查数据库连接
+        - [ ] 主数据库
+        - [ ] 只读副本
+          - [ ] us-east-1 副本
+          - [ ] eu-west-1 副本
+- [ ] 安全审计完成
+  - [x] 认证流程已评审
+  - [ ] 限流已实现
+    - [x] 匿名用户 100 次请求/分钟
+    - [ ] 已认证用户 1000 次请求/分钟
+  - [ ] 输入清洗已验证
+- [x] 文档已更新
+  - [x] API 参考已生成
+  - [x] 集成指南已撰写
+  - [ ] 视频教程已录制
 
-### API Endpoints
+### API 端点
 
-| Method | Endpoint | Description | Auth |
+| 方法 | 端点 | 说明 | 认证 |
 |--------|----------|-------------|------|
-| GET | /api/documents | List all documents | Required |
-| POST | /api/documents | Create new document | Required |
-| GET | /api/documents/:id | Fetch document | Required |
-| PUT | /api/documents/:id | Update document | Owner/Editor |
-| DELETE | /api/documents/:id | Delete document | Owner only |
-| POST | /api/documents/:id/share | Share document | Owner only |
-| GET | /api/documents/:id/collaborators | List collaborators | Required |
+| GET | /api/documents | 列出所有文档 | 需要 |
+| POST | /api/documents | 创建新文档 | 需要 |
+| GET | /api/documents/:id | 获取文档 | 需要 |
+| PUT | /api/documents/:id | 更新文档 | 所有者/编辑者 |
+| DELETE | /api/documents/:id | 删除文档 | 仅所有者 |
+| POST | /api/documents/:id/share | 分享文档 | 仅所有者 |
+| GET | /api/documents/:id/collaborators | 列出协作者 | 需要 |
 
-### Performance Targets
+### 性能目标
 
-| Metric | Target | Current | Status |
+| 指标 | 目标 | 当前 | 状态 |
 |--------|--------|---------|--------|
-| WebSocket latency | < 50ms | 42ms | On track |
-| Time to first cursor | < 200ms | 310ms | **At risk** |
-| Concurrent users/doc | 50 | 25 | In progress |
-| Operation transform | < 5ms | 3ms | On track |
-| Reconnect time | < 2s | 1.8s | On track |
+| WebSocket 延迟 | < 50ms | 42ms | 符合预期 |
+| 首个光标出现时间 | < 200ms | 310ms | **有风险** |
+| 并发用户/文档 | 50 | 25 | 进行中 |
+| 操作变换 | < 5ms | 3ms | 符合预期 |
+| 重连时间 | < 2s | 1.8s | 符合预期 |
 
-### Mixed List Styles
+### 混合列表样式
 
-* Asterisk item at level 0
-  - Dash item at level 1
-    * Asterisk at level 2
-      - Dash at level 3
-        * Asterisk at level 4
-          - Maximum reasonable depth
-1. Numbered item
-   - Sub-bullet under numbered
-   - Another sub-bullet
-     1. Nested numbered list
-     2. Second nested number
+* 第 0 级的星号项
+  - 第 1 级的短横线项
+    * 第 2 级的星号项
+      - 第 3 级的短横线项
+        * 第 4 级的星号项
+          - 合理的最大深度
+1. 编号项
+   - 编号下的子项
+   - 另一个子项
+     1. 嵌套的编号列表
+     2. 第二个嵌套编号
 
 ---
 
-## Appendix: Diagrams
+## 附录：图表
 
-### Architecture
+### 架构
 
 \`\`\`mermaid
 flowchart LR
@@ -345,7 +345,7 @@ flowchart LR
     WS <--> WSS
 \`\`\`
 
-### Service Dependencies (Graphviz)
+### 服务依赖（Graphviz）
 
 \`\`\`graphviz
 digraph CollaborationStack {
@@ -367,20 +367,20 @@ digraph CollaborationStack {
 
 ---
 
-## Phase 4: File Changes
+## 第四阶段：文件更改
 
-### Modified files
+### 修改的文件
 
-The core connection logic lives in \`packages/ui/components/InlineMarkdown.tsx\` which handles rendering inline tokens. The detection utility is in \`packages/shared/code-file.ts\` and the popout viewer is wired through \`packages/ui/hooks/useCodeFilePopout.ts\`.
+核心连接逻辑位于 \`packages/ui/components/InlineMarkdown.tsx\`，负责渲染行内 token。检测工具位于 \`packages/shared/code-file.ts\`，弹出式查看器通过 \`packages/ui/hooks/useCodeFilePopout.ts\` 接入。
 
-On the server side, update packages/server/index.ts to register the new WebSocket routes and packages/server/reference-handlers.ts for the file resolution endpoint. The editor entry point \`packages/editor/App.tsx\` needs the collaboration provider wrapper.
+服务端方面，更新 packages/server/index.ts 以注册新的 WebSocket 路由，并更新 packages/server/reference-handlers.ts 以提供文件解析端点。编辑器入口 \`packages/editor/App.tsx\` 需要包裹协作 provider。
 
-### Build and deploy
+### 构建与部署
 
-- Update the \`Dockerfile\` to expose the new WebSocket port
-- Run \`package.json\` scripts for the build pipeline
-- Config files like \`.env\` and \`README.md\` do not need changes
-- Commands like \`npm install\` and \`bun run build\` remain unchanged
+- 更新 \`Dockerfile\`，暴露新的 WebSocket 端口
+- 运行 \`package.json\` 中的构建流水线脚本
+- \`.env\`、\`README.md\` 等配置文件无需改动
+- \`npm install\`、\`bun run build\` 等命令保持不变
 
-**Target:** Ship MVP in next sprint
+**目标：** 下个冲刺发布 MVP
 `;

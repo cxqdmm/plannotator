@@ -38,9 +38,9 @@ const RUNS_SHOWN = 5;
 
 /** A one-time one after its time: "Done · ran Fri 5:02 PM", or that it didn't start or didn't run (skipped). */
 const doneWords = (record: InboxScheduledRow): string => {
-  if (!record.last_run) return "Done · didn't run";
-  if (record.last_run.outcome === 'didnt_start') return "Done · didn't start";
-  return `Done · ran ${runWhenWords(record.last_run.started_at).replace(/^Today /, '')}`;
+  if (!record.last_run) return '已完成 · 未运行';
+  if (record.last_run.outcome === 'didnt_start') return '已完成 · 未启动';
+  return `已完成 · 运行于 ${runWhenWords(record.last_run.started_at).replace(/^今天 /, '')}`;
 };
 
 const fieldsOf = (row: InboxScheduledRow): ScheduledFields => ({
@@ -63,20 +63,20 @@ function MoreMenu({ on, onTurn, onDelete }: { on: boolean | null; onTurn: () => 
   useLayoutEffect(() => setPortal(anchor.current?.closest<HTMLElement>('.pn-inbox') ?? null), []);
   return (
     <Menu.Root modal={false}>
-      <Menu.Trigger ref={anchor} className="ib-iconbtn" aria-label="More">
+      <Menu.Trigger ref={anchor} className="ib-iconbtn" aria-label="更多">
         <Icon name="dots" />
       </Menu.Trigger>
       <Menu.Portal container={portal ?? undefined}>
         {sheet && <Menu.Backdrop className="ib-pm-scrim" />}
         <Menu.Positioner className="ib-pm-pos" side="bottom" align="end" sideOffset={4} data-phone={sheet ? '' : undefined}>
-          <Menu.Popup className="ib-pm" aria-label="Routine">
+          <Menu.Popup className="ib-pm" aria-label="例行任务">
             {on !== null && (
               <Menu.Item className="ib-pmi" onClick={onTurn}>
-                <span className="ib-pmi-l">{on ? 'Turn off' : 'Turn on'}</span>
+                <span className="ib-pmi-l">{on ? '关闭' : '开启'}</span>
               </Menu.Item>
             )}
             <Menu.Item className="ib-pmi" onClick={onDelete}>
-              <span className="ib-pmi-l">Delete</span>
+              <span className="ib-pmi-l">删除</span>
             </Menu.Item>
           </Menu.Popup>
         </Menu.Positioner>
@@ -201,15 +201,15 @@ export function ScheduledEditor(props: EditorProps) {
   const threadName = record?.thread_id ? (record.thread_name ?? record.name) : null;
   const agentName = block?.launch?.agents.find((a) => a.agent === draft.agent)?.name ?? INBOX_HOST_NAMES[draft.agent] ?? draft.agent;
   const running = record?.state === 'running';
-  const name = draft.name || (isNew ? 'New routine' : '');
+  const name = draft.name || (isNew ? '新例行任务' : '');
 
   return (
     <div className="ib-pane st-pane" data-scheduled-editor={id}>
       <div className="ib-phead">
         {props.narrow && (
-          <button type="button" className="ib-pback" onClick={props.onClose} aria-label="Back to routines">
+          <button type="button" className="ib-pback" onClick={props.onClose} aria-label="返回例行任务">
             <Icon name="chevL" size={18} />
-            <span className="ib-pback-l">Routines</span>
+            <span className="ib-pback-l">例行任务</span>
           </button>
         )}
         <span className="ib-phsubj" data-on="" aria-hidden="true">
@@ -219,8 +219,8 @@ export function ScheduledEditor(props: EditorProps) {
         {!props.narrow && (
           <>
             <span className="ib-vsep" aria-hidden="true" />
-            <Tip content="Close">
-              <button type="button" className="ib-iconbtn" onClick={props.onClose} aria-label="Close">
+            <Tip content="关闭">
+              <button type="button" className="ib-iconbtn" onClick={props.onClose} aria-label="关闭">
                 <Icon name="x" />
               </button>
             </Tip>
@@ -230,8 +230,8 @@ export function ScheduledEditor(props: EditorProps) {
       <div className="ib-pbody st-body">
         <input
           className="ib-subject st-title"
-          aria-label="Name"
-          placeholder="Name"
+          aria-label="名称"
+          placeholder="名称"
           value={draft.name}
           onChange={(event) => setDraft({ ...draft, name: event.target.value })}
           onBlur={() => draft.name.trim() && draft.name !== (record?.name ?? '') && void save({ name: draft.name.trim() })}
@@ -241,15 +241,15 @@ export function ScheduledEditor(props: EditorProps) {
             <span>{doneWords(record)}</span>
           ) : (
             <>
-              <Switch on={on} label={on ? 'On' : 'Off'} disabled={isNew && (!draft.name.trim() || !draft.prompt.trim())} onClick={() => void turn()} />
-              <span>{on ? 'On' : 'Off'}</span>
+              <Switch on={on} label={on ? '开启' : '关闭'} disabled={isNew && (!draft.name.trim() || !draft.prompt.trim())} onClick={() => void turn()} />
+              <span>{on ? '开启' : '关闭'}</span>
             </>
           )}
           {threadName && record?.thread_id && (
             <>
               <span className="ib-tdot" aria-hidden="true" />
               <span>
-                Replies in{' '}
+                回复位于{' '}
                 <button type="button" className="st-link" onClick={() => props.onOpenThread(record.thread_id!)}>
                   {threadName}
                 </button>
@@ -257,10 +257,10 @@ export function ScheduledEditor(props: EditorProps) {
             </>
           )}
           <span className="ib-tdot" aria-hidden="true" />
-          <span className="st-wrap">Runs on this computer while the Inbox is running</span>
+          <span className="st-wrap">收件箱运行期间，在这台计算机上执行</span>
         </div>
         <section className="ib-sgroup st-group">
-          <h2>Schedule</h2>
+          <h2>计划</h2>
           <ScheduleRow
             schedule={draft.schedule}
             preview={preview}
@@ -270,30 +270,30 @@ export function ScheduledEditor(props: EditorProps) {
             }}
           />
           <div className="st-miss">
-            <span id="st-miss-l">If a run is missed:</span>
+            <span id="st-miss-l">如果错过一次运行：</span>
             <span className="ib-seg" role="radiogroup" aria-labelledby="st-miss-l">
               {(['run_once', 'skip'] as const).map((value) => (
                 <label key={value} className="ib-seg-o" data-on={draft.if_missed === value ? '' : undefined}>
                   <input type="radio" name={`st-miss-${id}`} value={value} checked={draft.if_missed === value} onChange={() => void save({ if_missed: value })} />
-                  {value === 'run_once' ? "Run once when I'm back" : 'Skip it'}
+                  {value === 'run_once' ? '回来后补跑一次' : '跳过'}
                 </label>
               ))}
             </span>
           </div>
         </section>
-        <section className="ib-sgroup st-group st-kv" aria-label="What it works with">
-          <span className="st-k">Repo or folder</span>
+        <section className="ib-sgroup st-group st-kv" aria-label="它的工作范围">
+          <span className="st-k">仓库或文件夹</span>
           <FolderPick block={block} folder={draft.folder} shown={record && JSON.stringify(record.folder) === JSON.stringify(draft.folder) ? record.folder_shown : null} agentName={agentName} phone={props.phone} onChange={(folder) => void save({ folder })} />
-          <span className="st-k">Files</span>
+          <span className="st-k">文件</span>
           <FilesRow files={draft.attachments} onChange={(attachments) => void save({ attachments })} />
         </section>
         <section className="ib-sgroup st-group">
-          <h2>Prompt</h2>
+          <h2>提示词</h2>
           <div className="st-box">
             <textarea
               className="st-prompt"
-              aria-label="Prompt"
-              placeholder="What should this do?"
+              aria-label="提示词"
+              placeholder="它应该做什么？"
               autoFocus={isNew}
               value={draft.prompt}
               onChange={(event) => setDraft({ ...draft, prompt: event.target.value })}
@@ -305,12 +305,12 @@ export function ScheduledEditor(props: EditorProps) {
         {record && record.runs > 0 && (
           <section className="ib-sgroup st-group" aria-labelledby="st-runs-h">
             <h2 id="st-runs-h" className="st-runs-h">
-              Runs<span className="ib-n">{formatCount(record.runs)}</span>
+              运行<span className="ib-n">{formatCount(record.runs)}</span>
             </h2>
             <div className="st-runs">
               {runs.slice(0, RUNS_SHOWN).map((run) => (
                 <button key={run.message_id} type="button" className="st-runrow" onClick={() => record.thread_id && props.onOpenThread(record.thread_id, run.message_id)} data-run-outcome={run.outcome}>
-                  <b>Run {run.run}</b>
+                  <b>第 {run.run} 次运行</b>
                   <span className={run.outcome === 'didnt_finish' || run.outcome === 'didnt_start' ? 'st-bad' : 'st-mut'}>{OUTCOME_WORDS[run.outcome]}</span>
                   <span className="st-mut">{runWhenWords(run.started_at)}</span>
                   <Icon name="chevR" size={12} />
@@ -319,7 +319,7 @@ export function ScheduledEditor(props: EditorProps) {
             </div>
             {record.runs > RUNS_SHOWN && record.thread_id && (
               <button type="button" className="st-all" onClick={() => props.onOpenThread(record.thread_id!)}>
-                All {formatCount(record.runs)} in the thread
+                在会话中查看全部 {formatCount(record.runs)} 次
               </button>
             )}
           </section>
@@ -333,11 +333,11 @@ export function ScheduledEditor(props: EditorProps) {
       <div className="ib-pfoot st-pfoot">
         {running ? (
           <button type="button" className="ib-btn" onClick={() => record && void act(() => scheduledApi.stop(record.id))} data-scheduled-stop="">
-            Stop
+            停止
           </button>
         ) : (
           <button type="button" className="ib-btn ib-pri" disabled={!record} onClick={() => record && void act(() => scheduledApi.run(record.id))} data-scheduled-run-now="">
-            Run now
+            立即运行
           </button>
         )}
       </div>

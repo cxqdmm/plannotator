@@ -46,11 +46,11 @@ export function inboxStoredAgentName(raw: string | null | undefined): string | n
   return name ? name : null;
 }
 
-const TIME = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
-const DAY = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
-const DAY_YEAR = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-const FULL = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
-const COUNT = new Intl.NumberFormat('en-US');
+const TIME = new Intl.DateTimeFormat('zh-CN', { hour: 'numeric', minute: '2-digit' });
+const DAY = new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric' });
+const DAY_YEAR = new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric', year: 'numeric' });
+const FULL = new Intl.DateTimeFormat('zh-CN', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+const COUNT = new Intl.NumberFormat('zh-CN');
 
 const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
@@ -94,8 +94,8 @@ export function dayWords(iso: string, now: Date = new Date()): string {
   if (Number.isNaN(date.getTime())) return '';
   const start = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const days = Math.round((start(now) - start(date)) / 86_400_000);
-  if (days === 0) return 'today';
-  if (days === 1) return 'yesterday';
+  if (days === 0) return '今天';
+  if (days === 1) return '昨天';
   return dayOf(date, now);
 }
 
@@ -113,7 +113,7 @@ export function clockTime(iso: string): string {
 
 /** "2 questions" from two up (the count in plain words); nothing for one or none. */
 export function questionCount(open: number): string {
-  return open >= 2 ? `${formatCount(open)} questions` : '';
+  return open >= 2 ? `${formatCount(open)} 个问题` : '';
 }
 
 /**
@@ -126,9 +126,9 @@ export function waitCount(open: number, actions = 0): string {
   const todos = Math.min(Math.max(actions, 0), open);
   const questions = open - todos;
   if (todos === 0) return questionCount(questions);
-  const todoWords = `${formatCount(todos)} action item${todos === 1 ? '' : 's'}`;
+  const todoWords = `${formatCount(todos)} 个待办事项`;
   if (questions === 0) return todoWords;
-  return `${formatCount(questions)} question${questions === 1 ? '' : 's'}, ${todoWords}`;
+  return `${formatCount(questions)} 个问题，${todoWords}`;
 }
 
 /** "1 thread", "1,284 threads". */

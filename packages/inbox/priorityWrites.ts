@@ -24,7 +24,7 @@ interface PriorityHost {
 export function priorityWrites({ rowOf, threadRow, showError, showToast, dismissToast, afterWrite, say, armSlide, setShown, shownRef, routeRef, latestRef, listCovered }: PriorityHost) {
   const setPriority = async (row: Pick<InboxListRow, 'thread_id' | 'subject'>, on: boolean) => {
     const threadId = row.thread_id;
-    const subject = row.subject ?? '(no subject)';
+    const subject = row.subject ?? '(无主题)';
     const backIn = priorityBackIn(rowOf(threadId) ?? (threadRow()?.thread_id === threadId ? threadRow() : null));
     let before: InboxPriorityBefore;
     try {
@@ -38,19 +38,19 @@ export function priorityWrites({ rowOf, threadRow, showError, showToast, dismiss
     if (on) {
       showToast({
         icon: 'check',
-        lead: 'Added to Priority',
+        lead: '已加入优先',
         detail: `“${subject}”`,
-        speech: `Added “${subject}” to Priority.`,
-        onUndo: () => void undoPriority(threadId, before, drawnBefore, 'Removed from Priority again.'),
+        speech: `已将“${subject}”加入优先。`,
+        onUndo: () => void undoPriority(threadId, before, drawnBefore, '已再次移出优先。'),
       });
       return;
     }
     showToast({
       icon: 'check',
-      lead: 'Removed from Priority',
+      lead: '已移出优先',
       ...(backIn ? { detail: backIn } : {}),
-      speech: `Removed “${subject}” from Priority.${backIn ? ` ${backIn}.` : ''}`,
-      onUndo: () => void undoPriority(threadId, before, drawnBefore, 'Back in Priority.'),
+      speech: `已将“${subject}”移出优先。${backIn ? ` ${backIn}。` : ''}`,
+      onUndo: () => void undoPriority(threadId, before, drawnBefore, '已回到优先。'),
     });
   };
   const movePriorityRow = (threadId: string): InboxListSection[] | null => {

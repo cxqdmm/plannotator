@@ -142,8 +142,8 @@ export function prototypeNames(
       // are the file's, not one option's, so the question names it.
       const fileIds = pages.flatMap((page) => (page?.kind === 'file' ? [page.attachmentId] : []));
       const sharedFile = (page: PrototypePage | null) => page?.kind === 'file' && fileIds.filter((id) => id === page.attachmentId).length > 1;
-      question.choices.forEach((choice, i) => name(pages[i]!, sharedFile(pages[i]!) ? `Prototype for "${question.prompt}"` : `Prototype of "${choice.label}"`));
-      name(prototypePageOf(question.prototype?.target, message, root), `Prototype for "${question.prompt}"`);
+      question.choices.forEach((choice, i) => name(pages[i]!, sharedFile(pages[i]!) ? `“${question.prompt}”的原型` : `“${choice.label}”的原型`));
+      name(prototypePageOf(question.prototype?.target, message, root), `“${question.prompt}”的原型`);
     }
   }
   return { sites, attachments };

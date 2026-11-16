@@ -77,13 +77,13 @@ export function shownAgentGroups(groups: readonly RowAgentGroup[]): { shown: rea
 export function rowAgentWords(groups: readonly RowAgentGroup[]): string {
   const words = groups.map((g) => {
     const named = (g.labels ?? []).map((label) => shortLabel(label, ROW_LABEL_MAX));
-    const plain = g.sessions < 2 ? g.name : g.host ? `${g.sessions} ${g.name} sessions` : `${g.sessions} agent sessions`;
+    const plain = g.sessions < 2 ? g.name : g.host ? `${g.sessions} 个 ${g.name} 会话` : `${g.sessions} 个 agent 会话`;
     if (named.length === 0) return plain;
-    if (g.sessions < 2) return `${named[0]} (${g.name})`;
+    if (g.sessions < 2) return `${named[0]}（${g.name}）`;
     const unnamed = g.sessions - named.length;
-    return `${plain} (${[...named, ...(unnamed > 0 ? [`${unnamed} unnamed`] : [])].join(', ')})`;
+    return `${plain}（${[...named, ...(unnamed > 0 ? [`${unnamed} 个未命名`] : [])].join('、')}）`;
   });
-  return words.length < 2 ? (words[0] ?? '') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
+  return words.length < 2 ? (words[0] ?? '') : `${words.slice(0, -1).join('、')} 和 ${words[words.length - 1]}`;
 }
 
 /**

@@ -30,15 +30,15 @@ export const threadPullsBus = {
 export function pullStateWord(state: InboxThreadPullState): string {
   switch (state) {
     case 'open':
-      return 'Open';
+      return '开放';
     case 'draft':
-      return 'Draft';
+      return '草稿';
     case 'merged':
-      return 'Merged';
+      return '已合并';
     case 'closed':
-      return 'Closed';
+      return '已关闭';
     default:
-      return 'State not known yet';
+      return '状态未知';
   }
 }
 
@@ -46,11 +46,11 @@ export function pullStateWord(state: InboxThreadPullState): string {
 export function pullExtras(pull: Pick<InboxThreadPullWire, 'state' | 'checks' | 'review'>): string[] {
   if (pull.state !== 'open' && pull.state !== 'draft') return [];
   const out: string[] = [];
-  if (pull.checks === 'running') out.push('checks running');
-  if (pull.checks === 'failing') out.push('checks failing');
-  if (pull.state === 'open' && pull.review === 'approved') out.push('approved');
-  if (pull.state === 'open' && pull.review === 'review_required') out.push('review required');
-  if (pull.state === 'open' && pull.review === 'changes_requested') out.push('changes requested');
+  if (pull.checks === 'running') out.push('检查运行中');
+  if (pull.checks === 'failing') out.push('检查失败');
+  if (pull.state === 'open' && pull.review === 'approved') out.push('已通过');
+  if (pull.state === 'open' && pull.review === 'review_required') out.push('待评审');
+  if (pull.state === 'open' && pull.review === 'changes_requested') out.push('已要求修改');
   return out;
 }
 
@@ -71,8 +71,8 @@ export function pullsSummaryOf(answer: Pick<InboxThreadPullsAnswer, 'pulls' | 'g
  */
 export function pullsMarkWords(summary: InboxThreadPullsSummary, headlineLabel: string | null): string {
   const state = summary.headline.state === 'unknown' ? null : summary.headline.state;
-  if (summary.count === 1) return `Pull request${headlineLabel ? ` ${headlineLabel}` : ''}${state ? `, ${state}` : ''}`;
-  return `${summary.count} pull requests${headlineLabel && state ? `, ${headlineLabel} ${state}` : ''}`;
+  if (summary.count === 1) return `PR${headlineLabel ? ` ${headlineLabel}` : ''}${state ? `，${state}` : ''}`;
+  return `${summary.count} 个 PR${headlineLabel && state ? `，${headlineLabel} ${state}` : ''}`;
 }
 
 /** The label of a key as the window shows it (`#12`, `!12`), from the key alone (the row has no wire). */
@@ -118,8 +118,8 @@ export function pullsHead(answer: Pick<InboxThreadPullsAnswer, 'pulls' | 'groups
   const only = answer.groups.length === 1 ? answer.groups[0]! : null;
   const total = answer.pulls.length;
   return {
-    repo: oneRepo ? (answer.pulls[0]?.repo ?? '') : `${repos.size} repositories`,
-    count: only?.kind === 'stack' ? `Stack of ${total}` : `${total} pull request${total === 1 ? '' : 's'}`,
+    repo: oneRepo ? (answer.pulls[0]?.repo ?? '') : `${repos.size} 个仓库`,
+    count: only?.kind === 'stack' ? `堆叠共 ${total} 层` : `${total} 个 PR`,
     oneRepo,
   };
 }

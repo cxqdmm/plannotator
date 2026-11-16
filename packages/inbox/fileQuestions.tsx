@@ -36,7 +36,7 @@ export interface FileQuestions {
 }
 
 /** The status tag a pick not sent shows, as on the body's cards. */
-const DRAFT_STATUS = { label: 'Draft', tone: 'open' } as const;
+const DRAFT_STATUS = { label: '草稿', tone: 'open' } as const;
 
 /** The records of `message` asked inside the attachment `attachmentId`, then the questions of its body. */
 export function fileQuestionRecords(message: Pick<InboxMessageWire, 'questions'> | undefined, attachmentId: string): InboxQuestion[] {

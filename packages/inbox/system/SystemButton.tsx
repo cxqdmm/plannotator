@@ -41,7 +41,7 @@ export function SystemButton({ projects, open, phone, portalRef, onOpen, onMenu 
       }}
       modal={phone}
     >
-      <Menu.Trigger className="ib-sysb" aria-label={current ? `System: ${current.name}` : 'System'} data-set={current ? '' : undefined} data-system-button="">
+      <Menu.Trigger className="ib-sysb" aria-label={current ? `系统：${current.name}` : '系统'} data-set={current ? '' : undefined} data-system-button="">
         {current ? (
           <span className="ib-sysb-in">
             <Icon name="diagram" />
@@ -51,7 +51,7 @@ export function SystemButton({ projects, open, phone, portalRef, onOpen, onMenu 
           </span>
         ) : (
           // Drawn anew when the menu opens or closes, so a tooltip never stays over the open menu.
-          <Tip key={menuOpen ? 'menu' : 'rest'} content="System">
+          <Tip key={menuOpen ? 'menu' : 'rest'} content="系统">
             <span className="ib-sysb-in">
               <Icon name="diagram" />
             </span>
@@ -61,11 +61,11 @@ export function SystemButton({ projects, open, phone, portalRef, onOpen, onMenu 
       <Menu.Portal container={portal ?? undefined}>
         {phone && <Menu.Backdrop className="ib-pm-scrim" />}
         <Menu.Positioner className="ib-pm-pos" side="bottom" align="end" sideOffset={6} data-phone={phone ? '' : undefined}>
-          <Menu.Popup className="ib-pm ib-pc-menu ib-sysm" aria-label="System" data-system-menu="">
-            <div className="ib-sysm-h">System</div>
+          <Menu.Popup className="ib-pm ib-pc-menu ib-sysm" aria-label="系统" data-system-menu="">
+            <div className="ib-sysm-h">系统</div>
             {projects !== null && listed.length === 0 && (
               <p className="ib-sysm-none" data-system-menu-none="">
-                No project is drawn yet.
+                还没有绘制任何项目。
               </p>
             )}
             {listed.length > 0 && (
@@ -84,7 +84,7 @@ export function SystemButton({ projects, open, phone, portalRef, onOpen, onMenu 
             <Menu.Separator className="ib-pm-sep" />
             <Menu.Item className="ib-pmi" onClick={() => openSystemSetup()} data-system-menu-setup="">
               <Icon name="plus" />
-              <span className="ib-pmi-l">Set up a project</span>
+              <span className="ib-pmi-l">设置项目</span>
             </Menu.Item>
           </Menu.Popup>
         </Menu.Positioner>

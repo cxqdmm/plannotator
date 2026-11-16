@@ -42,8 +42,8 @@ function sizeParts(attachment: InboxAttachmentState): { words: string; size: str
   if (kind === 'video' || kind === 'audio') {
     return { words: [inboxAttachmentKindLabel(attachment.kind, attachment.name, attachment.media_type), inboxVideoMeta(attachment)].filter(Boolean).join(' · '), size: ` · ${size}` };
   }
-  if (kind === 'image' && attachment.width && attachment.height) return { words: `${attachment.width} × ${attachment.height}`, size: `, ${size}` };
-  return { words: inboxAttachmentKindLabel(attachment.kind, attachment.name, attachment.media_type), size: `, ${size}` };
+  if (kind === 'image' && attachment.width && attachment.height) return { words: `${attachment.width} × ${attachment.height}`, size: `，${size}` };
+  return { words: inboxAttachmentKindLabel(attachment.kind, attachment.name, attachment.media_type), size: `，${size}` };
 }
 
 /**
@@ -55,7 +55,7 @@ function sizeParts(attachment: InboxAttachmentState): { words: string; size: str
 function timedParts(attachment: InboxAttachmentState, count: number): { keep: string[]; drop: string[] } {
   const frame = inboxVideoMeta({ width: attachment.width, height: attachment.height });
   return {
-    keep: [inboxAttachmentKindLabel(attachment.kind, attachment.name, attachment.media_type), inboxVideoMeta({ duration_ms: attachment.duration_ms }), count > 0 ? plural(count, 'comment') : ''].filter(Boolean),
+    keep: [inboxAttachmentKindLabel(attachment.kind, attachment.name, attachment.media_type), inboxVideoMeta({ duration_ms: attachment.duration_ms }), count > 0 ? plural(count, '条评论', '条评论') : ''].filter(Boolean),
     drop: [frame, formatBytes(attachment.current?.size ?? attachment.size)].filter(Boolean),
   };
 }
@@ -68,13 +68,13 @@ export function sizeLine(attachment: InboxAttachmentState): string {
 /** The changed line a tile or caption shows, or null when the file on disk is what was sent. */
 export function changedLine(attachment: InboxAttachmentState, short = false): string | null {
   if (attachment.unavailable) {
-    if (short) return attachment.unavailable.code === 'attachment_missing' ? 'No longer on disk' : 'Changed type';
-    return attachment.unavailable.code === 'attachment_missing' ? 'No longer on disk; the sent version opens' : 'Changed type; the sent version opens';
+    if (short) return attachment.unavailable.code === 'attachment_missing' ? '磁盘上已不存在' : '类型已更改';
+    return attachment.unavailable.code === 'attachment_missing' ? '磁盘上已不存在，将打开发送时的版本' : '类型已更改，将打开发送时的版本';
   }
   if (attachment.changed_since_sent && attachment.current) {
     // Short (a tile, a caption, the step list): the time today, else the day, so the count beside it keeps its room.
-    if (short) return `Changed ${shortTime(attachment.current.mtime)}`;
-    return `${attachment.captured === 'on_open' ? 'Changed since you first opened it' : 'Changed since it was sent'}, edited ${whenTime(attachment.current.mtime)}`;
+    if (short) return `更改于 ${shortTime(attachment.current.mtime)}`;
+    return `${attachment.captured === 'on_open' ? '自你首次打开后已更改' : '自发送后已更改'}，编辑于 ${whenTime(attachment.current.mtime)}`;
   }
   return null;
 }
@@ -154,8 +154,8 @@ function GalleryImage({
   const shownSrc = drawnImageUrl(src, image.width, GALLERY_IMAGE_WIDTH);
   const changed = changedLine(image, true);
   // A changed image keeps its comment count beside the changed line.
-  const detail = `${changed ?? sizeLine(image)}${count > 0 ? `, ${plural(count, 'comment')}` : ''}`;
-  const label = `View ${image.name}, ${inboxAttachmentKindLabel(image.kind, image.name, image.media_type)}${changed ? `, ${changed.toLowerCase()}` : ''}${count > 0 ? `, ${plural(count, 'comment')}` : ''}`;
+  const detail = `${changed ?? sizeLine(image)}${count > 0 ? `，${plural(count, '条评论', '条评论')}` : ''}`;
+  const label = `查看 ${image.name}，${inboxAttachmentKindLabel(image.kind, image.name, image.media_type)}${changed ? `，${changed}` : ''}${count > 0 ? `，${plural(count, '条评论', '条评论')}` : ''}`;
   const frame = { flex: `${shown} 1 ${Math.round(shown * 160)}px`, maxWidth: `min(100%, ${Math.round(shown * 230)}px)` };
   const item = (
     <button
@@ -170,7 +170,7 @@ function GalleryImage({
         {failed ? (
           <span className="ib-gal-fail">
             <Icon name="photo" size={20} />
-            This image could not be shown
+            无法显示此图片
           </span>
         ) : (
           <img
@@ -263,7 +263,7 @@ export function AttachmentTiles({
       {!header && (
         <div className="ib-attach-h">
           <Icon name="clip" size={13} />
-          {plural(attachments.length, 'attachment')}
+          {plural(attachments.length, '个附件', '个附件')}
         </div>
       )}
       <ImageGallery images={images} annotationCounts={annotationCounts} onOpen={onOpen} openIn={openIn} onOpenAs={onOpenAs} pinOf={pinOf} />
@@ -279,7 +279,7 @@ export function AttachmentTiles({
           // A video or a recording: played, with comments at moments.
           const isVideo = isInboxTimedKind(attachment.kind);
           // A video's (and a recording's) caption keeps one separator throughout: "WebM video · 0:12 · 2 comments · 81.8 KB".
-          const counted = count > 0 ? (isVideo ? ` · ${plural(count, 'comment')}` : `, ${plural(count, 'annotation')}`) : '';
+          const counted = count > 0 ? (isVideo ? ` · ${plural(count, '条评论', '条评论')}` : `，${plural(count, '条标注', '条标注')}`) : '';
           const timed = isVideo ? timedParts(attachment, count) : null;
           const detail = `${changed ?? sizeLine(attachment)}${counted}`;
           const detailLong = `${changedLong ?? sizeLine(attachment)}${counted}`;
@@ -360,7 +360,7 @@ export function AttachmentTiles({
                 key={attachment.id}
                 href={source.downloadUrl(attachment, readableVersion(attachment))}
                 download={attachment.name}
-                aria-label={`Download ${attachment.name}`}
+                aria-label={`下载 ${attachment.name}`}
                 aria-describedby={detailId}
                 data-attachment-id={attachment.id}
                 data-attachment-name={attachment.name}
@@ -369,7 +369,7 @@ export function AttachmentTiles({
                 {icon}
                 {text}
                 <span className="ib-open" aria-hidden="true">
-                  Download
+                  下载
                 </span>
               </a>,
             );
@@ -384,7 +384,7 @@ export function AttachmentTiles({
               className={`ib-att-t${isOpen ? ' ib-open-beside' : ''}`}
               key={attachment.id}
               onClick={() => onOpen(attachment)}
-              aria-label={`${isVideo ? 'Play' : 'Open'} ${attachment.name}`}
+              aria-label={`${isVideo ? '播放' : '打开'} ${attachment.name}`}
               aria-current={isOpen ? 'true' : undefined}
               aria-describedby={detailId}
               aria-keyshortcuts={attachment.id === newestId ? newestKeys : undefined}
@@ -396,7 +396,7 @@ export function AttachmentTiles({
               {text}
               {attachment.id === newestId && newestKeycap && <ShortcutHint scope={inboxThreadShortcuts} action="openNewest" className="ib-kbd ib-att-kbd" />}
               <span className="ib-open" aria-hidden="true">
-                {isVideo ? 'Play' : 'Open'}
+                {isVideo ? '播放' : '打开'}
               </span>
             </button>,
           );
@@ -447,18 +447,18 @@ export function AttachmentsCount({
         data-header-files={messageId}
         aria-expanded={open}
         aria-controls={controls}
-        aria-label={`${plural(count, 'attachment')}${changed > 0 ? `, ${changed} changed` : ''}`}
+        aria-label={`${plural(count, '个附件', '个附件')}${changed > 0 ? `，${changed} 个已更改` : ''}`}
         onClick={onToggle}
         onKeyDown={onKeyDown}
       >
         <Icon name="clip" size={13} />
-        <span>{plural(count, 'attachment')}</span>
+        <span>{plural(count, '个附件', '个附件')}</span>
         {changed > 0 && (
           <>
             <span className="ib-to-sep" aria-hidden="true">
               ·
             </span>
-            <span className="ib-hflag">{changed} changed</span>
+            <span className="ib-hflag">{changed} 个已更改</span>
           </>
         )}
         <Icon name="chevD" size={12} className="ib-hchev" />

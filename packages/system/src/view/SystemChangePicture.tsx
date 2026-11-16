@@ -63,11 +63,11 @@ export function ChangeLine({ summary }: { summary: ChangeSummary }) {
   // the line is one sentence; each clause takes its kind's ink, in the order changeWords writes them
   const gonePart = summary.parts.filter((p) => p.is === 'removed').length;
   const kinds = [summary.added && 'added', summary.changed && 'changed', gonePart && 'removed', summary.removed - gonePart && 'removed'].filter((x): x is string => !!x);
-  const parts = words.split(', ');
+  const parts = words.split('，');
   if (parts.length !== kinds.length) return <span className="sys-cline">{words}</span>;
   return (
     <span className="sys-cline">
-      {parts.map((p, i) => <span key={i}>{i > 0 && ', '}<span className={'sys-ink-' + kinds[i]}>{p}</span></span>)}
+      {parts.map((p, i) => <span key={i}>{i > 0 && '，'}<span className={'sys-ink-' + kinds[i]}>{p}</span></span>)}
     </span>
   );
 }
@@ -84,7 +84,7 @@ export function SystemChangePicture({ model, change, files, onOpen }: SystemChan
   const k = crop && w ? w / crop.w : 0;
   const title = L ? `${L.title}: ${changeWords(summary)}` : changeWords(summary);
   return (
-    <button ref={ref} type="button" className="sys sys-cpic" onClick={() => onOpen()} aria-label={`${title}. Open the System view`} data-sheet={summary.sheet}>
+    <button ref={ref} type="button" className="sys sys-cpic" onClick={() => onOpen()} aria-label={`${title}。打开系统视图`} data-sheet={summary.sheet}>
       <span className="sys-cpic-frame" style={crop && k ? { height: Math.ceil(crop.h * k) } : undefined}>
         {L && crop && k > 0 && (
           <span className="sys-scaled" style={{ transform: `scale(${k}) translate(${-crop.x}px, ${-crop.y}px)` }}>

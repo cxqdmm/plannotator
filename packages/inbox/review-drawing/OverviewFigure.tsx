@@ -30,22 +30,22 @@ export function OverviewFigure({
   const [hidden, setHidden] = useState(false);
   const marks: MarkState | undefined = changed?.size ? { fresh: changed, erasing: EMPTY, noted: EMPTY } : undefined;
   return (
-    <section className="ib-ov-fig" aria-label="How it works" data-overview-figure={hidden ? 'hidden' : 'shown'}>
+    <section className="ib-ov-fig" aria-label="工作原理" data-overview-figure={hidden ? 'hidden' : 'shown'}>
       <div className="ib-ov-fig-h">
         <Pebble alive={false} size={16} className="ib-sm-peb" />
-        <b>How it works</b>
+        <b>工作原理</b>
         <span className="ib-ov-fig-m">· {meta}</span>
         <span className="ib-sp" />
         <button type="button" className="ib-btn ib-sm-quiet" onClick={() => setHidden((was) => !was)} aria-expanded={!hidden}>
-          {hidden ? 'Show' : 'Hide'}
+          {hidden ? '显示' : '隐藏'}
         </button>
       </div>
       {!hidden && (
         <>
           <div className="ib-ov-fig-b">
-            <ShapeDiagram drawn={drawn} onCode={onCode} {...(marks ? { marks, tags: { fresh: 'changed' } } : {})} />
+            <ShapeDiagram drawn={drawn} onCode={onCode} {...(marks ? { marks, tags: { fresh: '已更改' } } : {})} />
           </div>
-          <div className="ib-ov-fig-f">Click a part to open its code</div>
+          <div className="ib-ov-fig-f">点击某个部分以打开其代码</div>
         </>
       )}
     </section>
@@ -65,13 +65,13 @@ export function ChapterFigure({ drawn, meta, onCode }: { drawn: ShapeDrawnView; 
   const [expanded, setExpanded] = useState(false);
   const capped = drawn.width !== undefined && drawn.height !== undefined;
   return (
-    <section className="ib-ov-fig ib-ch-fig" aria-label="Chapter picture" data-chapter-figure="">
+    <section className="ib-ov-fig ib-ch-fig" aria-label="章节图片" data-chapter-figure="">
       <div className="ib-ov-fig-h">
         <Pebble alive={false} size={16} className="ib-sm-peb" />
         <span className="ib-ov-fig-m">{meta}</span>
         <span className="ib-sp" />
         <button type="button" className="ib-btn ib-sm-quiet" onClick={() => setExpanded(true)} data-chapter-figure-expand="">
-          Expand
+          展开
         </button>
       </div>
       <div className="ib-ov-fig-b">
@@ -80,7 +80,7 @@ export function ChapterFigure({ drawn, meta, onCode }: { drawn: ShapeDrawnView; 
           <ShapeDiagram drawn={drawn} onCode={onCode} />
         </div>
       </div>
-      <div className="ib-ov-fig-f">Click a part to open its code</div>
+      <div className="ib-ov-fig-f">点击某个部分以打开其代码</div>
       {expanded && <ChapterFigurePopout drawn={drawn} onCode={onCode} onClose={() => setExpanded(false)} />}
     </section>
   );
@@ -102,12 +102,12 @@ function ChapterFigurePopout({ drawn, onCode, onClose }: { drawn: ShapeDrawnView
   if (typeof document === 'undefined') return null;
   return createPortal(
     <div className="ib-ch-fig-pop" data-popover-layer="" data-chapter-figure-popout="" onClick={onClose}>
-      <div className="ib-ch-fig-pop-in" role="dialog" aria-modal="true" aria-label="Chapter picture" onClick={(event) => event.stopPropagation()}>
+      <div className="ib-ch-fig-pop-in" role="dialog" aria-modal="true" aria-label="章节图片" onClick={(event) => event.stopPropagation()}>
         <div className="ib-ov-fig-h">
-          <b>Chapter picture</b>
+          <b>章节图片</b>
           <span className="ib-sp" />
           <button type="button" className="ib-btn ib-sm-quiet" onClick={onClose} autoFocus>
-            Close
+            关闭
           </button>
         </div>
         <div className="ib-ch-fig-pop-b">
@@ -130,7 +130,7 @@ export function ShowMeButton({ onShowMe }: { onShowMe: () => void }) {
   return (
     <button type="button" className="ib-btn ib-pri ib-sm-send gv-head-showme" onClick={onShowMe} data-overview-show-me="" data-overview-show-me-button="">
       <Pebble alive={false} size={14} className="ib-sm-peb" />
-      Show me
+      给我看
     </button>
   );
 }

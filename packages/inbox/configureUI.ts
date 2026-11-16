@@ -74,7 +74,7 @@ configurePlannotatorUI({
   skillInstructionsDestination: 'your reply',
   uploadTransport: {
     upload: async () => {
-      throw new Error('Images cannot be added to a comment in the Inbox.');
+      throw new Error('无法在收件箱的评论中添加图片。');
     },
   },
 });

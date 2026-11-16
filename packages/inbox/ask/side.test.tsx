@@ -259,7 +259,7 @@ test.skipIf(!hasDom)("an agent's message in a thread that can ask: Side after �
     return side() !== null;
   }, 'Side in the selection bar');
   expect(noAskIcon()).toBe(true);
-  expect(barOrder()).toEqual(['Delete', 'Comment', 'Looks good', '|', 'Side chat with Claude', '|', 'Cancel']);
+  expect(barOrder()).toEqual(['Delete', 'Comment', 'Looks good', '|', '与 Claude 侧边对话', '|', 'Cancel']);
   // Icon only: Claude's mark as the thread draws it, and no word.
   expect(side()!.textContent).toBe('');
   expect(side()!.querySelector('.ib-mk')!.isEqualNode(markOf('claude-code'))).toBe(true);
@@ -288,7 +288,7 @@ test.skipIf(!hasDom)("a Codex thread: Side is Codex's mark, named for Codex", as
     await select(host!, WORDS);
     return side() !== null;
   }, 'Side in the selection bar');
-  expect(barOrder()).toEqual(['Delete', 'Comment', 'Looks good', '|', 'Side chat with Codex', '|', 'Cancel']);
+  expect(barOrder()).toEqual(['Delete', 'Comment', 'Looks good', '|', '与 Codex 侧边对话', '|', 'Cancel']);
   expect(side()!.textContent).toBe('');
   expect(side()!.querySelector('.ib-mk')!.isEqualNode(markOf('codex'))).toBe(true);
   await act(async () => side()!.click());
@@ -303,7 +303,7 @@ test.skipIf(!hasDom)("a T3 Code thread: Side is T3 Code's mark, named for T3 Cod
     await select(host!, WORDS);
     return side() !== null;
   }, 'Side in the selection bar');
-  expect(barOrder()).toEqual(['Delete', 'Comment', 'Looks good', '|', 'Side chat with T3 Code', '|', 'Cancel']);
+  expect(barOrder()).toEqual(['Delete', 'Comment', 'Looks good', '|', '与 T3 Code 侧边对话', '|', 'Cancel']);
   expect(side()!.textContent).toBe('');
   expect(side()!.querySelector('.ib-mk')!.isEqualNode(markOf('t3'))).toBe(true);
   expect(side()!.querySelector('[data-mark="t3"]')).not.toBeNull();
@@ -321,7 +321,7 @@ for (const agent of [
       await select(host!, WORDS);
       return side() !== null;
     }, 'Side in the selection bar');
-    expect(barOrder()).toEqual(['Delete', 'Comment', 'Looks good', '|', 'Side chat', '|', 'Cancel']);
+    expect(barOrder()).toEqual(['Delete', 'Comment', 'Looks good', '|', '侧边对话', '|', 'Cancel']);
     expect(side()!.textContent).toBe('');
     expect(side()!.querySelectorAll('.ib-mk, [data-icon="code"]')).toHaveLength(0);
     expect(side()!.querySelectorAll('svg path')).toHaveLength(2);
@@ -362,7 +362,7 @@ test.skipIf(!hasDom)('a full-screen file: its bar has no Ask icon (none on the p
   await select(page, 'five attempts');
   await until(() => side() !== null, 'Side in the file');
   // The file's bar draws Side as the message's does.
-  expect(barOrder().slice(-3)).toEqual(['Side chat with Claude', '|', 'Cancel']);
+  expect(barOrder().slice(-3)).toEqual(['与 Claude 侧边对话', '|', 'Cancel']);
   expect(side()!.querySelectorAll('.ib-mk')).toHaveLength(1);
   await act(async () => side()!.click());
   await until(() => askBox() !== null, 'the Ask window');

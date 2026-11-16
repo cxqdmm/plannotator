@@ -83,7 +83,7 @@ export const PICTURE_MAX_BYTES = 512 * 1024;
  * refused here, before it is read, so a big file is never read into memory or sent.
  */
 export async function pictureFromFile(file: Blob): Promise<{ picture: string } | { refused: string }> {
-  if (file.size > PICTURE_MAX_BYTES) return { refused: 'Picture: at most 512 KB.' };
+  if (file.size > PICTURE_MAX_BYTES) return { refused: '图片：最大 512 KB。' };
   const bytes = new Uint8Array(await file.arrayBuffer());
   let binary = '';
   for (let at = 0; at < bytes.length; at += 0x8000) binary += String.fromCharCode(...bytes.subarray(at, at + 0x8000));

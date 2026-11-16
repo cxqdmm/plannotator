@@ -55,12 +55,12 @@ export interface ActionChecklistProps {
 const CHIP: Record<ActionCardState, { label: string; className: string } | null> = {
   open: null,
   pending: null, // Done or Can't do it, by its outcome (below)
-  done: { label: 'Done', className: 'ib-badge ib-b-ok' },
-  seen: { label: 'Done', className: 'ib-badge ib-b-ok' },
-  cant: { label: "Can't do it", className: 'ib-badge ib-b-stop' },
-  'set-aside': { label: 'Set aside', className: 'ib-badge ib-b-mut' },
-  archived: { label: 'Closed', className: 'ib-badge ib-b-mut' },
-  replaced: { label: 'Replaced', className: 'ib-badge ib-b-mut' },
+  done: { label: '完成', className: 'ib-badge ib-b-ok' },
+  seen: { label: '完成', className: 'ib-badge ib-b-ok' },
+  cant: { label: '做不到', className: 'ib-badge ib-b-stop' },
+  'set-aside': { label: '已搁置', className: 'ib-badge ib-b-mut' },
+  archived: { label: '已关闭', className: 'ib-badge ib-b-mut' },
+  replaced: { label: '已替换', className: 'ib-badge ib-b-mut' },
 };
 
 function isDoneState(action: InboxQuestion, state: ActionCardState): boolean {
@@ -90,7 +90,7 @@ export function taskMarkdown(prompt: string): string {
 
 /** A sentence's end, kept: "…appear" gets a period, "…appear." keeps its own. */
 function sentence(text: string): string {
-  return /[.!?…]$/.test(text) ? text : `${text}.`;
+  return /[.!?…。]$/.test(text) ? text : `${text}。`;
 }
 
 /** The next item still open after `key` (then from the start), or null. */
@@ -112,9 +112,9 @@ export function ActionChecklist({ actions, agent, refRepo = null, readOnly = fal
   const stopped = openItems.some((a) => a.stopped !== null);
   const holds = openItems.reduce((n, a) => n + a.holds_up.length, 0);
   const badge = stopped
-    ? { label: 'Stopped', className: 'ib-badge ib-b-stop' }
+    ? { label: '已停止', className: 'ib-badge ib-b-stop' }
     : holds > 0
-      ? { label: `Holds up ${holds}`, className: 'ib-badge ib-b-hold' }
+      ? { label: `影响 ${holds} 项`, className: 'ib-badge ib-b-hold' }
       : null;
   // What the agent watches, for the items it still waits on (open, or marked and not sent): a settled or replaced item's watch is over.
   const watching = useMemo(
@@ -157,14 +157,14 @@ export function ActionChecklist({ actions, agent, refRepo = null, readOnly = fal
         <Icon name="todo" />
         <span className="ib-chk-title" id={headId} data-action-title="">
           {total === 0
-            ? `${replaced === 1 ? '1 action item' : `${replaced} action items`}, replaced`
+            ? `已替换 ${replaced} 个行动项`
             : total === 1
-              ? '1 thing only you can do'
-              : `${total} things only you can do`}
+              ? '1 件只有你能做的事'
+              : `${total} 件只有你能做的事`}
         </span>
         {total > 0 && (
           <span className="ib-chk-count" data-action-progress="">
-            {done} of {total} done{replaced > 0 ? ` · ${replaced} replaced` : ''}
+            已完成 {done}/{total}{replaced > 0 ? ` · 已替换 ${replaced}` : ''}
           </span>
         )}
         {badge && (
@@ -204,7 +204,7 @@ export function ActionChecklist({ actions, agent, refRepo = null, readOnly = fal
         <p className="ib-chk-foot" data-action-foot="">
           <Icon name="eye" />
           <span data-action-watching="">
-            {agent} is watching: {sentence(watching.join('; '))}
+            {agent} 正在关注：{sentence(watching.join('；'))}
           </span>
         </p>
       )}
@@ -302,30 +302,30 @@ function ActionRow({ action, state, agent, refRepo, readOnly, open, onToggle, to
         <>
           <span>
             {result.outcome === 'cant'
-              ? `Can't do it: “${result.note ?? ''}”. Goes to ${agent} in a few seconds.`
-              : `Done ${when}${result.note ? ' with a note' : ''}. Goes to ${agent} in a few seconds.`}
+              ? `做不到：“${result.note ?? ''}”。几秒后发送给 ${agent}。`
+              : `${when} 已完成${result.note ? '，并附了备注' : ''}。几秒后发送给 ${agent}。`}
           </span>
           {!readOnly && (
             <button type="button" className="ib-act-undo" data-action-undo="" onClick={() => void mark(null, 'panel')} disabled={busy}>
-              Undo
+              撤销
             </button>
           )}
         </>
       );
     }
-    if (state === 'cant' && result) return <span>Can't do it: “{result.note ?? ''}” Sent to {agent}{result.staged ? ' with your reply' : ''}.</span>;
-    if (state === 'seen' && result && inDraft) return <span>{agent} saw it done, {when}.</span>;
+    if (state === 'cant' && result) return <span>做不到：“{result.note ?? ''}”已发送给 {agent}{result.staged ? '，随你的回复一起' : ''}。</span>;
+    if (state === 'seen' && result && inDraft) return <span>{agent} 已看到它完成，{when}。</span>;
     return null;
   })();
   // The settled line inside the open row.
   const settled = (() => {
-    if (state === 'done' && result) return `You marked it done, ${when}${result.note ? ' with a note' : ''}. Sent to ${agent}${result.staged ? ' with your reply' : ''}.`;
+    if (state === 'done' && result) return `你在 ${when} 标记为完成${result.note ? '，并附了备注' : ''}。已发送给 ${agent}${result.staged ? '，随你的回复一起' : ''}。`;
     if (state === 'seen' && result && inDraft) return null;
-    if (state === 'seen' && result && mine?.note) return `${agent} saw it done, ${when}. Your note went with your reply.`;
-    if (state === 'seen' && result) return `${agent} saw it done, ${when}.`;
-    if (state === 'set-aside') return `Set aside when you marked the thread read. ${agent} was told not to wait.`;
-    if (state === 'replaced') return `${agent} replaced this action item.`;
-    if (state === 'archived') return 'Closed when the thread was archived.';
+    if (state === 'seen' && result && mine?.note) return `${agent} 已看到它完成，${when}。你的备注随回复一起发送了。`;
+    if (state === 'seen' && result) return `${agent} 已看到它完成，${when}。`;
+    if (state === 'set-aside') return `你将会话标记为已读时已搁置。已告知 ${agent} 不必等待。`;
+    if (state === 'replaced') return `${agent} 替换了这个行动项。`;
+    if (state === 'archived') return '会话归档时已关闭。';
     return null;
   })();
 
@@ -349,7 +349,7 @@ function ActionRow({ action, state, agent, refRepo, readOnly, open, onToggle, to
         className="ib-chk-tick"
         data-action-tick=""
         aria-pressed={pending}
-        aria-label={`Done: ${action.prompt}`}
+        aria-label={`完成：${action.prompt}`}
         // aria-disabled, not disabled: a disabled button drops keyboard focus to the page. mark() ignores clicks while busy.
         aria-disabled={busy || undefined}
         onClick={onTick}
@@ -409,13 +409,13 @@ function ActionRow({ action, state, agent, refRepo, readOnly, open, onToggle, to
         {action.context && <ContextMarkdown className="ib-body ib-chk-why" data-action-why="" markdown={action.context} messageId={action.message_id} refRepo={refRepo} />}
         {live && action.stopped !== null && (
           <p className="ib-chk-holds" data-action-stopped="">
-            <b>Stopped</b>
+            <b>已停止</b>
             {action.stopped !== '' ? ` ${action.stopped}` : ''}
           </p>
         )}
         {live && action.holds_up.length > 0 && (
           <p className="ib-chk-holds" data-action-holds="">
-            <b>Holds up</b> {action.holds_up.join('; ')}
+            <b>影响</b> {action.holds_up.join('；')}
           </p>
         )}
         {live && facts.where && !facts.where_url && (
@@ -426,20 +426,20 @@ function ActionRow({ action, state, agent, refRepo, readOnly, open, onToggle, to
         )}
         {live && facts.where_url && (
           <a className="ib-chk-open" href={facts.where_url} target="_blank" rel="noopener noreferrer" data-action-open="">
-            <span className="ib-chk-open-l">Open {facts.where ?? 'link'}</span>
+            <span className="ib-chk-open-l">打开 {facts.where ?? '链接'}</span>
             <Icon name="external" />
           </a>
         )}
         {live && facts.run && (
           <div className="ib-chk-run" data-action-run="">
             <div className="ib-chk-run-top">
-              <span className="ib-chk-run-l">Command</span>
+              <span className="ib-chk-run-l">命令</span>
               <button type="button" className="ib-btn ib-sm" data-action-copy="" onClick={() => void copy()}>
                 <Icon name={copied === 'ok' ? 'check' : 'copy'} />
-                {copied === 'ok' ? 'Copied' : copied === 'failed' ? "Couldn't copy" : 'Copy'}
+                {copied === 'ok' ? '已复制' : copied === 'failed' ? '复制失败' : '复制'}
               </button>
               <span className="ib-chk-sr" role="status" data-action-copy-status="">
-                {copied === 'ok' ? 'Command copied.' : copied === 'failed' ? "Couldn't copy the command." : ''}
+                {copied === 'ok' ? '命令已复制。' : copied === 'failed' ? '无法复制命令。' : ''}
               </span>
             </div>
             <code className="ib-chk-cmd" data-action-cmd="">
@@ -457,7 +457,7 @@ function ActionRow({ action, state, agent, refRepo, readOnly, open, onToggle, to
         )}
         {live && !readOnly && (composing ? (
           <div className="ib-chk-compose">
-            <label htmlFor={noteId}>{`Why can't you? ${agent} gets this word for word.`}</label>
+            <label htmlFor={noteId}>{`为什么做不到？${agent} 会原样收到这段说明。`}</label>
             <textarea
               id={noteId}
               ref={areaRef}
@@ -485,10 +485,10 @@ function ActionRow({ action, state, agent, refRepo, readOnly, open, onToggle, to
                 disabled={busy || text.trim() === ''}
                 onClick={() => void mark({ outcome: 'cant', note: text.trim() }, 'panel')}
               >
-                Can't do it
+                做不到
               </button>
               <button type="button" className="ib-btn ib-sm ib-ghost" data-action-cant-cancel="" onClick={closeNote}>
-                Cancel
+                取消
               </button>
             </div>
           </div>
@@ -496,10 +496,10 @@ function ActionRow({ action, state, agent, refRepo, readOnly, open, onToggle, to
           <div className="ib-chk-acts">
             <button type="button" className="ib-btn ib-sm ib-pri" data-action-done="" disabled={busy} onClick={() => void mark({ outcome: 'done' }, 'panel')}>
               <Icon name="check" />
-              Done
+              完成
             </button>
             <button type="button" className="ib-btn ib-sm ib-ghost" data-action-cant="" ref={cantRef} disabled={busy} onClick={() => setComposing('cant')}>
-              Can't do it…
+              做不到…
             </button>
           </div>
         ))}
@@ -595,7 +595,7 @@ function DraftNote({
   return (
     <div className="ib-chk-draft" data-action-draft="">
       <label className="ib-chk-sr" htmlFor={noteId}>
-        {cant ? `Why you can't, for ${agent}` : `A note for ${agent}`}
+        {cant ? `为什么做不到，给 ${agent}` : `给 ${agent} 的备注`}
       </label>
       <textarea
         id={noteId}
@@ -605,7 +605,7 @@ function DraftNote({
         rows={1}
         value={text}
         readOnly={readOnly}
-        placeholder={`Add a note for ${agent}`}
+        placeholder={`给 ${agent} 添加备注`}
         onChange={(event) => {
           const value = event.target.value;
           typed.current = value;
@@ -623,8 +623,8 @@ function DraftNote({
         }}
       />
       <p className="ib-chk-dline" data-action-draft-line="">
-        {seen ? (cant ? 'Your reason' : 'Your note') : cant ? "Can't do it" : 'Done'}
-        {seen ? '' : ` ${clockTime(mark.at)}`} · in your draft
+        {seen ? (cant ? '你的理由' : '你的备注') : cant ? '做不到' : '完成'}
+        {seen ? '' : ` ${clockTime(mark.at)}`} · 在你的草稿中
       </p>
     </div>
   );

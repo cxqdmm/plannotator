@@ -56,7 +56,7 @@ function VoiceStatus({ voice, phone }: { voice: VoiceHandle; phone: boolean }) {
       <b>{now.word}</b>
       {now.hint && <span className="ib-vhint">{now.hint}</span>}
       <button type="button" className="ib-dtlink" data-voice-cancel="" onClick={session.cancel}>
-        Cancel
+        取消
       </button>
       <span className="ib-vsp" />
       {now.bars && <Bars session={session} count={phone ? 10 : VOICE_BARS} />}
@@ -79,7 +79,7 @@ function MicButton({ voice, phone, block }: { voice: VoiceHandle; phone: boolean
   // Opening shows from the press itself: lit, with the spinner, so a tap never looks like it did nothing. Its words
   // follow on the status line a moment later (VOICE_OPENING_SLOW_MS).
   const opening = view.phase === 'opening';
-  const label = block ? 'Dictate: not available here' : view.phase === 'sending' ? 'Transcribing' : opening ? 'Opening the microphone' : tapped ? 'Stop dictating' : live ? 'Dictating' : 'Dictate: hold to talk, or tap';
+  const label = block ? '听写：此处不可用' : view.phase === 'sending' ? '正在转写' : opening ? '正在打开麦克风' : tapped ? '停止听写' : live ? '正在听写' : '听写：按住说话，或点按';
   return (
     <button
       ref={button}
@@ -159,50 +159,50 @@ function troubleNote(trouble: VoiceTrouble, api: boolean, where: string): Note {
   const service = api ? 'OpenAI' : 'ChatGPT';
   switch (trouble) {
     case 'notheard':
-      return { tone: 'quiet', text: 'Nothing heard, so nothing was sent.' };
+      return { tone: 'quiet', text: '没有听到声音，因此未发送。' };
     case 'nothing':
-      return { tone: 'quiet', text: 'Nothing heard in that clip.' };
+      return { tone: 'quiet', text: '那段录音里没有听到声音。' };
     case 'badclip':
-      return { tone: 'error', text: 'That clip didn’t reach the Inbox whole, so nothing was sent. Try again.' };
+      return { tone: 'error', text: '那段录音没有完整传到收件箱，因此未发送。请重试。' };
     case 'blocked':
-      return { tone: 'error', text: 'The browser blocked the microphone. Allow it in this site’s settings, then press the mic again.' };
+      return { tone: 'error', text: '浏览器阻止了麦克风。请在此网站的设置中允许使用，然后再次按下麦克风。' };
     case 'micfailed':
-      return { tone: 'error', text: 'The microphone didn’t start. Check that one is connected, then press the mic again.' };
+      return { tone: 'error', text: '麦克风没有启动。请检查是否已连接，然后再次按下麦克风。' };
     case 'expired':
       return {
         tone: 'error',
         text: (
           <>
-            Your ChatGPT sign-in expired. Run <code>codex login</code> on {where}, then retry.
+            你的 ChatGPT 登录已过期。请在 {where} 上运行 <code>codex login</code>，然后重试。
           </>
         ),
       };
     case 'refused':
       return api
-        ? { tone: 'error', text: 'OpenAI turned this clip down.' }
-        : { tone: 'error', text: 'ChatGPT turned this clip down. This route isn’t an official API, so it can be blocked or changed without notice.' };
+        ? { tone: 'error', text: 'OpenAI 拒绝了这段录音。' }
+        : { tone: 'error', text: 'ChatGPT 拒绝了这段录音。这条通道不是官方 API，可能未经通知就被封锁或更改。' };
     case 'keyrefused':
-      return { tone: 'error', text: 'OpenAI refused this API key.', settings: true };
+      return { tone: 'error', text: 'OpenAI 拒绝了这个 API 密钥。', settings: true };
     case 'offline':
-      return { tone: 'error', text: `Could not reach ${service}. Your clip is kept until you close this box.` };
+      return { tone: 'error', text: `无法连接 ${service}。在你关闭此输入框之前，录音会保留。` };
     case 'inboxgone':
-      return { tone: 'error', text: 'Could not reach the Inbox. Your clip is kept until you close this box.' };
+      return { tone: 'error', text: '无法连接收件箱。在你关闭此输入框之前，录音会保留。' };
     case 'codexfailed':
-      return { tone: 'error', text: `Codex didn’t answer on ${where}. Your clip is kept until you close this box.` };
+      return { tone: 'error', text: `Codex 在 ${where} 上没有响应。在你关闭此输入框之前，录音会保留。` };
     case 'notready':
       return { tone: 'quiet', text: notReadyText(api, where), settings: true };
     case 'voiceoff':
-      return { tone: 'quiet', text: `Voice is off on ${where}.`, settings: true };
+      return { tone: 'quiet', text: `${where} 上的语音已关闭。`, settings: true };
     case 'failed':
-      return { tone: 'error', text: 'Couldn’t transcribe this clip. Your clip is kept until you close this box.' };
+      return { tone: 'error', text: '无法转写这段录音。在你关闭此输入框之前，录音会保留。' };
   }
 }
 
-const notReadyText = (api: boolean, where: string) => (api ? `Voice needs an OpenAI API key on ${where}.` : `Voice needs Codex signed in with ChatGPT on ${where}.`);
+const notReadyText = (api: boolean, where: string) => (api ? `${where} 上的语音需要 OpenAI API 密钥。` : `${where} 上的语音需要以 ChatGPT 登录 Codex。`);
 
 function blockNote(block: VoiceBlock, api: boolean, where: string): Note {
   return block === 'nomic'
-    ? { tone: 'quiet', text: 'This page can’t use the microphone. Browsers allow it only over https or on the computer itself.' }
+    ? { tone: 'quiet', text: '此页面无法使用麦克风。浏览器只允许在 https 下或本机上使用。' }
     : { tone: 'quiet', text: notReadyText(api, where), settings: true };
 }
 
@@ -251,11 +251,11 @@ export function VoiceNote({ voice, glide = false }: { voice: VoiceHandle; glide?
           <span className="ib-vnote-a">
             {going.kept && (
               <>
-                <span className="ib-dtlink ib-vstrong">Retry</span>
-                <span className="ib-dtlink">Discard</span>
+                <span className="ib-dtlink ib-vstrong">重试</span>
+                <span className="ib-dtlink">丢弃</span>
               </>
             )}
-            {going.settings && <span className="ib-dtlink ib-vstrong">Voice settings</span>}
+            {going.settings && <span className="ib-dtlink ib-vstrong">语音设置</span>}
           </span>
         )}
       </div>
@@ -269,16 +269,16 @@ export function VoiceNote({ voice, glide = false }: { voice: VoiceHandle; glide?
           {view.kept && (
             <>
               <button type="button" className="ib-dtlink ib-vstrong" data-voice-retry="" onClick={session.retry}>
-                Retry
+                重试
               </button>
               <button type="button" className="ib-dtlink" data-voice-discard="" onClick={session.discard}>
-                Discard
+                丢弃
               </button>
             </>
           )}
           {note.settings && (
             <a className="ib-dtlink ib-vstrong" href="#settings/voice" data-voice-settings="">
-              Voice settings
+              语音设置
             </a>
           )}
         </span>
@@ -332,7 +332,7 @@ function MarkerWord({ nextFree }: { nextFree: boolean }) {
     <>
       <span className="ib-vph" ref={at}>
         <i ref={word} style={place.kind === 'none' ? { visibility: 'hidden' } : { left: place.left, top: `calc(-0.15em + ${place.top}px)` }}>
-          Transcribing…
+          正在转写…
         </i>
       </span>
       {/* After the anchor, not in it, so the anchor stays where it was measured. */}

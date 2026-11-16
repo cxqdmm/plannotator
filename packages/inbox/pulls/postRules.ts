@@ -45,15 +45,15 @@ export function platformRules(pull: PlatformPostPull): PlatformRules {
     requestChangesSupported: caps.requestChanges,
     selfRequestChangesBlocked: caps.selfRequestChangesBlocked,
     requestChangesUnavailableReason: !caps.requestChanges
-      ? `${caps.label} has no request-changes review; this posts as a comment.`
+      ? `${caps.label} 不支持“要求修改”式评审；这次将作为评论发布。`
       : selfAuthored && caps.selfRequestChangesBlocked
-        ? `You can't request changes on your own ${noun} on ${caps.label}.`
+        ? `你不能对自己的 ${noun === 'merge request' ? 'MR' : 'PR'} 要求修改（${caps.label}）。`
         : undefined,
   };
 }
 
 export function postedWords(posted: { label: string; action: string }): string {
-  if (posted.action === 'approve') return `Approved on ${posted.label}`;
-  if (posted.action === 'request_changes') return `Changes requested on ${posted.label}`;
-  return `Review posted on ${posted.label}`;
+  if (posted.action === 'approve') return `已在 ${posted.label} 上批准`;
+  if (posted.action === 'request_changes') return `已在 ${posted.label} 上要求修改`;
+  return `评审已发布到 ${posted.label}`;
 }

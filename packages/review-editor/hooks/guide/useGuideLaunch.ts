@@ -10,10 +10,10 @@ export const GUIDE_ENGINES = Object.keys(REVIEW_ENGINE_LABEL) as ReviewEngine[];
 
 // Marker-engine fallbacks until the server delivers the live catalogs on the
 // capability entries (mirrors AgentsTab's fallbacks).
-const CURSOR_FALLBACK = [{ value: 'auto', label: 'Auto' }];
-const OPENCODE_FALLBACK = [{ value: '', label: 'Default' }];
-const PI_FALLBACK = [{ value: '', label: 'Default' }];
-const COPILOT_FALLBACK = [{ value: '', label: 'Default' }];
+const CURSOR_FALLBACK = [{ value: 'auto', label: '自动' }];
+const OPENCODE_FALLBACK = [{ value: '', label: '默认' }];
+const PI_FALLBACK = [{ value: '', label: '默认' }];
+const COPILOT_FALLBACK = [{ value: '', label: '默认' }];
 
 export type GuideModelOption = { value: string; label: string };
 
@@ -134,21 +134,21 @@ export function useGuideLaunch(
     engine === 'cursor'
       ? {
           provider: 'guide',
-          label: 'Guided Review',
+          label: '引导式评审',
           engine: 'cursor',
           ...(effectiveCursorModel && effectiveCursorModel.toLowerCase() !== 'auto' ? { model: effectiveCursorModel } : {}),
         }
       : engine === 'opencode'
         ? {
             provider: 'guide',
-            label: 'Guided Review',
+            label: '引导式评审',
             engine: 'opencode',
             ...(effectiveOpencodeModel ? { model: effectiveOpencodeModel } : {}),
           }
         : engine === 'pi'
           ? {
               provider: 'guide',
-              label: 'Guided Review',
+              label: '引导式评审',
               engine: 'pi',
               ...(effectivePiModel ? { model: effectivePiModel } : {}),
               thinking: guidePiThinking,
@@ -156,13 +156,13 @@ export function useGuideLaunch(
           : engine === 'copilot'
             ? {
                 provider: 'guide',
-                label: 'Guided Review',
+                label: '引导式评审',
                 engine: 'copilot',
                 ...(effectiveCopilotModel ? { model: effectiveCopilotModel } : {}),
               }
             : {
                 provider: 'guide',
-                label: 'Guided Review',
+                label: '引导式评审',
                 engine,
                 model: engine === 'claude' ? guideClaudeModel : guideCodexModel,
                 ...(engine === 'claude'

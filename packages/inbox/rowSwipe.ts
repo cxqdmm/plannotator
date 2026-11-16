@@ -43,12 +43,12 @@ import { watchListShift } from './rowSwipeShift';
 import type { InboxListGroupId, InboxListRow } from '@plannotator/core/inbox-types';
 
 /** The right swipe's label (the owner: "Call it 'Quiet': that's where a read thread goes in the list"). */
-export const SWIPE_QUIET_LABEL = 'Quiet';
+export const SWIPE_QUIET_LABEL = '安静';
 /** What a screen reader hears for it: the visible word alone does not say what it does. */
-export const SWIPE_QUIET_NAME = 'Mark read, move to Quiet';
+export const SWIPE_QUIET_NAME = '标记为已读并移到安静';
 /** On a read row, the hover action's own word. */
-export const SWIPE_UNREAD_LABEL = 'Mark unread';
-export const SWIPE_ARCHIVE_LABEL = 'Archive';
+export const SWIPE_UNREAD_LABEL = '标记为未读';
+export const SWIPE_ARCHIVE_LABEL = '归档';
 
 /** The finger moves this far before the swipe is decided either way. */
 export const SWIPE_DECIDE_PX = 10;

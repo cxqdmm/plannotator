@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { InboxDraft, InboxMessageWire, InboxReplyDraft } from '@plannotator/core/inbox-types';
 import { InboxApiError, inboxApi } from './api';
 
-export const TAKE_BACK_LABEL = 'Take back';
+export const TAKE_BACK_LABEL = '收回';
 
 export interface TakeBackState {
   id: string;
@@ -14,11 +14,11 @@ export interface TakeBackState {
 export function takeBackRefusal(error: unknown, name: string): string {
   if (error instanceof InboxApiError && error.code === 'agent_has_it') {
     return error.by === 'handing'
-      ? `${name} is picking up its messages right now, so this can't be taken back. Try again in a few seconds.`
-      : `${name} already has this message, so it can't be taken back. Reply below to change it.`;
+      ? `${name} 正在接收消息，暂时无法收回。请几秒后重试。`
+      : `${name} 已经收到这条消息，无法收回。请在下方回复来修改。`;
   }
   if (error instanceof InboxApiError && (error.code === 'cannot_take_back' || error.code === 'taken_back')) return error.message;
-  return 'It was not taken back. Try again.';
+  return '未能收回。请重试。';
 }
 
 /** A reply that sent answers (to questions or action items) is never taken back: the server refuses it. */
@@ -44,7 +44,7 @@ export function useTakeBack(host: {
   const take = async (id: string, name: string) => {
     setState({ id, busy: true, line: null, note: null });
     if (!(await host.settle())) {
-      setState({ id, busy: false, line: 'Your reply is still saving. Try again in a moment.', note: null });
+      setState({ id, busy: false, line: '你的回复仍在保存中。请稍后再试。', note: null });
       return;
     }
     try {
@@ -56,7 +56,7 @@ export function useTakeBack(host: {
       }
       const draft = (await host.reload()) ?? answer.draft;
       if (draft) host.fill(draft);
-      setState({ id, busy: false, line: null, note: `Taken back. ${name} never got it. Send it again when it's ready.` });
+      setState({ id, busy: false, line: null, note: `已收回。${name} 从未收到这条消息，准备好后再发送一次。` });
       await host.changed();
     } catch (error) {
       setState({ id, busy: false, line: takeBackRefusal(error, name), note: null });

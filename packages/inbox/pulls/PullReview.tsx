@@ -365,7 +365,7 @@ function LayerReview({ model, modelError, stackId, layerKey, scope: asked, onLay
       .catch((cause: unknown) => {
         if (controller.signal.aborted) return;
         again.current = !(cause instanceof InboxApiError && (cause.code === 'pull_diff_too_large' || cause.code === 'pull_diff_fork'));
-        if (!diff) setDiffError(cause instanceof Error ? cause.message : 'The diff could not be read.');
+        if (!diff) setDiffError(cause instanceof Error ? cause.message : '无法读取 diff。');
       });
     return () => controller.abort();
     // A new layer or scope reads again; the same one keeps its diff.
@@ -813,7 +813,7 @@ function LayerReview({ model, modelError, stackId, layerKey, scope: asked, onLay
         onSent();
       } catch (cause) {
         if (!mounted.current) return;
-        setSendError(cause instanceof InboxApiError || cause instanceof Error ? cause.message : 'Your verdict was not sent.');
+        setSendError(cause instanceof InboxApiError || cause instanceof Error ? cause.message : '你的评审结论未发送。');
       } finally {
         if (mounted.current) setSending(false);
       }
@@ -848,7 +848,7 @@ function LayerReview({ model, modelError, stackId, layerKey, scope: asked, onLay
           </Tip>
         </div>
         <div className="ib-pr-empty" role={modelError || model ? 'alert' : undefined}>
-          {modelError ?? (model ? 'This pull request is no longer in the list.' : 'Reading your pull requests…')}
+          {modelError ?? (model ? '此拉取请求已不在列表中。' : '正在读取你的拉取请求…')}
         </div>
       </section>
     );
@@ -859,7 +859,7 @@ function LayerReview({ model, modelError, stackId, layerKey, scope: asked, onLay
   const scopeTitle = on?.title ?? null;
   const diffCounts = diff ? { add: files.reduce((sum, f) => sum + f.additions, 0), del: files.reduce((sum, f) => sum + f.deletions, 0) } : undefined;
 
-  const readOnlyParts: Words = layer.mine ? ['No review thread yet'] : layer.author ? ['by ', person(layer.author)] : ['by a deleted account'];
+  const readOnlyParts: Words = layer.mine ? ['还没有评审会话'] : layer.author ? ['由 ', person(layer.author)] : ['由已删除的账户'];
   const readOnlyWords = wordsText(readOnlyParts);
   const readOnlyNote = !canDecide && !posted && !diffError && (
     <Tip cut content={readOnlyWords}>
@@ -971,7 +971,7 @@ function LayerReview({ model, modelError, stackId, layerKey, scope: asked, onLay
             onClick={() => setSheet((v) => !v)}
             aria-expanded={sheet}
             aria-controls={sheetId}
-            aria-label={`Comments, ${comments.length}`}
+            aria-label={`评论，${comments.length}`}
           >
             <Icon name="comment" size={15} />
             {comments.length}
@@ -1022,7 +1022,7 @@ function LayerReview({ model, modelError, stackId, layerKey, scope: asked, onLay
         ) : (
           <a className="ib-btn ib-sm" href={layer.url} target="_blank" rel="noreferrer noopener" data-pull-review-forge="">
             <Icon name="external" size={14} />
-            {phone ? <span className="ib-sr">Open on {forgeName(stack)}</span> : `Open on ${forgeName(stack)}`}
+            {phone ? <span className="ib-sr">在 {forgeName(stack)} 上打开</span> : `在 ${forgeName(stack)} 上打开`}
           </a>
         )}
       </div>
@@ -1066,7 +1066,7 @@ function LayerReview({ model, modelError, stackId, layerKey, scope: asked, onLay
             ) : undefined}
           />
         )}
-        <nav className="ib-rrail" id={filesSheetId} ref={railRef} aria-label="Changed files" {...sheetKeys}>
+        <nav className="ib-rrail" id={filesSheetId} ref={railRef} aria-label="更改的文件" {...sheetKeys}>
           {rail}
         </nav>
         {!phone && (
@@ -1074,7 +1074,7 @@ function LayerReview({ model, modelError, stackId, layerKey, scope: asked, onLay
             className="ib-prp-handle"
             role="separator"
             aria-orientation="vertical"
-            aria-label="Width of the file rail"
+            aria-label="文件栏宽度"
             aria-valuemin={RAIL_WIDTH.min}
             aria-valuemax={RAIL_WIDTH.max}
             aria-valuenow={railWidth}
@@ -1168,34 +1168,34 @@ function LayerReview({ model, modelError, stackId, layerKey, scope: asked, onLay
           )}
           {next && scope === 'layer' && (diff || diffError) && (
             <button type="button" className="ib-prp-next" onClick={() => onLayer(next.key, 'layer')} data-pull-next-layer={next.key}>
-              <span className="ib-prp-nextw">Next layer</span>
+              <span className="ib-prp-nextw">下一层</span>
               <span className="ib-prp-num">{inboxPullLabel(next)}</span>
               <bdi className="ib-prp-title">{next.title}</bdi>
               <Icon name="chevR" size={15} />
             </button>
           )}
         </div>
-        <div className="ib-apanel ib-gpanel" id={sheetId} ref={panelRef} role={folded ? 'region' : undefined} aria-label={folded ? 'Comments' : undefined} {...sheetKeys}>
+        <div className="ib-apanel ib-gpanel" id={sheetId} ref={panelRef} role={folded ? 'region' : undefined} aria-label={folded ? '评论' : undefined} {...sheetKeys}>
           {folded && (
             <div className="ib-sheet-h">
-              <b>Comments</b>
+              <b>评论</b>
               <span className="ib-mut">{comments.length}</span>
               <span className="ib-sp" />
-              <button ref={sheetCloseRef} type="button" className="ib-iconbtn" onClick={closeComments} aria-label="Close the comments">
+              <button ref={sheetCloseRef} type="button" className="ib-iconbtn" onClick={closeComments} aria-label="关闭评论">
                 <Icon name="x" />
               </button>
             </div>
           )}
           {phone && <div ref={setControlsHost} className="ib-prr-controls ib-prp-sheetctl" data-pull-controls="" />}
           <AnnotationPanel
-            title="Comments"
-            emptyHint={readerComments ? 'Click a line number, drag across lines, or select code to comment' : undefined}
+            title="评论"
+            emptyHint={readerComments ? '点击行号、跨行拖动，或选中代码以评论' : undefined}
             isOpen
             presentation={folded ? 'embedded' : undefined}
             annotations={NO_ANNOTATIONS}
             blocks={NO_BLOCKS}
             codeAnnotations={comments}
-            codeAnnotationNote={(c) => (here.includes(c) ? null : 'Written on older code')}
+            codeAnnotationNote={(c) => (here.includes(c) ? null : '写在旧代码上')}
             onSelect={showFromPanel}
             onDelete={remove}
             selectedId={selectedId}

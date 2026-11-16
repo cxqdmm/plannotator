@@ -566,7 +566,7 @@ export const PRCommentsTab: React.FC<PRCommentsTabProps> = React.memo(({ context
           }}
           onClose={() => setAnnotating(null)}
           onAskAI={onAskAIForComment}
-          askAIContext={{ kind: 'selection', label: 'PR comment', text: annotating.body }}
+          askAIContext={{ kind: 'selection', label: 'PR 评论', text: annotating.body }}
         />
       )}
     </div>

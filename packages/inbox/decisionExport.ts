@@ -41,25 +41,25 @@ export function decisionExportUrl(threadId: string, format: DecisionExportDownlo
 export async function postDecisions(threadId: string, ref: string, onToast?: (toast: Omit<InboxToastModel, 'id'>) => void): Promise<void> {
   try {
     const answer = await inboxApi.postThreadDecisions(threadId, ref, readerZone());
-    const open = answer.url.startsWith('https://') ? { action: { label: 'Open', onPress: () => void window.open(answer.url, '_blank', 'noopener,noreferrer') } } : {};
+    const open = answer.url.startsWith('https://') ? { action: { label: '打开', onPress: () => void window.open(answer.url, '_blank', 'noopener,noreferrer') } } : {};
     if (answer.fallback) {
       onToast?.({
         icon: 'check',
-        lead: `Decisions posted on ${answer.ref} as a comment instead`,
-        detail: answer.fallback === 'no_permission' ? "You can't edit its description." : 'Too long for its description.',
+        lead: `决策已改为作为评论发布在 ${answer.ref} 上`,
+        detail: answer.fallback === 'no_permission' ? '你无法编辑它的说明。' : '说明里放不下。',
         ...open,
       });
       return;
     }
-    onToast?.({ icon: 'check', lead: `Decisions ${answer.action === 'updated' ? 'updated' : 'posted'} on ${answer.ref}`, ...open });
+    onToast?.({ icon: 'check', lead: `决策已${answer.action === 'updated' ? '更新' : '发布'}到 ${answer.ref}`, ...open });
   } catch (cause) {
-    onToast?.({ icon: 'warn', lead: cause instanceof Error && cause.message ? cause.message : `Couldn't post on ${ref}. Try again.`, wrap: true });
+    onToast?.({ icon: 'warn', lead: cause instanceof Error && cause.message ? cause.message : `无法发布到 ${ref}。请重试。`, wrap: true });
   }
 }
 
 /** The Post group's "Where to post": its words, in the order shown. */
 export const DECISIONS_POST_TO_WORDS: readonly { value: DecisionsPostTo; label: string }[] = [
-  { value: 'description', label: 'In the description' },
-  { value: 'comment', label: 'As a comment' },
-  { value: 'both', label: 'Short in the description, full in a comment' },
+  { value: 'description', label: '在说明中' },
+  { value: 'comment', label: '作为评论' },
+  { value: 'both', label: '说明中简短，评论中完整' },
 ];

@@ -101,7 +101,7 @@ function useFolderRead(path: string | null, machineId: string | null, asleep: bo
           setRead({
             path,
             retry,
-            error: cause instanceof InboxApiError ? folderRefusalWords(cause.code ?? null, cause.message) : "The folders couldn't be read.",
+            error: cause instanceof InboxApiError ? folderRefusalWords(cause.code ?? null, cause.message) : '无法读取文件夹。',
             code: cause instanceof InboxApiError ? (cause.code ?? null) : null,
           });
         },
@@ -162,21 +162,21 @@ function useCloneTarget(at: string | null, url: string | null, machineId: string
 function rowAria(row: FolderRow): string {
   switch (row.kind) {
     case 'start':
-      return `Start in ${row.name}, ${row.path}`;
+      return `在 ${row.name} 中启动，${row.path}`;
     case 'create':
-      return `Create ${row.name} and start, a new folder at ${row.path}`;
+      return `创建 ${row.name} 并启动，新文件夹位于 ${row.path}`;
     case 'fix':
-      return `Go to ${row.path.replace(/\/$/, '')}, the path with ${row.name} in place of ${row.from}`;
+      return `转到 ${row.path.replace(/\/$/, '')}，将 ${row.from} 替换为 ${row.name} 后的路径`;
     case 'noaccess':
-      return `${row.name}, no access, can't be opened`;
+      return `${row.name}，无访问权限，无法打开`;
     case 'cloneHere':
-      return `Clone ${row.repo} here, into ${row.path}${row.taken ? `. ${row.taken} is another folder` : ''}`;
+      return `在此克隆 ${row.repo}，克隆到 ${row.path}${row.taken ? `。${row.taken} 是另一个文件夹` : ''}`;
     case 'cloneStart':
-      return `Start in ${row.name}, ${row.path}, already cloned`;
+      return `在 ${row.name} 中启动，${row.path}，已克隆`;
     case 'cloneInto':
-      return `Clone into ${row.name} and start, ${row.path}`;
+      return `克隆到 ${row.name} 并启动，${row.path}`;
     default:
-      return `${row.name}, ${row.path}`;
+      return `${row.name}，${row.path}`;
   }
 }
 
@@ -285,7 +285,7 @@ export function HomeFolderBrowser({
   const target = useCloneTarget(clone ? cloneAt(shown, ok, okName) : null, clone?.url ?? null, machine.id, asleep);
   const view = asleep
     ? { note: null, rows: [] as FolderRow[], after: null }
-    : folderBrowserView({ typed: shown, read: ok, nameRead: okName, nameRefused, error: quietHere ? `${here!.name} isn't responding.` : read && 'error' in read ? read.error : null, clone: clone ? { repo: clone.repo, target } : null });
+    : folderBrowserView({ typed: shown, read: ok, nameRead: okName, nameRefused, error: quietHere ? `${here!.name} 无响应。` : read && 'error' in read ? read.error : null, clone: clone ? { repo: clone.repo, target } : null });
   const rows = view.rows;
   const rowsKey = rows.map((row) => `${row.kind}>${row.path}`).join('\n');
 
@@ -394,10 +394,10 @@ export function HomeFolderBrowser({
   const placesRow = (drives.length > 0 || machine.finder === true) && !clone && (
     <div className="ib-hfb-places" data-home-folders-places="" ref={placesRef} onScroll={measurePlaces} data-more-before={more.before ? '' : undefined} data-more-after={more.after ? '' : undefined}>
       {drives.length > 0 && (
-        <div className="ib-seg ib-seg-sm" role="radiogroup" aria-label="Places">
+        <div className="ib-seg ib-seg-sm" role="radiogroup" aria-label="位置">
           <button type="button" className="ib-seg-o" role="radio" aria-checked={atHome} data-on={atHome ? '' : undefined} onClick={() => goTo(HOME_FOLDER_START)} data-home-folders-place="home">
             <Icon name="folder" size={14} />
-            Home
+            主文件夹
           </button>
           {drives.map((drive) => {
             const on = here?.path === drive.path;
@@ -409,7 +409,7 @@ export function HomeFolderBrowser({
                 className="ib-seg-o"
                 role="radio"
                 aria-checked={on}
-                aria-label={`${drive.name}${drive.network ? ', network drive' : ''}${quiet ? ", isn't responding" : ''}`}
+                aria-label={`${drive.name}${drive.network ? '，网络驱动器' : ''}${quiet ? '，无响应' : ''}`}
                 data-on={on ? '' : undefined}
                 onClick={() => goTo(`${drive.path}/`)}
                 data-home-folders-place={drive.path}
@@ -417,7 +417,7 @@ export function HomeFolderBrowser({
               >
                 <Icon name={drive.network ? 'globe' : 'drive'} size={14} />
                 {drive.name}
-                {quiet && <span className="ib-hfb-quiet"> · isn't responding</span>}
+                {quiet && <span className="ib-hfb-quiet"> · 无响应</span>}
               </button>
             );
           })}
@@ -426,7 +426,7 @@ export function HomeFolderBrowser({
       {machine.finder === true && (
         <button type="button" className="ib-lnk ib-hfb-finder" disabled={finding} onClick={chooseInFinder} data-home-folders-finder="">
           <Icon name="external" size={14} />
-          {finding ? 'Waiting for Finder…' : 'Choose in Finder…'}
+          {finding ? '正在等待 Finder…' : '在 Finder 中选择…'}
         </button>
       )}
     </div>
@@ -434,20 +434,22 @@ export function HomeFolderBrowser({
 
   const where = clone ? (
     <>
-      Clone <b dir="auto">{clone.repo}</b>
-      {machine.name && (
+      {machine.name ? (
         <>
-          {' '}
-          on <b dir="auto">{machine.name}</b>
+          在 <b dir="auto">{machine.name}</b> 上克隆 <b dir="auto">{clone.repo}</b>
+        </>
+      ) : (
+        <>
+          克隆 <b dir="auto">{clone.repo}</b>
         </>
       )}
     </>
   ) : machine.name ? (
     <>
-      A folder on <b dir="auto">{machine.name}</b>
+      在 <b dir="auto">{machine.name}</b> 上的文件夹
     </>
   ) : (
-    'A folder'
+    '文件夹'
   );
 
   const lead = (row: FolderRow) =>
@@ -471,38 +473,38 @@ export function HomeFolderBrowser({
       case 'start':
         return (
           <>
-            Start in <b>{row.name}</b>
+            在 <b>{row.name}</b> 中启动
           </>
         );
       case 'create':
         return (
           <>
-            Create <b>{row.name}</b> and start
+            创建 <b>{row.name}</b> 并启动
           </>
         );
       case 'fix':
         return (
           <>
-            Go to <b>{row.path.replace(/\/$/, '')}</b>
+            转到 <b>{row.path.replace(/\/$/, '')}</b>
           </>
         );
       case 'cloneHere':
         return (
           <>
-            Clone <b>{row.repo}</b> here
+            在此克隆 <b>{row.repo}</b>
           </>
         );
       case 'cloneStart':
         return (
           <>
-            Start in <b>{row.name}</b>
-            <span className="ib-cp-trust"> · already cloned</span>
+            在 <b>{row.name}</b> 中启动
+            <span className="ib-cp-trust"> · 已克隆</span>
           </>
         );
       case 'cloneInto':
         return (
           <>
-            Clone into <b>{row.name}</b> and start
+            克隆到 <b>{row.name}</b> 并启动
           </>
         );
       default:
@@ -510,7 +512,7 @@ export function HomeFolderBrowser({
     }
   };
   // The place in the path column: none for Go to (its words are the path); "no access" for a folder that can't be opened.
-  const place = (row: FolderRow) => (row.kind === 'fix' ? '' : row.kind === 'noaccess' ? 'no access' : row.path);
+  const place = (row: FolderRow) => (row.kind === 'fix' ? '' : row.kind === 'noaccess' ? '无访问权限' : row.path);
 
   return (
     <div className="ib-hfb" data-home-folders={machine.id ?? 'self'} data-home-folders-clone={clone ? clone.repo : undefined} data-asleep={asleep ? '' : undefined} onKeyDown={onKey}>
@@ -518,9 +520,9 @@ export function HomeFolderBrowser({
         <div className="ib-cp-pickhead">
           <button type="button" className="ib-cp-back" onClick={onBack} data-home-folders-back="">
             <Icon name="chevL" size={16} />
-            Back
+            返回
           </button>
-          <span>{clone ? 'Clone into' : 'Another folder'}</span>
+          <span>{clone ? '克隆到' : '其他文件夹'}</span>
         </div>
       )}
       {phone ? (
@@ -531,7 +533,7 @@ export function HomeFolderBrowser({
         )
       ) : (
         <div className="ib-hfb-head">
-          <button type="button" className="ib-hfb-back" aria-label="Back to the list" onClick={onBack} data-home-folders-back="">
+          <button type="button" className="ib-hfb-back" aria-label="返回列表" onClick={onBack} data-home-folders-back="">
             <Icon name="chevL" size={15} />
           </button>
           <span>{where}</span>
@@ -548,7 +550,7 @@ export function HomeFolderBrowser({
           aria-autocomplete="list"
           aria-controls={`ib-hfb-list-${uid}`}
           aria-activedescendant={at >= 0 ? optionId(at) : undefined}
-          aria-label={clone ? `Folder to clone ${clone.repo} into${machine.name ? `, on ${machine.name}` : ''}` : machine.name ? `A folder on ${machine.name}` : 'A folder'}
+          aria-label={clone ? `将 ${clone.repo} 克隆到的文件夹${machine.name ? `（在 ${machine.name} 上）` : ''}` : machine.name ? `${machine.name} 上的文件夹` : '文件夹'}
           autoComplete="off"
           autoCapitalize="off"
           autoCorrect="off"
@@ -559,16 +561,16 @@ export function HomeFolderBrowser({
           data-home-folders-path=""
         />
       </div>
-      <div className="ib-cp-list" role="listbox" id={`ib-hfb-list-${uid}`} aria-label="Folders">
+      <div className="ib-cp-list" role="listbox" id={`ib-hfb-list-${uid}`} aria-label="文件夹">
         {asleep && (
           <div className="ib-cp-none" role="status" data-home-folders-note="asleep">
-            {machine.name ?? 'This computer'} is asleep
+            {machine.name ?? '此计算机'} 已休眠
           </div>
         )}
         {reading && (
           <div className="ib-cp-none ib-cp-checking" role="status" data-home-folders-note="reading">
             <span className="ib-run-spin" aria-hidden="true" />
-            Reading {here?.name ?? (parent === '~' ? 'your home folder' : folderName(parent))}…
+            正在读取 {here?.name ?? (parent === '~' ? '你的主文件夹' : folderName(parent))}…
           </div>
         )}
         {view.note && (
@@ -578,7 +580,7 @@ export function HomeFolderBrowser({
               <>
                 {' '}
                 <button type="button" className="ib-lnk" onMouseDown={(event) => event.preventDefault()} onClick={tryAgain} data-home-folders-retry="">
-                  Try again
+                  重试
                 </button>
               </>
             )}
@@ -608,7 +610,7 @@ export function HomeFolderBrowser({
                 {/* A phone hides the path column: a new folder's or a clone's place goes on a second line (G5, G6). */}
                 {twoLine(row) && <span className="ib-hfb-sub">{row.path}</span>}
               </span>
-              {place(row) ? row.kind === 'noaccess' ? <span className="ib-hfb-noaccess-word">no access</span> : <FolderPath path={place(row)} /> : <span />}
+              {place(row) ? row.kind === 'noaccess' ? <span className="ib-hfb-noaccess-word">无访问权限</span> : <FolderPath path={place(row)} /> : <span />}
               <span className="ib-cp-check" aria-hidden="true" />
             </div>
             {view.after && view.after.at === i + 1 && (

@@ -141,10 +141,10 @@ const ROWS_COOKIE_OLD_DEFAULTS = 'none';
 
 /** The ⋮ menu's checkboxes, in order (no icons, the owner 2026-11-02: "those could all just be check boxes"). */
 export const LIST_LOOK_OPTIONS: ReadonlyArray<{ key: MenuLookKey; label: string }> = [
-  { key: 'highlight', label: 'Highlight thread subject' },
-  { key: 'compact', label: 'Compact rows' },
-  { key: 'hideAgents', label: 'Hide agent icons' },
-  { key: 'smallNames', label: 'Smaller thread names' },
+  { key: 'highlight', label: '高亮会话主题' },
+  { key: 'compact', label: '紧凑行' },
+  { key: 'hideAgents', label: '隐藏 agent 图标' },
+  { key: 'smallNames', label: '较小的会话名称' },
 ];
 
 /** The look a list of option names makes: names no build knows are dropped, and a rival pair never both on (core `inboxRowsCanonical`). */

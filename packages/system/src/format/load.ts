@@ -41,7 +41,7 @@ const err = (issues: Issues, a: At, message: string) => issues.push({ file: a.fi
 /** One issue as one line: `sheets/L-101.yaml bands[0].x: coordinates are not allowed`. */
 export const formatIssue = (i: LoadIssue) => `${i.file}${i.field ? ` ${i.field}` : ''}: ${i.message}`;
 
-const numberFormat = new Intl.NumberFormat('en-US');
+const numberFormat = new Intl.NumberFormat('zh-CN');
 /** A value from YAML as text: numbers get separators (1284003 reads 1,284,003); a leading run of five or more digits too. */
 export const fmtValue = (v: unknown): string => {
   if (typeof v === 'number') return Number.isFinite(v) ? numberFormat.format(v) : String(v);

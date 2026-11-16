@@ -194,7 +194,7 @@ export function MapKeys({ binding }: { binding: string }) {
     <span className="ib-mapkeys">
       {groups.map((group, i) => (
         <span key={`${group}-${i}`} className="ib-mapkeys">
-          {i > 0 && <span className="ib-mapor">then</span>}
+          {i > 0 && <span className="ib-mapor">然后</span>}
           <kbd className="ib-kbd">{bindingText(group, platform)}</kbd>
         </span>
       ))}

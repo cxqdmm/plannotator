@@ -6,7 +6,7 @@
  */
 import { useMemo, useState } from 'react';
 import { inboxPullRepoKey, inboxReviewGroups, type InboxPullLink, type InboxPullsAnswer, type InboxPullStack, type InboxReviewMove, type InboxReviewRow, type InboxReviewsAnswer } from '@plannotator/core/inbox-types';
-import { formatCount, plural } from '@plannotator/core/inbox-format';
+import { formatCount } from '@plannotator/core/inbox-format';
 import { HostMark, Icon } from '../icons';
 import { RefMarkIcon } from '../board/RefMark';
 import { Tip } from '../components/Tip';
@@ -39,8 +39,8 @@ function AuthorLead({ stack }: { stack: InboxPullStack }) {
   const { shown, failed, state, onLoad, onError } = usePicture(src);
   if (!author || !src) {
     return (
-      <Tip content="A deleted account">
-        <span className="ib-pr-av ib-pr-av-ghost" role="img" aria-label="A deleted account" data-pulls-ghost="">
+      <Tip content="已删除的账户">
+        <span className="ib-pr-av ib-pr-av-ghost" role="img" aria-label="已删除的账户" data-pulls-ghost="">
           <Icon name="user" size={13} />
         </span>
       </Tip>
@@ -171,7 +171,7 @@ function ReviewRowItem({
         <span className="ib-pv" dir="auto">
           {layers > 1 && stack && (
             <span className="ib-sr">
-              A stack of {layers} {pullNounWord(stack.platform)}s:{' '}
+              由 {layers} 个 {pullNounWord(stack.platform)} 组成的堆叠：{' '}
             </span>
           )}
           {line.lead}
@@ -300,7 +300,7 @@ export function ReviewsList({
   const notJudgedLine =
     notJudged > 0 ? (
       <p className="ib-pr-risknote" data-pulls-risk-not-judged={notJudged}>
-        {plural(notJudged, 'pull request')} not ranked yet.
+        {notJudged} 个 PR 尚未评级。
       </p>
     ) : null;
   const labels = repoLabels([...rows, ...notRanked].flatMap((row) => row.stacks));
@@ -309,7 +309,7 @@ export function ReviewsList({
     if (stack) return labels.get(inboxPullRepoKey(stack.host, stack.repo)) ?? repoName(stack.repo);
     const id = reviewRowProject(row);
     const project = id ? projectNames.get(id) : null;
-    return project ?? row.review?.source?.repo ?? 'A project';
+    return project ?? row.review?.source?.repo ?? '一个项目';
   };
   const links = { ...model.links, ...Object.fromEntries(answer.rows.flatMap((row) => (row.link ? row.pull_keys.map((key) => [key, row.link!] as const) : []))) };
   const draw = (row: InboxReviewRow) => (
@@ -318,15 +318,15 @@ export function ReviewsList({
   // High: what it can't place, behind one quiet line in the fold's own shape.
   const notRankedLine =
     notRanked.length > 0 ? (
-      <div className="ib-group ib-pr-fold" role="group" aria-label="Not ranked" data-pulls-risk-not-ranked={notRanked.length}>
+      <div className="ib-group ib-pr-fold" role="group" aria-label="未评级" data-pulls-risk-not-ranked={notRanked.length}>
         <button type="button" className="ib-pr-foldbtn" onClick={() => setNotRankedOpen((v) => !v)} aria-expanded={notRankedOpen} data-pulls-risk-not-ranked-toggle="">
           <Icon name={notRankedOpen ? 'chevD' : 'chevR'} size={14} />
           {notRankedOpen ? (
             <>
-              Not ranked <span className="ib-n">{formatCount(notRanked.length)}</span>
+              未评级 <span className="ib-n">{formatCount(notRanked.length)}</span>
             </>
           ) : (
-            `${formatCount(notRanked.length)} not ranked`
+            `${formatCount(notRanked.length)} 个未评级`
           )}
         </button>
         {notRankedOpen && notRanked.map(draw)}
@@ -338,7 +338,7 @@ export function ReviewsList({
       <>
         {notice}
         <div className="ib-pr-empty" data-pulls-empty="risk">
-          <p className="ib-pr-empty-h">{risk === 'high' ? 'Nothing high risk.' : 'Nothing at medium risk or above.'}</p>
+          <p className="ib-pr-empty-h">{risk === 'high' ? '没有高风险的 PR。' : '没有中等及以上风险的 PR。'}</p>
           {notJudgedLine}
         </div>
         {notRankedLine}
@@ -348,7 +348,7 @@ export function ReviewsList({
   if (rows.length === 0) {
     // Never "nothing" before Others answers, and the wait never hides a host's own failure.
     const othersOnItsWay = (filter === 'all' || filter === 'others') && model.hosts.some((h) => h.others_pending) && !model.hosts.some((h) => h.error);
-    if (othersOnItsWay) return <p className="ib-pr-empty" data-pulls-empty="reading">Reading your pull requests…</p>;
+    if (othersOnItsWay) return <p className="ib-pr-empty" data-pulls-empty="reading">正在读取你的 PR…</p>;
     // A view with nothing in it, while the read was whole: what the view holds. Never while a host failed or was cut.
     if (filter !== 'all' && notices.every((n) => n.key.startsWith('unsigned:'))) {
       const empty = pullFilterEmptyWords(filter);
@@ -366,11 +366,11 @@ export function ReviewsList({
     return (
       <div className="ib-pr-off" data-pulls-empty={empty.kind}>
         <div className="ib-pr-empty">
-          <p className="ib-pr-empty-h">{nothing ? 'No reviews yet' : empty.head}</p>
-          {nothing ? <p>Reviews your agents send, and your open pull requests, show here.</p> : empty.lines.map((line) => <p key={line}>{line}</p>)}
+          <p className="ib-pr-empty-h">{nothing ? '暂无评审' : empty.head}</p>
+          {nothing ? <p>agent 发来的评审，以及你开放的 PR，会显示在这里。</p> : empty.lines.map((line) => <p key={line}>{line}</p>)}
           <button type="button" className="ib-btn ib-pri" onClick={onNew} data-reviews-new="empty">
             <Icon name="plus" size={15} />
-            New review
+            新建评审
           </button>
         </div>
       </div>
@@ -379,11 +379,11 @@ export function ReviewsList({
   return (
     <>
       {notice}
-      <Band label="On you" name="on_you" rows={groups.on_you} draw={draw} />
-      <Band label="With your agents" name="agents" rows={groups.agents} draw={draw} />
-      <Band label="Ready to land" name="ready" rows={groups.ready} draw={draw} />
-      <FoldedGroup label="Waiting on others" name="waiting" rows={groups.waiting} open={waitingOpen} onToggle={() => toggle('waiting')} draw={draw} />
-      <FoldedGroup label="Open, not reviewed" name="not_reviewed" rows={groups.not_reviewed} open={listedOpen} onToggle={() => toggle('not_reviewed')} draw={draw} />
+      <Band label="待你处理" name="on_you" rows={groups.on_you} draw={draw} />
+      <Band label="与你的 agent" name="agents" rows={groups.agents} draw={draw} />
+      <Band label="可以合并" name="ready" rows={groups.ready} draw={draw} />
+      <FoldedGroup label="等待其他人" name="waiting" rows={groups.waiting} open={waitingOpen} onToggle={() => toggle('waiting')} draw={draw} />
+      <FoldedGroup label="开放，未评审" name="not_reviewed" rows={groups.not_reviewed} open={listedOpen} onToggle={() => toggle('not_reviewed')} draw={draw} />
       {notJudgedLine}
       {notRankedLine}
     </>

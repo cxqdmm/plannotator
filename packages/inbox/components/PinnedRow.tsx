@@ -48,7 +48,7 @@ export function PinnedRow(props: PinnedRowProps) {
   const { row } = props;
   const project = props.project ?? row.project.name;
   const state = pinnedState(row);
-  const subject = row.subject ?? '(no subject)';
+  const subject = row.subject ?? '（无主题）';
   const label = pinnedLabel(row);
   const items = (
     <PinnedMenuItems
@@ -65,11 +65,11 @@ export function PinnedRow(props: PinnedRowProps) {
   const tail =
     state.kind === 'stop' ? (
       <span className="ib-spill" data-k="stop" aria-hidden="true">
-        Stopped
+        已停止
       </span>
     ) : state.kind === 'hold' ? (
       <span className="ib-spill" data-k="hold" aria-hidden="true">
-        Holds {formatCount(state.n)}
+        阻碍 {formatCount(state.n)} 项
       </span>
     ) : state.kind === 'wait' ? (
       <span className="ib-n" aria-hidden="true">
@@ -89,7 +89,7 @@ export function PinnedRow(props: PinnedRowProps) {
     ) : state.kind === 'wait' || state.kind === 'new' || state.kind === 'archived' ? (
       <span className="ib-pin-st" data-k={state.kind}>
         {/* One open question has no words of its own in the list (`questionCount`); here it is said. */}
-        {state.words || '1 question'}
+        {state.words || '1 个问题'}
       </span>
     ) : null;
   const row_ = (children: ReactNode, extra: Record<string, unknown> = {}) => (
@@ -133,7 +133,7 @@ export function PinnedRow(props: PinnedRowProps) {
         </button>
       </Tip>
       <Menu.Root open={menuOpen} onOpenChange={setMenuOpen} modal={false}>
-        <Menu.Trigger ref={more} className="ib-pmore" aria-label={`${label} options`} data-pin-more={row.thread_id}>
+        <Menu.Trigger ref={more} className="ib-pmore" aria-label={`${label} 选项`} data-pin-more={row.thread_id}>
           <Icon name="dots" size={16} />
         </Menu.Trigger>
         <Menu.Portal container={portal ?? undefined}>
@@ -170,22 +170,22 @@ function PinnedMenuItems({ subject, first, last, onAction }: { subject: string; 
       <div className="ib-pm-title" dir="auto" aria-hidden="true">
         {subject}
       </div>
-      <Menu.Item className="ib-pmi" label="Unstar" onClick={() => onAction('unpin')} data-pin-action="unpin">
+      <Menu.Item className="ib-pmi" label="取消星标" onClick={() => onAction('unpin')} data-pin-action="unpin">
         <Icon name="star" size={15} className="ib-star-on" />
-        Unstar
+        取消星标
       </Menu.Item>
-      <Menu.Item className="ib-pmi" label="Move up" disabled={first} onClick={() => onAction('up')} data-pin-action="up">
+      <Menu.Item className="ib-pmi" label="上移" disabled={first} onClick={() => onAction('up')} data-pin-action="up">
         <Icon name="arrowUp" size={15} />
-        Move up
+        上移
       </Menu.Item>
-      <Menu.Item className="ib-pmi" label="Move down" disabled={last} onClick={() => onAction('down')} data-pin-action="down">
+      <Menu.Item className="ib-pmi" label="下移" disabled={last} onClick={() => onAction('down')} data-pin-action="down">
         <Icon name="arrowDown" size={15} />
-        Move down
+        下移
       </Menu.Item>
       <Menu.Separator className="ib-pm-sep" />
-      <Menu.Item className="ib-pmi" label="Copy link" onClick={() => onAction('copy-link')} data-pin-action="copy-link">
+      <Menu.Item className="ib-pmi" label="复制链接" onClick={() => onAction('copy-link')} data-pin-action="copy-link">
         <Icon name="link" size={15} />
-        Copy link
+        复制链接
       </Menu.Item>
     </>
   );

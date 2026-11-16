@@ -53,7 +53,7 @@ export function UndeliveredText({ wait, name }: { wait: Wait; name: string }) {
   const words = undeliveredWords(wait, now);
   return (
     <span className="ib-dl-text">
-      <strong>{words.label}</strong> · {name} is working · <span className="ib-m-mute">{words.next}</span>
+      <strong>{words.label}</strong> · {name} 正在工作 · <span className="ib-m-mute">{words.next}</span>
     </span>
   );
 }
@@ -94,10 +94,10 @@ export function UndeliveredBand({
       <span className="ib-dl-acts">
         {onTakeBack && <TakeBackButton busy={takingBack} onPress={onTakeBack} />}
         {onSendNow && (
-          <Tip content="Put it into the running turn now: the agent reads it at its next step, without waiting for the turn to end.">
+          <Tip content="立即放进正在进行的回合：agent 会在下一步读到它，无需等回合结束。">
             <button type="button" className="ib-sendnow ib-sendnow-go" data-send-now="" disabled={sending} onClick={onSendNow}>
               <Icon name="send" size={14} />
-              Send now
+              立即发送
             </button>
           </Tip>
         )}
@@ -109,7 +109,7 @@ export function UndeliveredBand({
 
 export function TakeBackButton({ busy, onPress }: { busy?: boolean; onPress: () => void }) {
   return (
-    <Tip content="Take it out of the queue and back into your reply box. Nothing goes out until you send it again.">
+    <Tip content="从队列中取回并放回回复框。在你再次发送之前不会发出任何内容。">
       <button type="button" className="ib-sendnow ib-takeback" data-take-back="" disabled={busy} onClick={onPress}>
         {TAKE_BACK_LABEL}
       </button>
