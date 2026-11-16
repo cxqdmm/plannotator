@@ -80,7 +80,8 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-          # The merge commit plus both parents, as in the guides-show job of test.yml.
+          # The merge commit plus both parents, so the path gate below can diff
+          # the PR against its base without fetching the whole history.
           fetch-depth: 2
 
       - name: Does this change touch the Qwen Code installer steps?

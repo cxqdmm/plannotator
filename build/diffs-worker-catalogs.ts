@@ -25,8 +25,8 @@
  * The third catalog, `@pierre/highlights/themes/loader`, is aliased away for
  * both builds (build/pierre-highlights-stub.ts).
  *
- * A plain object, not typed against `vite`: apps/guides-show's tsconfig checks
- * its Vite config, and `vite` does not resolve from this root folder.
+ * A plain object, not typed against `vite`: the Vite configs that import it
+ * are checked by tsconfigs from which `vite` does not resolve.
  */
 const CATALOGS = new Set(['shiki/langs', '@pierre/theming/themes']);
 const PREFIX = '\0diffs-worker-catalog:';

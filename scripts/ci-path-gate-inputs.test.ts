@@ -1,20 +1,13 @@
 /**
- * Guard for the three CI path gates: `guides-show` in
- * .github/workflows/test.yml, `qwen-gate` and `diagram-engine-gate` in
+ * Guard for the two CI path gates: `qwen-gate` and `diagram-engine-gate` in
  * .github/workflows/windows.yml.
  *
  * Each diffs a PR against its base and skips its job when nothing in a fixed
  * pattern changed, and each pattern claims to name every input of its job —
  * diagram-engine-gate says so outright, "Only these files can change what that
- * build does", and the guides-show gate adds "skipping is the risky
- * direction". When a pattern is short, a PR that breaks the job skips the only
- * run that would have said so. All three were short:
+ * build does". When a pattern is short, a PR that breaks the job skips the only
+ * run that would have said so. Both were short:
  *
- *   - guides-show builds the portable viewer and checks its size budgets (the
- *     release refuses a build that blows one, but that fires at the tag). The
- *     build also reads packages/shared/call-flow-types.ts, through
- *     packages/review-editor's CallFlow components, and build/ — the vite
- *     config's own worker plugin and aliases.
  *   - qwen-installers-windows runs scripts/install.test.ts, which imports
  *     packages/shared/plannotator-tool.ts beside the t3-hook-command.ts the
  *     gate already named.
@@ -44,12 +37,6 @@ interface Gate {
 }
 
 const GATES: Gate[] = [
-  {
-    workflow: '.github/workflows/test.yml',
-    job: 'guides-show',
-    entries: ['apps/guides-show/viewer/main.tsx', 'apps/guides-show/vite.viewer.config.ts'],
-    known: 'packages/shared/call-flow-types.ts',
-  },
   {
     workflow: '.github/workflows/windows.yml',
     job: 'qwen-gate',

@@ -28,8 +28,7 @@ concurrency:
 
 # The repo variable TEST_RUNNER moves the checks, unit, dom and opencode-v2
 # jobs to that runner label (e.g. `burst-e2e`, the rented machines); unset or
-# empty, they run on GitHub's ubuntu-24.04. guides-show stays there: it runs
-# for a minute or less, shorter than a rented machine takes to start. A
+# empty, they run on GitHub's ubuntu-24.04. A
 # self-hosted runner must never run a fork's code, so only a push, a manual run
 # (both need write access) or a PR whose head branch is in this repository goes
 # to it; a PR from a fork stays on ubuntu-24.04 whatever the variable says. So
@@ -381,7 +380,7 @@ jobs:
   # The mod's engine-harness tests (apps/hook/tests/): bun cannot load them,
   # they import 'claude-code/testing'. `claude plugin test` runs every hook
   # against mocks in the test file, so it needs no login, API key or model call.
-  # It runs for a minute or less, so it stays on ubuntu-24.04 like guides-show.
+  # It runs for a minute or less, so it stays on ubuntu-24.04.
   claude-code-mod:
     name: Claude Code mod (engine harness)
     runs-on: ubuntu-24.04
@@ -407,68 +406,3 @@ jobs:
           export PLANNOTATOR_DATA_DIR="$(mktemp -d)"
           sh scripts/test-claude-code-mod.sh
 
-  guides-show:
-    name: guides.show viewer (budgets + pinned manifest)
-    runs-on: ubuntu-24.04
-
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-          # The merge commit plus both parents, so the path gate below can diff
-          # the PR against its base without fetching the whole history.
-          fetch-depth: 2
-
-      # Path gate. The viewer build only reads apps/guides-show and the packages
-      # it bundles, so an unrelated PR skips the install and the build. Anything
-      # this cannot resolve (a push to main, a manual run, a checkout that is not
-      # the PR merge commit) runs the job: skipping is the risky direction.
-      - name: Does this change touch the viewer's inputs?
-        id: gate
-        run: |
-          set -eu
-          run=true
-          # HEAD is the PR merge commit, so HEAD^1 is the base tip and diffing
-          # the two is exactly the PR's changes. Requiring HEAD^2 confirms this
-          # really is the merge commit before trusting that.
-          if [ "$GITHUB_EVENT_NAME" = "pull_request" ] \
-             && base=$(git rev-parse --verify --quiet 'HEAD^1') \
-             && git rev-parse --verify --quiet 'HEAD^2' >/dev/null; then
-            changed=$(git diff --name-only "$base" HEAD)
-            if grep -Eq '^(apps/guides-show/|build/|packages/(guide-viewer|ui|review-editor|core|shared)/)' <<< "$changed"; then
-              run=true
-            else
-              run=false
-            fi
-          fi
-          echo "run=$run" >> "$GITHUB_OUTPUT"
-
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        if: steps.gate.outputs.run == 'true'
-        with:
-          bun-version: 1.4.4
-
-      - name: Install dependencies
-        if: steps.gate.outputs.run == 'true'
-        run: bun install --frozen-lockfile
-
-      # The release workflow (guides-show-deploy.yml) refuses to publish when
-      # the viewer build blows its size budgets, but that gate fires at the
-      # tag, so a budget break has to surface on the PR that causes it.
-      - name: Build viewer
-        if: steps.gate.outputs.run == 'true'
-        run: bun run --cwd apps/guides-show build:viewer
-
-      - name: Size budgets
-        if: steps.gate.outputs.run == 'true'
-        run: bun run --cwd apps/guides-show check:budgets
-
-      # The viewer pin (packages/core/guide-viewer-manifest.ts) is generated,
-      # never committed: every shipping build runs `bun run build:viewer-pin`.
-      # Prove the generator still turns this build into a module core accepts,
-      # since the release, the guides.show deploy and core's prepack rely on it.
-      - name: Generate the viewer pin from this build
-        if: steps.gate.outputs.run == 'true'
-        run: |
-          bun run --cwd apps/guides-show sync:manifest
-          cd packages/core && bunx tsc --noEmit -p tsconfig.json

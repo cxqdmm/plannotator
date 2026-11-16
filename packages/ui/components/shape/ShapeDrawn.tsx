@@ -404,9 +404,9 @@ function placeNumber(el: Element): Element {
   return spot;
 }
 
-const markOf = (path: EventTarget[]) => path.find((t): t is HTMLElement => t instanceof Element && (t as Element).hasAttribute('data-mark')) as HTMLElement | undefined;
-const bubbleOf = (path: EventTarget[]) => path.find((t): t is HTMLElement => t instanceof Element && (t as Element).classList.contains('shp-rb')) as HTMLElement | undefined;
-const codeOf = (path: EventTarget[]) => path.find((t): t is HTMLElement => t instanceof Element && (t as Element).classList.contains('shp-cl')) as HTMLElement | undefined;
+const markOf = (path: (EventTarget | undefined)[]) => path.find((t): t is HTMLElement => t instanceof Element && (t as Element).hasAttribute('data-mark')) as HTMLElement | undefined;
+const bubbleOf = (path: (EventTarget | undefined)[]) => path.find((t): t is HTMLElement => t instanceof Element && (t as Element).classList.contains('shp-rb')) as HTMLElement | undefined;
+const codeOf = (path: (EventTarget | undefined)[]) => path.find((t): t is HTMLElement => t instanceof Element && (t as Element).classList.contains('shp-cl')) as HTMLElement | undefined;
 
 export interface ShapeDrawnProps {
   drawn: ShapeDrawnView;

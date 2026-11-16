@@ -97,7 +97,7 @@ const TOUCH_OWNERS = 'video, audio, input, textarea, select, [contenteditable=""
  * scroll that way). `path` is the touchstart's composed path (through shadow
  * roots); `dir` the way the swipe would step.
  */
-export function sidewaysOwner(path: readonly EventTarget[], dir: SwipeDir, owners?: string): 'owner' | 'sideways' | null {
+export function sidewaysOwner(path: readonly (EventTarget | undefined)[], dir: SwipeDir, owners?: string): 'owner' | 'sideways' | null {
   const own = owners ? `${TOUCH_OWNERS}, ${owners}` : TOUCH_OWNERS;
   for (const node of path) {
     if (typeof Element === 'undefined' || !(node instanceof Element)) continue;
@@ -255,7 +255,7 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
   useEffect(() => {
     const el = area.current;
     if (!el || !enabled) return;
-    let start: { x: number; y: number; path: EventTarget[] } | null = null;
+    let start: { x: number; y: number; path: (EventTarget | undefined)[] } | null = null;
     let mode: 'idle' | 'swipe' | 'dismiss' | 'native' = 'idle';
     let last = { x: 0, y: 0, t: 0 };
     let vx = 0;
