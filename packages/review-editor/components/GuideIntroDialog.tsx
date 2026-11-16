@@ -27,7 +27,7 @@ export const GuideIntroDialog: React.FC<GuideIntroDialogProps> = ({ isOpen, onDi
       <div className="bg-card border border-border rounded-xl w-full max-w-5xl max-h-[calc(100vh-2rem)] shadow-2xl flex flex-col">
         {/* Header */}
         <div className="p-7 border-b border-border">
-          <h3 className="font-semibold text-2xl">Introducing Guided Reviews</h3>
+          <h3 className="font-semibold text-2xl">引导式评审简介</h3>
         </div>
 
         <div className="p-7 flex flex-col gap-5 overflow-y-auto">
@@ -36,7 +36,7 @@ export const GuideIntroDialog: React.FC<GuideIntroDialogProps> = ({ isOpen, onDi
             <div className="aspect-[3476/2160] w-full">
               <img
                 src={HERO_IMAGE_URL}
-                alt="Guided review: chaptered changes with per-file summaries"
+                alt="引导式评审：按章节组织的更改，附每个文件的摘要"
                 className="w-full h-full object-cover rounded-lg border border-border select-none"
                 draggable={false}
                 onError={() => setImageFailed(true)}
@@ -45,18 +45,16 @@ export const GuideIntroDialog: React.FC<GuideIntroDialogProps> = ({ isOpen, onDi
           )}
 
           <p className="text-sm text-muted-foreground leading-relaxed">
-            A guided review organizes your changeset into ordered chapters, with the most
-            important changes first. Every file gets a brief summary of what changed. It is
-            generated on demand by your local agent CLI.
+            引导式评审会把你的改动整理成有序的章节，最重要的更改排在最前。每个文件都会附带一段简短的更改摘要。它由你本地的 agent CLI 按需生成。
           </p>
 
           {/* Launch hint: a compact mock of the app header with the Guide pill. */}
           <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2">
             <span className="bg-muted rounded-md text-xs font-medium px-2 py-1 select-none">
-              <TextShimmer duration={2.5} spread={1.5}>Guide</TextShimmer>
+              <TextShimmer duration={2.5} spread={1.5}>指南</TextShimmer>
             </span>
             <span className="text-xs text-muted-foreground">
-              Find Guide in the top left of the app header.
+              在应用顶栏左上角找到“指南”。
             </span>
           </div>
         </div>
@@ -67,7 +65,7 @@ export const GuideIntroDialog: React.FC<GuideIntroDialogProps> = ({ isOpen, onDi
             onClick={onDismiss}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
           >
-            Got it
+            知道了
           </button>
         </div>
       </div>

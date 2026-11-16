@@ -33,7 +33,7 @@ const CopyPathButton: React.FC<{ filePath: string }> = ({ filePath }) => {
   return (
     <button
       onClick={copy}
-      title="Copy path"
+      title="复制路径"
       className="inline-flex items-center gap-1.5 mt-1.5 px-2 py-1 rounded bg-muted/60 hover:bg-muted border border-border/50 transition-colors group max-w-full"
     >
       <code className="text-[10px] text-muted-foreground font-mono truncate">
@@ -76,13 +76,13 @@ export const HooksTab: React.FC = () => {
   };
 
   if (!status) {
-    return <div className="text-sm text-muted-foreground py-4">Loading hook status…</div>;
+    return <div className="text-sm text-muted-foreground py-4">加载 hook 状态…</div>;
   }
 
   return (
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        These hooks inject context into your planning agent before it writes a plan.
+        这些 hook 会在规划 agent 编写计划前向其注入上下文。
       </p>
 
       {/* PFM Reminder Card */}
@@ -110,11 +110,7 @@ export const HooksTab: React.FC = () => {
               </button>
             </div>
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Inspired by GitHub Flavored Markdown, PFM extends it with interactive tables, SVG diagrams
-              (custom, Mermaid &amp; Graphviz), code-file links that open in your editor, callouts, task lists, and more.
-              This reminder tells the planning agent what the renderer supports so it can use these features
-              naturally. <strong>No extra tokens</strong> — the agent still writes markdown as it normally would,
-              just with enhanced syntax that Plannotator renders richer.
+              PFM 受 GitHub Flavored Markdown 启发，并扩展了交互表格、SVG 图表（自定义、Mermaid 和 Graphviz）、可在编辑器中打开的代码文件链接、标注块、任务列表等。此提醒会告诉规划 agent 渲染器支持哪些功能，以便它自然地使用这些特性。<strong>不增加额外 token</strong>——agent 仍像平常一样编写 markdown，只是使用 Plannotator 渲染得更丰富的增强语法。
             </p>
             <div className="mt-2">
               <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
@@ -123,7 +119,7 @@ export const HooksTab: React.FC = () => {
                   : 'bg-muted text-muted-foreground'
               }`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${pfmEnabled ? 'bg-primary' : 'bg-muted-foreground/50'}`} />
-                {pfmEnabled ? 'Enabled' : 'Disabled'}
+                {pfmEnabled ? '已启用' : '已停用'}
               </span>
             </div>
           </div>
@@ -140,21 +136,21 @@ export const HooksTab: React.FC = () => {
           />
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-foreground">Improvement Hook</h3>
+              <h3 className="text-sm font-semibold text-foreground">改进 hook</h3>
               <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
                 status.improvementHook.present
                   ? 'bg-primary/15 text-primary'
                   : 'bg-muted text-muted-foreground'
               }`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${status.improvementHook.present ? 'bg-primary' : 'bg-muted-foreground/50'}`} />
-                {status.improvementHook.present ? 'Active' : 'Not found'}
+                {status.improvementHook.present ? '活跃' : '未找到'}
               </span>
             </div>
 
             {status.improvementHook.present ? (
               <>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Corrective planning instructions generated from your plan denial history.
+                  根据你的计划拒绝历史生成的纠正性规划指令。
                   {status.improvementHook.fileSize != null && (
                     <span className="text-muted-foreground/70"> · {(status.improvementHook.fileSize / 1024).toFixed(1)}KB</span>
                   )}
@@ -163,15 +159,13 @@ export const HooksTab: React.FC = () => {
                   <CopyPathButton filePath={status.improvementHook.filePath} />
                 )}
                 <p className="text-[11px] text-muted-foreground/70 mt-2 leading-relaxed">
-                  Edit this file directly to customize, or
-                  run <code className="text-[10px] bg-muted px-1 py-0.5 rounded">/plannotator-compound</code> to
-                  regenerate from recent denial history.
+                  直接编辑此文件即可自定义，或运行 <code className="text-[10px] bg-muted px-1 py-0.5 rounded">/plannotator-compound</code> 根据最近的拒绝历史重新生成。
                 </p>
                 <button
                   onClick={() => setHookExpanded(!hookExpanded)}
                   className="text-xs text-primary hover:text-primary/80 mt-1.5 transition-colors"
                 >
-                  {hookExpanded ? '▾ Hide content' : '▸ Show content'}
+                  {hookExpanded ? '▾ 隐藏内容' : '▸ 显示内容'}
                 </button>
                 {hookExpanded && status.improvementHook.content && (
                   <pre className="mt-2 p-3 rounded-md bg-muted/50 border border-border text-[11px] text-foreground/80 overflow-auto max-h-64 whitespace-pre-wrap font-mono leading-relaxed">
@@ -182,23 +176,20 @@ export const HooksTab: React.FC = () => {
             ) : (
               <>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  No improvement hook found. This file injects corrective planning instructions
-                  before your agent writes a plan — the more you review, the better your agent plans.
+                  未找到改进 hook。此文件会在你的 agent 编写计划前注入纠正性规划指令——你评审得越多，agent 的计划就越好。
                 </p>
                 {status.improvementHook.filePath && (
                   <CopyPathButton filePath={status.improvementHook.filePath} />
                 )}
                 <p className="text-[11px] text-muted-foreground/70 mt-2 leading-relaxed">
-                  Run <code className="text-[10px] bg-muted px-1 py-0.5 rounded">/plannotator-compound</code> to
-                  auto-generate from your denial history, or create a plain text file at the path above with
-                  your own instructions.{' '}
+                  运行 <code className="text-[10px] bg-muted px-1 py-0.5 rounded">/plannotator-compound</code> 根据拒绝历史自动生成，或在上方路径创建一个包含你自己指令的纯文本文件。{' '}
                   <a
                     href="https://plannotator.ai/blog/continuously-improve-claude-code-plans/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary hover:text-primary/80 underline underline-offset-2"
                   >
-                    Learn more
+                    了解更多
                   </a>
                 </p>
               </>

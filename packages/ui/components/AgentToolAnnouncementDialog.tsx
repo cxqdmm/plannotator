@@ -93,7 +93,7 @@ export function AgentToolAnnouncementDialog({
       if (!mountedRef.current) return;
       setSave({
         kind: 'failed',
-        message: error instanceof Error && error.message ? error.message : 'Could not save the setting.',
+        message: error instanceof Error && error.message ? error.message : '无法保存设置。',
       });
     }
   }, [onTurnOn]);
@@ -180,20 +180,19 @@ export function AgentToolAnnouncementDialog({
         </div>
         <div className="min-h-0 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
           <h2 id="agent-tool-announcement-title" className="text-balance text-xl font-semibold tracking-tight sm:text-2xl">
-            Do you use Plannotator as a skill?
+            你将 Plannotator 作为技能使用吗？
           </h2>
           <div id="agent-tool-announcement-description">
             <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
-              Like asking {agent} to &ldquo;use Plannotator to show me the HTML plan&rdquo; or &ldquo;open a
-              Plannotator code review&rdquo;.
+              例如让 {agent}&ldquo;用 Plannotator 给我看 HTML 计划&rdquo;，或者&ldquo;打开一个
+              Plannotator 代码评审&rdquo;。
             </p>
             <p className="mt-3 text-pretty text-sm leading-relaxed text-foreground">
-              If so, turn on the Plannotator tool. Those requests then open right away while {agent} keeps
-              working, and your feedback comes back as a message.
+              如果是，请开启 Plannotator 工具。这样，{agent} 继续工作时，这些请求会立即打开，你的反馈也会以消息形式返回。
             </p>
           </div>
           <p className="mt-3 text-pretty text-xs leading-relaxed text-muted-foreground" data-agent-tool-cost>
-            Adds about 800 tokens to each request.{save.kind === 'saved' ? '' : ` ${startsLine(host)}`}
+            每次请求大约增加 800 个 token。{save.kind === 'saved' ? '' : ` ${startsLine(host)}`}
           </p>
 
           <div className="mt-5 flex flex-col gap-3">
@@ -204,7 +203,7 @@ export function AgentToolAnnouncementDialog({
                 className="inline-flex min-w-0 items-center gap-2 text-sm text-foreground"
               >
                 <span className="size-2 shrink-0 rounded-full bg-success" aria-hidden="true" />
-                Turned on. {startsLine(host)}
+                已开启。{startsLine(host)}
               </p>
             ) : save.kind === 'failed' ? (
               <p
@@ -226,7 +225,7 @@ export function AgentToolAnnouncementDialog({
                   onClick={() => onDismissRef.current()}
                   className={`${PRIMARY_BUTTON_CLASS} w-full sm:w-auto`}
                 >
-                  Done
+                  完成
                 </button>
               ) : (
                 <>
@@ -238,7 +237,7 @@ export function AgentToolAnnouncementDialog({
                     data-agent-tool-not-now
                     className={`${SECONDARY_BUTTON_CLASS} w-full justify-center text-balance py-1.5 text-center sm:w-auto`}
                   >
-                    No, I&rsquo;ll just use slash commands
+                    不，我只用斜杠命令
                   </button>
                   <button
                     type="button"
@@ -248,7 +247,7 @@ export function AgentToolAnnouncementDialog({
                     data-agent-tool-turn-on
                     className={`${PRIMARY_BUTTON_CLASS} w-full sm:w-auto`}
                   >
-                    {saving ? 'Turning on…' : save.kind === 'failed' ? 'Try again' : 'Yes, turn it on'}
+                    {saving ? '正在开启…' : save.kind === 'failed' ? '重试' : '是，开启它'}
                   </button>
                 </>
               )}
@@ -281,7 +280,7 @@ const DIALOG_LAYOUT_CSS = `
 
 /** When the change applies on each host; part of the small print and the saved status. */
 function startsLine(host: AgentToolOfferHost): string {
-  return host === 'opencode' ? 'Starts the next time OpenCode starts.' : 'Starts with your next Pi session.';
+  return host === 'opencode' ? 'OpenCode 下次启动时生效。' : '从你的下一次 Pi 会话开始生效。';
 }
 
 /*
@@ -317,7 +316,7 @@ function RoundTripGraphic({ agent }: { agent: string }) {
         <rect x="29" y="33" width="11" height="3" rx="1.5" style={{ fill: 'var(--primary)' }} />
       </g>
       <text x={120} y={140} textAnchor="middle" fontSize="13" fontWeight="600" style={{ fill: 'var(--foreground)' }}>
-        {agent} <tspan fontWeight="400" style={{ fill: 'var(--muted-foreground)' }}>keeps working</tspan>
+        {agent} <tspan fontWeight="400" style={{ fill: 'var(--muted-foreground)' }}>继续工作</tspan>
       </text>
 
       {/* Plannotator: a document with one highlighted, commented line */}
@@ -336,12 +335,12 @@ function RoundTripGraphic({ agent }: { agent: string }) {
       {/* opens right away */}
       <path d="M152 64 Q 236 16 310 56" style={{ fill: 'none', stroke: 'var(--muted-foreground)' }} strokeWidth="1.75" strokeLinecap="round" />
       <path d="M302.5 47.5 L311 56.5 L299 59" style={{ fill: 'none', stroke: 'var(--muted-foreground)' }} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-      <text x={232} y={28} textAnchor="middle" fontSize="12" style={{ fill: 'var(--muted-foreground)' }}>opens right away</text>
+      <text x={232} y={28} textAnchor="middle" fontSize="12" style={{ fill: 'var(--muted-foreground)' }}>立即打开</text>
 
       {/* your feedback comes back */}
       <path d="M310 106 Q 236 150 152 98" pathLength={1} className="pn-ato-return" style={{ fill: 'none', stroke: 'var(--primary)' }} strokeWidth="2.25" strokeLinecap="round" />
       <path d="M153 112 L151.5 98.5 L164.5 100" className="pn-ato-return-head" style={{ fill: 'none', stroke: 'var(--primary)' }} strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
-      <text x={236} y={166} textAnchor="middle" fontSize="12" fontWeight="600" className="pn-ato-return-label" style={{ fill: 'var(--primary)' }}>your feedback, as a message</text>
+      <text x={236} y={166} textAnchor="middle" fontSize="12" fontWeight="600" className="pn-ato-return-label" style={{ fill: 'var(--primary)' }}>你的反馈，以消息形式返回</text>
     </svg>
   );
 }

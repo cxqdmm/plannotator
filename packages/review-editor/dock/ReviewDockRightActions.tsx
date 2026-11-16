@@ -46,7 +46,7 @@ export const ReviewDockRightActions: React.FC<IDockviewHeaderActionsProps> = (pr
   const navigation = state?.navigation && props.activePanel?.id !== REVIEW_CODE_NAV_PANEL_ID ? state.navigation : null;
   const navButton = (direction: 'back' | 'forward') => {
     const enabled = direction === 'back' ? navigation!.canBack : navigation!.canForward;
-    const label = direction === 'back' ? `Go back${keyHint('navigateBack')}` : `Go forward${keyHint('navigateForward')}`;
+    const label = direction === 'back' ? `后退${keyHint('navigateBack')}` : `前进${keyHint('navigateForward')}`;
     return (
       <button
         type="button"
@@ -54,7 +54,7 @@ export const ReviewDockRightActions: React.FC<IDockviewHeaderActionsProps> = (pr
         disabled={!enabled}
         className="p-1.5 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
         title={label}
-        aria-label={direction === 'back' ? 'Go back' : 'Go forward'}
+        aria-label={direction === 'back' ? '后退' : '前进'}
         data-nav-history={direction}
       >
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
@@ -67,7 +67,7 @@ export const ReviewDockRightActions: React.FC<IDockviewHeaderActionsProps> = (pr
   return (
     <div className="flex items-center gap-1 h-full pr-2 pl-1">
       {navigation && (navigation.canBack || navigation.canForward) && (
-        <div className="flex items-center" role="group" aria-label="Jump history">
+        <div className="flex items-center" role="group" aria-label="跳转历史">
           {navButton('back')}
           {navButton('forward')}
         </div>
@@ -77,8 +77,8 @@ export const ReviewDockRightActions: React.FC<IDockviewHeaderActionsProps> = (pr
           type="button"
           onClick={state.onToggleAllFilesCollapsed}
           className="p-1.5 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
-          title={state.allFilesAllCollapsed ? 'Expand all files' : 'Collapse all files'}
-          aria-label={state.allFilesAllCollapsed ? 'Expand all files' : 'Collapse all files'}
+          title={state.allFilesAllCollapsed ? '展开所有文件' : '折叠所有文件'}
+          aria-label={state.allFilesAllCollapsed ? '展开所有文件' : '折叠所有文件'}
         >
           <svg
             className="w-3.5 h-3.5"

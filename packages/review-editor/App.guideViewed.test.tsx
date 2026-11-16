@@ -260,7 +260,7 @@ async function openLiveGuide(): Promise<void> {
 /** Open the guide takeover, then the saved guide from "Previous guides". */
 async function openSavedGuide(): Promise<void> {
   const guideButton = Array.from(document.querySelectorAll<HTMLButtonElement>("button"))
-    .find((b) => b.title === "Open guided review");
+    .find((b) => b.title === "打开引导式评审");
   if (!guideButton) throw new Error("Guide button did not render");
   await act(async () => guideButton.click());
   let entry: HTMLButtonElement | undefined;

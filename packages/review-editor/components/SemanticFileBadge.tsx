@@ -47,7 +47,7 @@ export const SemanticFileBadge: React.FC<{ filePath: string }> = ({ filePath }) 
     return (
       <span
         className="semantic-file-badge semantic-file-badge-disabled"
-        title="No semantic changes in this file"
+        title="此文件没有语义更改"
         aria-disabled="true"
       >
         <span className="semantic-file-badge-label">sem</span>
@@ -79,8 +79,8 @@ export const SemanticFileBadge: React.FC<{ filePath: string }> = ({ filePath }) 
               setOpen(true);
             }}
             onMouseLeave={scheduleClose}
-            title={`${count} semantic change${count === 1 ? '' : 's'} in this file`}
-            aria-label={`Semantic changes for ${filePath}`}
+            title={`此文件中有 ${count} 处语义更改`}
+            aria-label={`${filePath} 的语义更改`}
           />
         }
       >

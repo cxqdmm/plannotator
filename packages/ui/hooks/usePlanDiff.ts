@@ -210,7 +210,7 @@ export function usePlanDiff(
         setDiffBasePlan(data.plan);
         setDiffBaseVersion(version);
       } catch {
-        alert(`Failed to load version ${version}.`);
+        alert(`加载版本 ${version} 失败。`);
       } finally {
         setIsSelectingVersion(false);
         setFetchingVersion(null);

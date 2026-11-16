@@ -160,7 +160,7 @@ describe('CallFlowFileBadge Lens', () => {
     });
     window.removeEventListener('keydown', outsideShortcut);
 
-    const pathsInput = popup?.querySelector<HTMLInputElement>('input[placeholder="Find calls or files"]');
+    const pathsInput = popup?.querySelector<HTMLInputElement>('input[placeholder="查找调用或文件"]');
     expect(pathsInput).not.toBeNull();
     expect(document.activeElement).toBe(pathsInput);
     expect(shortcutEscapedLens).toBe(false);
@@ -186,7 +186,7 @@ describe('CallFlowFileBadge Lens', () => {
     expect(pathsInput?.selectionEnd).toBe(4);
 
     const rawTab = [...(popup?.querySelectorAll<HTMLButtonElement>('button') ?? [])]
-      .find((button) => button.textContent === 'Raw');
+      .find((button) => button.textContent === '原始');
     await act(async () => rawTab?.click());
     expect(popup?.querySelector('.call-flow-raw-compact')).not.toBeNull();
     await act(async () => {
@@ -197,7 +197,7 @@ describe('CallFlowFileBadge Lens', () => {
         ctrlKey: true,
       }));
     });
-    const rawInput = popup?.querySelector<HTMLInputElement>('input[placeholder="Find in raw output"]');
+    const rawInput = popup?.querySelector<HTMLInputElement>('input[placeholder="在原始输出中查找"]');
     expect(rawInput).not.toBeNull();
     expect(document.activeElement).toBe(rawInput);
   });
@@ -218,21 +218,21 @@ describe('CallFlowFileBadge Lens', () => {
     await act(async () => trigger?.click());
     const popup = document.querySelector<HTMLElement>('.call-flow-popover');
     expect(popup).not.toBeNull();
-    expect(popup?.textContent).toContain('2 paths · 2 changed');
+    expect(popup?.textContent).toContain('2 条路径 · 2 处变更');
     expect(popup?.querySelectorAll('.call-flow-tree')).toHaveLength(2);
     expect(popup?.textContent).toContain('nearbyContext()');
     expect(popup?.textContent).toContain('afterContext()');
     expect(popup?.textContent).not.toContain('deepContext()');
 
     const rawTab = [...(popup?.querySelectorAll<HTMLButtonElement>('button') ?? [])]
-      .find((button) => button.textContent === 'Raw');
+      .find((button) => button.textContent === '原始');
     await act(async () => rawTab?.click());
     expect(popup?.querySelectorAll('.call-flow-raw-section')).toHaveLength(2);
     expect(popup?.textContent).toContain('checkout()');
-    expect(popup?.querySelector('[aria-label^="Raw line 3"]')).not.toBeNull();
-    expect(popup?.querySelector('[aria-label^="Raw line 8"]')).not.toBeNull();
+    expect(popup?.querySelector('[aria-label^="原始行 3"]')).not.toBeNull();
+    expect(popup?.querySelector('[aria-label^="原始行 8"]')).not.toBeNull();
 
-    const rawLine = popup?.querySelector<HTMLButtonElement>('[aria-label^="Raw line 3"]');
+    const rawLine = popup?.querySelector<HTMLButtonElement>('[aria-label^="原始行 3"]');
     await act(async () => rawLine?.click());
     expect(document.querySelector('[data-comment-popover="true"]')).not.toBeNull();
   });

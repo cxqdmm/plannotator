@@ -9,158 +9,158 @@ import { createShortcutScopeHook } from '../runtime';
  */
 export const vimSelectionShortcuts = defineShortcutScope({
   id: 'vim-selection',
-  title: 'Vim selection',
+  title: 'Vim 选择',
   shortcuts: {
     moveDown: {
-      description: 'Next block or semantic sibling',
+      description: '下一个块或语义同级',
       bindings: ['J'],
-      section: 'Vim Document Navigation',
+      section: 'Vim 文档导航',
       displayOrder: 10,
     },
     moveUp: {
-      description: 'Previous block or semantic sibling',
+      description: '上一个块或语义同级',
       bindings: ['K'],
-      section: 'Vim Document Navigation',
+      section: 'Vim 文档导航',
       displayOrder: 20,
     },
     documentStart: {
-      description: 'Start of document',
+      description: '文档开头',
       bindings: ['G G'],
-      section: 'Vim Document Navigation',
+      section: 'Vim 文档导航',
       displayOrder: 30,
       preventDefault: true,
     },
     documentEnd: {
-      description: 'End of document',
+      description: '文档结尾',
       bindings: ['Shift+G'],
-      section: 'Vim Document Navigation',
+      section: 'Vim 文档导航',
       displayOrder: 40,
     },
     moveOut: {
-      description: 'Move to containing target',
+      description: '移到所在目标',
       bindings: ['H'],
-      section: 'Vim Document Navigation',
+      section: 'Vim 文档导航',
       displayOrder: 50,
     },
     refine: {
-      description: 'Refine into child or text',
+      description: '细化到子级或文本',
       bindings: ['L'],
-      section: 'Vim Document Navigation',
+      section: 'Vim 文档导航',
       displayOrder: 60,
     },
     visual: {
-      description: 'Toggle precise Visual selection',
+      description: '切换精确可视选择',
       bindings: ['V'],
-      section: 'Vim Document Navigation',
+      section: 'Vim 文档导航',
       displayOrder: 70,
     },
     visualBlock: {
-      description: 'Toggle whole-block Visual selection',
+      description: '切换整块可视选择',
       bindings: ['Shift+V'],
-      section: 'Vim Document Navigation',
-      hint: 'Use j / k to extend by whole blocks.',
+      section: 'Vim 文档导航',
+      hint: '使用 j / k 按整块扩展。',
       displayOrder: 80,
     },
     wordForward: {
-      description: 'Move to next word',
+      description: '移到下一个词',
       bindings: ['W'],
-      section: 'Vim Text Navigation',
+      section: 'Vim 文本导航',
       displayOrder: 90,
     },
     wordBackward: {
-      description: 'Move to previous word',
+      description: '移到上一个词',
       bindings: ['B'],
-      section: 'Vim Text Navigation',
+      section: 'Vim 文本导航',
       displayOrder: 100,
     },
     wordEnd: {
-      description: 'Move to end of word',
+      description: '移到词尾',
       bindings: ['E'],
-      section: 'Vim Text Navigation',
+      section: 'Vim 文本导航',
       displayOrder: 110,
     },
     lineStart: {
-      description: 'Move to start of line',
+      description: '移到行首',
       bindings: ['0'],
-      section: 'Vim Text Navigation',
+      section: 'Vim 文本导航',
       displayOrder: 120,
     },
     lineEnd: {
-      description: 'Move to end of line',
+      description: '移到行尾',
       bindings: ['$'],
-      section: 'Vim Text Navigation',
+      section: 'Vim 文本导航',
       displayOrder: 130,
     },
     previousTextBlock: {
-      description: 'Move to previous text block',
+      description: '移到上一个文本块',
       bindings: ['{'],
-      section: 'Vim Text Navigation',
+      section: 'Vim 文本导航',
       displayOrder: 140,
     },
     nextTextBlock: {
-      description: 'Move to next text block',
+      description: '移到下一个文本块',
       bindings: ['}'],
-      section: 'Vim Text Navigation',
+      section: 'Vim 文本导航',
       displayOrder: 150,
     },
     swapSelectionEnds: {
-      description: 'Swap selection ends',
+      description: '交换选区两端',
       bindings: ['O'],
-      section: 'Vim Text Navigation',
+      section: 'Vim 文本导航',
       displayOrder: 160,
     },
     activeAnnotation: {
-      description: 'Use active annotation mode',
+      description: '使用当前标注模式',
       bindings: ['Enter'],
-      section: 'Vim Annotation Actions',
+      section: 'Vim 标注操作',
       displayOrder: 170,
     },
     annotationMenu: {
-      description: 'Open annotation actions',
+      description: '打开标注操作',
       bindings: ['Space'],
-      section: 'Vim Annotation Actions',
+      section: 'Vim 标注操作',
       displayOrder: 180,
     },
     comment: {
-      description: 'Comment selection or target',
+      description: '评论所选内容或目标',
       bindings: ['C'],
-      section: 'Vim Annotation Actions',
+      section: 'Vim 标注操作',
       displayOrder: 190,
     },
     redline: {
-      description: 'Redline selection or target',
+      description: '将所选内容或目标标记为删除',
       bindings: ['D'],
-      section: 'Vim Annotation Actions',
+      section: 'Vim 标注操作',
       displayOrder: 200,
     },
     markup: {
-      description: 'Markup selection or target',
+      description: '标记所选内容或目标',
       bindings: ['M'],
-      section: 'Vim Annotation Actions',
+      section: 'Vim 标注操作',
       displayOrder: 210,
     },
     label: {
-      description: 'Label selection or target',
+      description: '为所选内容或目标添加标签',
       bindings: ['T'],
-      section: 'Vim Annotation Actions',
+      section: 'Vim 标注操作',
       displayOrder: 220,
     },
     copy: {
-      description: 'Copy selection or target',
+      description: '复制所选内容或目标',
       bindings: ['Y'],
-      section: 'Vim Annotation Actions',
+      section: 'Vim 标注操作',
       displayOrder: 230,
     },
     cancel: {
-      description: 'Cancel current Vim state',
+      description: '取消当前 Vim 状态',
       bindings: ['Escape'],
-      section: 'Vim Annotation Actions',
+      section: 'Vim 标注操作',
       displayOrder: 240,
     },
     help: {
-      description: 'Toggle key map',
+      description: '切换键位图',
       bindings: ['?'],
-      section: 'Vim Annotation Actions',
+      section: 'Vim 标注操作',
       displayOrder: 250,
     },
   },
@@ -191,31 +191,31 @@ export function describeVimSelectionAction(
 ): string {
   switch (actionId) {
     case 'moveDown':
-      if (context === 'inline') return 'Next semantic sibling';
-      if (context === 'text' || context === 'visual') return 'Next line';
-      if (context === 'visual-block') return 'Extend to next block';
-      return 'Next block';
+      if (context === 'inline') return '下一个语义同级';
+      if (context === 'text' || context === 'visual') return '下一行';
+      if (context === 'visual-block') return '扩展到下一个块';
+      return '下一个块';
     case 'moveUp':
-      if (context === 'inline') return 'Previous semantic sibling';
-      if (context === 'text' || context === 'visual') return 'Previous line';
-      if (context === 'visual-block') return 'Extend to previous block';
-      return 'Previous block';
+      if (context === 'inline') return '上一个语义同级';
+      if (context === 'text' || context === 'visual') return '上一行';
+      if (context === 'visual-block') return '扩展到上一个块';
+      return '上一个块';
     case 'moveOut':
       return context === 'text' || context === 'visual'
-        ? 'Move left one character'
-        : 'Move to containing target';
+        ? '向左移动一个字符'
+        : '移到所在目标';
     case 'refine':
       return context === 'text' || context === 'visual'
-        ? 'Move right one character'
-        : 'Refine into child or text';
+        ? '向右移动一个字符'
+        : '细化到子级或文本';
     case 'visual':
       return context === 'visual'
-        ? 'Return to Normal mode'
-        : 'Start Visual selection';
+        ? '返回普通模式'
+        : '开始可视选择';
     case 'visualBlock':
       return context === 'visual-block'
-        ? 'Return to block navigation'
-        : 'Select the whole block';
+        ? '返回块导航'
+        : '选中整个块';
     case 'documentStart':
     case 'documentEnd':
     case 'wordForward':

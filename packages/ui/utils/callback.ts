@@ -76,8 +76,8 @@ export async function executeCallback(
   annotatedUrl: string,
 ): Promise<ToastPayload> {
   const successMsg = action === CallbackAction.Approve
-    ? "Plan approved! The bot will proceed to implementation."
-    : "Feedback sent! The bot will re-plan with your annotations.";
+    ? "计划已通过！机器人将继续实施。"
+    : "反馈已发送！机器人将根据你的标注重新制定计划。";
   try {
     const res = await fetch(config.callbackUrl, {
       method: "POST",
@@ -88,12 +88,12 @@ export async function executeCallback(
       return {
         type: "error",
         message: res.status === 401
-          ? "Plan link expired — request a new one from the bot."
-          : "Callback failed.",
+          ? "计划链接已过期，请向机器人索取新链接。"
+          : "回调失败。",
       };
     }
     return { type: "success", message: successMsg };
   } catch {
-    return { type: "error", message: "Callback failed." };
+    return { type: "error", message: "回调失败。" };
   }
 }

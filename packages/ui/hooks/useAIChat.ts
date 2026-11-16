@@ -166,7 +166,7 @@ export function buildDefaultPrompt(params: AskAIParams): string {
   return pre + base;
 }
 
-function createThread(title = 'Chat'): AIChatThread {
+function createThread(title = '对话'): AIChatThread {
   return {
     id: generateId('ai-thread'),
     title,
@@ -269,7 +269,7 @@ export function useAIChat({
   model,
   reasoningEffort,
   buildPrompt = buildDefaultPrompt,
-  threadTitle = 'Chat',
+  threadTitle = '对话',
 }: UseAIChatOptions) {
   const [thread, setThread] = useState<AIChatThread>(() => createThread(threadTitle));
   const [isCreatingSession, setIsCreatingSession] = useState(false);
@@ -322,7 +322,7 @@ export function useAIChat({
       }, signal);
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: 'Failed to create AI session' }));
+        const data = await res.json().catch(() => ({ error: '创建 AI 会话失败' }));
         throw new Error(data.error || `HTTP ${res.status}`);
       }
 
@@ -444,7 +444,7 @@ export function useAIChat({
       }, controller.signal);
 
       if (!res.ok || !res.body) {
-        const data = await res.json().catch(() => ({ error: 'Query failed' }));
+        const data = await res.json().catch(() => ({ error: '查询失败' }));
         throw new Error(data.error || `HTTP ${res.status}`);
       }
 

@@ -62,7 +62,7 @@ export const isAnswersOnlyFeedback = (input: {
 
 /** Frozen label (owner-approved mock): the plan-review primary when only
  *  answers are ready to send. */
-export const SEND_ANSWERS_LABEL = 'Send answers';
+export const SEND_ANSWERS_LABEL = '发送回答';
 
 /**
  * The feedback fields of a plan `/api/deny` body. An answers-only deny adds
@@ -89,11 +89,15 @@ export const describeFeedbackLoss = (annotationCount: number, hasDirectEdits: bo
   const answers = Math.min(Math.max(answerCount, 0), annotationCount);
   const others = annotationCount - answers;
   const parts = [
-    answers > 0 ? `${answers} answer${answers !== 1 ? 's' : ''}` : '',
-    others > 0 ? `${others} annotation${others !== 1 ? 's' : ''}` : '',
-    hasDirectEdits ? 'direct edits' : '',
+    answers > 0 ? `${answers} 个回答` : '',
+    others > 0 ? `${others} 条标注` : '',
+    hasDirectEdits ? '直接编辑' : '',
   ].filter(Boolean);
-  if (parts.length === 0) return 'feedback';
-  if (parts.length === 1) return parts[0];
-  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+  if (parts.length === 0) return '反馈';
+  // 和 plus a space only before a numeric part, matching decisionSpec's
+  // planFeedbackPhrase so the menu and the close warnings agree.
+  return parts.reduce(
+    (out, part, i) => (i === 0 ? part : `${out}和${/^\d/.test(part) ? ' ' : ''}${part}`),
+    '',
+  );
 };

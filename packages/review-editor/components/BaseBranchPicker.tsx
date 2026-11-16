@@ -150,7 +150,7 @@ export const BaseBranchPicker: React.FC<BaseBranchPickerProps> = ({
   const commitsContent = (
     <>
       {filtered.commits.length === 0 ? (
-        <div className="px-3 py-2 text-xs text-muted-foreground">No matching commits.</div>
+        <div className="px-3 py-2 text-xs text-muted-foreground">没有匹配的 commit。</div>
       ) : (
         <CommitList commits={filtered.commits} selectedBase={selectedBase} onSelect={handleSelect} />
       )}
@@ -224,7 +224,7 @@ export const BaseBranchPicker: React.FC<BaseBranchPickerProps> = ({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={hasCommits ? `${copy.searchPlaceholder} or SHA / HEAD~N` : copy.searchPlaceholder}
+              placeholder={hasCommits ? `${copy.searchPlaceholder} 或 SHA / HEAD~N` : copy.searchPlaceholder}
               onKeyDown={(e) => {
                 // Enter on a SHA-like query commits the manual entry —
                 // matches the "Use … as base" affordance below.
@@ -244,7 +244,7 @@ export const BaseBranchPicker: React.FC<BaseBranchPickerProps> = ({
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-muted focus:outline-none focus:bg-muted text-foreground"
               >
                 <span className="flex-1 truncate">
-                  Use <span className="font-mono">{trimmedQuery}</span> as base
+                  使用 <span className="font-mono">{trimmedQuery}</span> 作为基线
                 </span>
                 <span className="text-[10px] uppercase tracking-wide text-muted-foreground px-1 py-0.5 rounded bg-muted">
                   commit
@@ -255,10 +255,10 @@ export const BaseBranchPicker: React.FC<BaseBranchPickerProps> = ({
           {hasCommits && (
             <div className="flex border-b border-border/50 bg-muted/30">
               <TabButton active={tab === 'branches'} onClick={() => setTab('branches')}>
-                Branches
+                分支
               </TabButton>
               <TabButton active={tab === 'commits'} onClick={() => setTab('commits')}>
-                Commits
+                commit
               </TabButton>
             </div>
           )}
@@ -272,7 +272,7 @@ export const BaseBranchPicker: React.FC<BaseBranchPickerProps> = ({
                 onClick={handleReset}
                 className="w-full text-left px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded"
               >
-                Reset to detected ({detectedBase})
+                重置为检测到的基线（{detectedBase}）
               </button>
             </div>
           )}
@@ -344,7 +344,7 @@ const BranchGroup: React.FC<BranchGroupProps> = ({
           <span className="truncate flex-1">{branch}</span>
           {isDetected && (
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground px-1 py-0.5 rounded bg-muted">
-              detected
+              已检测
             </span>
           )}
         </button>

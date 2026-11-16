@@ -53,15 +53,15 @@ describe('planDenyFeedbackFields', () => {
 
 describe('describeFeedbackLoss', () => {
   test('without answers the wording is unchanged', () => {
-    expect(describeFeedbackLoss(0, false)).toBe('feedback');
-    expect(describeFeedbackLoss(1, false)).toBe('1 annotation');
-    expect(describeFeedbackLoss(3, true)).toBe('3 annotations and direct edits');
-    expect(describeFeedbackLoss(0, true)).toBe('direct edits');
+    expect(describeFeedbackLoss(0, false)).toBe('反馈');
+    expect(describeFeedbackLoss(1, false)).toBe('1 条标注');
+    expect(describeFeedbackLoss(3, true)).toBe('3 条标注和直接编辑');
+    expect(describeFeedbackLoss(0, true)).toBe('直接编辑');
   });
   test('answers are named on their own', () => {
-    expect(describeFeedbackLoss(2, false, 2)).toBe('2 answers');
-    expect(describeFeedbackLoss(3, false, 1)).toBe('1 answer and 2 annotations');
-    expect(describeFeedbackLoss(3, true, 1)).toBe('1 answer, 2 annotations and direct edits');
+    expect(describeFeedbackLoss(2, false, 2)).toBe('2 个回答');
+    expect(describeFeedbackLoss(3, false, 1)).toBe('1 个回答和 2 条标注');
+    expect(describeFeedbackLoss(3, true, 1)).toBe('1 个回答和 2 条标注和直接编辑');
   });
 });
 

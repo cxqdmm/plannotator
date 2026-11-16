@@ -505,10 +505,10 @@ export function ReviewSubmissionDialog({
   const eventChoiceLocked = isSubmitting ||
     submission.targets.some(t => t.status === 'success' || t.status === 'partial' || t.status === 'blocked');
   const eventOptions: Array<{ value: 'comment' | 'request_changes'; label: string; disabled: boolean }> = [
-    { value: 'comment', label: 'Comment', disabled: eventChoiceLocked },
+    { value: 'comment', label: '评论', disabled: eventChoiceLocked },
     {
       value: 'request_changes',
-      label: 'Request changes',
+      label: '要求修改',
       disabled: eventChoiceLocked || requestChangesUnavailableReason !== undefined,
     },
   ];
@@ -529,12 +529,12 @@ export function ReviewSubmissionDialog({
       >
         <div className="min-h-0 overflow-y-auto p-4 sm:p-6">
         <DialogTitle className="font-semibold mb-1">
-          {isApprove ? `Approve ${mrLabel}` : isRequestChanges ? 'Request Changes' : 'Post Review Comments'}
+          {isApprove ? `通过 ${mrLabel}` : isRequestChanges ? '要求修改' : '提交评审评论'}
         </DialogTitle>
         <DialogDescription className="text-sm text-muted-foreground mb-3">
           {isApprove
-            ? 'Add a general comment to the approval (optional).'
-            : 'Review what will be posted.'}
+            ? '为通过操作添加一条通用评论（可选）。'
+            : '确认将要发布的内容。'}
         </DialogDescription>
 
         {/* The native radios stay visible, so keyboard focus keeps the
@@ -542,7 +542,7 @@ export function ReviewSubmissionDialog({
             guides.show viewer scans this file and pins its CSS. */}
         {showEventChoice && (
           <fieldset data-review-event-choice className="mb-3">
-            <legend className="sr-only">Review type</legend>
+            <legend className="sr-only">评审类型</legend>
             <div className="grid grid-cols-2 gap-1 rounded-md bg-muted p-1">
               {eventOptions.map(option => {
                 const checked = action === option.value;
@@ -583,7 +583,7 @@ export function ReviewSubmissionDialog({
           data-pn-mobile-editable
           value={generalComment}
           onChange={e => onGeneralCommentChange(e.target.value)}
-          placeholder="Leave a comment..."
+          placeholder="留下评论…"
           rows={3}
           disabled={bodyLocked}
           aria-describedby={bodyLocked ? 'review-general-comment-lock' : undefined}
@@ -592,15 +592,15 @@ export function ReviewSubmissionDialog({
         {bodyLocked && (
           <div id="review-general-comment-lock" className="mt-1 mb-3 text-xs text-warning">
             {hasBlocked
-              ? `General comment locked because ${platformLabel} may already have received it. Automatic retry is blocked until you inspect the ${mrLabel}.`
-              : 'General comment locked because it may already be posted. Safe retry never resends it.'}
+              ? `通用评论已锁定，因为 ${platformLabel} 可能已经收到它。在你检查 ${mrLabel} 之前，自动重试会被阻止。`
+              : '通用评论已锁定，因为它可能已经发布。安全重试不会重新发送它。'}
           </div>
         )}
         {!bodyLocked && <div className="mb-3" />}
 
         {postingTo && !hasTargets && (
           <p className="mb-3 text-sm text-muted-foreground" data-review-posting-to="">
-            Posting to <span className="font-medium text-foreground">{postingTo}</span>
+            发布到 <span className="font-medium text-foreground">{postingTo}</span>
           </p>
         )}
 
@@ -608,7 +608,7 @@ export function ReviewSubmissionDialog({
         {submission.targets.length > 0 && (
           <div className="mb-3">
             <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-              Posting to
+              发布到
             </div>
             <div className="space-y-1.5">
               {submission.targets.map(target => (
@@ -644,13 +644,13 @@ export function ReviewSubmissionDialog({
                       {target.prRepo}#{target.prNumber}{target.prTitle ? ` — ${target.prTitle}` : ''}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {target.annotationCount} comment{target.annotationCount !== 1 ? 's' : ''} across {target.fileCount} file{target.fileCount !== 1 ? 's' : ''}
+                      {target.annotationCount} 条评论，涉及 {target.fileCount} 个文件
                     </div>
                     {target.outsideDiffCount ? (
                       <div className="text-xs text-muted-foreground mt-0.5" data-outside-diff-note>
                         {target.outsideDiffCount === 1
-                          ? '1 comment is on lines outside the diff, so it goes in the review\'s main comment with the code quoted and a link.'
-                          : `${target.outsideDiffCount} comments are on lines outside the diff, so they go in the review's main comment with the code quoted and a link.`}
+                          ? '1 条评论位于差异之外的行上，因此会放入评审主评论，并附上代码引用和链接。'
+                          : `${target.outsideDiffCount} 条评论位于差异之外的行上，因此会放入评审主评论，并附上代码引用和链接。`}
                       </div>
                     ) : null}
                     {(target.status === 'failed' || target.status === 'partial') && target.error && (
@@ -659,15 +659,15 @@ export function ReviewSubmissionDialog({
                     {target.status === 'partial' && target.partial && (
                       <div className="mt-2 rounded-md border border-warning/30 bg-warning/10 p-2 text-xs">
                         <div className="font-medium text-warning">
-                          Review partially posted
+                          评审已部分发布
                         </div>
                         <div className="mt-1 text-muted-foreground">
-                          This attempt posted {target.partial.postedFileCommentCount} inline comment{target.partial.postedFileCommentCount === 1 ? '' : 's'}{target.partial.reviewBodyPosted ? ' and the general comment' : ''}.
+                          本次尝试发布了 {target.partial.postedFileCommentCount} 条行内评论{target.partial.reviewBodyPosted ? '以及通用评论' : ''}。
                         </div>
                         {target.partial.failedFileComments.length > 0 && (
                           <>
                             <div className="mt-1 text-muted-foreground">
-                              {target.partial.failedFileComments.length} inline comment{target.partial.failedFileComments.length === 1 ? '' : 's'} failed:
+                              {target.partial.failedFileComments.length} 条行内评论失败：
                             </div>
                             <ul className="mt-1 space-y-1">
                               {target.partial.failedFileComments.map(({ comment, error }) => (
@@ -681,7 +681,7 @@ export function ReviewSubmissionDialog({
                             <CopyButton
                               text={buildFailedCommentsMarkdown(target.partial)}
                               variant="inline"
-                              label="Copy failed comments"
+                              label="复制失败的评论"
                               className="mt-1"
                             />
                           </>
@@ -693,7 +693,7 @@ export function ReviewSubmissionDialog({
                         )}
                         {target.partial.approval === 'failed' && (
                           <div className="mt-1 text-destructive">
-                            {target.partial.approvalError ?? `Failed to approve ${mrLabel}.`}
+                            {target.partial.approvalError ?? `无法通过 ${mrLabel}。`}
                           </div>
                         )}
                         <div className="mt-1 text-muted-foreground">
@@ -701,39 +701,39 @@ export function ReviewSubmissionDialog({
                         </div>
                         <div className="mt-1 text-muted-foreground">
                           {recoveryPersistsRefresh
-                            ? 'You can close and reopen this dialog or refresh this tab; Plannotator keeps this narrowed retry in tab-scoped recovery storage.'
-                            : 'You can close and reopen this dialog on this page. Keep the page open because tab-scoped refresh recovery is unavailable.'}
+                            ? '你可以关闭并重新打开此对话框，或刷新此标签页；Plannotator 会把这个缩小后的重试保存在标签页级恢复存储中。'
+                            : '你可以在此页面上关闭并重新打开此对话框。请保持页面打开，因为标签页级刷新恢复不可用。'}
                         </div>
                         {target.partial.recoveryFile && (
                           <div className="mt-1 text-muted-foreground">
-                            Recovery copy: <code className="break-all text-foreground">{target.partial.recoveryFile}</code>
+                            恢复副本：<code className="break-all text-foreground">{target.partial.recoveryFile}</code>
                           </div>
                         )}
                       </div>
                     )}
                     {target.status === 'blocked' && (
                       <div className="mt-2 rounded-md border border-warning/30 bg-warning/10 p-2 text-xs">
-                        <div className="font-medium text-warning">Automatic retry blocked</div>
+                        <div className="font-medium text-warning">自动重试已阻止</div>
                         <div className="mt-1 break-words text-muted-foreground">
-                          {target.error ?? `The ${mrLabel} may already contain part of this review. Inspect it before starting another submission.`}
+                          {target.error ?? `${mrLabel} 可能已包含本次评审的一部分。请先检查，再发起另一次提交。`}
                         </div>
                         {target.partial && target.partial.failedFileComments.length > 0 && (
                           <CopyButton
                             text={buildFailedCommentsMarkdown(target.partial)}
                             variant="inline"
-                            label="Copy last known unposted comments"
+                            label="复制最近一次已知的未发布评论"
                             className="mt-1"
                           />
                         )}
                         {target.partial?.recoveryFile && (
                           <div className="mt-1 text-muted-foreground">
-                            Last recovery copy: <code className="break-all text-foreground">{target.partial.recoveryFile}</code>
+                            上次恢复副本：<code className="break-all text-foreground">{target.partial.recoveryFile}</code>
                           </div>
                         )}
                         <div className="mt-1 text-muted-foreground">
                           {recoveryPersistsRefresh
-                            ? 'Closing and reopening this dialog, or refreshing this tab, keeps the block in tab-scoped recovery storage.'
-                            : 'Closing the dialog keeps this block on the current page. Keep the page open because tab-scoped refresh recovery is unavailable.'}
+                            ? '关闭并重新打开此对话框，或刷新此标签页，会把该阻止状态保留在标签页级恢复存储中。'
+                            : '关闭对话框会把该阻止状态保留在当前页面。请保持页面打开，因为标签页级刷新恢复不可用。'}
                         </div>
                       </div>
                     )}
@@ -748,13 +748,13 @@ export function ReviewSubmissionDialog({
         {totalOrphans > 0 && (
           <div className="mb-3 p-3 rounded-md bg-warning/10 border border-warning/20">
             <div className="text-xs font-medium text-warning uppercase tracking-wide mb-1">
-              Cannot post inline ({totalOrphans})
+              无法行内发布（{totalOrphans}）
             </div>
             {submission.orphans.map(group => (
               <div key={group.reason} className="text-xs text-muted-foreground mb-2">
                 {group.reason === 'full-stack'
-                  ? `${group.annotations.length} finding${group.annotations.length !== 1 ? 's' : ''} from full-stack view — line numbers don't map to a single ${mrLabel}'s diff.`
-                  : `${group.annotations.length} annotation${group.annotations.length !== 1 ? 's' : ''} not attributed to a specific ${mrLabel}.`}
+                  ? `来自全栈视图的 ${group.annotations.length} 条发现——行号无法映射到单个 ${mrLabel} 的差异。`
+                  : `${group.annotations.length} 条标注未归属到特定的 ${mrLabel}。`}
               </div>
             ))}
             <div className="flex gap-2">
@@ -764,8 +764,8 @@ export function ReviewSubmissionDialog({
                   text={group.markdown}
                   variant="inline"
                   label={submission.orphans.length > 1
-                    ? `Copy ${group.reason === 'full-stack' ? 'full-stack' : 'unmapped'}`
-                    : 'Copy as Markdown'}
+                    ? `复制${group.reason === 'full-stack' ? '全栈' : '未映射'}`
+                    : '复制为 Markdown'}
                 />
               ))}
             </div>
@@ -780,7 +780,7 @@ export function ReviewSubmissionDialog({
             onChange={e => onPlatformOpenPRChange(e.target.checked)}
             className="rounded border-border"
           />
-          View on {platformLabel} after submitting
+          提交后在 {platformLabel} 上查看
         </label>
 
         </div>
@@ -793,7 +793,7 @@ export function ReviewSubmissionDialog({
             disabled={isSubmitting}
             className="px-4 py-2 rounded-md text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 disabled:opacity-50"
           >
-            {hasPartial || hasBlocked ? 'Close' : 'Cancel'}
+            {hasPartial || hasBlocked ? '关闭' : '取消'}
           </button>
           <button
             data-pn-touch-target
@@ -808,18 +808,18 @@ export function ReviewSubmissionDialog({
             }`}
           >
             {isSubmitting
-              ? 'Posting...'
+              ? '发布中…'
               : hasBlocked
-                ? 'Retry blocked'
+                ? '重试已阻止'
               : hasPartial
-                ? 'Retry Unposted'
+                ? '重试未发布项'
                 : hasFailed
-                  ? 'Retry Failed'
+                  ? '重试失败项'
                   : isApprove
-                    ? 'Approve'
+                    ? '通过'
                     : isRequestChanges
-                      ? 'Request Changes'
-                      : 'Post Comments'}
+                      ? '要求修改'
+                      : '提交评论'}
           </button>
         </div>
       </DialogContent>

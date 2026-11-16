@@ -52,7 +52,7 @@ describe('SidebarContainer compact presentation', () => {
     expect(html).toContain('hidden lg:flex flex-col sticky top-12 h-[calc(100vh-3rem)]');
     expect(html).toContain('style="width:var(--toc-w, 240px)"');
     expect(html).not.toContain('data-pn-plan-navigator');
-    expect(html).not.toContain('Close navigator');
+    expect(html).not.toContain('关闭导航');
   });
 
   test('renders a full visible-viewport stage with touch-safe navigation', () => {
@@ -71,13 +71,13 @@ describe('SidebarContainer compact presentation', () => {
     expect(html).toContain('data-pn-plan-navigator="true"');
     expect(html).toContain('role="dialog"');
     expect(html).toContain('aria-modal="true"');
-    expect(html).toContain('Opening alpha.md…');
+    expect(html).toContain('正在打开 alpha.md…');
     expect(html).toContain('pn-visible-viewport-stage');
-    expect(html).toContain('aria-label="Close navigator"');
+    expect(html).toContain('aria-label="关闭导航"');
     expect(html).toContain('data-pn-touch-target="true"');
     expect(html).not.toContain('sticky top-12');
-    expect(html).not.toContain('>Contents<');
-    expect(html).toContain('>Archive<');
+    expect(html).not.toContain('>目录<');
+    expect(html).toContain('>归档<');
 
     const theme = readFileSync(resolve(import.meta.dir, '../../theme.css'), 'utf8');
     expect(theme).toContain('.pn-visible-viewport-stage');
@@ -100,7 +100,7 @@ describe('SidebarContainer compact presentation', () => {
       />,
     );
 
-    for (const label of ['Contents', 'Versions', 'Messages', 'Files', 'Archive']) {
+    for (const label of ['目录', '版本', '消息', '文件', '归档']) {
       expect(html).toContain(`>${label}<`);
     }
     expect(html.match(/data-pn-touch-target="true"/g)?.length).toBe(6);
@@ -125,9 +125,9 @@ describe('SidebarContainer compact presentation', () => {
       );
     });
 
-    const close = document.querySelector<HTMLButtonElement>('[aria-label="Close navigator"]');
+    const close = document.querySelector<HTMLButtonElement>('[aria-label="关闭导航"]');
     const files = Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
-      .find((button) => button.textContent?.trim() === 'Files');
+      .find((button) => button.textContent?.trim() === '文件');
 
     expect(document.activeElement).toBe(close);
     await act(async () => files?.click());

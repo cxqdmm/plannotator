@@ -187,9 +187,9 @@ export const MarkdownFilePreview: React.FC<MarkdownFilePreviewProps> = ({
     const files = reviewFilePaths ?? (state ? new Set(state.files.map((file) => file.path)) : undefined);
     const open = onOpenReviewFile ?? state?.openDiffFile;
     if (target !== null && open && files?.has(target)) {
-      return { kind: 'open', open: () => open(target), title: `Open ${target} in this review` };
+      return { kind: 'open', open: () => open(target), title: `在本次评审中打开 ${target}` };
     }
-    return { kind: 'unavailable', title: 'Not in this review' };
+    return { kind: 'unavailable', title: '不在本次评审中' };
   }, [docPath, reviewFilePaths, onOpenReviewFile, state]);
 
   const snapshot = imageSnapshotId ?? state?.snapshotId;
@@ -204,7 +204,7 @@ export const MarkdownFilePreview: React.FC<MarkdownFilePreviewProps> = ({
         : { kind: 'src', src: src.trim() };
     }
     if (isExternalImageSource(src)) return null;
-    if (!canLoadImages) return { kind: 'unavailable', title: 'Images are not shown for this review' };
+    if (!canLoadImages) return { kind: 'unavailable', title: '本次评审不显示图片' };
     // The patch names the file by its display path (a deletion's is its old
     // one). The source goes as written: the route normalizes it the same way
     // it reads the file's references.
@@ -404,10 +404,10 @@ export const MarkdownFilePreview: React.FC<MarkdownFilePreviewProps> = ({
         className="mx-auto max-w-3xl rounded-md border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground"
       >
         {loading
-          ? 'Loading the full Markdown file…'
+          ? '正在加载完整的 Markdown 文件…'
           : isStale
-            ? 'This file changed after the diff was captured. Refresh the diff to preview it.'
-            : 'The full file content is unavailable for this review. Switch back to Source to review the available changes.'}
+            ? '捕获 diff 后此文件发生了更改。请刷新 diff 后再预览。'
+            : '本次评审无法获取完整的文件内容。切回“源码”以查看可用的更改。'}
       </div>
     );
   } else if (tooLarge) {
@@ -418,8 +418,8 @@ export const MarkdownFilePreview: React.FC<MarkdownFilePreviewProps> = ({
         className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 rounded-md border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground"
       >
         <span>
-          <span className="font-medium text-foreground">Too large to preview here</span>
-          {' · '}{Math.round(bytes / 1024)} KB. Rendering it may slow the page.
+          <span className="font-medium text-foreground">文件过大，无法在此预览</span>
+          {' · '}{Math.round(bytes / 1024)} KB。渲染它可能会拖慢页面。
         </span>
         <button
           type="button"
@@ -427,7 +427,7 @@ export const MarkdownFilePreview: React.FC<MarkdownFilePreviewProps> = ({
           className="rounded px-2 py-1 text-xs text-foreground bg-muted/60 hover:bg-muted"
           onClick={() => setAcceptedLarge(true)}
         >
-          Preview anyway
+          仍然预览
         </button>
       </div>
     );
@@ -471,7 +471,7 @@ export const MarkdownFilePreview: React.FC<MarkdownFilePreviewProps> = ({
   // The header's status letter and the green or red rail already say "new"
   // or "deleted"; only a rename with no change needs a word.
   const renamedNote = ready && !tooLarge && unchangedRename
-    ? (oldPath ? `Renamed from ${oldPath} · contents unchanged.` : 'Renamed · contents unchanged.')
+    ? (oldPath ? `重命名自 ${oldPath} · 内容未变。` : '已重命名 · 内容未变。')
     : null;
   const bothViews = !!ready && !tooLarge && !singleSide && !unchangedRename;
   const unanchoredCount = fileComments.filter((ann) => unanchored.has(ann.id)).length;
@@ -495,8 +495,8 @@ export const MarkdownFilePreview: React.FC<MarkdownFilePreviewProps> = ({
           className="mx-auto mb-3 flex max-w-4xl flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground"
         >
           <span>
-            {heldRemoteCount === 1 ? '1 remote image is' : `${heldRemoteCount} remote images are`} not loaded.
-            {' '}Loading one tells its server your IP address.
+            {heldRemoteCount === 1 ? '有 1 张远程图片未加载。' : `有 ${heldRemoteCount} 张远程图片未加载。`}
+            {' '}加载其中一张会向其服务器暴露你的 IP 地址。
           </span>
           <button
             type="button"
@@ -504,13 +504,13 @@ export const MarkdownFilePreview: React.FC<MarkdownFilePreviewProps> = ({
             className="text-primary hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60 rounded"
             onClick={() => setRemoteImagesLoaded(true)}
           >
-            Load remote images
+            加载远程图片
           </button>
         </div>
       )}
       {unanchoredCount > 0 && (
         <div role="status" data-markdown-preview-unanchored="" className="mx-auto mb-3 max-w-4xl text-xs text-muted-foreground">
-          {unanchoredCount === 1 ? '1 comment on this file is' : `${unanchoredCount} comments on this file are`} not in this view.
+          此文件有 {unanchoredCount} 条评论不在当前视图中。
           {bothViews && (
             <button
               type="button"
@@ -518,7 +518,7 @@ export const MarkdownFilePreview: React.FC<MarkdownFilePreviewProps> = ({
               className="ml-1 text-primary hover:underline"
               onClick={() => setView(effectiveView === 'diff' ? 'whole' : 'diff')}
             >
-              {effectiveView === 'diff' ? 'Show in Read' : 'Show in Changes'}
+              {effectiveView === 'diff' ? '在阅读中显示' : '在更改中显示'}
             </button>
           )}
         </div>

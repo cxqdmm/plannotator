@@ -26,12 +26,12 @@ export const GuideGlobalCommentButton: React.FC<{ onAdd: (anchor: HTMLElement) =
       type="button"
       data-guide-global-comment-add=""
       onClick={() => ref.current && onAdd(ref.current)}
-      title="Add global comment"
+      title="添加全局评论"
       className="flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-muted/50 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
     >
       <GlobeIcon />
       {/* Cut with "…" only where the row is narrower than the button (the tab's row in a narrow bare guide). */}
-      <span className="truncate">Global comment</span>
+      <span className="truncate">全局评论</span>
     </button>
   );
 };
@@ -46,10 +46,10 @@ export const GuideGlobalCommentList: React.FC<{ globalComments: GuideGlobalComme
   const { comments, onSelect, selectedId } = globalComments;
   if (comments.length === 0) return null;
   return (
-    <section className="mt-5 max-w-[72ch]" aria-label="Global comments" data-guide-global-comments={comments.length}>
+    <section className="mt-5 max-w-[72ch]" aria-label="全局评论" data-guide-global-comments={comments.length}>
       <h2 className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
         <GlobeIcon />
-        Global comments
+        全局评论
         <span className="font-mono text-muted-foreground/60">{comments.length}</span>
       </h2>
       <ul className="mt-2 space-y-1.5">

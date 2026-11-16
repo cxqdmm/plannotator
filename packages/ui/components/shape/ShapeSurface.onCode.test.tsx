@@ -124,9 +124,9 @@ test.skipIf(!hasDom)('no host seam: the board opens the file, as it does on its 
 test.skipIf(!hasDom)("the refresh button takes the host's words, and keeps its own without them", async () => {
   await mount({}, host({ refresh: async () => {}, refreshLabel: 'Show me again' }));
   expect(document.body.textContent).toContain('Show me again');
-  expect(document.body.textContent).not.toContain('Bring it up to date');
+  expect(document.body.textContent).not.toContain('更新到最新');
   act(() => root?.unmount());
   document.body.innerHTML = '';
   await mount({}, host({ refresh: async () => {} }));
-  expect(document.body.textContent).toContain('Bring it up to date');
+  expect(document.body.textContent).toContain('更新到最新');
 });

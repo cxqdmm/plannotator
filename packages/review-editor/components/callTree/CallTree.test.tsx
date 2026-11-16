@@ -102,7 +102,7 @@ describe('CallTree rows', () => {
 
   test.skipIf(!hasDom)('Changes only drops unchanged branches and keeps the root', async () => {
     await mount(<CallTree doc={doc} onOpen={() => {}} />);
-    const filter = [...host!.querySelectorAll('button')].find((b) => b.textContent === 'Changes only')!;
+    const filter = [...host!.querySelectorAll('button')].find((b) => b.textContent === '仅显示更改')!;
     await act(async () => filter.click());
     expect(filter.getAttribute('aria-pressed')).toBe('true');
     const labels = [...host!.querySelectorAll('[role="treeitem"]')].map((r) => r.querySelector('.call-tree-label')?.textContent);
@@ -118,7 +118,7 @@ describe('CallTree rows', () => {
     }, 0);
     await mount(<CallTree doc={repeated} onOpen={() => {}} />);
     const rows = [...host!.querySelectorAll<HTMLElement>('[role="treeitem"]')].filter((r) => r.textContent?.includes('shared()'));
-    expect(rows.map((r) => r.textContent?.includes('↑ above'))).toEqual([false, true]);
+    expect(rows.map((r) => r.textContent?.includes('↑ 同上'))).toEqual([false, true]);
     expect(host!.querySelectorAll('[role="treeitem"]')).toHaveLength(1 + 2 + 2);
   });
 
@@ -134,7 +134,7 @@ describe('CallTree rows', () => {
 
   test.skipIf(!hasDom)('a caller trail shows when the root is not the entry', async () => {
     await mount(<CallTree doc={{ ...doc, trail: ['main', 'boot'] }} onOpen={() => {}} />);
-    expect(host!.querySelector('.call-tree-trail')?.textContent).toBe('from main › boot');
+    expect(host!.querySelector('.call-tree-trail')?.textContent).toBe('来自 main › boot');
   });
 });
 
@@ -261,9 +261,9 @@ describe('CallTree source preview (#2322)', () => {
 });
 
 async function search(text: string) {
-  const trigger = host!.querySelector<HTMLButtonElement>('button[aria-label="Search call paths"]');
+  const trigger = host!.querySelector<HTMLButtonElement>('button[aria-label="搜索调用路径"]');
   if (trigger) await act(async () => trigger.click());
-  const input = host!.querySelector<HTMLInputElement>('input[placeholder="Find calls or files"]')!;
+  const input = host!.querySelector<HTMLInputElement>('input[placeholder="查找调用或文件"]')!;
   await act(async () => {
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
     setter?.call(input, text);
@@ -302,7 +302,7 @@ describe('CallTree search', () => {
 
   test.skipIf(!hasDom)('Changes only and search together keep only changed matches', async () => {
     await mount(<CallTreeList trees={[{ key: 'k', doc }]} onOpen={() => {}} />);
-    await act(async () => [...host!.querySelectorAll('button')].find((b) => b.textContent === 'Changes only')!.click());
+    await act(async () => [...host!.querySelectorAll('button')].find((b) => b.textContent === '仅显示更改')!.click());
     await search('e');
     const labels = [...host!.querySelectorAll('.call-tree-row-match')].map((r) => r.querySelector('.call-tree-label')?.textContent);
     expect(labels.some((label) => label?.includes('getTheme'))).toBe(false);

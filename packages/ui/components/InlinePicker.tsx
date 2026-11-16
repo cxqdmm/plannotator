@@ -86,14 +86,14 @@ export function InlinePicker({
                     if (e.key === 'Enter' && keysStayInList) e.preventDefault();
                     if (e.key === 'Enter' && filtered.length > 0) select(filtered[0].value);
                   }}
-                  placeholder="Type to filter…"
+                  placeholder="输入以筛选…"
                   className="w-full rounded-md border border-border/40 bg-background px-2.5 py-1.5 text-xs text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-border"
                 />
               </div>
             )}
             <div className={`overflow-y-auto p-1 ${searchable ? 'max-h-80' : 'max-h-56'}`}>
               {filtered.length === 0 && (
-                <div className="px-2.5 py-2 text-xs text-muted-foreground/50">No matches</div>
+                <div className="px-2.5 py-2 text-xs text-muted-foreground/50">无匹配结果</div>
               )}
               {grouped.map((group) => (
                 <React.Fragment key={group.label ?? '__flat'}>

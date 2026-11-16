@@ -233,9 +233,9 @@ describe.if(hasDom)('HtmlViewer Vim HUD bridge', () => {
     expect(document.querySelector('[data-vim-key-hud]')).not.toBeNull();
     expect(document.querySelector('[data-vim-hud-active-key="j"]')).not.toBeNull();
     expect(document.querySelector('[data-vim-hud-phase]')?.textContent)
-      .toBe('BLOCK / PINPOINT');
+      .toBe('BLOCK / 精准定位');
     expect(document.querySelector('[data-vim-hud-command]')?.textContent)
-      .toBe('Next block');
+      .toBe('下一个块');
 
     const mapToggle = document.querySelector<HTMLButtonElement>(
       '[data-vim-key-map-toggle]',

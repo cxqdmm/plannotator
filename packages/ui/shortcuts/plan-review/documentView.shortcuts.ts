@@ -15,21 +15,21 @@ import { createShortcutScopeHook } from '../runtime';
  */
 export const documentViewShortcuts = defineShortcutScope({
   id: 'document-view',
-  title: 'Document View',
+  title: '文档视图',
   shortcuts: {
     toggleFocusMode: {
-      description: 'Toggle focus mode',
+      description: '切换专注模式',
       bindings: ['Mod+.'],
-      section: 'View',
-      hint: 'Collapses the Contents sidebar and the right-hand panel together; press again to restore whatever was open before.',
+      section: '视图',
+      hint: '同时收起目录侧边栏和右侧面板；再次按下可恢复之前打开的内容。',
       displayOrder: 10,
       preventDefault: true,
     },
     toggleEditMode: {
-      description: 'Toggle edit mode',
+      description: '切换编辑模式',
       bindings: ['Mod+E'],
-      section: 'View',
-      hint: 'Opens the markdown source editor in place, keeping your scroll position; press again to commit your edits and return to annotating.',
+      section: '视图',
+      hint: '就地打开 Markdown 源编辑器，并保持滚动位置；再次按下会提交编辑并返回标注。',
       displayOrder: 20,
       preventDefault: true,
     },

@@ -99,7 +99,7 @@ function ShortcutDescription({ id, binding }: { id: string; binding: string | nu
   if (!binding) return null;
   return (
     <span id={id} hidden>
-      {`Shortcut: ${formatShortcutBindingText(binding)}`}
+      {`快捷键：${formatShortcutBindingText(binding)}`}
     </span>
   );
 }
@@ -136,16 +136,16 @@ export interface HtmlSurfaceControlLabels {
 export const DEFAULT_HTML_SURFACE_CONTROL_LABELS: Required<
   Omit<HtmlSurfaceControlLabels, 'annotateLabel' | 'interactLabel'>
 > = {
-  annotateTitle: `Annotate mode: click an element or select text to comment; links open (${modKey}-click one to comment on it). Esc to interact`,
-  interactTitle: 'Interact mode: clicks reach the page (text selection still comments). Click to annotate',
-  hideTools: 'Hide tools',
-  showTools: 'Show tools',
-  refresh: 'Refresh',
-  refreshing: 'Refreshing',
-  refreshTitle: 'Refresh document',
-  refreshingTitle: 'Refreshing document',
-  back: 'Back',
-  backTitle: 'Back to the document this one was opened from',
+  annotateTitle: `标注模式：点击元素或选择文本即可评论；链接可直接打开（${modKey}+点击可对其评论）。按 Esc 切换为交互模式`,
+  interactTitle: '交互模式：点击会传递到页面（选择文本仍可评论）。点击切换为标注模式',
+  hideTools: '隐藏工具',
+  showTools: '显示工具',
+  refresh: '刷新',
+  refreshing: '刷新中',
+  refreshTitle: '刷新文档',
+  refreshingTitle: '正在刷新文档',
+  back: '返回',
+  backTitle: '返回打开此文档时所处的文档',
 };
 
 // Stable ids: one HTML surface renders at most one of each control.

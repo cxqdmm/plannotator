@@ -35,13 +35,13 @@ function AnchorBlock({
           {anchor.file}
         </span>
         <span className="text-[10px] text-muted-foreground/50 whitespace-nowrap flex-shrink-0">
-          L{anchor.line}–{anchor.end_line}
+          第 {anchor.line}–{anchor.end_line} 行
         </span>
         <button
           onClick={(e) => { e.stopPropagation(); onClick(); }}
           className="flex-shrink-0 text-[10px] text-primary/60 hover:text-primary transition-colors ml-1 font-medium"
         >
-          Open ↗
+          打开 ↗
         </button>
       </div>
 

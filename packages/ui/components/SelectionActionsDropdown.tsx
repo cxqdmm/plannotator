@@ -147,7 +147,7 @@ export const FloatingSelectionActionsPicker: React.FC<{
     <div
       ref={ref}
       role="listbox"
-      aria-label="Actions"
+      aria-label="操作"
       data-selection-actions-picker
       data-floating-picker="true"
       className="fixed z-[100]"

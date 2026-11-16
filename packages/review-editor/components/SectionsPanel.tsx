@@ -116,9 +116,9 @@ const MIN_COMMITTED_ROWS = 3;
 const FALLBACK_ROW_HEIGHT = 25;
 
 const SECTION_META: Record<SectionGroup, { label: string }> = {
-  committed: { label: 'Committed' },
-  changes: { label: 'Changes' },
-  untracked: { label: 'Untracked' },
+  committed: { label: '已提交' },
+  changes: { label: '更改' },
+  untracked: { label: '未跟踪' },
 };
 
 const SectionRow: React.FC<{
@@ -192,7 +192,7 @@ const SectionRow: React.FC<{
           <ChangeTypeLetter status={file.status} oldPath={file.oldPath} untracked={item.group === 'untracked'} />
         </span>
         <TruncatedPath path={file.path} />
-        {isTest && <FileKindIcon kind="test" size={11} title="Test file" />}
+        {isTest && <FileKindIcon kind="test" size={11} title="测试文件" />}
         <AnnotationBadge count={annotationCount} />
       </div>
       <CountColumns additions={file.additions} deletions={file.deletions} />
@@ -545,7 +545,7 @@ export const SectionsPanel: React.FC<SectionsPanelProps> = ({
             style={countColumnVars(totalAdditions, totalDeletions)}
           >
             {/* Nav rows — shared with the tree view, same order. */}
-            <nav aria-label="Review views" className="pb-3 flex flex-col empty:hidden" data-review-views-nav="">
+            <nav aria-label="评审视图" className="pb-3 flex flex-col empty:hidden" data-review-views-nav="">
             {onSelectAllFiles && (
               <AllChangesRow
                 active={isAllFilesActive ?? false}
@@ -572,7 +572,7 @@ export const SectionsPanel: React.FC<SectionsPanelProps> = ({
 
             {searchQuery.trim() ? (
               isSearchPending ? (
-                <div className="py-6 text-center text-xs text-muted-foreground/50">Searching…</div>
+                <div className="py-6 text-center text-xs text-muted-foreground/50">搜索中…</div>
               ) : searchGroups.length > 0 ? (
                 searchGroups.map((group) => (
                   <SearchFileGroup
@@ -584,7 +584,7 @@ export const SectionsPanel: React.FC<SectionsPanelProps> = ({
                   />
                 ))
               ) : (
-                <div className="py-6 text-center text-xs text-muted-foreground/50">No matches found</div>
+                <div className="py-6 text-center text-xs text-muted-foreground/50">未找到匹配项</div>
               )
             ) : (
               <>
@@ -600,7 +600,7 @@ export const SectionsPanel: React.FC<SectionsPanelProps> = ({
                             onClick={() => setCommittedExpanded(true)}
                             className="w-full text-left px-2 py-1 text-[11px] text-primary/80 underline underline-offset-2 decoration-primary/40 hover:text-primary hover:decoration-primary transition-colors"
                           >
-                            {items.committed.length - committedVisibleCount} more files
+                            还有 {items.committed.length - committedVisibleCount} 个文件
                           </button>
                         )}
                         {committedExpanded && items.committed.length > MIN_COMMITTED_ROWS && (
@@ -608,7 +608,7 @@ export const SectionsPanel: React.FC<SectionsPanelProps> = ({
                             onClick={() => setCommittedExpanded(false)}
                             className="w-full text-left px-2 py-1 text-[11px] text-primary/80 underline underline-offset-2 decoration-primary/40 hover:text-primary hover:decoration-primary transition-colors"
                           >
-                            Show fewer
+                            显示更少
                           </button>
                         )}
                       </div>
@@ -623,7 +623,7 @@ export const SectionsPanel: React.FC<SectionsPanelProps> = ({
                     (items.changes.length > 0 ? (
                       renderRows(items.changes)
                     ) : (
-                      <div className="px-2 py-1 text-[11px] text-muted-foreground/50">No working-tree changes</div>
+                      <div className="px-2 py-1 text-[11px] text-muted-foreground/50">没有工作区更改</div>
                     ))}
                 </div>
 

@@ -113,7 +113,7 @@ export function MentionPicker({
     <div
       id={id}
       role="listbox"
-      aria-label="People"
+      aria-label="人员"
       data-mention-picker
       data-placement={above ? 'above' : 'below'}
       style={{ position: 'fixed', left: anchor.left, width: anchor.width, ...style }}

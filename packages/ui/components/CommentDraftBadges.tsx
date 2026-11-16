@@ -111,9 +111,9 @@ export function CommentDraftBadges({
           className="pn-cdraft"
           style={{ left: p.left, top: p.top }}
           data-comment-draft-badge={p.id}
-          data-label="Draft"
-          aria-label={p.quote ? `Draft comment on “${p.quote}”, not sent. Open it` : 'Draft comment, not sent. Open it'}
-          title="Your comment, not sent. Open it"
+          data-label="草稿"
+          aria-label={p.quote ? `关于“${p.quote}”的评论草稿，尚未发送。点击打开` : '评论草稿，尚未发送。点击打开'}
+          title="你的评论，尚未发送。点击打开"
           onPointerDown={(event) => event.stopPropagation()}
           onMouseDown={(event) => event.stopPropagation()}
           onMouseUp={(event) => event.stopPropagation()}

@@ -38,7 +38,7 @@ export function SvgFenceBlock({ block }: { block: Block }) {
             className={`rounded px-1.5 py-0.5 hover:bg-muted hover:text-foreground ${showCode ? 'bg-muted text-foreground' : ''}`}
             onClick={() => setShowCode((value) => !value)}
           >
-            Code
+            代码
           </button>
         )}
       </figcaption>

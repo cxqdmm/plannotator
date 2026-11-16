@@ -120,7 +120,7 @@ export const DiffHunkPreview: React.FC<DiffHunkPreviewProps> = ({
   if (!fileDiff) {
     return (
       <div className="px-3 py-2 text-[11px] text-muted-foreground/30 italic">
-        Diff not available
+        Diff 不可用
       </div>
     );
   }
@@ -152,7 +152,7 @@ export const DiffHunkPreview: React.FC<DiffHunkPreviewProps> = ({
           onClick={(e) => { e.stopPropagation(); setExpanded(true); }}
           className="w-full text-[10px] text-muted-foreground hover:text-foreground py-1 bg-muted/20 border-t border-border/20 transition-colors"
         >
-          Show full context
+          显示完整上下文
         </button>
       )}
     </div>

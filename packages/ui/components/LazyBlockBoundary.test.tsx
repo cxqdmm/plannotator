@@ -122,7 +122,7 @@ describe('LazyBlockBoundary', () => {
     await settle();
 
     const notice = el.querySelector('[data-lazy-load-failed]');
-    expect(notice?.textContent).toContain("Couldn't load this view.");
+    expect(notice?.textContent).toContain('无法加载此视图。');
     expect(notice?.querySelector('button')?.textContent).toBe('Reload');
     // The block's source stays readable in its place; no pending status.
     expect(el.querySelector('[data-diagram-block="mermaid"] pre')?.textContent).toBe(mermaidBlock.content);
@@ -141,8 +141,8 @@ describe('LazyBlockBoundary', () => {
     expect(calls).toEqual([{ url: chunkUrl(), method: 'HEAD' }]);
     const notice = el.querySelector('[data-lazy-load-failed]');
     expect(notice?.getAttribute('data-lazy-load-failed')).toBe('updated');
-    expect(notice?.textContent).toContain('This page was updated.');
-    expect(notice?.querySelector('button')?.textContent).toBe('Reload to see this');
+    expect(notice?.textContent).toContain('此页面已更新。');
+    expect(notice?.querySelector('button')?.textContent).toBe('重新加载以查看');
   });
 
   test.skipIf(!hasDom)('a chunk that loads renders the block and nothing else', async () => {

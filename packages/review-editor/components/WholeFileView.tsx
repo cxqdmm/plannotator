@@ -39,7 +39,7 @@ export const WholeFileView: React.FC<{
   const fileAnnotations = useMemo(() => wholeFileAnnotations(annotations, filePath), [annotations, filePath]);
   const scroll = useScrollMemory(`whole:${snapshotId ?? ''}:${filePath}`, text.status === 'ready' && !revealLine);
 
-  if (text.status === 'loading') return <FileTextState>Reading the file…</FileTextState>;
+  if (text.status === 'loading') return <FileTextState>正在读取文件…</FileTextState>;
   if (text.status === 'error') return <FileTextState>{text.message}</FileTextState>;
   if (text.status === 'empty') return <FileTextState>{repoFileEmptyMessage(text.reason, text.size)}</FileTextState>;
   return (

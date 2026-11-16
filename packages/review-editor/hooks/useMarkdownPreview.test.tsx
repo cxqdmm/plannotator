@@ -182,7 +182,7 @@ describe.if(hasDom)('Markdown file views', () => {
   test('the file the edit session holds keeps its view: P, a pick and navigation all leave it', async () => {
     await mount({ targetPath: 'docs/a.md' });
     await act(async () => controller!.setEditingFile('docs/a.md'));
-    expect(controller!.lockReason('docs/a.md')).toBe('Finish editing first');
+    expect(controller!.lockReason('docs/a.md')).toBe('请先结束编辑');
     expect(controller!.lockReason('docs/b.md')).toBeNull();
     await press('p');
     await act(async () => controller!.choose('docs/a.md', 'read'));
@@ -191,7 +191,7 @@ describe.if(hasDom)('Markdown file views', () => {
     expect(stored.has(MARKDOWN_VIEW_COOKIE)).toBe(false);
 
     // P on the locked file says why instead of doing nothing.
-    expect(lockedNotes).toEqual(['Finish editing first']);
+    expect(lockedNotes).toEqual(['请先结束编辑']);
 
     await act(async () => controller!.setEditingFile(null));
     await press('p');

@@ -521,7 +521,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
         detectedEvoBase && (
           <div className="px-2 py-1.5 border-b border-border/30 flex items-center gap-2">
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground flex-shrink-0">
-              from evolution
+              对比自演化
             </span>
             <div className="flex-1 min-w-0">
               <EvoLogPicker
@@ -543,7 +543,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
           className="px-2 pb-2"
           style={countColumnVars(totalAdditions, totalDeletions)}
         >
-          <nav aria-label="Review views" className="pb-3 flex flex-col empty:hidden" data-review-views-nav="">
+          <nav aria-label="评审视图" className="pb-3 flex flex-col empty:hidden" data-review-views-nav="">
           {onSelectAllFiles && (
             <AllChangesRow
               active={isAllFilesActive}
@@ -567,10 +567,10 @@ export const FileTree: React.FC<FileTreeProps> = ({
             <SidebarActionRow
               active={isPRArtifactsActive}
               onClick={onSelectPRArtifacts}
-              title="View attachments shared in this pull request or merge request"
+              title="查看此 PR 或 MR 中共享的附件"
             >
               <Paperclip className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>Artifacts</span>
+              <span>附件</span>
               <span className="ml-auto rounded bg-muted px-1.5 py-0.5 font-mono text-[9px] tabular-nums text-muted-foreground">
                 {prArtifactCount}
               </span>
@@ -594,7 +594,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
 
           {searchQuery.trim() ? (
             isSearchPending ? (
-              <div className="py-6 text-center text-xs text-muted-foreground/50">Searching…</div>
+              <div className="py-6 text-center text-xs text-muted-foreground/50">正在搜索…</div>
             ) : searchGroups.length > 0 ? (
               searchGroups.map((group) => (
                 <SearchFileGroup
@@ -606,7 +606,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                 />
               ))
             ) : (
-              <div className="py-6 text-center text-xs text-muted-foreground/50">No matches found</div>
+              <div className="py-6 text-center text-xs text-muted-foreground/50">未找到匹配项</div>
             )
           ) : showAllFiles ? (
             repoReady ? (
@@ -678,7 +678,7 @@ const EMPTY_SET: ReadonlySet<string> = new Set();
 /** The All files list while it loads, or why there is none. */
 export const RepoListingPlaceholder: React.FC<{ state: RepoFiles['state'] | undefined; onRetry?: () => void }> = ({ state, onRetry }) => {
   if (!state || state.status === 'idle' || state.status === 'loading') {
-    return <div className="py-6 text-center text-xs text-muted-foreground/60" data-repo-files-loading>Listing the repository…</div>;
+    return <div className="py-6 text-center text-xs text-muted-foreground/60" data-repo-files-loading>正在列出仓库文件…</div>;
   }
   if (state.status === 'unavailable') {
     return <div className="px-3 py-6 text-center text-xs text-muted-foreground/70" data-repo-files-unavailable={state.reason}>{state.message}</div>;
@@ -686,10 +686,10 @@ export const RepoListingPlaceholder: React.FC<{ state: RepoFiles['state'] | unde
   if (state.status === 'error') {
     return (
       <div className="px-3 py-6 text-center text-xs text-muted-foreground/70" data-repo-files-error>
-        <div>The repository could not be listed.</div>
+        <div>无法列出仓库文件。</div>
         {onRetry && (
           <button type="button" className="mt-2 text-primary hover:underline" onClick={onRetry}>
-            Try again
+            重试
           </button>
         )}
       </div>
@@ -702,9 +702,9 @@ export const RepoListingPlaceholder: React.FC<{ state: RepoFiles['state'] | unde
  *  for its heading's tooltip and spoken name. The label stays "Code"
  *  (approved design record "review-file-kinds"); this says what it means. */
 const KIND_COVERS: Record<FileKindBlock['kind'], string> = {
-  code: 'Everything that is not a test or a generated file, docs and config included',
-  test: 'Test files (such as *.test.ts, *_test.go, test_*.py) and files in test folders (tests, __tests__, spec, e2e, fixtures)',
-  generated: 'Generated files: lockfiles, minified and source-map files, and files marked linguist-generated in .gitattributes',
+  code: '除测试文件和生成文件之外的所有文件，包括文档和配置',
+  test: '测试文件（如 *.test.ts、*_test.go、test_*.py）以及测试目录（tests、__tests__、spec、e2e、fixtures）中的文件',
+  generated: '生成文件：lockfile、压缩文件和 source-map 文件，以及在 .gitattributes 中标记为 linguist-generated 的文件',
 };
 
 /** A kind heading's spoken name: "Code: 9 files, 0 viewed, 66 lines added,
@@ -713,8 +713,8 @@ const KIND_COVERS: Record<FileKindBlock['kind'], string> = {
 function kindHeadingName(block: FileKindBlock, viewedFiles: Set<string>): string {
   const total = block.paths.length;
   const viewed = block.paths.filter((path) => viewedFiles.has(path)).length;
-  const files = `${total} file${total === 1 ? '' : 's'}`;
-  return `${FILE_KIND_LABELS[block.kind]}: ${files}, ${viewed} viewed, ${block.additions} lines added, ${block.deletions} removed. ${KIND_COVERS[block.kind]}.`;
+  const files = `${total} 个文件`;
+  return `${FILE_KIND_LABELS[block.kind]}：共 ${files}，已查看 ${viewed} 个，新增 ${block.additions} 行，删除 ${block.deletions} 行。${KIND_COVERS[block.kind]}。`;
 }
 
 /** A kind heading's numbers: viewed/total as a third column, then +/- in the
@@ -724,7 +724,7 @@ const KindBlockCounts: React.FC<{ block: FileKindBlock; viewedFiles: Set<string>
   const viewed = block.paths.filter((path) => viewedFiles.has(path)).length;
   return (
     <span className="ml-auto flex items-center gap-2 pl-2" data-kind-counts="">
-      <span className="review-kind-viewed" data-kind-viewed="" title={`${viewed} of ${total} viewed`}>
+      <span className="review-kind-viewed" data-kind-viewed="" title={`已查看 ${viewed} / ${total}`}>
         {viewed}/{total}
       </span>
       <CountColumns additions={block.additions} deletions={block.deletions} tone="quiet" />

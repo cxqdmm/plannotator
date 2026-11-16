@@ -31,24 +31,24 @@ export const displayRef = (ref: string): string =>
  * Keep these short — they're hover hints, not docs.
  */
 const OPTION_HINTS: Record<string, string> = {
-  'since-base': "Everything since your branch split from the base — committed, uncommitted, and untracked. What a PR would show if you committed it all and pushed.",
-  'local-vs-remote': "Your local branch and working tree compared with its remote-tracking branch — committed, uncommitted, and untracked differences from the last fetch.",
-  uncommitted: "All your local changes — anything you haven't committed yet.",
-  staged: "Only what you've run `git add` on.",
-  unstaged: "What `git diff` shows with no arguments.",
-  'last-commit': "Just your most recent commit.",
-  'workspace-current': "Current local changes in every workspace repo.",
-  'workspace-staged': "Staged Git changes in every workspace repo.",
-  'workspace-unstaged': "Unstaged Git changes in every workspace repo.",
-  'workspace-last': "The last committed Git change or previous jj change in every workspace repo.",
-  'jj-current': "Changes in the current jj change.",
-  'jj-last': "Changes in the previous jj change.",
-  'jj-line': "Changes in your line of work from the selected bookmark or revision.",
-  'jj-evolog': "What changed between two evolutions of the current change — shows what you amended.",
-  'jj-all': "Every tracked file in the current jj workspace, shown as additions.",
-  branch: "Straight compare against the base branch (picked below). Can show commits that aren't yours if the base has new commits.",
-  'merge-base': "Only what you've added on top of the base branch (picked below). Same as GitHub's PR view.",
-  all: "Every tracked file at HEAD, shown as additions. Unlike Committed, which shows what changed vs a base branch, this shows the entire codebase.",
+  'since-base': "自分支从基线分出以来的全部内容——已提交、未提交和未跟踪的更改。这也是把所有内容提交并推送后 PR 会显示的内容。",
+  'local-vs-remote': "本地分支和工作区与其远程跟踪分支的比较——自上次 fetch 以来已提交、未提交和未跟踪的差异。",
+  uncommitted: "你本地尚未提交的所有更改。",
+  staged: "仅包含你运行过 `git add` 的内容。",
+  unstaged: "`git diff` 不带参数时显示的内容。",
+  'last-commit': "仅显示最近一次 commit。",
+  'workspace-current': "每个工作区仓库中当前的本地更改。",
+  'workspace-staged': "每个工作区仓库中已暂存的 Git 更改。",
+  'workspace-unstaged': "每个工作区仓库中未暂存的 Git 更改。",
+  'workspace-last': "每个工作区仓库中最近一次已提交的 Git 更改，或上一个 jj 更改。",
+  'jj-current': "当前 jj 更改中的内容。",
+  'jj-last': "上一个 jj 更改中的内容。",
+  'jj-line': "从所选 bookmark 或 revision 起你这条工作线上的更改。",
+  'jj-evolog': "当前更改的两个演进版本之间的差异——展示你修正了什么。",
+  'jj-all': "当前 jj 工作区中的每个已跟踪文件，以新增形式显示。",
+  branch: "直接与基线分支（在下方选择）比较。如果基线有新 commit，也会显示不属于你的 commit。",
+  'merge-base': "仅显示你在基线分支（在下方选择）之上新增的内容。与 GitHub 的 PR 视图一致。",
+  all: "HEAD 上每个已跟踪文件，以新增形式显示。与“已提交”不同——后者显示相对基线的变更，而这里显示整个代码库。",
 };
 
 export const DiffTypePicker: React.FC<DiffTypePickerProps> = ({
@@ -66,17 +66,17 @@ export const DiffTypePicker: React.FC<DiffTypePickerProps> = ({
   // base-dependent labels — the branch belongs in the picker.
   const displayLabel = (opt: DiffOption) => {
     if (!hasBasePicker) return opt.label;
-    if (opt.id === 'merge-base') return 'Committed changes (PR view)';
+    if (opt.id === 'merge-base') return '已提交的更改（PR 视图）';
     // getGitContext bakes the since-base label from the DETECTED default at
     // session start; render it from the live active base instead so the
     // dropdown agrees with the adjacent base picker after a base switch or a
     // --base launch.
-    if (opt.id === 'since-base' && activeBase) return `All changes since ${displayRef(activeBase)}`;
+    if (opt.id === 'since-base' && activeBase) return `自 ${displayRef(activeBase)} 的全部更改`;
     return opt.label;
   };
 
   const active = options.find((o) => o.id === activeDiffType);
-  const activeLabel = active ? displayLabel(active) : 'Select diff';
+  const activeLabel = active ? displayLabel(active) : '选择 Diff';
 
   return (
     <Menu.Root open={open} onOpenChange={setOpen}>

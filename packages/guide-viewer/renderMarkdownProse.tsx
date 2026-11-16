@@ -79,7 +79,7 @@ export function renderMarkdownProse(
         warning: 'bg-warning/[0.05] dark:bg-warning/[0.12] text-foreground',
         note: 'bg-muted/20 dark:bg-muted/40 text-foreground',
       };
-      const calloutLabel = { important: 'Important', warning: 'Warning', note: 'Note' };
+      const calloutLabel = { important: '重要', warning: '警告', note: '注意' };
       nodes.push(
         <div key={key++} className={`my-2 px-3 py-2 rounded text-[12px] ${calloutStyles[type]}`}>
           <span className="font-semibold text-[10px] uppercase tracking-wider block mb-0.5 opacity-70">

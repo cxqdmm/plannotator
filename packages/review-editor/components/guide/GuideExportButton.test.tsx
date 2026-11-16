@@ -136,7 +136,7 @@ describe('GuideExportButton', () => {
     expect(document.querySelector('[data-testid="guide-share-url"]')?.textContent).toBe('https://guides.show/g/abc#key=k1');
     expect(document.querySelector('[data-testid="guide-share-delete-token"]')?.textContent).toBe('tok-1');
     // The header control now knows a link exists.
-    expect(shareButton()!.textContent).toContain('Share link');
+    expect(shareButton()!.textContent).toContain('分享链接');
   });
 
   test.skipIf(!hasDom)('a link the server could not record is neither offered for removal nor re-created', async () => {
@@ -181,7 +181,7 @@ describe('GuideExportButton', () => {
     await click(document.querySelector('[data-testid="guide-share-create"]'));
     expect(document.querySelector('[data-testid="guide-share-error"]')?.textContent).toBe('sharing disabled');
     expect(document.querySelector('[data-testid="guide-share-url"]')).toBeNull();
-    expect(shareButton()!.textContent).toContain('Create share link');
+    expect(shareButton()!.textContent).toContain('创建分享链接');
   });
 
   test.skipIf(!hasDom)('an existing link shows the URL with Remove link, and removing clears it', async () => {
@@ -195,7 +195,7 @@ describe('GuideExportButton', () => {
       share: (method) => (method === 'DELETE' ? new Response(null, { status: 204 }) : new Response(null, { status: 405 })),
     });
     await render('saved:1000-x');
-    expect(shareButton()!.textContent).toContain('Share link');
+    expect(shareButton()!.textContent).toContain('分享链接');
     await click(shareButton());
     expect(document.querySelector('[data-testid="guide-share-url"]')?.textContent).toBe('https://guides.show/g/old#key=k0');
     expect(document.querySelector('[data-testid="guide-share-create"]')).toBeNull();
@@ -207,6 +207,6 @@ describe('GuideExportButton', () => {
     // Back to the create form, and the header control no longer claims a link.
     expect(document.querySelector('[data-testid="guide-share-create"]')).not.toBeNull();
     expect(document.querySelector('[data-testid="guide-share-remove"]')).toBeNull();
-    expect(shareButton()!.textContent).toContain('Create share link');
+    expect(shareButton()!.textContent).toContain('创建分享链接');
   });
 });

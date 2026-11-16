@@ -25,7 +25,7 @@ export function Bubble({ n }: { n: number }) {
   const common = {
     className: cls,
     'data-ref': n,
-    'aria-label': `Reference ${n}: ${ref.title}`,
+    'aria-label': `引用 ${n}：${ref.title}`,
     onPointerEnter: (e: React.PointerEvent<HTMLElement>) => {
       r.onHover(n);
       if (e.pointerType !== 'touch') r.onPeek?.(n, e.currentTarget, 'hover');
@@ -78,12 +78,12 @@ export const KindIcon = ({ kind }: { kind: ShapeRefKind }) => (
 /** The References tab: the board's references, by number. */
 export function RefList({ onShow, canOpen, fileAction }: { onShow: (n: number) => void; canOpen: (ref: ShapeRef) => boolean; fileAction?: (ref: ShapeRef) => React.ReactNode }) {
   const r = useContext(RefsCtx);
-  if (!r.refs.length) return <p className="shp-empty-note">This board cites nothing yet.</p>;
+  if (!r.refs.length) return <p className="shp-empty-note">此看板还没有引用任何内容。</p>;
   return (
     <ol className="shp-ref-list">
       {r.refs.map((ref) => (
         <li key={ref.n} className={r.hover === ref.n ? 'lit' : ''} onPointerEnter={() => r.onHover(ref.n)} onPointerLeave={() => r.onHover(null)}>
-          <button type="button" className="shp-ref-row" onClick={() => onShow(ref.n)} title="Show it on the board">
+          <button type="button" className="shp-ref-row" onClick={() => onShow(ref.n)} title="在看板上显示">
             <span className="shp-rb static">{ref.n}</span>
             <span className="shp-ref-kind"><KindIcon kind={ref.kind} /></span>
             <span className="shp-ref-txt">
@@ -92,9 +92,9 @@ export function RefList({ onShow, canOpen, fileAction }: { onShow: (n: number) =
             </span>
           </button>
           {ref.kind === 'pr' || ref.kind === 'link' ? (
-            <a className="shp-ref-open" href={shapeLinkUrl(ref.target) ?? undefined} target="_blank" rel="noreferrer">Open</a>
+            <a className="shp-ref-open" href={shapeLinkUrl(ref.target) ?? undefined} target="_blank" rel="noreferrer">打开</a>
           ) : canOpen(ref) ? (
-            <button type="button" className="shp-ref-open" onClick={() => r.onOpen(ref.n)}>Open</button>
+            <button type="button" className="shp-ref-open" onClick={() => r.onOpen(ref.n)}>打开</button>
           ) : null}
           {fileAction?.(ref)}
         </li>
@@ -110,7 +110,7 @@ export function shapeRefPicture(ref: ShapeRef): { src: string; alt: string; crop
   return ref.kind === 'image' && shapeUrlAllowed(ref.target) ? { src: ref.target, alt: ref.title } : null;
 }
 
-const OPEN_WORD: Record<ShapeRefKind, string> = { image: 'View', file: 'Open file', diff: 'Open diff', message: 'Go to message', pr: 'Open', link: 'Open' };
+const OPEN_WORD: Record<ShapeRefKind, string> = { image: '查看', file: '打开文件', diff: '打开 Diff', message: '转到消息', pr: '打开', link: '打开' };
 
 /**
  * A reference's bubble: it pops out beside its number with a small real picture (or, for a file, the
@@ -206,7 +206,7 @@ export function RefPeek({
       ref={box}
       className="shp-peek"
       role="group"
-      aria-label={`Reference ${reference.n}: ${reference.title}`}
+      aria-label={`引用 ${reference.n}：${reference.title}`}
       style={place ? ({ left: place.left, top: place.top, transformOrigin: place.origin, '--dot': `${place.dot}px` } as React.CSSProperties) : { left: -9999, top: 0, visibility: 'hidden' }}
       data-placed={place ? '' : undefined}
       data-side={place?.side}
@@ -214,7 +214,7 @@ export function RefPeek({
       onPointerLeave={onLeave}
     >
       {picture ? (
-        <button type="button" className="shp-peek-pic" onClick={open} aria-label={`View ${picture.alt || reference.title} full size`} tabIndex={-1}>
+        <button type="button" className="shp-peek-pic" onClick={open} aria-label={`全尺寸查看 ${picture.alt || reference.title}`} tabIndex={-1}>
           {picture.crop ? (
             <span
               className="shp-peek-crop"
@@ -231,7 +231,7 @@ export function RefPeek({
           )}
         </button>
       ) : lines ? (
-        <button type="button" className="shp-peek-code" onClick={open} tabIndex={-1} aria-label={`Open ${reference.target}`}>
+        <button type="button" className="shp-peek-code" onClick={open} tabIndex={-1} aria-label={`打开 ${reference.target}`}>
           <code>{lines.map((l, i) => <span key={i}>{l || ' '}</span>)}</code>
         </button>
       ) : null}
@@ -243,8 +243,8 @@ export function RefPeek({
         {reference.sub && <p>{reference.sub}</p>}
         <div className="shp-peek-acts">
           {!isLink && canOpen && <button type="button" tabIndex={-1} onClick={onOpen}>{OPEN_WORD[reference.kind]}</button>}
-          {isLink && picture && <button type="button" tabIndex={-1} onClick={onOpen}>View</button>}
-          {isLink && <button type="button" tabIndex={-1} onClick={onOpenLink}>{reference.kind === 'pr' ? 'Open pull request' : 'Open link'} ↗</button>}
+          {isLink && picture && <button type="button" tabIndex={-1} onClick={onOpen}>查看</button>}
+          {isLink && <button type="button" tabIndex={-1} onClick={onOpenLink}>{reference.kind === 'pr' ? '打开 PR' : '打开链接'} ↗</button>}
           {fileAction}
         </div>
       </div>

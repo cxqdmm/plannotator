@@ -105,7 +105,7 @@ describe('GuideSectionCard file kinds', () => {
       'src/backoff.ts',
     ]);
     const expected = ['src/retry.ts', 'src/backoff.ts', 'src/retry.test.ts', 'tests/e2e/sync.spec.ts', 'bun.lock'];
-    expect(subheads(el)).toEqual(['Tests2', 'Generated1']);
+    expect(subheads(el)).toEqual(['测试2', '生成文件1']);
     expect(chipNames(el)).toEqual(expected);
     expect(cardOrder(el)).toEqual(expected);
   });
@@ -121,7 +121,7 @@ describe('GuideSectionCard file kinds', () => {
 
   test.skipIf(!hasDom)("the host's generated set decides what is generated", async () => {
     const el = await renderChapter(['src/schema.gen.ts', 'bun.lock'], new Set(['src/schema.gen.ts']));
-    expect(subheads(el)).toEqual(['Generated1']);
+    expect(subheads(el)).toEqual(['生成文件1']);
     expect(cardOrder(el)).toEqual(['bun.lock', 'src/schema.gen.ts']);
   });
 

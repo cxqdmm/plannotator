@@ -30,7 +30,7 @@ export const ReviewDockTabRenderer: React.FC<IDockviewPanelHeaderProps> = (props
   return (
     <div
       className="dv-review-tab"
-      title={preview ? `${title} (preview: double-click to keep it open)` : title}
+      title={preview ? `${title}（预览：双击可保持打开）` : title}
       data-preview-tab={preview || undefined}
       onDoubleClick={preview && state?.onKeepFileTab ? () => state.onKeepFileTab!(props.api.id) : undefined}
     >
@@ -43,7 +43,7 @@ export const ReviewDockTabRenderer: React.FC<IDockviewPanelHeaderProps> = (props
       <button
         className="dv-review-tab-close"
         onClick={handleClose}
-        aria-label="Close"
+        aria-label="关闭"
       >
         <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor">
           <path d="M8 8.707l3.646 3.647.708-.707L8.707 8l3.647-3.646-.707-.708L8 7.293 4.354 3.646l-.707.708L7.293 8l-3.646 3.646.707.708L8 8.707z" />

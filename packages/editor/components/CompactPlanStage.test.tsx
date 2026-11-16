@@ -38,7 +38,7 @@ describe.if(hasDom)('CompactPlanStage', () => {
     });
 
     const stage = document.querySelector<HTMLElement>('[data-pn-compact-plan-stage="true"]');
-    const close = document.querySelector<HTMLButtonElement>('button[aria-label="Close Annotations"]');
+    const close = document.querySelector<HTMLButtonElement>('button[aria-label="关闭 Annotations"]');
     const buttons = Array.from(stage?.querySelectorAll<HTMLButtonElement>('button') ?? []);
     if (!stage || !close) throw new Error('Compact stage did not render');
 

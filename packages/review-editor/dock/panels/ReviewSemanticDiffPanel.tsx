@@ -126,7 +126,7 @@ export function ReviewSemanticDiffPanel() {
     return (
       <div className="semantic-diff-panel">
         <div className="semantic-diff-terminal" aria-live="polite">
-          <div className="semantic-diff-loading">Running semantic diff...</div>
+          <div className="semantic-diff-loading">正在运行语义 Diff…</div>
         </div>
       </div>
     );
@@ -153,7 +153,7 @@ export function ReviewSemanticDiffPanel() {
 
   return (
     <div className="semantic-diff-panel">
-      <div className="semantic-diff-terminal" aria-label="Semantic diff">
+      <div className="semantic-diff-terminal" aria-label="语义 Diff">
         {groupedChanges.map((group) => (
           <section className="semantic-diff-file" key={group.filePath}>
             <header className="semantic-diff-file-header">
@@ -182,7 +182,7 @@ export function ReviewSemanticDiffPanel() {
         ))}
 
         {loadState.status === 'empty' && (
-          <div className="semantic-diff-empty">No semantic changes found.</div>
+          <div className="semantic-diff-empty">未发现语义更改。</div>
         )}
         <div className="semantic-diff-summary">{formatSummary(loadState.data)}</div>
       </div>

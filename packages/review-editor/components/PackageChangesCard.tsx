@@ -55,11 +55,11 @@ const fullDate = new Intl.DateTimeFormat('en', { dateStyle: 'medium' });
 export function releasedAgo(iso: string, now = Date.now()): string {
   const days = Math.floor((now - Date.parse(iso)) / 86_400_000);
   if (!Number.isFinite(days)) return '';
-  if (days < 1) return 'today';
-  if (days < 45) return `${days}d`;
+  if (days < 1) return '今天';
+  if (days < 45) return `${days} 天`;
   const months = Math.floor(days / 30.44);
-  if (months < 12) return `${months}mo`;
-  return `${Math.floor(days / 365.25)}y`;
+  if (months < 12) return `${months} 个月`;
+  return `${Math.floor(days / 365.25)} 年`;
 }
 
 /** Published under 7 days ago: the age many teams wait before installing. */
@@ -68,12 +68,12 @@ export function isFreshRelease(iso: string | null | undefined, now = Date.now())
 }
 
 const KIND: Record<PackageChange['kind'], { glyph: string; label: string; tone: string }> = {
-  added: { glyph: '+', label: 'Added', tone: 'text-success' },
-  removed: { glyph: '−', label: 'Removed', tone: 'text-destructive' },
-  upgraded: { glyph: '↑', label: 'Upgraded', tone: 'text-foreground/70' },
-  downgraded: { glyph: '↓', label: 'Downgraded', tone: 'text-foreground/70' },
-  changed: { glyph: '~', label: 'Changed', tone: 'text-muted-foreground' },
-  moved: { glyph: '⇄', label: 'Moved', tone: 'text-muted-foreground' },
+  added: { glyph: '+', label: '已添加', tone: 'text-success' },
+  removed: { glyph: '−', label: '已移除', tone: 'text-destructive' },
+  upgraded: { glyph: '↑', label: '已升级', tone: 'text-foreground/70' },
+  downgraded: { glyph: '↓', label: '已降级', tone: 'text-foreground/70' },
+  changed: { glyph: '~', label: '已更改', tone: 'text-muted-foreground' },
+  moved: { glyph: '⇄', label: '已移动', tone: 'text-muted-foreground' },
 };
 
 const PackageIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -141,13 +141,13 @@ const NameTags: React.FC<{ change: PackageChange; meta?: PackageMetadata; withhe
     ) : null}
     {change.workspace && <span className="flex-none truncate font-mono text-[10px] text-muted-foreground">{change.workspace}</span>}
     {withheld && (
-      <Tooltip content="Not sent to npm">
-        <span className="flex-none text-muted-foreground"><LockIcon /><span className="sr-only">Not sent to npm</span></span>
+      <Tooltip content="未发送至 npm">
+        <span className="flex-none text-muted-foreground"><LockIcon /><span className="sr-only">未发送至 npm</span></span>
       </Tooltip>
     )}
     {meta?.deprecated && (
       <Tooltip content={meta.deprecated} wide>
-        <span><Pill tone="warning">deprecated</Pill></span>
+        <span><Pill tone="warning">已废弃</Pill></span>
       </Tooltip>
     )}
   </>
@@ -161,7 +161,7 @@ const VersionText: React.FC<{ version: string | null; spec: string | null; muted
   const specHint = spec && version && spec !== version ? spec : null;
   if (!specHint && !major) return <span className={cls}>{text}</span>;
   return (
-    <Tooltip content={<span>{major && 'Breaking under semver'}{major && specHint && ' · '}{specHint && <span className="font-mono">{specHint}</span>}</span>}>
+    <Tooltip content={<span>{major && '按 semver 属破坏性变更'}{major && specHint && ' · '}{specHint && <span className="font-mono">{specHint}</span>}</span>}>
       <span className={cls}>
         {text}
         {major && <span className="sr-only"> (major)</span>}
@@ -174,7 +174,7 @@ const Released: React.FC<{ iso: string | null | undefined }> = ({ iso }) => {
   if (!iso) return <span className="text-muted-foreground">—</span>;
   const fresh = isFreshRelease(iso);
   return (
-    <Tooltip content={fresh ? `${fullDate.format(new Date(iso))} · under 7 days` : fullDate.format(new Date(iso))}>
+    <Tooltip content={fresh ? `${fullDate.format(new Date(iso))} · 7 天内` : fullDate.format(new Date(iso))}>
       <span className={`whitespace-nowrap tabular-nums ${fresh ? 'text-warning' : ''}`}>{releasedAgo(iso)}</span>
     </Tooltip>
   );
@@ -280,8 +280,8 @@ export const CardBody: React.FC<CardBodyProps> = ({ card, folded, lookup, lookup
     return (
       <div data-package-changes="error" className="flex items-center gap-2 border-b border-border bg-muted/20 px-4 py-1.5 text-xs text-muted-foreground">
         <PackageIcon className="h-3.5 w-3.5 flex-none" />
-        <Tooltip content={`${card.error.side === 'old' ? 'Previous' : 'New'} side: ${card.error.reason}`}>
-          <span>Unreadable {card.path.split('/').pop()}</span>
+        <Tooltip content={`${card.error.side === 'old' ? '旧' : '新'}侧：${card.error.reason}`}>
+          <span>无法读取 {card.path.split('/').pop()}</span>
         </Tooltip>
       </div>
     );
@@ -292,23 +292,23 @@ export const CardBody: React.FC<CardBodyProps> = ({ card, folded, lookup, lookup
   const indirect = card.indirect;
 
   const headerRight = consent ? (
-    <Tooltip content="Counts the packages of every card in this review" side="bottom" align="end">
+    <Tooltip content="统计本次评审中每张卡片的包" side="bottom" align="end">
       <button
         type="button"
         data-package-lookup-allow=""
         data-pn-touch-target={touch}
         disabled={consent.asking}
         onClick={consent.onAllow}
-        aria-label={`Look up ${consent.names} package ${consent.names === 1 ? 'name' : 'names'} from every card in this review on npm: sends them to registry.npmjs.org`}
+        aria-label={`在 npm 上查询本次评审中每张卡片的 ${consent.names} 个包名：会将其发送至 registry.npmjs.org`}
         className="ml-auto flex-none rounded border border-border bg-background px-2 py-0.5 text-[11px] text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
       >
-        Look up {consent.names} on npm
+        在 npm 上查询 {consent.names} 个
       </button>
     </Tooltip>
   ) : failure ? (
     <span className="ml-auto flex flex-none items-center gap-1 text-[11px] text-muted-foreground" role="status" data-package-lookup-state="failed">
-      <span>{failure === 'offline' || failure === 'timed out' ? 'npm unreachable' : failure === 'rate limited' ? 'npm rate limited' : 'npm lookup failed'}</span>
-      <button type="button" data-pn-touch-target={touch} onClick={onRetry} className={quietButton}>Retry</button>
+      <span>{failure === 'offline' || failure === 'timed out' ? 'npm 无法访问' : failure === 'rate limited' ? 'npm 请求受限' : 'npm 查询失败'}</span>
+      <button type="button" data-pn-touch-target={touch} onClick={onRetry} className={quietButton}>重试</button>
     </span>
   ) : null;
 
@@ -365,7 +365,7 @@ export const CardBody: React.FC<CardBodyProps> = ({ card, folded, lookup, lookup
       className={`${quietButton} inline-flex items-center gap-1`}
     >
       <Chevron open={showIndirect} />
-      {indirect.length} indirect
+      {indirect.length} 个间接依赖
     </button>
   ) : null;
 
@@ -391,21 +391,21 @@ export const CardBody: React.FC<CardBodyProps> = ({ card, folded, lookup, lookup
         >
           <Chevron open={!folded} />
           <PackageIcon className="h-3.5 w-3.5 flex-none text-muted-foreground" />
-          <span className="whitespace-nowrap font-medium text-foreground">Packages</span>
+          <span className="whitespace-nowrap font-medium text-foreground">包</span>
           {total > 0 && <span className="rounded bg-muted px-1.5 text-[10px] tabular-nums text-muted-foreground">{total}</span>}
         </button>
         {!folded && narrow && total > 1 && (
           <label className="flex flex-none items-center text-muted-foreground">
-            <span className="sr-only">Sort packages by</span>
+            <span className="sr-only">包排序依据</span>
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
               className="rounded border border-border bg-background px-1 py-0.5 text-[11px] text-foreground"
             >
-              <option value="change">Change</option>
-              <option value="name">Name</option>
-              {showMeta && <option value="released">Released</option>}
-              {showMeta && SHOW_DOWNLOADS && <option value="downloads">Downloads</option>}
+              <option value="change">更改</option>
+              <option value="name">名称</option>
+              {showMeta && <option value="released">发布时间</option>}
+              {showMeta && SHOW_DOWNLOADS && <option value="downloads">下载量</option>}
             </select>
           </label>
         )}
@@ -414,7 +414,7 @@ export const CardBody: React.FC<CardBodyProps> = ({ card, folded, lookup, lookup
 
       <div id={bodyId} hidden={folded}>
         {total > 0 && (narrow ? (
-          <ul className="mt-2 divide-y divide-border/60 rounded border border-border/70 bg-background/60" aria-label={`Package changes in ${card.path}`} aria-busy={loading || undefined}>
+          <ul className="mt-2 divide-y divide-border/60 rounded border border-border/70 bg-background/60" aria-label={`包更改：${card.path}`} aria-busy={loading || undefined}>
             {rows.map((c) => {
               const m = metaFor(lookup, c);
               const ok = m?.status === 'ok';
@@ -436,7 +436,7 @@ export const CardBody: React.FC<CardBodyProps> = ({ card, folded, lookup, lookup
                         <>
                           {m.license && <span>{m.license}</span>}
                           {m.publishedAt && <Released iso={m.publishedAt} />}
-                          {SHOW_DOWNLOADS && m.weeklyDownloads != null && <span className="tabular-nums text-muted-foreground/70">{compact.format(m.weeklyDownloads)}/wk</span>}
+                          {SHOW_DOWNLOADS && m.weeklyDownloads != null && <span className="tabular-nums text-muted-foreground/70">{compact.format(m.weeklyDownloads)}/周</span>}
                         </>
                       ) : null}
                     </div>
@@ -448,15 +448,15 @@ export const CardBody: React.FC<CardBodyProps> = ({ card, folded, lookup, lookup
         ) : (
           <div className="mt-2 overflow-x-auto rounded border border-border/70 bg-background/60">
             <table className="w-full border-collapse text-left" aria-busy={loading || undefined}>
-              <caption className="sr-only">Package changes in {card.path}</caption>
+              <caption className="sr-only">包更改：{card.path}</caption>
               <thead className="border-b border-border/70 text-[11px] text-muted-foreground">
                 <tr>
-                  {sortHeader('name', 'Package')}
-                  <th scope="col" className="px-2 py-1 font-medium">Previous</th>
-                  <th scope="col" className="px-2 py-1 font-medium">Version</th>
-                  {showMeta && <th scope="col" className="px-2 py-1 font-medium">License</th>}
-                  {showMeta && sortHeader('released', 'Released')}
-                  {showMeta && SHOW_DOWNLOADS && sortHeader('downloads', 'Downloads', 'right', 'Last 7 days')}
+                  {sortHeader('name', '包')}
+                  <th scope="col" className="px-2 py-1 font-medium">旧版本</th>
+                  <th scope="col" className="px-2 py-1 font-medium">新版本</th>
+                  {showMeta && <th scope="col" className="px-2 py-1 font-medium">许可证</th>}
+                  {showMeta && sortHeader('released', '发布时间')}
+                  {showMeta && SHOW_DOWNLOADS && sortHeader('downloads', '下载量', 'right', '最近 7 天')}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
@@ -487,26 +487,26 @@ export const CardBody: React.FC<CardBodyProps> = ({ card, folded, lookup, lookup
           <div className="mt-1 flex flex-wrap items-center gap-2">
             {sorted.length > ROW_CAP && (
               <button type="button" data-pn-touch-target={touch} onClick={() => setShowAll((v) => !v)} className={quietButton}>
-                {showAll ? 'Fewer' : `${sorted.length - ROW_CAP} more`}
+                {showAll ? '收起' : `还有 ${sorted.length - ROW_CAP} 个`}
               </button>
             )}
             {indirectToggle}
           </div>
         )}
         {showIndirect && indirect.length > 0 && (
-          <ul className="mt-1 max-h-64 overflow-y-auto rounded border border-border/60 bg-background/40 py-1" aria-label={`Indirect package changes in ${card.lockfile ?? card.path}`}>
+          <ul className="mt-1 max-h-64 overflow-y-auto rounded border border-border/60 bg-background/40 py-1" aria-label={`间接包更改：${card.lockfile ?? card.path}`}>
             {indirect.slice(0, indirectShown).map((i) => (
               <li key={i.name} className="flex min-w-0 items-center gap-2 px-2.5 py-0.5 font-mono text-[11px] text-muted-foreground">
                 <span className="truncate text-foreground/80">{i.name}</span>
                 <span className="ml-auto flex-none tabular-nums">
-                  {indirectVersions(i, 'before')} <span aria-hidden="true">→</span><span className="sr-only">to</span> {indirectVersions(i, 'after')}
+                  {indirectVersions(i, 'before')} <span aria-hidden="true">→</span><span className="sr-only">至</span> {indirectVersions(i, 'after')}
                 </span>
               </li>
             ))}
             {indirect.length > indirectShown && (
               <li className="px-1.5 pt-0.5">
                 <button type="button" data-pn-touch-target={touch} onClick={() => setIndirectShown((n) => n + INDIRECT_STEP)} className={quietButton}>
-                  {indirect.length - indirectShown} more
+                  还有 {indirect.length - indirectShown} 个
                 </button>
               </li>
             )}

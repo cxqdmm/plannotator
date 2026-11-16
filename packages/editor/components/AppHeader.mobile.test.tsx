@@ -78,8 +78,8 @@ describe('compact Plan navigator trigger', () => {
     expect(html).toContain('data-pn-touch-target="true"');
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('aria-controls="pn-compact-plan-navigator"');
-    expect(html).toContain('Open plan navigator');
-    expect(html).toContain('Plan navigation');
+    expect(html).toContain('打开计划导航');
+    expect(html).toContain('计划导航');
   });
 
   test('announces the open state without changing the control footprint', () => {
@@ -91,7 +91,7 @@ describe('compact Plan navigator trigger', () => {
     );
 
     expect(open).toContain('aria-expanded="true"');
-    expect(open).toContain('Close plan navigator');
+    expect(open).toContain('关闭计划导航');
     expect(open).toContain('h-11 w-11');
     expect(closed).toContain('h-11 w-11');
   });

@@ -315,7 +315,7 @@ export async function createShortShareUrl(
 
     if (!response.ok) {
       if (response.status === 413) {
-        throw new ShortShareUrlError(await readPasteError(response, 'Share payload is too large'));
+        throw new ShortShareUrlError(await readPasteError(response, '分享内容过大'));
       }
       console.warn(`[sharing] Paste service returned ${response.status}`);
       return null;

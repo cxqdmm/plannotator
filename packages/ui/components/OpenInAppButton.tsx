@@ -123,17 +123,17 @@ export const OpenInAppButton: React.FC<OpenInAppButtonProps> = ({
         })),
       });
       if (await noteServerSessionMismatch(res)) {
-        flashError('This review was replaced. Reload the page.');
+        flashError('此评审已被替换，请重新加载页面。');
         return;
       }
       const data = (await res.json().catch(() => null)) as
         | { ok: boolean; error?: string }
         | null;
       if (!res.ok || !data || data.ok === false) {
-        flashError(data?.error || 'Failed to open');
+        flashError(data?.error || '打开失败');
       }
     } catch {
-      flashError('Failed to open');
+      flashError('打开失败');
     } finally {
       setBusy(false);
     }
@@ -183,7 +183,7 @@ export const OpenInAppButton: React.FC<OpenInAppButtonProps> = ({
               showLabel ? 'pl-2 pr-1.5' : 'px-1.5'
             }`}
             title={error ?? currentApp.label}
-            aria-label={`Open in ${currentApp.label}`}
+            aria-label={`在 ${currentApp.label} 中打开`}
           >
             {busy ? Spinner : <AppIcon id={currentApp.icon} className="w-3.5 h-3.5" />}
             {showLabel && <span className="whitespace-nowrap">{currentApp.label}</span>}
@@ -199,8 +199,8 @@ export const OpenInAppButton: React.FC<OpenInAppButtonProps> = ({
                 className={`text-xs flex items-center py-1 transition-colors text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed ${
                   openable ? 'px-1 border-l border-border/50' : 'px-1.5'
                 }`}
-                title={openable ? 'Open in…' : 'File actions'}
-                aria-label={openable ? 'Choose app to open in' : 'File actions'}
+                title={openable ? '打开方式…' : '文件操作'}
+                aria-label={openable ? '选择用于打开的应用' : '文件操作'}
               />
             }
           >
@@ -244,7 +244,7 @@ export const OpenInAppButton: React.FC<OpenInAppButtonProps> = ({
                 className="text-xs"
               >
                 <Copy className="w-4 h-4" />
-                <span className="flex-1">Copy path</span>
+                <span className="flex-1">复制路径</span>
               </DropdownMenuItem>
             )}
             {diffText && (
@@ -254,7 +254,7 @@ export const OpenInAppButton: React.FC<OpenInAppButtonProps> = ({
                 className="text-xs"
               >
                 <Copy className="w-4 h-4" />
-                <span className="flex-1">Copy file diff</span>
+                <span className="flex-1">复制文件 Diff</span>
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>

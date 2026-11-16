@@ -356,68 +356,68 @@ describe.if(hasDom)("App document permissions", () => {
     });
 
     expect(document.querySelector("[data-pn-compact-document-title]")?.textContent).toBe("mobile.md");
-    expect(document.querySelector("[data-pn-compact-annotate-entry]")?.textContent).toContain("Pinpoint");
-    for (const label of ["Wide", "Focus", "Edit", "Markup", "Comment", "Redline", "Label"]) {
+    expect(document.querySelector("[data-pn-compact-annotate-entry]")?.textContent).toContain("点选");
+    for (const label of ["宽屏", "专注", "编辑", "Markup", "Comment", "Redline", "Label"]) {
       expect(findButton(label)).toBeUndefined();
     }
 
     const annotateEntry = document.querySelector<HTMLButtonElement>("[data-pn-compact-annotate-entry]");
     if (!annotateEntry) throw new Error("Compact annotation entry did not render");
     await act(async () => annotateEntry.click());
-    expect(findButtonContaining("Select text")).not.toBeUndefined();
-    expect(findButtonContaining("Pinpoint")).not.toBeUndefined();
+    expect(findButtonContaining("选择文本")).not.toBeUndefined();
+    expect(findButtonContaining("点选")).not.toBeUndefined();
 
-    await act(async () => findButtonContaining("Select text")?.click());
-    expect(document.querySelector("[data-pn-compact-annotate-entry]")?.textContent).toContain("Select text");
+    await act(async () => findButtonContaining("选择文本")?.click());
+    expect(document.querySelector("[data-pn-compact-annotate-entry]")?.textContent).toContain("选择文本");
     expect(noteSettings.get("plannotator-input-method")).toBe("pinpoint");
 
     const optionsButton = document.querySelector<HTMLButtonElement>('button[aria-label="Options"]');
     if (!optionsButton) throw new Error("Options menu trigger did not render");
     await act(async () => optionsButton.click());
-    for (let attempt = 0; attempt < 20 && !findButtonContaining("Ask AI"); attempt += 1) {
+    for (let attempt = 0; attempt < 20 && !findButtonContaining("询问 AI"); attempt += 1) {
       await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
     }
-    expect(findButtonContaining("Annotations")).not.toBeUndefined();
-    expect(findButtonContaining("Ask AI")).not.toBeUndefined();
-    expect(findButtonContaining("Review and finish")).not.toBeUndefined();
-    expect(findButton("Close session")).toBeUndefined();
+    expect(findButtonContaining("标注")).not.toBeUndefined();
+    expect(findButtonContaining("询问 AI")).not.toBeUndefined();
+    expect(findButtonContaining("查看并完成")).not.toBeUndefined();
+    expect(findButton("关闭会话")).toBeUndefined();
     expect(findButton("通过")).toBeUndefined();
-    expect(findButtonContaining("Edit document")).not.toBeUndefined();
+    expect(findButtonContaining("编辑文档")).not.toBeUndefined();
 
-    await act(async () => findButtonContaining("Annotations")?.click());
-    expect(document.querySelector('[data-pn-compact-plan-stage="true"]')?.getAttribute("aria-label")).toBe("Annotations");
+    await act(async () => findButtonContaining("标注")?.click());
+    expect(document.querySelector('[data-pn-compact-plan-stage="true"]')?.getAttribute("aria-label")).toBe("标注");
     expect(document.body.textContent).toContain("No annotations yet");
-    const closeAnnotations = document.querySelector<HTMLButtonElement>('button[aria-label="Close Annotations"]');
+    const closeAnnotations = document.querySelector<HTMLButtonElement>('button[aria-label="关闭 标注"]');
     if (!closeAnnotations) throw new Error("Compact Annotations close control did not render");
     await act(async () => closeAnnotations.click());
     expect(document.querySelector('[data-pn-compact-plan-stage="true"]')).toBeNull();
 
     await act(async () => optionsButton.click());
-    await act(async () => findButtonContaining("Ask AI")?.click());
-    expect(document.querySelector('[data-pn-compact-plan-stage="true"]')?.getAttribute("aria-label")).toBe("Ask AI");
+    await act(async () => findButtonContaining("询问 AI")?.click());
+    expect(document.querySelector('[data-pn-compact-plan-stage="true"]')?.getAttribute("aria-label")).toBe("询问 AI");
     expect(document.querySelector('textarea[placeholder="Ask about this document..."]')?.getAttribute("data-pn-mobile-editable")).toBe("true");
-    const closeAI = document.querySelector<HTMLButtonElement>('button[aria-label="Close Ask AI"]');
+    const closeAI = document.querySelector<HTMLButtonElement>('button[aria-label="关闭 询问 AI"]');
     if (!closeAI) throw new Error("Compact Ask AI close control did not render");
     await act(async () => closeAI.click());
 
     const completion = document.querySelector("[data-pn-compact-plan-completion]");
-    expect(completion?.textContent).toContain("Ready to finish?");
+    expect(completion?.textContent).toContain("准备完成了吗？");
     const reviewTrigger = document.querySelector<HTMLButtonElement>("#pn-compact-plan-review-trigger");
     if (!reviewTrigger) throw new Error("End-of-document review trigger did not render");
     await act(async () => reviewTrigger.click());
-    expect(document.querySelector('[data-pn-compact-plan-stage="true"]')?.getAttribute("aria-label")).toBe("Review");
-    expect(findButton("Close session")).not.toBeUndefined();
+    expect(document.querySelector('[data-pn-compact-plan-stage="true"]')?.getAttribute("aria-label")).toBe("评审");
+    expect(findButton("关闭会话")).not.toBeUndefined();
     expect(findButton("通过")).not.toBeUndefined();
-    const closeReview = document.querySelector<HTMLButtonElement>('button[aria-label="Close Review"]');
+    const closeReview = document.querySelector<HTMLButtonElement>('button[aria-label="关闭 评审"]');
     if (!closeReview) throw new Error("Compact Review close control did not render");
     await act(async () => closeReview.click());
 
     await act(async () => optionsButton.click());
-    await act(async () => findButtonContaining("Edit document")?.click());
+    await act(async () => findButtonContaining("编辑文档")?.click());
     const editControls = document.querySelector("[data-pn-compact-edit-controls]");
-    expect(editControls?.textContent).toContain("Editing mobile.md");
-    expect(findButton("Saved")).not.toBeUndefined();
-    expect(findButton("Done")).not.toBeUndefined();
+    expect(editControls?.textContent).toContain("正在编辑 mobile.md");
+    expect(findButton("已保存")).not.toBeUndefined();
+    expect(findButton("完成")).not.toBeUndefined();
     expect(document.querySelector("[data-pn-compact-plan-completion]")).toBeNull();
   });
 
@@ -461,11 +461,11 @@ describe.if(hasDom)("App document permissions", () => {
       serverConfig: {},
     });
 
-    for (let attempt = 0; attempt < 20 && !findButton("Choose a file"); attempt += 1) {
+    for (let attempt = 0; attempt < 20 && !findButton("选择文件"); attempt += 1) {
       await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
     }
-    const chooseFile = findButton("Choose a file");
-    if (!chooseFile) throw new Error("Folder arrival did not expose Choose a file");
+    const chooseFile = findButton("选择文件");
+    if (!chooseFile) throw new Error("Folder arrival did not expose 选择文件");
     await act(async () => chooseFile.click());
 
     for (let attempt = 0; attempt < 20 && !findButtonContaining("alpha"); attempt += 1) {

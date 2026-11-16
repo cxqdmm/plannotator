@@ -232,7 +232,7 @@ describe('Viewer.reopenComment', () => {
     };
     let answer: boolean | undefined;
     await act(async () => { answer = ref.current!.reopenComment!(kept); });
-    expect(document.querySelector('[title="Add global comment"]')).not.toBeNull();
+    expect(document.querySelector('[title="添加全局评论"]')).not.toBeNull();
     expect(answer).toBe(true);
     expect(composer()?.value).toBe('Overall fine');
   });

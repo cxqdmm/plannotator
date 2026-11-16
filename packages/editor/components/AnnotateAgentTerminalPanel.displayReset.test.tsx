@@ -62,7 +62,7 @@ async function mountPopover(options: {
 
 function resetButton(): HTMLButtonElement {
   const button = document.querySelector<HTMLButtonElement>(
-    'button[aria-label="Reset terminal display settings"]',
+    'button[aria-label="重置终端显示设置"]',
   );
   if (!button) throw new Error('reset button missing (popover did not open)');
   return button;
@@ -97,7 +97,7 @@ describe.if(hasDom)('agent terminal Display popover reset', () => {
     });
 
     const rightOption = Array.from(document.querySelectorAll('button'))
-      .find((button) => button.textContent?.trim() === 'Right');
+      .find((button) => button.textContent?.trim() === '右侧');
     if (!rightOption) throw new Error('Position "Right" option missing');
     await act(async () => rightOption.click());
 

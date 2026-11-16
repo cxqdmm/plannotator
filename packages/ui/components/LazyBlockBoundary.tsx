@@ -83,7 +83,7 @@ export const LazyLoadNotice: React.FC<{ error: unknown }> = ({ error }) => {
       data-lazy-load-failed={updated ? 'updated' : ''}
       className="mb-1.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground"
     >
-      <span>{updated ? 'This page was updated.' : "Couldn't load this view."}</span>
+      <span>{updated ? '此页面已更新。' : '无法加载此视图。'}</span>
       {/* The hit area is padding cancelled by a negative margin, so the line
           looks the same: 24px tall everywhere, 44px on a touch screen. On
           touch it grows upward into the block's top margin, never down over
@@ -93,7 +93,7 @@ export const LazyLoadNotice: React.FC<{ error: unknown }> = ({ error }) => {
         onClick={() => window.location.reload()}
         className="relative -mx-1 -my-1 px-1 py-1 font-medium text-foreground underline-offset-2 hover:underline [@media(pointer:coarse)]:-mb-1.5 [@media(pointer:coarse)]:-mt-[22px] [@media(pointer:coarse)]:pb-1.5 [@media(pointer:coarse)]:pt-[22px]"
       >
-        {updated ? 'Reload to see this' : 'Reload'}
+        {updated ? '重新加载以查看' : '重新加载'}
       </button>
     </div>
   );

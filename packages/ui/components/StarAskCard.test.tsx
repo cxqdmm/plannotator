@@ -86,47 +86,47 @@ describe.skipIf(!hasDom)('the card', () => {
     };
     const el = await render(<StarAskCard shape="card" canStar onStar={onStar} {...c} />);
     expect(stars).toBe(0);
-    const star = button(el, 'Star on GitHub')!;
+    const star = button(el, '在 GitHub 上加星标')!;
     expect(star.tagName).toBe('BUTTON');
     star.focus();
     await act(async () => star.click());
     expect(stars).toBe(1);
-    expect(button(el, 'Starring…')?.getAttribute('aria-busy')).toBe('true');
-    await act(async () => button(el, 'Starring…')!.click());
+    expect(button(el, '加星标中…')?.getAttribute('aria-busy')).toBe('true');
+    await act(async () => button(el, '加星标中…')!.click());
     expect(stars).toBe(1);
     await act(async () => finish(true));
     await settle();
-    expect(el.querySelector('[role="status"]')?.textContent).toBe('Starred. Thank you!');
+    expect(el.querySelector('[role="status"]')?.textContent).toBe('已加星标，谢谢！');
     expect(art(el).getAttribute('data-star-ask-art')).toBe('lit');
     expect(art(el).textContent).toContain('starred.');
     expect(art(el).textContent).toContain('decided · recorded');
-    expect(document.activeElement?.textContent).toBe('Close');
+    expect(document.activeElement?.textContent).toBe('关闭');
     expect(c.log).toEqual([]);
-    await act(async () => button(el, 'Close')!.click());
+    await act(async () => button(el, '关闭')!.click());
     expect(c.log).toEqual(['leave']);
   });
 
   test('a failed star: no thanks, an Open GitHub link (a real new-tab link) that records the open', async () => {
     const c = calls();
     const el = await render(<StarAskCard shape="corner" canStar onStar={async () => false} {...c} />);
-    await act(async () => button(el, 'Star on GitHub')!.click());
+    await act(async () => button(el, '在 GitHub 上加星标')!.click());
     await settle();
-    expect(el.querySelector('[role="status"]')?.textContent).toContain('Couldn’t star it from here.');
+    expect(el.querySelector('[role="status"]')?.textContent).toContain('无法从这里加星标。');
     expect(art(el).getAttribute('data-star-ask-art')).toBe('ask');
-    const link = button(el, 'Open GitHub') as HTMLAnchorElement;
+    const link = button(el, '打开 GitHub') as HTMLAnchorElement;
     expect(link.getAttribute('href')).toBe(STAR_ASK_REPO_URL);
     expect(link.getAttribute('target')).toBe('_blank');
     link.addEventListener('click', (event) => event.preventDefault());
     await act(async () => link.click());
     expect(c.log).toEqual(['answer:opened']);
-    expect(el.querySelector('[role="status"]')?.textContent).toBe('Thank you! GitHub is open in a new tab.');
+    expect(el.querySelector('[role="status"]')?.textContent).toBe('谢谢！GitHub 已在新标签页中打开。');
   });
 
   test('gh cannot star (missing, signed out): the button is a real link, opened by the click itself', async () => {
     const c = calls();
     let stars = 0;
     const el = await render(<StarAskCard shape="card" canStar={false} onStar={async () => (stars++, true)} {...c} />);
-    const link = button(el, 'Star on GitHub') as HTMLAnchorElement;
+    const link = button(el, '在 GitHub 上加星标') as HTMLAnchorElement;
     expect(link.tagName).toBe('A');
     expect(link.getAttribute('href')).toBe('https://github.com/backnotprop/plannotator');
     expect(link.getAttribute('target')).toBe('_blank');
@@ -135,7 +135,7 @@ describe.skipIf(!hasDom)('the card', () => {
     await act(async () => link.click());
     expect(stars).toBe(0);
     expect(c.log).toEqual(['answer:opened']);
-    expect(el.querySelector('[role="status"]')?.textContent).toBe('Thank you! GitHub is open in a new tab.');
+    expect(el.querySelector('[role="status"]')?.textContent).toBe('谢谢！GitHub 已在新标签页中打开。');
     expect(art(el).getAttribute('data-star-ask-art')).toBe('lit');
   });
 
@@ -145,7 +145,7 @@ describe.skipIf(!hasDom)('the card', () => {
     el.querySelector('section')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(c.log).toEqual([]);
-    await act(async () => button(el, 'Not now')!.click());
+    await act(async () => button(el, '暂时不要')!.click());
     expect(c.log).toEqual(['answer:not-now', 'leave']);
   });
 
@@ -193,8 +193,8 @@ describe.skipIf(!hasDom)('the done screen (useStarAskDoneScreen)', () => {
     expect(log).toEqual(['claim', 'shown']);
     expect(el.querySelector('[data-star-ask="card"]')).not.toBeNull();
     // No gh star from the done screen: the server has stopped, so the button is the real link.
-    expect(button(el, 'Star on GitHub')?.tagName).toBe('A');
-    await act(async () => button(el, 'Not now')!.click());
+    expect(button(el, '在 GitHub 上加星标')?.tagName).toBe('A');
+    await act(async () => button(el, '暂时不要')!.click());
     expect(log).toEqual(['claim', 'shown', 'answer:not-now']);
     expect(el.querySelector('[data-star-ask]')).toBeNull();
   });

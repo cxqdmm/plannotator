@@ -169,8 +169,8 @@ const CallTreeRowView = memo(function CallTreeRowView({
           type="button"
           tabIndex={-1}
           className="call-tree-comment"
-          aria-label={`Comment on ${node.label}`}
-          title={`Comment on ${node.label}`}
+          aria-label={`评论 ${node.label}`}
+          title={`评论 ${node.label}`}
           onClick={(event) => {
             event.stopPropagation();
             onComment(row, event.currentTarget.parentElement ?? event.currentTarget);
@@ -203,8 +203,8 @@ const CallTreeRowView = memo(function CallTreeRowView({
           <span className="call-tree-twist" aria-hidden="true" />
         )}
         {row.dot && <span className={`call-tree-dot call-tree-dot-${row.dot}`} aria-hidden="true" />}
-        {node.status === 'added' && <span className="sr-only">New: </span>}
-        {node.status === 'removed' && <span className="sr-only">Removed: </span>}
+        {node.status === 'added' && <span className="sr-only">新增：</span>}
+        {node.status === 'removed' && <span className="sr-only">已删除：</span>}
         <span className={`call-tree-label call-tree-label-${node.status}`}>
           {node.provenance === 'agent' && <span className="call-tree-pencil" aria-hidden="true">✎ </span>}
           <RowLabel node={node} query={query} />
@@ -215,11 +215,11 @@ const CallTreeRowView = memo(function CallTreeRowView({
             {note.text}
           </span>
         ))}
-        {row.folded && <span className="call-tree-count">{row.childCount} {row.childCount === 1 ? 'call' : 'calls'}</span>}
-        {row.repeat && <span className="call-tree-repeat">↑ above</span>}
+        {row.folded && <span className="call-tree-count">{row.childCount} 个调用</span>}
+        {row.repeat && <span className="call-tree-repeat">↑ 同上</span>}
       </span>
       <span className="call-tree-ref">
-        {openable && <span className="call-tree-open" aria-hidden="true">⏎ open</span>}
+        {openable && <span className="call-tree-open" aria-hidden="true">⏎ 打开</span>}
         {location && (
           <button
             type="button"
@@ -236,8 +236,8 @@ const CallTreeRowView = memo(function CallTreeRowView({
               sourcePreview.dismiss();
               onSelect(row, openable);
             }}
-            title={openable ? `Open ${fullLocation}` : 'Outside the reviewed patch'}
-            aria-label={openable ? `Open ${fullLocation}` : `Source ${fullLocation} is outside the reviewed patch`}
+            title={openable ? `打开 ${fullLocation}` : '不在本次评审的更改范围内'}
+            aria-label={openable ? `打开 ${fullLocation}` : `源位置 ${fullLocation} 不在本次评审的更改范围内`}
           >
             <Marked text={location} query={query} />
           </button>
@@ -430,7 +430,7 @@ export function CallTree({
     key: `${idPrefix}:${target.treePath}`,
     label: target.filePath
       ? `${target.filePath.split('/').pop()}${target.lineStart ? `:${target.lineStart}` : ''}`
-      : 'inferred step',
+      : '推断步骤',
     excerpt: `${target.entry} → ${target.label}`,
   })), [draftTargets, idPrefix]);
 
@@ -443,12 +443,12 @@ export function CallTree({
   const currentIndex = rowIndex.get(resolvedCurrentId) ?? 0;
 
   return (
-    <section className="call-tree" aria-label={`Call tree ${doc.title}`}>
+    <section className="call-tree" aria-label={`调用树 ${doc.title}`}>
       <header className="call-tree-head">
         <h3 className="call-tree-title">{doc.title}</h3>
         <span className="call-tree-provenance">
           <span className="call-tree-provenance-dot" aria-hidden="true" />
-          calls from analysis of the diff
+          由 diff 分析得出的调用
         </span>
         <span className="call-tree-head-actions">
           <button
@@ -457,12 +457,12 @@ export function CallTree({
             aria-pressed={changesOnly}
             onClick={() => setChangesOnly((value) => !value)}
           >
-            Changes only
+            仅显示更改
           </button>
           {headerAccessory}
         </span>
         {doc.trail.length > 0 && (
-          <p className="call-tree-trail">from {doc.trail.join(' › ')}</p>
+          <p className="call-tree-trail">来自 {doc.trail.join(' › ')}</p>
         )}
       </header>
       <div
@@ -470,7 +470,7 @@ export function CallTree({
         className="call-tree-rows"
         role="tree"
         tabIndex={0}
-        aria-label={`Call tree ${doc.title}`}
+        aria-label={`调用树 ${doc.title}`}
         aria-activedescendant={rows.length > 0 ? domIdOf(currentIndex) : undefined}
       >
         {rows.map((row, index) => (

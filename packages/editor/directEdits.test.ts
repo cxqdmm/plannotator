@@ -76,7 +76,7 @@ describe('direct edit feedback helpers', () => {
     ]);
 
     expect(item.id).toBe('saved:file:/repo/docs/a.md');
-    expect(item.title).toBe('Edits');
+    expect(item.title).toBe('编辑');
     expect(item.diffText).toContain('-before');
     expect(item.diffText).toContain('+after');
   });

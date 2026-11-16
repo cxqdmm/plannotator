@@ -55,9 +55,9 @@ export interface RepoFileTreeProps {
 }
 
 const ON_DISK_TITLES: Record<RepoOnDiskChange, string> = {
-  A: 'Added on disk since this diff was taken. Refresh the diff to review it.',
-  M: 'Changed on disk since this diff was taken. Refresh the diff to see it.',
-  D: 'Deleted on disk since this diff was taken. Refresh the diff to see it.',
+  A: '生成此差异后磁盘上新增了该文件。刷新差异即可评审。',
+  M: '生成此差异后磁盘上该文件有更改。刷新差异即可查看。',
+  D: '生成此差异后磁盘上已删除该文件。刷新差异即可查看。',
 };
 
 /** The amber dot on a file that changed on disk after the diff was taken. */
@@ -202,7 +202,7 @@ export const RepoFileTree: React.FC<RepoFileTreeProps> = ({
     if (row.kind === 'loading') {
       return (
         <div className="flex items-center h-full text-[11px] text-muted-foreground/60" style={{ paddingLeft: paddingLeft + 16 }}>
-          Loading…
+          加载中…
         </div>
       );
     }
@@ -302,7 +302,7 @@ export const RepoFileTree: React.FC<RepoFileTreeProps> = ({
         <span className={`truncate ${isActive ? '' : 'text-muted-foreground/80'}`}>{row.name}</span>
         {onDisk && <OnDiskDot change={onDisk} />}
         {annotationCount > 0 && (
-          <span className="ml-auto text-[10px] text-primary tabular-nums flex-shrink-0" title={`${annotationCount} comment${annotationCount === 1 ? '' : 's'}`}>
+          <span className="ml-auto text-[10px] text-primary tabular-nums flex-shrink-0" title={`${annotationCount} 条评论`}>
             {annotationCount}
           </span>
         )}
@@ -314,7 +314,7 @@ export const RepoFileTree: React.FC<RepoFileTreeProps> = ({
     <div
       ref={listRef}
       role="tree"
-      aria-label="All files"
+      aria-label="全部文件"
       data-repo-file-tree=""
       className="relative"
       style={{ height: rows.length * REPO_TREE_ROW_HEIGHT }}

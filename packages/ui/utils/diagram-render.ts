@@ -522,7 +522,7 @@ async function renderMermaid(runtime: Mermaid, renderId: string, source: string)
 function mermaidFailure(error: unknown, chunkFailed: boolean): DiagramRenderResult {
   return {
     ok: false,
-    message: errorMessage(error, 'Failed to render diagram'),
+    message: errorMessage(error, '图表渲染失败'),
     line: chunkFailed ? null : errorLine(error),
     runtimeUnavailable: false,
     ...(chunkFailed ? { chunkFailed: true } : {}),
@@ -572,7 +572,7 @@ const mermaidRenderer: DiagramRenderer = {
     } catch (error) {
       return {
         ok: false,
-        message: errorMessage(error, 'Failed to render diagram'),
+        message: errorMessage(error, '图表渲染失败'),
         line: null,
         runtimeUnavailable: true,
       };
@@ -711,7 +711,7 @@ const graphvizRenderer: DiagramRenderer = {
     } catch (error) {
       return {
         ok: false,
-        message: errorMessage(error, 'Failed to render diagram'),
+        message: errorMessage(error, '图表渲染失败'),
         line: errorLine(error),
         runtimeUnavailable: false,
       };

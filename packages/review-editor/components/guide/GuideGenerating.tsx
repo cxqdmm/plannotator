@@ -7,11 +7,11 @@ import { useJobLogs } from '../../dock/JobLogsContext';
 import { GuideSectionSkeleton } from '@plannotator/guide-viewer/GuideSkeleton';
 
 const STATUS_LABEL: Record<AgentJobInfo['status'], string> = {
-  starting: 'Starting',
-  running: 'Generating',
-  done: 'Done',
-  failed: 'Failed',
-  killed: 'Cancelled',
+  starting: '启动中',
+  running: '生成中',
+  done: '已完成',
+  failed: '生成失败',
+  killed: '已取消',
 };
 
 /** Keep only the last ~N lines of a live log tail — the guide's generating
@@ -51,12 +51,11 @@ export const GuideGenerating: React.FC<GuideGeneratingProps> = ({ job, onCancel 
           <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
         </span>
         <h1 className="text-[22px] font-semibold tracking-tight text-foreground">
-          {STATUS_LABEL[job.status]} your guide{'…'}
+          你的指南{STATUS_LABEL[job.status]}{'…'}
         </h1>
       </div>
       <p className="mt-1.5 max-w-[72ch] text-[13px] leading-relaxed text-muted-foreground">
-        The agent is reading the changeset and organizing it into sections. The guide
-        replaces this page when it's ready.
+        agent 正在阅读改动集并将其整理成章节。指南就绪后会替换此页面。
       </p>
       <p className="mt-2 font-mono text-[11px] text-muted-foreground/60">
         {job.label}
@@ -69,7 +68,7 @@ export const GuideGenerating: React.FC<GuideGeneratingProps> = ({ job, onCancel 
           onClick={onCancel}
           className="rounded-md border border-border/50 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
         >
-          Cancel
+          取消
         </button>
         <button
           type="button"
@@ -78,7 +77,7 @@ export const GuideGenerating: React.FC<GuideGeneratingProps> = ({ job, onCancel 
           className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs text-muted-foreground/70 transition-colors hover:text-foreground"
         >
           <ChevronRight className={`transition-transform ${showActivity ? 'rotate-90' : ''}`} size={12} />
-          {showActivity ? 'Hide activity' : 'Show activity'}
+          {showActivity ? '隐藏活动' : '显示活动'}
         </button>
       </div>
 

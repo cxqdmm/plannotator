@@ -89,7 +89,7 @@ export function StackedPRLabel({
     return !node.isCurrent && !node.isDefaultBranch && node.state === 'merged';
   }
 
-  const layerTarget = parentNode ? shortNodeLabel(parentNode, numberPrefix) : (stackInfo?.baseBranch ?? 'base');
+  const layerTarget = parentNode ? shortNodeLabel(parentNode, numberPrefix) : (stackInfo?.baseBranch ?? '基础分支');
   const fullStackTarget = rootNode?.isDefaultBranch ? rootNode.branch : (stackInfo?.defaultBranch ?? 'main');
   const scopeTarget = scope === 'full-stack' ? fullStackTarget : layerTarget;
   const hasScopeOptions = scopeOptions.length > 0;
@@ -121,9 +121,9 @@ export function StackedPRLabel({
       case 'current': return undefined;
       case 'full-stack':
         return fullStackOption?.enabled
-          ? 'Switch to full-stack diff'
-          : 'Full-stack diff requires local checkout';
-      case 'navigate': return action.url ? `Review ${shortNodeLabel(node, numberPrefix)}` : undefined;
+          ? '切换到全栈 Diff'
+          : '全栈 Diff 需要本地检出';
+      case 'navigate': return action.url ? `评审 ${shortNodeLabel(node, numberPrefix)}` : undefined;
     }
   }
 
@@ -153,7 +153,7 @@ export function StackedPRLabel({
             data-pn-touch-target
             type="button"
             disabled={isSwitchingScope}
-            title={`Stack: comparing vs ${scopeTarget}`}
+            title={`堆叠：与 ${scopeTarget} 对比`}
             className="h-7 text-[10px] text-annotation-comment/70 hover:text-annotation-comment inline-flex items-center gap-1 whitespace-nowrap transition-colors rounded px-1.5 hover:bg-muted/20 disabled:opacity-60 disabled:cursor-wait"
           />
         }
@@ -163,7 +163,7 @@ export function StackedPRLabel({
             <polyline points="30,220 250,350 470,220" />
             <polyline points="30,280 250,410 470,280" />
           </svg>
-          <span>vs {scopeTarget}</span>
+          <span>对比 {scopeTarget}</span>
           <svg
             className={`w-2.5 h-2.5 flex-shrink-0 opacity-40 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
             fill="none"
@@ -181,10 +181,10 @@ export function StackedPRLabel({
           <div className="px-3 pt-3 pb-2">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-medium text-muted-foreground">
-                Stack ({prNodes.length} {prNodes.length === 1 ? changeLabel : `${changeLabel}s`})
+                堆叠（{prNodes.length} 个 {changeLabel}）
                 {hideMerged && showToggle && (
                   <span className="ml-1 text-[10px] text-muted-foreground/50">
-                    · {mergedCount} merged hidden
+                    · 已隐藏 {mergedCount} 个已合并项
                   </span>
                 )}
               </span>
@@ -193,12 +193,12 @@ export function StackedPRLabel({
                   data-pn-touch-target
                   type="button"
                   onClick={toggleHideMerged}
-                  title={hideMerged ? 'Show merged PRs' : 'Hide merged PRs'}
+                  title={hideMerged ? '显示已合并的 PR' : '隐藏已合并的 PR'}
                   className={`cc-blocking-toggle ${hideMerged ? 'is-on' : ''}`}
                   style={{ borderLeft: 'none', marginLeft: 0 }}
                 >
                   <span className="cc-toggle-track"><span className="cc-toggle-thumb" /></span>
-                  <span>Hide merged</span>
+                  <span>隐藏已合并</span>
                 </button>
               )}
             </div>
@@ -247,10 +247,10 @@ export function StackedPRLabel({
                     >
                       <span className={`truncate ${merged ? 'line-through' : ''}`}>{nodeLabel(node, numberPrefix)}</span>
                       {node.isCurrent && (
-                        <span className="text-[9px] text-annotation-comment/60 whitespace-nowrap">reviewing</span>
+                        <span className="text-[9px] text-annotation-comment/60 whitespace-nowrap">评审中</span>
                       )}
                       {merged && (
-                        <span className="text-[9px] text-muted-foreground/40 whitespace-nowrap border border-muted-foreground/20 rounded px-0.5 leading-tight">merged</span>
+                        <span className="text-[9px] text-muted-foreground/40 whitespace-nowrap border border-muted-foreground/20 rounded px-0.5 leading-tight">已合并</span>
                       )}
                       {action.kind === 'navigate' && node.url && !disabled && (
                         <svg className="w-2.5 h-2.5 flex-shrink-0 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -271,7 +271,7 @@ export function StackedPRLabel({
           {/* Section 2: Scope Selector */}
           <div className="px-3 py-2">
             <div className="text-[11px] font-medium text-muted-foreground mb-1.5">
-              Comparing against
+              对比基准
             </div>
             {layerOption && (
               <button
@@ -292,10 +292,10 @@ export function StackedPRLabel({
                 </span>
                 <span className="min-w-0">
                   <span className="block text-xs font-medium truncate">
-                    {parentNode ? nodeLabel(parentNode, numberPrefix) : (stackInfo?.baseBranch ?? 'base')}
+                    {parentNode ? nodeLabel(parentNode, numberPrefix) : (stackInfo?.baseBranch ?? '基础分支')}
                   </span>
                   <span className="block text-[11px] leading-snug text-muted-foreground">
-                    Only changes in this PR
+                    仅此 PR 中的更改
                   </span>
                 </span>
               </button>
@@ -306,7 +306,7 @@ export function StackedPRLabel({
                 type="button"
                 disabled={!fullStackOption.enabled || isSwitchingScope}
                 onClick={() => handleSelect('full-stack')}
-                title={!fullStackOption.enabled ? 'Requires local checkout' : undefined}
+                title={!fullStackOption.enabled ? '需要本地检出' : undefined}
                 className={`w-full flex items-start gap-2 rounded px-2 py-1.5 text-left transition-colors ${
                   scope === 'full-stack'
                     ? 'bg-muted text-foreground'
@@ -321,7 +321,7 @@ export function StackedPRLabel({
                 <span className="min-w-0">
                   <span className="block text-xs font-medium">{fullStackTarget}</span>
                   <span className="block text-[11px] leading-snug text-muted-foreground">
-                    All changes from {fullStackTarget} to here
+                    从 {fullStackTarget} 到这里的全部更改
                   </span>
                 </span>
               </button>
@@ -340,7 +340,7 @@ export function StackedPRLabel({
               rel="noopener noreferrer"
               className="text-[11px] text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
             >
-              View {mrNumberLabel} on {getPlatformLabel(metadata)}
+              在 {getPlatformLabel(metadata)} 上查看 {mrNumberLabel}
               <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>

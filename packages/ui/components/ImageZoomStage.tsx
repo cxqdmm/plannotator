@@ -50,8 +50,8 @@ export const WHEEL_HINT_FADE_MS = 300;
 
 /** What the hint says, on screen and to a screen reader. */
 export const wheelHintText = {
-  visible: { before: 'Use', key: modKey, after: '+ scroll to zoom' },
-  spoken: `Scrolling moves the image. To zoom, hold ${modKeySpoken} and scroll.`,
+  visible: { before: '按住', key: modKey, after: '滚动即可缩放' },
+  spoken: `滚动可移动图片。需要缩放时，按住 ${modKeySpoken} 并滚动。`,
 };
 
 /** A device with a mouse or trackpad (a touch-only one never sends a wheel, and gets no hint). */
@@ -820,7 +820,7 @@ export const ImageZoomStage = forwardRef<ImageZoomStageHandle, {
       )}
       {failed && !onImageError && (
         <div className="absolute inset-0 flex items-center justify-center text-sm opacity-70" data-lightbox-failed="">
-          This image could not be loaded.
+          此图片无法加载。
         </div>
       )}
     </div>

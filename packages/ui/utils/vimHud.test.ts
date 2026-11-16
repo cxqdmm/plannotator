@@ -11,16 +11,16 @@ describe('Vim HUD command projection', () => {
   test('normalizes multi-key and named keys for the video keycaps', () => {
     expect(createVimHudCommand(1, 'documentStart', 'g', 'block')).toMatchObject({
       key: 'gg',
-      description: 'Start of document',
+      description: '文档开头',
       context: 'block',
     });
     expect(createVimHudCommand(2, 'cancel', 'Escape', 'visual')).toMatchObject({
       key: 'esc',
-      description: 'Cancel current Vim state',
+      description: '取消当前 Vim 状态',
     });
     expect(createVimHudCommand(3, 'annotationMenu', ' ', 'visual')).toMatchObject({
       key: 'space',
-      description: 'Open annotation actions',
+      description: '打开标注操作',
     });
   });
 
@@ -52,7 +52,7 @@ describe('Vim HUD command projection', () => {
       .toContainEqual(expect.objectContaining({
         actionId: 'moveDown',
         key: 'j',
-        description: 'Next line',
+        description: '下一行',
       }));
     expect(groups.find((group) => group.id === 'annotation')?.items)
       .toContainEqual(expect.objectContaining({

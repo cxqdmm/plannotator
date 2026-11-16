@@ -241,7 +241,7 @@ describe('direct-edit draft persistence', () => {
     const s2 = await mountSession(options());
     expect(s2.result.current!.draftBanner).toEqual({
       count: 1,
-      timeAgo: 'just now',
+      timeAgo: '刚刚',
       hasEdits: true,
     });
 
@@ -270,7 +270,7 @@ describe('direct-edit draft persistence', () => {
     const s2 = await mountSession(options());
     expect(s2.result.current!.draftBanner).toEqual({
       count: 0,
-      timeAgo: 'just now',
+      timeAgo: '刚刚',
       hasEdits: true,
     });
     let restored: ReturnType<HookResult['restoreDraft']>;
@@ -298,7 +298,7 @@ describe('direct-edit draft persistence', () => {
     const s2 = await mountSession(options());
     expect(s2.result.current!.draftBanner).toEqual({
       count: 0,
-      timeAgo: 'just now',
+      timeAgo: '刚刚',
       hasEdits: true,
     });
 
@@ -449,7 +449,7 @@ describe('direct-edit draft persistence', () => {
     const session = await mountSession(options());
     expect(session.result.current!.draftBanner).toEqual({
       count: 1,
-      timeAgo: 'just now',
+      timeAgo: '刚刚',
       hasEdits: false,
     });
     let restored: ReturnType<HookResult['restoreDraft']>;
@@ -535,7 +535,7 @@ describe('direct-edit draft persistence', () => {
     const session = await mountSession(options());
     expect(session.result.current!.draftBanner).toEqual({
       count: 1,
-      timeAgo: 'just now',
+      timeAgo: '刚刚',
       hasEdits: false,
     });
     act(() => {

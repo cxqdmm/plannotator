@@ -411,7 +411,6 @@ export const PlanCleanDiffView: React.FC<PlanCleanDiffViewProps> = ({
 
   const renderFold = (fold: PlanDiffFold, index: number) => {
     const expanded = expandedFolds.has(fold.key);
-    const noun = fold.sectionCount === 1 ? "section" : "sections";
     const row = expanded ? (
       <button
         type="button"
@@ -421,7 +420,7 @@ export const PlanCleanDiffView: React.FC<PlanCleanDiffViewProps> = ({
         className="annotation-exclude flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
       >
         <FoldChevron expanded />
-        Hide {fold.sectionCount} unchanged {noun}
+        隐藏 {fold.sectionCount} 个未更改段落
       </button>
     ) : (
       <button
@@ -432,13 +431,13 @@ export const PlanCleanDiffView: React.FC<PlanCleanDiffViewProps> = ({
         className="annotation-exclude flex w-full min-w-0 items-center gap-2 rounded-md bg-muted/40 px-3 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
       >
         <FoldChevron expanded={false} />
-        <span className="flex-none">{fold.sectionCount} unchanged {noun}</span>
+        <span className="flex-none">{fold.sectionCount} 个未更改段落</span>
         {fold.headings.length > 0 && (
           <span className="min-w-0 truncate text-muted-foreground/70">
             · {fold.headings.join(" · ")}
           </span>
         )}
-        <span className="ml-auto flex-none pl-2">Show</span>
+        <span className="ml-auto flex-none pl-2">显示</span>
       </button>
     );
     return (

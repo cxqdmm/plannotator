@@ -101,13 +101,13 @@ export const ReviewHeaderMenu: React.FC<ReviewHeaderMenuProps> = ({
               ? 'bg-muted text-foreground'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           }`}
-          title="Options"
-          aria-label="Options"
+          title="选项"
+          aria-label="选项"
           aria-expanded={isOpen}
         >
           {isOpen ? <CloseIcon /> : <MenuIcon />}
           {/* The dot says an update is out; the label never moves (no shimmer). */}
-          {compactTouchLayout && <span className="hidden lg:inline">Options</span>}
+          {compactTouchLayout && <span className="hidden lg:inline">选项</span>}
           {showUpdateDot && (
             <span className={`absolute w-2 h-2 rounded-full bg-primary ring-2 ring-background ${
               compactTouchLayout ? 'top-0.5 right-0.5 lg:-top-0.5 lg:-right-0.5' : 'top-0.5 right-0.5'
@@ -121,12 +121,12 @@ export const ReviewHeaderMenu: React.FC<ReviewHeaderMenuProps> = ({
           {compactTouchLayout && (compactDestination || compactActions.length > 0) && (
             <>
               <div className="px-3 py-2 space-y-2">
-                <ActionMenuSectionLabel>Review</ActionMenuSectionLabel>
+                <ActionMenuSectionLabel>评审</ActionMenuSectionLabel>
                 {compactDestination && (
-                  <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted/50 p-0.5" aria-label="Review destination">
+                  <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted/50 p-0.5" aria-label="评审去向">
                     {(['agent', 'platform'] as const).map((destination) => {
                       const selected = compactDestination.value === destination;
-                      const label = destination === 'agent' ? 'Agent' : compactDestination.platformLabel;
+                      const label = destination === 'agent' ? 'agent' : compactDestination.platformLabel;
                       return (
                         <button
                           data-pn-touch-target
@@ -169,7 +169,7 @@ export const ReviewHeaderMenu: React.FC<ReviewHeaderMenuProps> = ({
           )}
 
           <div className="px-3 py-2 space-y-1.5">
-            <ActionMenuSectionLabel>Theme</ActionMenuSectionLabel>
+            <ActionMenuSectionLabel>主题</ActionMenuSectionLabel>
             <div className="flex items-center gap-1 rounded-lg bg-muted/50 p-0.5">
               {THEME_MODES.map(({ id, label, Icon }) => (
                 <button
@@ -200,7 +200,7 @@ export const ReviewHeaderMenu: React.FC<ReviewHeaderMenuProps> = ({
               onOpenSettings();
             }}
             icon={<SettingsIcon />}
-            label="Settings"
+            label="设置"
           />
           <ActionMenuItem
             onClick={() => {
@@ -208,7 +208,7 @@ export const ReviewHeaderMenu: React.FC<ReviewHeaderMenuProps> = ({
               onOpenExport();
             }}
             icon={<ExportIcon />}
-            label="Export"
+            label="导出"
           />
           {agentInstructionsEnabled && (
             <ActionMenuItem
@@ -217,8 +217,8 @@ export const ReviewHeaderMenu: React.FC<ReviewHeaderMenuProps> = ({
                 onCopyAgentInstructions();
               }}
               icon={<ReviewAgentsIcon />}
-              label="Agent Instructions"
-              subtitle="Copy agent instructions for external review comments"
+              label="Agent 指令"
+              subtitle="复制用于外部评审评论的 agent 指令"
             />
           )}
 
@@ -232,7 +232,7 @@ export const ReviewHeaderMenu: React.FC<ReviewHeaderMenuProps> = ({
                     onOpenGuide();
                   }}
                   icon={<GuideIcon />}
-                  label="Guided Review"
+                  label="引导式评审"
                 />
               )}
               {onOpenAnnotations && (
@@ -242,7 +242,7 @@ export const ReviewHeaderMenu: React.FC<ReviewHeaderMenuProps> = ({
                     onOpenAnnotations();
                   }}
                   icon={<SidebarIcon />}
-                  label="Annotations"
+                  label="标注"
                 />
               )}
               {onOpenAI && (
@@ -252,7 +252,7 @@ export const ReviewHeaderMenu: React.FC<ReviewHeaderMenuProps> = ({
                     onOpenAI();
                   }}
                   icon={<SparklesIcon className="w-3.5 h-3.5" />}
-                  label="AI Chat"
+                  label="AI 对话"
                 />
               )}
               {onOpenAgents && (
@@ -262,7 +262,7 @@ export const ReviewHeaderMenu: React.FC<ReviewHeaderMenuProps> = ({
                     onOpenAgents();
                   }}
                   icon={<ReviewAgentsIcon className="w-3.5 h-3.5" />}
-                  label="Review Agents"
+                  label="评审 agent"
                 />
               )}
             </>
@@ -277,8 +277,8 @@ export const ReviewHeaderMenu: React.FC<ReviewHeaderMenuProps> = ({
             }}
             icon={<FileTreeMenuIcon />}
             label={compactTouchLayout
-              ? (isFileTreeOpen ? 'Close review navigation' : 'Open review navigation')
-              : (isFileTreeOpen ? 'Hide File Tree' : 'Show File Tree')
+              ? (isFileTreeOpen ? '关闭评审导航' : '打开评审导航')
+              : (isFileTreeOpen ? '隐藏文件树' : '显示文件树')
             }
             badge={compactTouchLayout ? undefined : <KbdHint keys={[modKey, 'B']} />}
           />
@@ -289,7 +289,7 @@ export const ReviewHeaderMenu: React.FC<ReviewHeaderMenuProps> = ({
                 onToggleSidebar();
               }}
               icon={<SidebarIcon />}
-              label={isSidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
+              label={isSidebarOpen ? '隐藏侧边栏' : '显示侧边栏'}
               badge={<KbdHint keys={[modKey, '.']} />}
             />
           )}

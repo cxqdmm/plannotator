@@ -60,23 +60,23 @@ export function useHtmlRefresh({
 
   const handleResult = useCallback((result: 'refreshed' | 'missing' | 'unavailable') => {
     if (result === 'missing') {
-      toast.error('HTML file no longer exists', {
-        description: 'The current rendered version remains open.',
+      toast.error('HTML 文件已不存在', {
+        description: '当前已渲染的版本仍保持打开。',
       });
     } else if (result === 'unavailable') {
-      toast.error('Could not refresh HTML', {
-        description: 'The current rendered version remains open. Try again in a moment.',
+      toast.error('无法刷新 HTML', {
+        description: '当前已渲染的版本仍保持打开。请稍后重试。',
       });
     } else {
-      toast.success('Refreshed HTML from disk');
+      toast.success('已从磁盘刷新 HTML');
     }
   }, []);
 
   const handleUnanchored = useCallback((missingIds: string[]) => {
     onUnanchored?.(missingIds);
     if (missingIds.length === 0) return;
-    toast(`${missingIds.length} annotation${missingIds.length === 1 ? ' no longer matches' : 's no longer match'} the HTML`, {
-      description: 'Their comments remain available in the annotations panel.',
+    toast(`${missingIds.length} 条标注与 HTML 不再匹配`, {
+      description: '它们的评论仍可在标注面板中查看。',
       duration: 5000,
     });
   }, [onUnanchored]);

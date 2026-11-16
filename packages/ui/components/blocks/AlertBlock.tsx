@@ -21,11 +21,11 @@ interface AlertBlockProps {
 }
 
 const TITLE: Record<AlertKind, string> = {
-  note: 'Note',
-  tip: 'Tip',
-  warning: 'Warning',
-  caution: 'Caution',
-  important: 'Important',
+  note: '备注',
+  tip: '提示',
+  warning: '警告',
+  caution: '注意',
+  important: '重要',
 };
 
 /**

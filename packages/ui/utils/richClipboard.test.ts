@@ -410,10 +410,10 @@ describe('copyRichTextToClipboard', () => {
 
   test('plain text in clipboard HTML is escaped; the tooltip says what was copied', () => {
     expect(plainTextClipboardHtml('<b>&"x"</b>')).toBe('<pre>&lt;b&gt;&amp;"x"&lt;/b&gt;</pre>');
-    expect(richCopyOutcomeLabel({ copied: 'rich' })).toBe('Copied as rich text');
+    expect(richCopyOutcomeLabel({ copied: 'rich' })).toBe('已复制为富文本');
     expect(richCopyOutcomeLabel({ copied: 'plain', reason: 'unavailable' }))
-      .toBe('Copied as plain text (rich clipboard unavailable)');
+      .toBe('已复制为纯文本（富文本剪贴板不可用）');
     expect(richCopyOutcomeLabel({ copied: 'plain', reason: 'no-markup', truncatedTo: 10_000 }))
-      .toBe('Copied as plain text (formatting not available; first 10,000 characters only)');
+      .toBe('已复制为纯文本（格式不可用；仅前 10,000 个字符）');
   });
 });

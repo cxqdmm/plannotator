@@ -71,7 +71,7 @@ function ChecksDisclosure({ context }: { context: PRContext }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${tone.dot}`} />
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Checks</span>
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">检查</span>
         <span className={`text-[10px] font-mono ${tone.text}`}>{label}</span>
       </button>
       {open && (
@@ -100,7 +100,7 @@ export const ReviewPROverviewPanel: React.FC<IDockviewPanelProps> = () => {
   }, [prContext, prContextError, isPRContextLoading, fetchPRContext]);
 
   if (!prMetadata) {
-    return <div className="h-full flex items-center justify-center text-muted-foreground text-sm">No PR metadata</div>;
+    return <div className="h-full flex items-center justify-center text-muted-foreground text-sm">没有 PR 元数据</div>;
   }
 
   if (isPRContextLoading && !prContext) {
@@ -120,7 +120,7 @@ export const ReviewPROverviewPanel: React.FC<IDockviewPanelProps> = () => {
           onClick={fetchPRContext}
           className="px-2.5 py-1 rounded-md text-xs font-medium bg-muted hover:bg-muted/80 transition-colors"
         >
-          Retry
+          重试
         </button>
       </div>
     );
@@ -159,7 +159,7 @@ export const ReviewPROverviewPanel: React.FC<IDockviewPanelProps> = () => {
 
   const commentsRegion = discussionCount > 0 ? (
     <section className="flex-1 min-w-0 min-h-0 flex flex-col rounded-lg border border-border/30 bg-surface-0 shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
-      {!isCompactTouchLayout && <RegionHeader>Comments</RegionHeader>}
+      {!isCompactTouchLayout && <RegionHeader>评论</RegionHeader>}
       <div className="flex-1 min-h-0">
         <PRCommentsTab context={prContext} platformUser={platformUser} />
       </div>
@@ -176,7 +176,7 @@ export const ReviewPROverviewPanel: React.FC<IDockviewPanelProps> = () => {
       {isCompactTouchLayout ? (
         <>
           {commentsRegion && (
-            <div className="shrink-0 grid grid-cols-2 rounded-lg bg-muted p-0.5" aria-label="PR overview section">
+            <div className="shrink-0 grid grid-cols-2 rounded-lg bg-muted p-0.5" aria-label="PR 概览分区">
               <button
                 data-pn-touch-target
                 type="button"
@@ -184,7 +184,7 @@ export const ReviewPROverviewPanel: React.FC<IDockviewPanelProps> = () => {
                 aria-pressed={compactSection === 'summary'}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium ${compactSection === 'summary' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
               >
-                Summary
+                概要
               </button>
               <button
                 data-pn-touch-target

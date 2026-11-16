@@ -68,7 +68,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
         {/* Header */}
         <div className="p-4 border-b border-border">
           <div className="flex justify-between items-center">
-            <h3 className="font-semibold text-sm">Import Teammate Review</h3>
+            <h3 className="font-semibold text-sm">导入队友评审</h3>
             <button
               onClick={handleClose}
               className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
@@ -84,7 +84,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
         <div className="p-4 space-y-4">
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-2">
-              Plannotator Share Link
+              Plannotator 分享链接
             </label>
             <input
               type="text"
@@ -99,7 +99,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Paste a share link from a teammate to import their annotations into the current plan review.
+            粘贴队友的分享链接，即可将其标注导入当前计划评审。
           </p>
 
           {/* Result feedback */}
@@ -112,13 +112,13 @@ export const ImportModal: React.FC<ImportModalProps> = ({
                 : 'bg-destructive/10 text-destructive'
             }`}>
               {result.success && result.count > 0 && (
-                <span>Imported {result.count} annotation{result.count !== 1 ? 's' : ''} from "{result.planTitle}"</span>
+                <span>已从“{result.planTitle}”导入 {result.count} 条标注</span>
               )}
               {result.success && result.count === 0 && (
-                <span>{result.error || 'No new annotations to import (all already exist)'}</span>
+                <span>{result.error || '没有可导入的新标注（全部已存在）'}</span>
               )}
               {!result.success && (
-                <span>{result.error || 'Failed to import'}</span>
+                <span>{result.error || '导入失败'}</span>
               )}
             </div>
           )}
@@ -130,14 +130,14 @@ export const ImportModal: React.FC<ImportModalProps> = ({
             onClick={handleClose}
             className="px-3 py-1.5 rounded-md text-xs font-medium bg-muted hover:bg-muted/80 transition-colors"
           >
-            Cancel
+            取消
           </button>
           <button
             onClick={handleImport}
             disabled={!url.trim() || loading}
             className="px-3 py-1.5 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Importing...' : 'Import'}
+            {loading ? '导入中…' : '导入'}
           </button>
         </div>
       </div>

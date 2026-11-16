@@ -44,15 +44,15 @@ describe('safe-update failure reasons', () => {
 
   test('a temp folder that could not hold the update is not called a download failure', () => {
     const text = describeAutoUpdateNotice(parseAutoUpdateNotice({ ...failed, reason: 'prepare' })!);
-    expect(text.title).toBe("Couldn't prepare the update");
-    expect(text.description).toContain('temp folder');
-    expect(text.description).not.toContain('download');
+    expect(text.title).toBe('无法准备更新');
+    expect(text.description).toContain('临时文件夹');
+    expect(text.description).not.toContain('下载');
   });
 
   test('a mismatch says nothing changed and offers no install command', () => {
     const text = describeAutoUpdateNotice(parseAutoUpdateNotice({ ...failed, reason: 'mismatch' })!);
-    expect(text.title).toBe('Update to v0.28.33 stopped');
-    expect(text.description).toContain('Nothing was changed');
+    expect(text.title).toBe('更新至 v0.28.33 已停止');
+    expect(text.description).toContain('未做任何更改');
     expect(text.description).not.toContain('curl');
   });
 });

@@ -177,18 +177,18 @@ describe('resolveGuideSectionFiles', () => {
 describe('GuideView persistence affordances (#1112)', () => {
   test.skipIf(!hasDom)('renders the Saved chip only when persisted, and no outdated hint either way', async () => {
     await renderView(makeGuide());
-    expect(host!.textContent).not.toContain('Saved');
-    expect(host!.textContent).not.toContain('Generated on a different version');
+    expect(host!.textContent).not.toContain('已保存');
+    expect(host!.textContent).not.toContain('指南基于此分支的另一个版本生成');
 
     await renderView(makeGuide({ saved: true }));
-    expect(host!.textContent).toContain('Saved');
-    expect(host!.textContent).not.toContain('Generated on a different version');
+    expect(host!.textContent).toContain('已保存');
+    expect(host!.textContent).not.toContain('指南基于此分支的另一个版本生成');
   });
 
   test.skipIf(!hasDom)('renders the outdated hint with a wired Regenerate action when moved', async () => {
     let regenerated = 0;
     await renderView(makeGuide({ saved: true, moved: true }), { onRegenerate: () => { regenerated += 1; } });
-    const regenerate = [...host!.querySelectorAll('button')].find((button) => button.textContent === 'Regenerate');
+    const regenerate = [...host!.querySelectorAll('button')].find((button) => button.textContent === '重新生成');
     expect(regenerate).not.toBeNull();
     await act(async () => regenerate!.click());
     expect(regenerated).toBe(1);
@@ -196,7 +196,7 @@ describe('GuideView persistence affordances (#1112)', () => {
 
   test.skipIf(!hasDom)('moved without a regenerate handler renders no action', async () => {
     await renderView(makeGuide({ saved: true, moved: true }));
-    expect([...host!.querySelectorAll('button')].find((button) => button.textContent === 'Regenerate')).toBeUndefined();
+    expect([...host!.querySelectorAll('button')].find((button) => button.textContent === '重新生成')).toBeUndefined();
   });
 });
 
@@ -212,7 +212,7 @@ describe('GuideView section count', () => {
     });
     await renderView(guide, { state: makeState({ files: [makeFile('a.ts'), makeFile('b.ts'), makeFile('c.ts')] }) });
     const text = host!.textContent ?? '';
-    expect(text).toContain('2 sections');
+    expect(text).toContain('2 个章节');
     expect(text).toContain('01 / 02');
     expect(text).toContain('02 / 02');
     expect(text).not.toContain('/ 03');
@@ -509,7 +509,7 @@ describe('GuideView global comments', () => {
       },
     });
     const add = host!.querySelector<HTMLButtonElement>('[data-guide-global-comment-add]')!;
-    expect(add.textContent).toBe('Global comment');
+    expect(add.textContent).toBe('全局评论');
     await act(async () => add.click());
     expect(anchors).toEqual([add]);
     const list = host!.querySelector('[data-guide-global-comments]')!;
@@ -550,8 +550,8 @@ describe('GuideView threadHeading (the Inbox review, under its top bar)', () => 
     await renderView(makeGuide(overview), { state: { ...makeState(), renderHeadActions: headActions }, engineLabel: 'Claude Code', sourceLine: 'repo · main' });
     expect(host!.querySelector('[data-guide-heading]')).toBeNull();
     expect(host!.querySelector('h1')?.textContent).toBe('Persisted guide');
-    expect(host!.textContent).toContain('1 section');
-    expect(host!.querySelector('[data-guide-overview] h2')?.textContent).toBe('Overview');
+    expect(host!.textContent).toContain('1 个章节');
+    expect(host!.querySelector('[data-guide-overview] h2')?.textContent).toBe('概览');
     expect(host!.querySelector('[data-testid="head-action"]')).toBeNull();
   });
 
@@ -561,38 +561,38 @@ describe('GuideView threadHeading (the Inbox review, under its top bar)', () => 
     await renderView(makeGuide(overview), { threadHeading: true, state, engineLabel: 'Claude Code · claude-opus-5', sourceLine: 'charges · master · main...HEAD' });
     const heading = host!.querySelector('[data-guide-heading]')!;
     expect(heading.querySelector('h1')?.textContent).toBe('Test intent.');
-    expect([...heading.querySelectorAll('[data-guide-facts] > span:not([aria-hidden])')].map((fact) => fact.textContent)).toEqual(['Written by Claude Code', 'claude-opus-5', 'charges', 'master', 'main...HEAD']);
+    expect([...heading.querySelectorAll('[data-guide-facts] > span:not([aria-hidden])')].map((fact) => fact.textContent)).toEqual(['Claude Code', 'claude-opus-5 撰写', 'charges', 'master', 'main...HEAD']);
     const buttons = [...heading.querySelectorAll('.gv-tools button')].map((button) => button.textContent?.trim());
-    expect(buttons).toEqual(['Show me', 'Global comment']);
+    expect(buttons).toEqual(['Show me', '全局评论']);
     // One Global comment: the row above the old title is not drawn as well.
     expect(host!.querySelectorAll('[data-guide-global-comment-add]')).toHaveLength(1);
     // The menu in the host's top bar names the overview: no label over the prose, no counts line.
     expect(host!.querySelector('[data-guide-overview] h2')).toBeNull();
     expect(host!.querySelector('[data-guide-overview]')?.textContent).toContain('How the change fits together.');
-    expect(host!.textContent).not.toContain('1 section');
+    expect(host!.textContent).not.toContain('1 个章节');
   });
 
   test.skipIf(!hasDom)('a guide moved since it was written says so among the facts', async () => {
     await renderView(makeGuide({ moved: true }), { threadHeading: true });
-    expect(host!.querySelector('[data-guide-facts]')?.textContent).toContain('Generated on a different version of this branch');
+    expect(host!.querySelector('[data-guide-facts]')?.textContent).toContain('指南基于此分支的另一个版本生成');
   });
 });
 
 describe('GuideView showReviewed (the Inbox walkthrough: nothing to review)', () => {
-  const reviewedButtons = () => [...host!.querySelectorAll('button')].filter((button) => /Mark as reviewed|Un-mark as reviewed/.test(button.getAttribute('title') ?? button.getAttribute('aria-label') ?? ''));
+  const reviewedButtons = () => [...host!.querySelectorAll('button')].filter((button) => /标记为已评审|取消已评审标记/.test(button.getAttribute('title') ?? button.getAttribute('aria-label') ?? ''));
 
   // Guards the hosts that never pass it (the review app, guides.show, VS Code, an Inbox review): each chapter keeps its tick.
   test.skipIf(!hasDom)('by default each chapter has its Reviewed tick', async () => {
     await renderView(makeGuide(), { threadHeading: true });
     expect(reviewedButtons()).toHaveLength(1);
-    expect(reviewedButtons()[0]!.textContent).toContain('Reviewed');
+    expect(reviewedButtons()[0]!.textContent).toContain('已评审');
   });
 
   // Guards the walkthrough: no tick on a chapter, open or folded, even one stored as reviewed.
   test.skipIf(!hasDom)('off: no chapter has a Reviewed tick, and a chapter stored as reviewed opens rather than folding', async () => {
     await renderView(makeGuide({ reviewed: [true] }), { threadHeading: true, showReviewed: false });
     expect(reviewedButtons()).toHaveLength(0);
-    expect(host!.textContent).not.toContain('Reviewed');
+    expect(host!.textContent).not.toContain('已评审');
     expect(host!.querySelector('[data-guide-section-grid]')).not.toBeNull();
   });
 });

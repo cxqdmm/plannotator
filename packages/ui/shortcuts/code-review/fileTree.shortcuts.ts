@@ -3,30 +3,30 @@ import { createShortcutScopeHook } from '../runtime';
 
 export const reviewFileTreeShortcuts = defineShortcutScope({
   id: 'review-file-tree',
-  title: 'File Navigation',
+  title: '文件导航',
   shortcuts: {
     nextFile: {
-      description: 'Next file',
+      description: '下一个文件',
       bindings: ['J', 'ArrowDown'],
-      section: 'File Navigation',
+      section: '文件导航',
       displayOrder: 10,
     },
     prevFile: {
-      description: 'Previous file',
+      description: '上一个文件',
       bindings: ['K', 'ArrowUp'],
-      section: 'File Navigation',
+      section: '文件导航',
       displayOrder: 20,
     },
     firstFile: {
-      description: 'First file',
+      description: '第一个文件',
       bindings: ['Home'],
-      section: 'File Navigation',
+      section: '文件导航',
       displayOrder: 30,
     },
     lastFile: {
-      description: 'Last file',
+      description: '最后一个文件',
       bindings: ['End'],
-      section: 'File Navigation',
+      section: '文件导航',
       displayOrder: 40,
     },
   },

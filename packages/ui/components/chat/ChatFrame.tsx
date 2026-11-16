@@ -59,12 +59,12 @@ export interface ChatFrameLabels {
 }
 
 const DEFAULT_LABELS: ChatFrameLabels = {
-  fullscreen: 'Fullscreen',
-  exitFullscreen: 'Exit fullscreen',
-  minimize: 'Minimize',
-  close: 'Close',
-  resize: 'Resize the chat window. Arrow keys resize; Home restores the default size.',
-  dragHint: 'Drag to move · double-click to re-dock',
+  fullscreen: '全屏',
+  exitFullscreen: '退出全屏',
+  minimize: '最小化',
+  close: '关闭',
+  resize: '调整聊天窗口大小。方向键调整大小；Home 恢复默认大小。',
+  dragHint: '拖动以移动 · 双击重新停靠',
 };
 
 export interface ChatFrameProps {

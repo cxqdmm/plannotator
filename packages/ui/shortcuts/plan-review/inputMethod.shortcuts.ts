@@ -10,20 +10,20 @@ import { defineShortcutScope } from '../core';
 
 export const inputMethodShortcuts = defineShortcutScope({
   id: 'input-method',
-  title: 'Input Method',
+  title: '输入方式',
   shortcuts: {
     temporarySwitch: {
-      description: 'Temporarily switch input method',
+      description: '临时切换输入方式',
       bindings: ['Alt hold'],
-      section: 'Input Method',
-      hint: 'Hold Alt to switch between Select and Pinpoint, then release to revert.',
+      section: '输入方式',
+      hint: '按住 Alt 在“选择”和“精准定位”之间切换，松开后恢复。',
       displayOrder: 10,
     },
     toggleSwitch: {
-      description: 'Toggle input method',
+      description: '切换输入方式',
       bindings: ['Alt Alt'],
-      section: 'Input Method',
-      hint: 'Double-tap Alt to switch between Select and Pinpoint until you toggle again.',
+      section: '输入方式',
+      hint: '双击 Alt 在“选择”和“精准定位”之间切换，直到再次切换。',
       displayOrder: 20,
     },
   },

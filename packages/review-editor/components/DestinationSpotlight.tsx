@@ -97,13 +97,13 @@ export function DestinationSpotlight({
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Review destination"
+            aria-label="评审去向"
             className="pointer-events-auto max-h-full w-full overflow-y-auto rounded-xl border border-border bg-popover p-4 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="text-base font-semibold text-foreground">Choose where reviews go</div>
+            <div className="text-base font-semibold text-foreground">选择评审的去向</div>
             <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-              Post comments to {platformLabel}, or send them to your agent. Tap the highlighted control any time to switch.
+              将评论发布到 {platformLabel}，或发送给你的 agent。随时点击高亮控件即可切换。
             </p>
             <div className="mt-3 flex justify-end">
               <button
@@ -112,7 +112,7 @@ export function DestinationSpotlight({
                 onClick={onDismiss}
                 className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
               >
-                Got it
+                知道了
               </button>
             </div>
           </div>
@@ -128,15 +128,13 @@ export function DestinationSpotlight({
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="text-sm font-semibold text-foreground">Where should your review go?</div>
+          <div className="text-sm font-semibold text-foreground">你的评审应该发往哪里？</div>
           <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-            You're reviewing {/^[AEIOUM]/.test(mrLabel) ? 'an' : 'a'} {mrLabel}, so your feedback
-            can go two ways: post review comments straight to {platformLabel}, or send them to your
-            agent session. Use this switcher to change the destination at any point — per review,
-            no setup.
+            你正在评审 {mrLabel}，因此反馈有两种去向：把评审评论直接发布到 {platformLabel}，或发送给你的
+            agent 会话。可随时用这个切换器更改去向——按每次评审生效，无需任何设置。
           </p>
           <p className="mt-2 text-[11px] text-muted-foreground/70">
-            Tip: double-tap {kbd(altKey)} {kbd(altKey)} to switch quickly.
+            提示：双击 {kbd(altKey)} {kbd(altKey)} 即可快速切换。
           </p>
           <div className="mt-3 flex justify-end">
             <button
@@ -144,7 +142,7 @@ export function DestinationSpotlight({
               onClick={onDismiss}
               className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
             >
-              Got it
+              知道了
             </button>
           </div>
         </div>

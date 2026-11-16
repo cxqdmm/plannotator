@@ -13,9 +13,9 @@ const stateColors: Record<PRItem['state'], string> = {
 };
 
 const stateLabels: Record<PRItem['state'], string> = {
-  open: 'Open',
-  merged: 'Merged',
-  closed: 'Closed',
+  open: '打开',
+  merged: '已合并',
+  closed: '已关闭',
 };
 
 interface PRSelectorProps {
@@ -87,26 +87,26 @@ export function PRSelector({ mrNumberLabel, numberPrefix, prTitle, currentNumber
           item.author.toLowerCase().includes(lower)
         );
       }}
-      placeholder="Search pull requests..."
-      emptyMessage={loading ? 'Loading...' : 'No pull requests found'}
+      placeholder="搜索 PR…"
+      emptyMessage={loading ? '加载中…' : '未找到 PR'}
       align="start"
       width="w-[min(20rem,calc(100vw-1rem))]"
       onOpenChange={handleOpen}
       headerContent={mergedCount > 0 ? (
         <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/50">
           <span className="text-[10px] text-muted-foreground/60">
-            {hideMerged ? `${openCount} open · ${mergedCount} hidden` : `${openCount} open, ${prs.length} total`}
+            {hideMerged ? `打开 ${openCount} 个 · 已隐藏 ${mergedCount} 个` : `打开 ${openCount} 个，共 ${prs.length} 个`}
           </span>
           <button
             data-pn-touch-target
             type="button"
             onClick={toggleHideMerged}
-            title={hideMerged ? 'Show merged PRs' : 'Hide merged PRs'}
+            title={hideMerged ? '显示已合并的 PR' : '隐藏已合并的 PR'}
             className={`cc-blocking-toggle ${hideMerged ? 'is-on' : ''}`}
             style={{ borderLeft: 'none', marginLeft: 0 }}
           >
             <span className="cc-toggle-track"><span className="cc-toggle-thumb" /></span>
-            <span>Hide merged</span>
+            <span>隐藏已合并</span>
           </button>
         </div>
       ) : undefined}

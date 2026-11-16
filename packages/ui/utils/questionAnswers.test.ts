@@ -104,8 +104,8 @@ Fourth?
     ]);
     expect(rows.map((r) => [r.number ?? null, r.status, r.answerText ?? null, r.hasNote, r.orphaned])).toEqual([
       [1, 'answered', 'B', true, false],
-      [2, 'settled', 'REST (settled)', false, false],
-      [3, 'skipped', 'Skipped', false, false],
+      [2, 'settled', 'REST（已确定）', false, false],
+      [3, 'skipped', '已跳过', false, false],
       [4, 'open', null, false, false],
       [null, 'answered', 'Yes', false, true],
     ]);

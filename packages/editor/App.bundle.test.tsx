@@ -154,7 +154,7 @@ async function mount(): Promise<void> {
   document.body.appendChild(host);
   root = createRoot(host);
   await act(async () => { root?.render(<App />); });
-  await waitFor(() => switcherText().includes("1 of 2"), "the first file to open");
+  await waitFor(() => switcherText().includes("第 1 个，共 2 个"), "the first file to open");
 }
 
 afterEach(async () => {
@@ -387,7 +387,7 @@ async function mountAgainstRealServer(): Promise<void> {
   document.body.appendChild(host);
   root = createRoot(host);
   await act(async () => { root?.render(<App />); });
-  await waitFor(() => switcherText().includes("1 of 2"), "the first file to open");
+  await waitFor(() => switcherText().includes("第 1 个，共 2 个"), "the first file to open");
 }
 
 const findButton = (label: string): HTMLButtonElement | undefined =>
@@ -395,7 +395,7 @@ const findButton = (label: string): HTMLButtonElement | undefined =>
 
 /** The Save control carries a width-reserving "Saving" ghost span in front of its live label. */
 const saveButton = (): HTMLButtonElement | undefined =>
-  Array.from(document.querySelectorAll("button")).find((button) => button.textContent?.startsWith("Saving"));
+  Array.from(document.querySelectorAll("button")).find((button) => button.textContent?.startsWith("保存中"));
 
 /** The mounted CodeMirror view, from its DOM back-reference (see App.editModeShortcut.test.tsx). */
 function editorView(): { state: { doc: { toString(): string } }; dispatch(spec: unknown): void } {
@@ -425,15 +425,15 @@ describe.if(hasDom)("annotate bundle Edit Mode", () => {
     const { readFileSync } = await import("node:fs");
     await mountAgainstRealServer();
 
-    await waitFor(() => !!findButton("Edit"), "Edit Mode to be offered on the first file");
-    await act(async () => { findButton("Edit")!.click(); });
+    await waitFor(() => !!findButton("编辑"), "Edit Mode to be offered on the first file");
+    await act(async () => { findButton("编辑")!.click(); });
     await waitFor(() => !!document.querySelector(".cm-editor"), "the editor");
 
     const view = editorView();
     await act(async () => {
       view.dispatch({ changes: { from: view.state.doc.toString().trimEnd().length, insert: " Edited." } });
     });
-    await waitFor(() => !!saveButton()?.textContent?.includes("Save") && !saveButton()?.disabled, "the Save control");
+    await waitFor(() => !!saveButton()?.textContent?.includes("保存") && !saveButton()?.disabled, "the Save control");
     await act(async () => { saveButton()!.click(); });
     await waitFor(() => readFileSync(bundle!.first, "utf-8").includes("Edited."), "the save to reach the file");
     expect(readFileSync(bundle.first, "utf-8")).toBe("# First\n\nFirst body text. Edited.\n");
@@ -446,10 +446,10 @@ describe.if(hasDom)("annotate bundle Edit Mode", () => {
     bundle = await startRealBundle();
     await mountAgainstRealServer();
     await act(async () => {
-      document.querySelector<HTMLButtonElement>('[aria-label="Next file"]')!.click();
+      document.querySelector<HTMLButtonElement>('[aria-label="下一个文件"]')!.click();
     });
-    await waitFor(() => switcherText().includes("2 of 2"), "the second file");
-    await waitFor(() => !!findButton("Edit"), "Edit Mode to be offered on the second file");
+    await waitFor(() => switcherText().includes("第 2 个，共 2 个"), "the second file");
+    await waitFor(() => !!findButton("编辑"), "Edit Mode to be offered on the second file");
   });
 });
 
@@ -458,10 +458,10 @@ describe.if(hasDom)("annotate bundle", () => {
     await mount();
     expect(docRequests()[0]).toBe(BETA);
     expect(switcherText()).toContain("beta.md");
-    expect(document.querySelector('[aria-label="Previous file"]')?.hasAttribute("disabled")).toBe(true);
+    expect(document.querySelector('[aria-label="上一个文件"]')?.hasAttribute("disabled")).toBe(true);
     // The tab names the open file and its place (#2061); the header names it
     // once, in the switcher.
-    expect(document.title).toBe("beta.md (1 of 2) · acme/payments");
+    expect(document.title).toBe("beta.md（第 1 个，共 2 个） · acme/payments");
     expect(document.querySelector("[data-header-document-name]")).toBeNull();
 
     // The Files tab lists exactly the bundle, unsorted (beta before alpha),
@@ -481,12 +481,12 @@ describe.if(hasDom)("annotate bundle", () => {
   test("Next opens the following file, and one Send Feedback has one section per file in bundle order", async () => {
     await mount();
     await act(async () => {
-      document.querySelector<HTMLButtonElement>('[aria-label="Next file"]')!.click();
+      document.querySelector<HTMLButtonElement>('[aria-label="下一个文件"]')!.click();
     });
-    await waitFor(() => switcherText().includes("2 of 2"), "the second file");
+    await waitFor(() => switcherText().includes("第 2 个，共 2 个"), "the second file");
     expect(switcherText()).toContain("alpha.md");
     expect(docRequests()).toContain(ALPHA);
-    expect(document.title).toBe("alpha.md (2 of 2) · acme/payments");
+    expect(document.title).toBe("alpha.md（第 2 个，共 2 个） · acme/payments");
     // Both files' saved comments are in the session now.
     await waitFor(() => !!document.querySelector("[data-decision-primary]")?.textContent?.includes("发送反馈"), "Send Feedback");
 

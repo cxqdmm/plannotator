@@ -28,10 +28,10 @@ function relativeTime(timestamp: string): string {
   const then = new Date(timestamp).getTime();
   const diff = now - then;
 
-  if (diff < 60_000) return "just now";
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)}d ago`;
+  if (diff < 60_000) return "刚刚";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`;
+  if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)} 天前`;
   return new Date(timestamp).toLocaleDateString();
 }
 
@@ -58,7 +58,7 @@ export const VersionBrowser: React.FC<VersionBrowserProps> = ({
   if (!versionInfo) {
     return (
       <div className="p-4 text-xs text-muted-foreground text-center">
-        No version history available.
+        没有可用的版本历史。
       </div>
     );
   }
@@ -71,10 +71,10 @@ export const VersionBrowser: React.FC<VersionBrowserProps> = ({
       {/* Current version info */}
       <div className="mb-3">
         <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
-          Current Plan
+          当前计划
         </div>
         <div className="text-xs text-foreground">
-          Version {currentVersion} of {totalVersions}
+          第 {currentVersion} 版，共 {totalVersions} 版
         </div>
       </div>
 
@@ -84,7 +84,7 @@ export const VersionBrowser: React.FC<VersionBrowserProps> = ({
           onClick={onActivatePlanDiff}
           className="w-full mb-3 px-3 py-1.5 text-xs font-medium rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
         >
-          Show Changes
+          显示更改
         </button>
       )}
 
@@ -92,12 +92,12 @@ export const VersionBrowser: React.FC<VersionBrowserProps> = ({
       {totalVersions > 1 && (
         <div className="mb-3">
           <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
-            Compare Against
+            对比版本
           </div>
 
           {isLoading ? (
             <div className="text-xs text-muted-foreground py-2 text-center">
-              Loading...
+              正在加载…
             </div>
           ) : (
             <div className="space-y-0.5">
@@ -121,12 +121,12 @@ export const VersionBrowser: React.FC<VersionBrowserProps> = ({
                           v{v.version}
                           {v.version === currentVersion - 1 && (
                             <span className="ml-1 text-muted-foreground font-normal">
-                              (previous)
+                              （上一版）
                             </span>
                           )}
                         </span>
                         <span className="text-[10px] text-muted-foreground">
-                          {fetchingVersion === v.version ? "Loading..." : relativeTime(v.timestamp)}
+                          {fetchingVersion === v.version ? "正在加载…" : relativeTime(v.timestamp)}
                         </span>
                       </div>
                     </button>

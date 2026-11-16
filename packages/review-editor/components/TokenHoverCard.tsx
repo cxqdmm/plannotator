@@ -109,7 +109,7 @@ function TokenHoverCardContent({
         <div className="mx-3.5 mt-2 overflow-x-auto whitespace-pre rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[11.5px] text-foreground">
           {definition.signature}
           {definition.signatureApproximate && (
-            <span className="text-muted-foreground"> {'// matched line'}</span>
+            <span className="text-muted-foreground"> {'// 匹配行'}</span>
           )}
         </div>
       )}
@@ -124,7 +124,7 @@ function TokenHoverCardContent({
         <div className="mt-2.5 px-3.5 text-xs text-muted-foreground">
           <div className="flex flex-wrap items-center gap-1.5">
             <span aria-hidden="true">{'→'}</span>
-            <span>Defined at</span>
+            <span>定义于</span>
             <button
               type="button"
               {...inertProps}
@@ -137,7 +137,7 @@ function TokenHoverCardContent({
           {alternateDefinition && (
             <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
               <span className="invisible" aria-hidden="true">{'→'}</span>
-              <span>or possibly</span>
+              <span>或可能是</span>
               <button
                 type="button"
                 {...inertProps}
@@ -154,7 +154,7 @@ function TokenHoverCardContent({
       {referenceCount > 0 && (
         <div className="mt-2.5 border-t border-border px-3.5 py-2.5">
           <div className="mb-1.5 text-xs text-muted-foreground">
-            {shownCount} {referenceCount === 1 ? 'reference' : 'references'}
+            {shownCount} 处引用
           </div>
           {references.map((reference) => (
             <div
@@ -174,7 +174,7 @@ function TokenHoverCardContent({
           ))}
           {remaining > 0 && (
             <div className="py-0.5 text-[11px] text-muted-foreground">
-              {`… ${remaining} more in the References panel`}
+              {`… 另有 ${remaining} 处在引用面板中`}
             </div>
           )}
         </div>
@@ -183,11 +183,11 @@ function TokenHoverCardContent({
       {/* Frozen copy: the card teaches exactly one thing, and the Alt-click
           alias is deliberately not advertised here. */}
       <div className="border-t border-border px-3.5 py-1.5 text-[10.5px] text-muted-foreground">
-        Click a location to jump.{' '}
+        点击位置即可跳转。{' '}
         <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px]">
           {modKey}
         </kbd>
-        {modKey === '⌘' ? '' : '+'}click a token for the full References panel.
+        {modKey === '⌘' ? '' : '+'}点击 token 可打开完整引用面板。
       </div>
     </>
   );
@@ -244,7 +244,7 @@ export function TokenHoverCard({
       // Not a dialog: nothing here takes focus, traps it, or must be
       // dismissed. It is supplementary information about the hovered token.
       role="tooltip"
-      aria-label={`${data.symbol} details`}
+      aria-label={`${data.symbol} 详情`}
       // A display-only card portals to <body>, which puts it OUTSIDE the
       // aria-modal dialog it is being shown inside — where a screen reader
       // would reach it as a stray tooltip with no context. Its meaning is

@@ -46,14 +46,14 @@ export function PRMediaScope({ children }: { children: React.ReactNode }): React
           if (img.closest('a') !== null) img.classList.remove('cursor-zoom-in');
           continue;
         }
-        const label = artifact ? `Open ${artifact.name} in Artifacts` : `View ${img.alt || 'picture'} larger`;
+        const label = artifact ? `在 Artifacts 中打开 ${artifact.name}` : `放大查看 ${img.alt || '图片'}`;
         img.setAttribute(MEDIA_ATTR, artifact ? 'artifact' : 'zoom');
         if (artifact) img.setAttribute(ARTIFACT_ID_ATTR, artifact.id);
         else img.removeAttribute(ARTIFACT_ID_ATTR);
         img.setAttribute('role', 'button');
         img.setAttribute('tabindex', '0');
         img.setAttribute('aria-label', label);
-        img.setAttribute('title', artifact ? 'Open in Artifacts' : 'View larger');
+        img.setAttribute('title', artifact ? '在 Artifacts 中打开' : '放大查看');
         img.classList.add('cursor-zoom-in');
       }
       for (const link of root.querySelectorAll<HTMLAnchorElement>('a[href]')) {
@@ -66,7 +66,7 @@ export function PRMediaScope({ children }: { children: React.ReactNode }): React
         }
         link.setAttribute(MEDIA_ATTR, 'artifact');
         link.setAttribute(ARTIFACT_ID_ATTR, artifact.id);
-        link.setAttribute('title', 'Open in Artifacts');
+        link.setAttribute('title', '在 Artifacts 中打开');
       }
     };
     decorate();

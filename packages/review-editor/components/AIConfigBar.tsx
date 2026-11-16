@@ -64,7 +64,7 @@ export const AIConfigBar: React.FC<AIConfigBarProps> = ({
     return (
       <>
       <div className="border-t border-border/50 px-2 py-1.5 text-[11px] text-muted-foreground/50">
-        No AI providers available
+        没有可用的 AI 提供商
       </div>
       <AskSessionSetupHint text={setupHint} />
       </>
@@ -184,7 +184,7 @@ export const AIConfigBar: React.FC<AIConfigBarProps> = ({
                     <input
                       ref={searchInputRef}
                       type="text"
-                      placeholder="Filter models…"
+                      placeholder="筛选模型…"
                       value={modelSearch}
                       onChange={e => setModelSearch(e.target.value)}
                       autoFocus
@@ -233,9 +233,9 @@ export const AIConfigBar: React.FC<AIConfigBarProps> = ({
               type="button"
               onClick={() => setOpenMenu(openMenu === 'effort' ? null : 'effort')}
               className="flex items-center gap-1 px-1 py-0.5 -mx-1 rounded hover:bg-muted/50 transition-colors"
-              title="Reasoning effort"
+              title="推理强度"
             >
-              <span>{reasoningEfforts.find(e => e.id === activeEffort)?.label ?? 'Auto'}</span>
+              <span>{reasoningEfforts.find(e => e.id === activeEffort)?.label ?? '自动'}</span>
               {chevron}
             </button>
 
@@ -247,7 +247,7 @@ export const AIConfigBar: React.FC<AIConfigBarProps> = ({
                     onClick={() => handleEffortSelect(null)}
                     className={`ai-config-menu-item ${activeEffort === '' ? 'ai-config-menu-item-active' : ''}`}
                   >
-                    <span>Auto</span>
+                    <span>自动</span>
                     {activeEffort === '' && (
                       <svg className="w-3 h-3 ml-auto text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -284,7 +284,7 @@ export const AIConfigBar: React.FC<AIConfigBarProps> = ({
 
       {/* Session reset note */}
       {showSessionNote && (
-        <span className="text-[10px] text-amber-500 animate-pulse">New chat session</span>
+        <span className="text-[10px] text-amber-500 animate-pulse">新的聊天会话</span>
       )}
     </div>
     <ModelSourceHint

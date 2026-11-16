@@ -413,7 +413,7 @@ describe.if(hasDom)('pinpoint click-to-pin flow', () => {
     if (!toolbar) throw new Error('toolbar missing');
     const titles = Array.from(toolbar.querySelectorAll('button')).map((b) => b.title);
     expect(titles).toContain('Comment');
-    expect(titles).toContain('Looks good');
+    expect(titles).toContain('看起来不错');
     expect(titles).not.toContain('Delete');
     expect(titles).not.toContain('Quick label');
   });
@@ -428,14 +428,14 @@ describe.if(hasDom)('pinpoint click-to-pin flow', () => {
     const toolbar = document.querySelector('.annotation-toolbar');
     if (!toolbar) throw new Error('toolbar missing');
     const thumbs = Array.from(toolbar.querySelectorAll<HTMLButtonElement>('button')).find(
-      (b) => b.title === 'Looks good',
+      (b) => b.title === '看起来不错',
     );
     if (!thumbs) throw new Error('thumbs-up missing');
     await act(async () => thumbs.click());
     expect(added).toHaveLength(1);
     expect(added[0]?.type).toBe(AnnotationType.COMMENT);
     expect(added[0]?.isQuickLabel).toBe(true);
-    expect(added[0]?.text).toBe('Looks good');
+    expect(added[0]?.text).toBe('看起来不错');
   });
 
   function composerThumbsUp(): HTMLButtonElement | null {

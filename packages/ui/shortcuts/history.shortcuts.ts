@@ -3,19 +3,19 @@ import { createShortcutScopeHook } from './runtime';
 
 export const historyShortcuts = defineShortcutScope({
   id: 'history',
-  title: 'History',
+  title: '历史记录',
   shortcuts: {
     undo: {
-      description: 'Undo annotation change',
+      description: '撤销标注更改',
       bindings: ['Mod+Z'],
-      section: 'History',
+      section: '历史记录',
       preventDefault: true,
       displayOrder: 10,
     },
     redo: {
-      description: 'Redo annotation change',
+      description: '重做标注更改',
       bindings: ['Mod+Shift+Z', 'Mod+Y'],
-      section: 'History',
+      section: '历史记录',
       preventDefault: true,
       displayOrder: 20,
     },

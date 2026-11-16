@@ -311,7 +311,7 @@ export default function ScenePlayer({ scene, reduce = false, at, fitView = true,
   const scenario = /^(scenario|simulated|written from|read from)/i.test(scene.source ?? '');
 
   return (
-    <div className={`ssc${reduce ? ' reduce' : ''}${look === 'technical' ? ' tech' : ''}`} ref={rootRef} style={{ ['--u' as string]: String(u) }} role="group" aria-label={`Animation: ${scene.title}`}>
+    <div className={`ssc${reduce ? ' reduce' : ''}${look === 'technical' ? ' tech' : ''}`} ref={rootRef} style={{ ['--u' as string]: String(u) }} role="group" aria-label={`动画：${scene.title}`}>
       <style>{CSS}</style>
       {/* One count on screen: the beat number lives by the time slider (beatCount), not here too. */}
       <p className="ssc-cap" aria-hidden="true">
@@ -329,11 +329,11 @@ export default function ScenePlayer({ scene, reduce = false, at, fitView = true,
               ))}
             </span>
           )}
-          {scene.source && <span className="ssc-src">{scenario ? `${scene.source} · not a recording` : scene.source}</span>}
+          {scene.source && <span className="ssc-src">{scenario ? `${scene.source} · 非录屏` : scene.source}</span>}
         </div>
       )}
       {scene.code && (
-        <div className="ssc-code" ref={codeRef} role="region" aria-label="Code" tabIndex={0}>
+        <div className="ssc-code" ref={codeRef} role="region" aria-label="代码" tabIndex={0}>
           <ol>
             {scene.code.lines.map((l, i) => (
               <li key={i} aria-current={beat.line === i + 1 ? 'step' : undefined}>
@@ -343,32 +343,32 @@ export default function ScenePlayer({ scene, reduce = false, at, fitView = true,
           </ol>
         </div>
       )}
-      {missing.length > 0 && <p className="ssc-warn">Not in the drawing: {missing.map((m) => `data-part="${m}"`).join(', ')}</p>}
+      {missing.length > 0 && <p className="ssc-warn">不在绘图中：{missing.map((m) => `data-part="${m}"`).join(', ')}</p>}
       <div className="ssc-bar">
         {/* At an end the button stays focusable (aria-disabled), so a keyboard user's focus is not dropped to the page. */}
-        <button type="button" className="icon" onClick={() => !atStart && back()} aria-disabled={atStart} aria-label="Back one beat">
+        <button type="button" className="icon" onClick={() => !atStart && back()} aria-disabled={atStart} aria-label="上一节拍">
           <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 2v10M11.5 2.6v8.8a.5.5 0 0 1-.8.4L5 7.4a.5.5 0 0 1 0-.8l5.7-4.4a.5.5 0 0 1 .8.4Z" fill="currentColor" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
         </button>
-        <button type="button" className="icon play" onClick={() => play(!playing)} aria-label={playing ? 'Pause' : 'Play'}>
+        <button type="button" className="icon play" onClick={() => play(!playing)} aria-label={playing ? '暂停' : '播放'}>
           {playing ? (
             <svg viewBox="0 0 14 14" aria-hidden="true"><rect x="3" y="2" width="3" height="10" rx="1" fill="currentColor" /><rect x="8" y="2" width="3" height="10" rx="1" fill="currentColor" /></svg>
           ) : (
             <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 2.2v9.6a.6.6 0 0 0 .9.5l7.6-4.8a.6.6 0 0 0 0-1L4.9 1.7a.6.6 0 0 0-.9.5Z" fill="currentColor" /></svg>
           )}
         </button>
-        <button type="button" className="icon" onClick={() => !atEnd && toBeat(nextIdx, true)} aria-disabled={atEnd} aria-label="Next beat">
+        <button type="button" className="icon" onClick={() => !atEnd && toBeat(nextIdx, true)} aria-disabled={atEnd} aria-label="下一节拍">
           <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M11 2v10M2.5 2.6v8.8a.5.5 0 0 0 .8.4L9 7.4a.5.5 0 0 0 0-.8L3.3 2.2a.5.5 0 0 0-.8.4Z" fill="currentColor" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
         </button>
         <span className="ticks">
-          <input type="range" min={0} max={scene.end} step="any" value={t} aria-label="Time" aria-valuetext={words(bi)} onChange={(e) => scrub(Number(e.target.value))} onKeyDown={reduce ? beatKeys : undefined} />
+          <input type="range" min={0} max={scene.end} step="any" value={t} aria-label="时间" aria-valuetext={words(bi)} onChange={(e) => scrub(Number(e.target.value))} onKeyDown={reduce ? beatKeys : undefined} />
           {beats.map((b, i) => (
             <span key={i} style={{ left: `${(b.at / scene.end) * 100}%` }} />
           ))}
         </span>
         <span className="n" aria-hidden="true">{beatCount(scene, t)}</span>
-        <span className="seg" role="group" aria-label="Speed">
+        <span className="seg" role="group" aria-label="速度">
           {SPEEDS.map((s) => (
-            <button key={s} type="button" aria-pressed={speed === s} onClick={() => setSpeed(s)} aria-label={`${s === 0.5 ? 'Half' : s === 1 ? 'Normal' : 'Double'} speed`}>
+            <button key={s} type="button" aria-pressed={speed === s} onClick={() => setSpeed(s)} aria-label={s === 0.5 ? '半速' : s === 1 ? '正常速度' : '两倍速'}>
               {s === 0.5 ? '½×' : `${s}×`}
             </button>
           ))}

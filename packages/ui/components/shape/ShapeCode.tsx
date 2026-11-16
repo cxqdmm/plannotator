@@ -195,14 +195,14 @@ function WholeFile({
   return (
     <div className="shp-file-over">
       <div className="shp-file-bar">
-        <button type="button" onClick={onClose}>← Guide</button>
+        <button type="button" onClick={onClose}>← 指南</button>
         {code.source && <span className="shp-file-src"><ShapeInline text={code.source} /></span>}
       </div>
       <div className={`shp-codeview${phone ? ' phone' : ''}`}>
         {files.length > 1 && (
-          <nav className="shp-files" aria-label="Files">
+          <nav className="shp-files" aria-label="文件">
             {phone ? (
-              <select value={file.path} onChange={(e) => onFile(e.target.value)} aria-label="File">
+              <select value={file.path} onChange={(e) => onFile(e.target.value)} aria-label="文件">
                 {files.map((f) => <option key={f.path} value={f.path}>{f.path.split('/').pop()}</option>)}
               </select>
             ) : (
@@ -218,9 +218,9 @@ function WholeFile({
         <div className="shp-code-main">
           <div className="shp-code-head"><span className="path">{file.path}</span>{fileAction?.({ path: file.path, line: file.line })}</div>
           {contents === undefined ? (
-            <p className="shp-empty-note">Opening…</p>
+            <p className="shp-empty-note">正在打开…</p>
           ) : contents === null ? (
-            <p className="shp-empty-note">This file could not be read.</p>
+            <p className="shp-empty-note">无法读取此文件。</p>
           ) : (
             <CodeFileView
               filepath={file.path}
@@ -231,8 +231,8 @@ function WholeFile({
               annotations={annotations.filter((a) => a.filePath === file.path)}
               onAddAnnotation={onComment}
               onAskAnnotation={onAsk}
-              commentSubmitLabel="Change it"
-              commentAskLabel="Ask"
+              commentSubmitLabel="修改它"
+              commentAskLabel="提问"
               commentExtraAction={lineAction}
               revealLine={{ line: file.line, token: file.token }}
               onTokenTarget={codeHover && CodeHoverCard ? onToken : undefined}

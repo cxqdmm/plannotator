@@ -33,7 +33,7 @@ export function DiffLayoutIcon({ layout, size = 15 }: { layout: DiffLayout; size
 
 /** The words a tooltip shows for the button: the layout on screen, then what a click does. */
 export function diffLayoutToggleTip(layout: DiffLayout): string {
-  return layout === 'split' ? 'Split view. Click for Unified' : 'Unified view. Click for Split';
+  return layout === 'split' ? '分屏视图，点击切换为统一视图' : '统一视图，点击切换为分屏视图';
 }
 
 export interface DiffLayoutToggleProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'value' | 'onChange'> {
@@ -58,7 +58,7 @@ export const DiffLayoutToggle = React.forwardRef<HTMLButtonElement, DiffLayoutTo
         onClick?.(event);
         if (!event.defaultPrevented) onChange(next);
       }}
-      aria-label={next === 'unified' ? 'Switch to Unified view' : 'Switch to Split view'}
+      aria-label={next === 'unified' ? '切换为统一视图' : '切换为分屏视图'}
       title={nativeTitle ? diffLayoutToggleTip(value) : undefined}
       data-diff-layout-toggle={value}
     >

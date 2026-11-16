@@ -93,7 +93,7 @@ async function openSelectionComposer(container: HTMLElement): Promise<void> {
 
 /** Open the GLOBAL composer (Viewer's second CommentPopover mount). */
 async function openGlobalComposer(container: HTMLElement): Promise<void> {
-  const button = container.querySelector<HTMLButtonElement>('button[title="Add global comment"]');
+  const button = container.querySelector<HTMLButtonElement>('button[title="添加全局评论"]');
   if (!button) throw new Error('Global comment button missing');
   await act(async () => { button.click(); });
 }

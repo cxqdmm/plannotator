@@ -153,7 +153,7 @@ describe.if(hasDom)('Viewer: visible comment drafts (the Inbox opts in)', () => 
     expect(kept.map((m) => m.textContent).join('')).toBe(PHRASE);
     const b = badge();
     expect(b).not.toBeNull();
-    expect(b!.getAttribute('data-label')).toBe('Draft');
+    expect(b!.getAttribute('data-label')).toBe('草稿');
     expect(b!.getAttribute('aria-label')).toContain(PHRASE);
     // Placed under the words' end, in the column; and no text of its own in the document.
     expect(b!.closest('article')).not.toBeNull();

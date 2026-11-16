@@ -117,7 +117,7 @@ export const ReviewAgentJobDetailPanel: React.FC<IDockviewPanelProps> = (props) 
   const logContent = jobLogs.get(jobId) ?? '';
 
   if (!job) {
-    return <div className="h-full flex items-center justify-center text-muted-foreground text-sm">Job not found</div>;
+    return <div className="h-full flex items-center justify-center text-muted-foreground text-sm">未找到任务</div>;
   }
 
   const isCorrect = job.summary
@@ -141,11 +141,11 @@ export const ReviewAgentJobDetailPanel: React.FC<IDockviewPanelProps> = (props) 
         )}
         {/* Inline details */}
         <div className="flex items-center gap-3 mt-1.5 text-[10px] text-muted-foreground">
-          <span>Started {new Date(job.startedAt).toLocaleTimeString()}</span>
+          <span>开始于 {new Date(job.startedAt).toLocaleTimeString()}</span>
           {job.exitCode !== undefined && (
-            <span>Exit <span className={`font-mono ${job.exitCode === 0 ? 'text-success' : 'text-destructive'}`}>{job.exitCode}</span></span>
+            <span>退出码 <span className={`font-mono ${job.exitCode === 0 ? 'text-success' : 'text-destructive'}`}>{job.exitCode}</span></span>
           )}
-          <CopyButton text={fullCommand} variant="inline" label="Command" />
+          <CopyButton text={fullCommand} variant="inline" label="命令" />
         </div>
         {job.warning && (
           <p role="status" data-agent-job-warning className="mt-2 rounded bg-warning/10 border border-warning/30 px-3 py-2 text-xs text-foreground/80 whitespace-pre-wrap break-words">
@@ -155,11 +155,11 @@ export const ReviewAgentJobDetailPanel: React.FC<IDockviewPanelProps> = (props) 
         {/* Prompt disclosures in header */}
         {userMessage && (
           <div className="mt-3 space-y-1.5">
-            <Disclosure title="Prompt" copyText={userMessage} nested>
+            <Disclosure title="提示词" copyText={userMessage} nested>
               <pre className="text-xs font-mono text-foreground/80 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">{userMessage}</pre>
             </Disclosure>
             {systemPrompt && (
-              <Disclosure title={isTour ? "Tour Prompt" : isGuide ? "Guide Prompt" : "Review Prompt"} copyText={systemPrompt} nested>
+              <Disclosure title={isTour ? "导览提示词" : isGuide ? "指南提示词" : "评审提示词"} copyText={systemPrompt} nested>
                 <pre className="text-xs font-mono text-foreground/80 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">{systemPrompt}</pre>
               </Disclosure>
             )}
@@ -171,16 +171,16 @@ export const ReviewAgentJobDetailPanel: React.FC<IDockviewPanelProps> = (props) 
       <div className="flex-shrink-0 px-8 flex gap-0.5 border-b border-border/40">
         {!isTour && !isGuide && (
           <TabButton active={activeTab === 'findings'} onClick={() => setActiveTab('findings')}>
-            Findings{activeAnnotations.length > 0 && ` (${activeAnnotations.length})`}
+            发现{activeAnnotations.length > 0 && `（${activeAnnotations.length}）`}
           </TabButton>
         )}
         {(isTour || isGuide) && (
           <TabButton active={activeTab === 'findings'} onClick={() => setActiveTab('findings')}>
-            Status
+            状态
           </TabButton>
         )}
         <TabButton active={activeTab === 'logs'} onClick={() => setActiveTab('logs')}>
-          Logs
+          日志
           {!terminal && <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-primary animate-pulse inline-block" />}
         </TabButton>
       </div>
@@ -211,16 +211,16 @@ export const ReviewAgentJobDetailPanel: React.FC<IDockviewPanelProps> = (props) 
               <>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-muted-foreground">
-                    {activeAnnotations.length} finding{activeAnnotations.length !== 1 ? 's' : ''}
-                    {dismissedCount > 0 && ` · ${dismissedCount} dismissed`}
+                    {activeAnnotations.length} 条发现
+                    {dismissedCount > 0 && ` · 已忽略 ${dismissedCount} 条`}
                   </span>
-                  {copyAllText && <CopyButton text={copyAllText} variant="inline" label="Copy All" />}
+                  {copyAllText && <CopyButton text={copyAllText} variant="inline" label="全部复制" />}
                 </div>
                 {activeAnnotations.some(a => a.severity) && (
                   <div className="flex items-center gap-3 text-[10px] text-muted-foreground/60">
-                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-destructive" /> Important</span>
-                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Nit</span>
-                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground" /> Pre-existing</span>
+                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-destructive" /> 重要</span>
+                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> 小问题</span>
+                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-muted-foreground" /> 既有问题</span>
                   </div>
                 )}
               </>
@@ -274,17 +274,17 @@ function VerdictCard({ summary, isCorrect, terminal }: {
   terminal: boolean;
 }) {
   if (summary) {
-    const verdictText = `${isCorrect ? 'Correct' : 'Incorrect'} (${Math.round(summary.confidence * 100)}% confidence)\n\n${summary.explanation}`;
+    const verdictText = `${isCorrect ? '正确' : '不正确'}（置信度 ${Math.round(summary.confidence * 100)}%）\n\n${summary.explanation}`;
     return (
       <div className={`rounded px-3 py-2.5 ${
         isCorrect ? 'bg-success/5' : 'bg-destructive/5'
       }`}>
         <div className="flex items-baseline gap-2">
           <span className={`text-xs font-semibold ${isCorrect ? 'text-success' : 'text-destructive'}`}>
-            {isCorrect ? 'Correct' : 'Incorrect'}
+            {isCorrect ? '正确' : '不正确'}
           </span>
           <span className="text-[10px] text-muted-foreground">
-            Confidence {Math.round(summary.confidence * 100)}%
+            置信度 {Math.round(summary.confidence * 100)}%
           </span>
           <span className="ml-auto"><CopyButton text={verdictText} variant="inline" /></span>
         </div>
@@ -297,16 +297,16 @@ function VerdictCard({ summary, isCorrect, terminal }: {
     <div className="rounded bg-muted/10 px-3 py-2.5">
       <div className="flex items-center gap-2">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-          Review Verdict
+          评审结论
         </span>
         {!terminal && (
-          <span className="text-[10px] text-muted-foreground/40 animate-pulse">Pending...</span>
+          <span className="text-[10px] text-muted-foreground/40 animate-pulse">处理中…</span>
         )}
       </div>
       {terminal ? (
-        <p className="text-xs text-muted-foreground/50 mt-1">No verdict available.</p>
+        <p className="text-xs text-muted-foreground/50 mt-1">没有可用的结论。</p>
       ) : (
-        <p className="text-xs text-muted-foreground/50 mt-1">Will appear when the review completes.</p>
+        <p className="text-xs text-muted-foreground/50 mt-1">评审完成后会显示。</p>
       )}
     </div>
   );
@@ -324,7 +324,7 @@ function TourStatusCard({ summary, terminal, jobId }: {
       <div className="space-y-3">
         <div className="rounded px-3 py-2.5 bg-success/5">
           <div className="flex items-baseline gap-2">
-            <span className="text-xs font-semibold text-success">Tour Generated</span>
+            <span className="text-xs font-semibold text-success">已生成导览</span>
           </div>
           <p className="text-xs text-foreground/80 leading-relaxed mt-1.5">{summary.explanation}</p>
         </div>
@@ -332,7 +332,7 @@ function TourStatusCard({ summary, terminal, jobId }: {
           onClick={() => state.openTourPanel(jobId)}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-xs font-medium active:scale-[0.98]"
         >
-          Open Tour
+          打开导览
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M3 7h8M8 3.5L11 7l-3 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -345,16 +345,16 @@ function TourStatusCard({ summary, terminal, jobId }: {
     <div className="rounded bg-muted/10 px-3 py-2.5">
       <div className="flex items-center gap-2">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-          Tour Status
+          导览状态
         </span>
         {!terminal && (
-          <span className="text-[10px] text-muted-foreground/40 animate-pulse">Generating...</span>
+          <span className="text-[10px] text-muted-foreground/40 animate-pulse">生成中…</span>
         )}
       </div>
       {terminal ? (
-        <p className="text-xs text-muted-foreground/50 mt-1">Tour generation failed.</p>
+        <p className="text-xs text-muted-foreground/50 mt-1">导览生成失败。</p>
       ) : (
-        <p className="text-xs text-muted-foreground/50 mt-1">The tour will be ready when the agent finishes.</p>
+        <p className="text-xs text-muted-foreground/50 mt-1">agent 完成后导览即可查看。</p>
       )}
     </div>
   );
@@ -385,7 +385,7 @@ function GuideStatusCard({ job, terminal, jobId }: {
             onClick={() => state.openGuide?.(jobId)}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-xs font-medium active:scale-[0.98]"
           >
-            Open guide
+            打开指南
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M3 7h8M8 3.5L11 7l-3 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -393,8 +393,8 @@ function GuideStatusCard({ job, terminal, jobId }: {
         ) : (
           <p className="text-[11px] leading-snug text-muted-foreground/60">
             {job.prUrl
-              ? 'This guide belongs to a different PR — switch to it to open the guide.'
-              : 'This guide belongs to the local diff — leave PR mode to open it.'}
+              ? '此指南属于另一个 PR——切换到该 PR 才能打开指南。'
+              : '此指南属于本地 Diff——退出 PR 模式才能打开。'}
           </p>
         )}
       </div>
@@ -405,21 +405,21 @@ function GuideStatusCard({ job, terminal, jobId }: {
     <div className="rounded bg-muted/10 px-3 py-2.5">
       <div className="flex items-center gap-2">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-          Guide Status
+          指南状态
         </span>
         {!terminal && (
-          <span className="text-[10px] text-muted-foreground/40 animate-pulse">Generating...</span>
+          <span className="text-[10px] text-muted-foreground/40 animate-pulse">生成中…</span>
         )}
       </div>
       {terminal ? (
         <>
-          <p className="text-xs text-muted-foreground/50 mt-1">{job.error || 'Guide generation failed.'}</p>
+          <p className="text-xs text-muted-foreground/50 mt-1">{job.error || '指南生成失败。'}</p>
           <p className="text-[11px] text-muted-foreground/40 mt-1">
-            Open the Guide screen for recovery options — it can fix the captured output or run a fresh attempt.
+            打开指南页面查看恢复选项——它可以修复捕获的输出，或重新运行一次。
           </p>
         </>
       ) : (
-        <p className="text-xs text-muted-foreground/50 mt-1">The guide will be ready when the agent finishes.</p>
+        <p className="text-xs text-muted-foreground/50 mt-1">agent 完成后指南即可查看。</p>
       )}
     </div>
   );
@@ -442,13 +442,13 @@ function ProviderPill({ provider, engine, model }: { provider: string; engine?: 
   let label: string;
   if (provider === 'tour') {
     const engineLabel = engine === 'codex' ? 'Codex' : 'Claude';
-    label = model && engine !== 'codex' ? `Tour · ${engineLabel} ${model.charAt(0).toUpperCase() + model.slice(1)}` : `Tour · ${engineLabel}`;
+    label = model && engine !== 'codex' ? `导览 · ${engineLabel} ${model.charAt(0).toUpperCase() + model.slice(1)}` : `导览 · ${engineLabel}`;
   } else if (provider === 'guide') {
     // Guide's engine union is wider than Tour's (marker engines included) —
     // only show the model for Claude, mirroring Tour's own "skip it for
     // engines with verbose/technical model ids" convention.
     const engineLabel = engine === 'codex' ? 'Codex' : engine === 'cursor' ? 'Cursor' : engine === 'opencode' ? 'OpenCode' : engine === 'pi' ? 'Pi' : engine === 'copilot' ? 'Copilot' : 'Claude';
-    label = model && engine === 'claude' ? `Guide · ${engineLabel} ${model.charAt(0).toUpperCase() + model.slice(1)}` : `Guide · ${engineLabel}`;
+    label = model && engine === 'claude' ? `指南 · ${engineLabel} ${model.charAt(0).toUpperCase() + model.slice(1)}` : `指南 · ${engineLabel}`;
   } else {
     label = provider === 'claude' ? 'Claude' : provider === 'codex' ? 'Codex' : provider === 'cursor' ? 'Cursor' : provider === 'opencode' ? 'OpenCode' : provider === 'pi' ? 'Pi' : provider === 'copilot' ? 'Copilot' : 'Shell';
   }
@@ -526,7 +526,7 @@ function AnnotationRow({ annotation: ann, dismissed, onClick, onExplain, explain
         )}
         {scope === 'general' ? (
           <span className={`font-mono uppercase tracking-wider flex-shrink-0 ${dismissed ? 'line-through text-muted-foreground' : 'text-primary'}`}>
-            general
+            全局
           </span>
         ) : (
           <>
@@ -534,10 +534,10 @@ function AnnotationRow({ annotation: ann, dismissed, onClick, onExplain, explain
               {ann.filePath}
             </span>
             {scope === 'file' ? (
-              <span className="text-muted-foreground flex-shrink-0 uppercase tracking-wider">file</span>
+              <span className="text-muted-foreground flex-shrink-0 uppercase tracking-wider">文件</span>
             ) : (
               <span className="text-muted-foreground flex-shrink-0">
-                L{ann.lineStart}{ann.lineEnd !== ann.lineStart ? `–${ann.lineEnd}` : ''}
+                {`第 ${ann.lineStart}${ann.lineEnd !== ann.lineStart ? `–${ann.lineEnd}` : ''} 行`}
               </span>
             )}
           </>
@@ -548,7 +548,7 @@ function AnnotationRow({ annotation: ann, dismissed, onClick, onExplain, explain
           </span>
         )}
         {dismissed && (
-          <span className="px-1 py-0.5 rounded text-[10px] uppercase tracking-wider bg-muted text-muted-foreground/60">dismissed</span>
+          <span className="px-1 py-0.5 rounded text-[10px] uppercase tracking-wider bg-muted text-muted-foreground/60">已忽略</span>
         )}
         {!dismissed && (copyText || onExplain) && (
           <span className="ml-auto flex items-center gap-1 opacity-0 group-hover/finding:opacity-100 group-focus-within/finding:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
@@ -575,7 +575,7 @@ function EmptyState({ terminal }: { terminal: boolean }) {
   return (
     <div className="text-center py-8">
       <p className="text-xs text-muted-foreground">
-        {terminal ? 'No findings were produced.' : 'Findings will appear as the agent works.'}
+        {terminal ? '未产生任何发现。' : 'agent 工作时会陆续显示发现。'}
       </p>
     </div>
   );
@@ -592,6 +592,6 @@ function ElapsedTime({ startedAt }: { startedAt: number }) {
 
 function formatDuration(ms: number): string {
   const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}s`;
-  return `${Math.floor(s / 60)}m ${s % 60}s`;
+  if (s < 60) return `${s} 秒`;
+  return `${Math.floor(s / 60)} 分 ${s % 60} 秒`;
 }

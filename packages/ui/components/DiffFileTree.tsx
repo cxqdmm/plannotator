@@ -34,17 +34,17 @@ export const ChangeTypeLetter: React.FC<{
 }> = ({ status, oldPath, untracked }) => (
   <span className="w-3 text-center text-[10px] flex-shrink-0">
     {untracked ? (
-      <span className="font-semibold text-muted-foreground/70" title="Untracked file">U</span>
+      <span className="font-semibold text-muted-foreground/70" title="未跟踪文件">U</span>
     ) : status === 'added' ? (
-      <span className="font-semibold text-success" title="Added file">A</span>
+      <span className="font-semibold text-success" title="新增文件">A</span>
     ) : status === 'deleted' ? (
-      <span className="font-semibold text-destructive" title="Deleted file">D</span>
+      <span className="font-semibold text-destructive" title="删除文件">D</span>
     ) : status === 'renamed' ? (
       <span className="font-semibold text-[#007aff]" title={oldPath ? `Renamed from ${oldPath}` : 'Renamed file'}>R</span>
     ) : status === 'binary' ? (
-      <span className="font-semibold text-muted-foreground/70" title="Binary file">B</span>
+      <span className="font-semibold text-muted-foreground/70" title="二进制文件">B</span>
     ) : (
-      <span className="text-muted-foreground/40" title="Modified file">M</span>
+      <span className="text-muted-foreground/40" title="已修改文件">M</span>
     )}
   </span>
 );

@@ -68,7 +68,7 @@ describe.skipIf(!hasDom)('AnnotationToolbar askOnly', () => {
   test('opens on the Ask box, offers no comment, and closes after asking', async () => {
     const calls = { asked: [] as string[], cancelled: 0 };
     await mount(true, calls);
-    const box = document.querySelector<HTMLTextAreaElement>('textarea[placeholder="Ask about this code..."]');
+    const box = document.querySelector<HTMLTextAreaElement>('textarea[placeholder="询问关于这段代码的问题…"]');
     expect(box).not.toBeNull();
     const buttons = () => Array.from(document.querySelectorAll('button')).map((b) => b.textContent?.trim());
     expect(buttons()).not.toContain('Comment');
@@ -82,7 +82,7 @@ describe.skipIf(!hasDom)('AnnotationToolbar askOnly', () => {
   test('without askOnly the toolbar opens on the comment composer', async () => {
     const calls = { asked: [] as string[], cancelled: 0 };
     await mount(false, calls);
-    expect(document.querySelector('textarea[placeholder="Ask about this code..."]')).toBeNull();
+    expect(document.querySelector('textarea[placeholder="询问关于这段代码的问题…"]')).toBeNull();
   });
 });
 

@@ -99,8 +99,8 @@ const UPLOAD_ICON =
  */
 export function embedSlashItem(): SlashCommandItem {
   return {
-    label: 'Embed HTML',
-    detail: 'live preview',
+    label: '嵌入 HTML',
+    detail: '实时预览',
     icon: EMBED_ICON,
     apply: (view, completion, from, to) => {
       view.dispatch({
@@ -188,8 +188,8 @@ function createEmbedPickerSource(
       options.push({
         label:
           targets.length === 0
-            ? config.labels?.empty ?? 'No HTML files in this workspace'
-            : config.labels?.noMatch?.(query.trim()) ?? `No HTML files match “${query.trim()}”`,
+            ? config.labels?.empty ?? '此工作区中没有 HTML 文件'
+            : config.labels?.noMatch?.(query.trim()) ?? `没有匹配“${query.trim()}”的 HTML 文件`,
         apply: (view, completion, _from, to) => {
           view.dispatch({
             changes: { from: line.from, to, insert: '' },
@@ -215,14 +215,14 @@ function createEmbedPickerSource(
       options.push(
         uploadState._tag === 'uploading'
           ? {
-              label: 'Uploading...',
+              label: '上传中…',
               slashCommandIcon: UPLOAD_ICON,
               apply: () => {
                 // Inert while the existing host callback is still pending.
               },
             }
           : {
-              label: config.labels?.upload ?? 'Upload HTML...',
+              label: config.labels?.upload ?? '上传 HTML…',
               slashCommandIcon: UPLOAD_ICON,
               apply: (view, completion, from, to) => {
                 startUpload(

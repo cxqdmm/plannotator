@@ -127,8 +127,8 @@ for (const lateResponse of ['superseded', 'failure', 'success'] as const) {
     document.body.appendChild(host);
     root = createRoot(host);
     await act(async () => root!.render(<App />));
-    await waitFor(() => !!button('Restore'));
-    await act(async () => button('Restore')!.click());
+    await waitFor(() => !!button('恢复'));
+    await act(async () => button('恢复')!.click());
     await act(async () => button('Commits')!.click());
     await waitFor(() => !!finishOldSwitch);
     // Commit clicks stay enabled during loading: start a newer switch to C.
@@ -152,8 +152,8 @@ for (const lateResponse of ['superseded', 'failure', 'success'] as const) {
     // Exercise both decision transports: Close must retain the page id AND
     // upstream's stale-server nonce when composing its query string.
     if (lateResponse === 'failure') {
-      await act(async () => document.querySelector<HTMLButtonElement>('[title="Close review without feedback"]')!.click());
-      await act(async () => button('Close Anyway')!.click());
+      await act(async () => document.querySelector<HTMLButtonElement>('[title="不发送反馈直接关闭评审"]')!.click());
+      await act(async () => button('仍然关闭')!.click());
     } else {
       await act(async () => document.querySelector<HTMLButtonElement>('[data-decision-primary]')!.click());
     }
@@ -210,13 +210,13 @@ test.skipIf(!hasDom)('a refresh that lands on no draft target resumes saving, an
   document.body.appendChild(host);
   root = createRoot(host);
   await act(async () => root!.render(<App />));
-  await waitFor(() => !!button('Restore'));
-  await act(async () => button('Restore')!.click());
+  await waitFor(() => !!button('恢复'));
+  await act(async () => button('恢复')!.click());
   await tick(650);
-  await waitFor(() => !!button('Refresh review'));
-  await act(async () => button('Refresh review')!.click());
+  await waitFor(() => !!button('刷新评审'));
+  await act(async () => button('刷新评审')!.click());
   await tick(650);
-  expect(button('Refresh review')).toBeUndefined();
+  expect(button('刷新评审')).toBeUndefined();
   expect(writes.at(-1)).toBeNull();
   // Its decision still names the page, so the server clears local-a too.
   await act(async () => document.querySelector<HTMLButtonElement>('[data-decision-primary]')!.click());

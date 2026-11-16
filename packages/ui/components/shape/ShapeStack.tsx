@@ -166,8 +166,8 @@ export function useShapeStack({
   }, []);
 
   const row = on ? (
-    <div className="shp-stk-row" role="group" aria-label="Pull requests in this stack" data-shp-stack-row="">
-      <span className="shp-stk-row-l">Stack of {stack!.pulls.length}</span>
+    <div className="shp-stk-row" role="group" aria-label="此堆叠中的 PR" data-shp-stack-row="">
+      <span className="shp-stk-row-l">堆叠：{stack!.pulls.length} 个 PR</span>
       {stack!.pulls.map((p) => (
         <button
           key={p.n}
@@ -175,7 +175,7 @@ export function useShapeStack({
           className={`shp-stk-chip${pick === p.n ? ' on' : ''}`}
           style={hueOf(stack!, p.n)}
           aria-pressed={pick === p.n}
-          aria-label={`#${p.n} ${p.title}: show only its parts`}
+          aria-label={`#${p.n} ${p.title}：仅显示其相关部分`}
           data-shp-stack-pick={p.n}
           onClick={() => setPick(pick === p.n ? null : p.n)}
         >
@@ -359,7 +359,7 @@ function StackCard({
       ref={ref}
       className={`shp-stk-card${phone ? ' sheet' : ''}`}
       role="dialog"
-      aria-label={`#${pull.n} in ${partName}`}
+      aria-label={`#${pull.n}，位于 ${partName}`}
       tabIndex={-1}
       data-shp-stack-card={`${change.part}#${pull.n}`}
       style={phone ? undefined : { left: pos?.left ?? 0, top: pos?.top ?? 0, visibility: pos ? 'visible' : 'hidden' }}
@@ -367,15 +367,15 @@ function StackCard({
       {phone && <div className="shp-stk-grip" aria-hidden="true" />}
       <div className="shp-stk-card-h">
         <PrName stack={stack} n={pull.n} />
-        <button type="button" className="shp-icon-btn shp-stk-x" onClick={() => onClose()} aria-label="Close">
+        <button type="button" className="shp-icon-btn shp-stk-x" onClick={() => onClose()} aria-label="关闭">
           ×
         </button>
       </div>
       <p className="shp-stk-card-part">
-        In <b>{partName}</b>
+        在 <b>{partName}</b> 中
       </p>
       <p className="shp-stk-card-said">{change.said}</p>
-      <ul className="shp-stk-files" aria-label={`Files #${pull.n} changed here`}>
+      <ul className="shp-stk-files" aria-label={`#${pull.n} 在此更改的文件`}>
         {rows.map(({ file, counts }, i) => {
           const { name, dir } = stackFileName(file.path);
           return (
@@ -394,7 +394,7 @@ function StackCard({
         <div className="shp-stk-card-foot">
           {others.length > 0 && (
             <span className="shp-stk-also">
-              <span>Also changed here by</span>
+              <span>同时在此更改的还有</span>
               {others.map((p) => (
                 <button key={p.n} type="button" className="shp-stk-pr" style={hueOf(stack, p.n)} onClick={() => onSwitch(p.n)} data-shp-stack-switch={p.n}>
                   <PrIcon />#{p.n}
@@ -415,7 +415,7 @@ function StackCard({
                   }, () => {});
               }}
             >
-              Read it in the review ›
+              在评审中查看 ›
             </button>
           )}
         </div>
@@ -466,21 +466,21 @@ function StackFile({
 
   const nav = (
     <div className="shp-stk-nav" data-shp-stack-nav="">
-      <button type="button" className="shp-stk-back" onClick={onBack} aria-label={`Back to #${card.pull.n} in ${partName}`}>
+      <button type="button" className="shp-stk-back" onClick={onBack} aria-label={`返回 #${card.pull.n}（${partName}）`}>
         <Chevron back />
         {partName}
       </button>
-      <span className="shp-stk-by">from</span>
+      <span className="shp-stk-by">来自</span>
       <PrName stack={stack} n={card.pull.n} title={!phone} />
       {total > 1 && (
         <span className="shp-stk-pager">
-          <button type="button" className="shp-stk-pg" disabled={index === 0} onClick={() => onGo(index - 1)} aria-label="Previous file">
+          <button type="button" className="shp-stk-pg" disabled={index === 0} onClick={() => onGo(index - 1)} aria-label="上一个文件">
             <Chevron back />
           </button>
           <span>
-            {index + 1} of {total} files
+            第 {index + 1} 个，共 {total} 个文件
           </span>
-          <button type="button" className="shp-stk-pg" disabled={index === total - 1} onClick={() => onGo(index + 1)} aria-label="Next file">
+          <button type="button" className="shp-stk-pg" disabled={index === total - 1} onClick={() => onGo(index + 1)} aria-label="下一个文件">
             <Chevron />
           </button>
         </span>

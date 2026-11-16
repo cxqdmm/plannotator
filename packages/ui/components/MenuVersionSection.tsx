@@ -18,7 +18,7 @@ function failingSince(iso: string): string {
   const date = new Date(iso);
   return Number.isNaN(date.getTime())
     ? iso
-    : date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    : date.toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
 interface MenuVersionSectionProps {
@@ -82,7 +82,7 @@ export const MenuVersionSection: React.FC<MenuVersionSectionProps> = ({
         <span className="flex items-center gap-1.5">
           {hasUpdate && (
             <>
-              <span className="font-medium text-foreground">{updateInfo!.latestVersion} is available</span>
+              <span className="font-medium text-foreground">{updateInfo!.latestVersion} 可用</span>
               <span className="text-muted-foreground/40">·</span>
             </>
           )}
@@ -93,12 +93,12 @@ export const MenuVersionSection: React.FC<MenuVersionSectionProps> = ({
             onClick={closeMenu}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
-            {hasUpdate ? "What's new" : 'Release notes'}
+            {hasUpdate ? '新变化' : '发行说明'}
           </a>
         </span>
         {!hasUpdate && checkFailing && (
           <span className="text-muted-foreground" data-menu-update-check-failing="">
-            Can&apos;t check for updates since {failingSince(checkFailing.since)} ({checkFailing.error}). To update now:
+            自 {failingSince(checkFailing.since)} 起无法检查更新（{checkFailing.error}）。要立即更新：
           </span>
         )}
         {(hasUpdate || checkFailing) && (
@@ -113,7 +113,7 @@ export const MenuVersionSection: React.FC<MenuVersionSectionProps> = ({
               onClick={handleCopy}
               className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium border border-border hover:bg-muted transition-colors"
             >
-              {copied ? 'Copied' : 'Copy'}
+              {copied ? '已复制' : '复制'}
             </button>
           </div>
         )}
@@ -125,7 +125,7 @@ export const MenuVersionSection: React.FC<MenuVersionSectionProps> = ({
                 disabled={updating === 'starting' || updating === 'started'}
                 className="w-full mt-1 px-2.5 py-1.5 rounded-md text-[11px] font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-60"
               >
-                {updating === 'started' ? `Updating to ${updateInfo!.latestVersion}…` : updating === 'starting' ? 'Starting…' : 'Update now'}
+                {updating === 'started' ? `正在更新到 ${updateInfo!.latestVersion}…` : updating === 'starting' ? '正在启动…' : '立即更新'}
               </button>
             )}
             {updating !== 'idle' && updating !== 'starting' && updating !== 'started' && (

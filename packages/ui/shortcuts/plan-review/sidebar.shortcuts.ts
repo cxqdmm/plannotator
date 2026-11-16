@@ -3,28 +3,28 @@ import { createShortcutScopeHook } from '../runtime';
 
 export const annotateSidebarShortcuts = defineShortcutScope({
   id: 'annotate-sidebar',
-  title: 'Annotate Sidebar',
+  title: '标注侧边栏',
   shortcuts: {
     toggleContents: {
-      description: 'Toggle Contents sidebar',
+      description: '切换目录侧边栏',
       bindings: ['Mod+B'],
-      section: 'Sidebar',
+      section: '侧边栏',
       displayOrder: 10,
       preventDefault: true,
     },
     toggleFiles: {
-      description: 'Toggle Files sidebar',
+      description: '切换文件侧边栏',
       bindings: ['Mod+Shift+B'],
-      section: 'Sidebar',
-      hint: 'Available when the Files tab is shown.',
+      section: '侧边栏',
+      hint: '显示文件标签页时可用。',
       displayOrder: 20,
       preventDefault: true,
     },
     toggleAgentTui: {
-      description: 'Toggle Agent TUI sidebar',
+      description: '切换 Agent TUI 侧边栏',
       bindings: ['Shift Shift'],
-      section: 'Sidebar',
-      hint: 'Available when the Agent control is shown.',
+      section: '侧边栏',
+      hint: '显示 Agent 控件时可用。',
       displayOrder: 30,
       preventDefault: true,
     },

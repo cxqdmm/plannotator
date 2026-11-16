@@ -436,7 +436,7 @@ describe('ThemeProvider', () => {
     expect(themeState().colorTheme).toBe('dracula');
 
     const modeButtons = Array.from(host!.querySelectorAll('button')).filter(button =>
-      ['Light', 'Dark', 'System'].includes(button.textContent?.trim() ?? '')
+      ['浅色', '深色', '跟随系统'].includes(button.textContent?.trim() ?? '')
     );
     expect(modeButtons.length).toBe(3);
     expect(modeButtons.some(button => button.disabled)).toBe(false);
@@ -486,7 +486,7 @@ describe('ThemeProvider', () => {
     expect(swatches[3]?.style.backgroundColor).toBe(tinacious.colors.light.background);
 
     // Assigning the other half leaves the visible palette alone.
-    await act(async () => clickButton(button('Dark theme')));
+    await act(async () => clickButton(button('深色主题')));
     expect(paletteNames()).toContain('Kanagawa Wave');
     expect(paletteNames()).not.toContain('Kanagawa Lotus');
 
@@ -498,7 +498,7 @@ describe('ThemeProvider', () => {
     // The summary names both halves and jumps the grid back to the light one.
     expect(host!.textContent).toContain('Tinacious');
     expect(host!.textContent).toContain('Dracula');
-    await act(async () => clickButton(summaryButton('Light:')));
+    await act(async () => clickButton(summaryButton('浅色：')));
     expect(paletteNames()).toContain('Kanagawa Lotus');
   });
 
@@ -540,7 +540,7 @@ describe('ThemeProvider', () => {
     expect(held()).toBe(false);
 
     // Settings' mode buttons.
-    await act(async () => clickButton(button('Light')));
+    await act(async () => clickButton(button('浅色')));
     expect(html.classList.contains('light')).toBe(true);
     expect(held()).toBe(true);
     await afterTwoFrames();
@@ -554,13 +554,13 @@ describe('ThemeProvider', () => {
     expect(held()).toBe(false);
 
     // A palette for the half not on screen changes nothing shown, so nothing is held.
-    await act(async () => clickButton(button('Dark theme')));
+    await act(async () => clickButton(button('深色主题')));
     await act(async () => clickButton(palette('Dracula')));
     expect(themeState().darkTheme).toBe('dracula');
     expect(held()).toBe(false);
 
     // Match system, then the computer turning dark at sunset.
-    await act(async () => clickButton(button('System')));
+    await act(async () => clickButton(button('跟随系统')));
     expect(html.classList.contains('theme-dracula')).toBe(true);
     expect(held()).toBe(true);
     await afterTwoFrames();

@@ -76,9 +76,9 @@ export const ReviewDiagramFence: React.FC<ReviewDiagramFenceProps> = ({ block, k
       {fallback}
       {state.status === 'failed' && (
         <p data-review-diagram-note="" className="mt-1 mb-4 text-xs text-muted-foreground">
-          The diagram renderer did not load, so this diagram shows as code.{' '}
+          图表渲染器未能加载，因此此图表以代码显示。{' '}
           <button type="button" onClick={retry} className="underline underline-offset-2 hover:text-foreground">
-            Retry
+            重试
           </button>
         </p>
       )}

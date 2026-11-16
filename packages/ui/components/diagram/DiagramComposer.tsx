@@ -177,27 +177,27 @@ export function DiagramComposer({
         data-comment-card=""
         data-in-canvas=""
         role="dialog"
-        aria-label={`Comment on ${on}`}
+        aria-label={`评论 ${on}`}
         className="pn-cbox"
         style={{ left, top, width: COMPOSER_WIDTH_PX }}
         onPointerDown={(event) => event.stopPropagation()}
         onPointerUp={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
       >
-        <button type="button" className="pn-cbox-close" onClick={onCancel} aria-label="Close (your words are kept)" title="Close (your words are kept)" data-comment-card-close="">
+        <button type="button" className="pn-cbox-close" onClick={onCancel} aria-label="关闭（保留已输入的文字）" title="关闭（保留已输入的文字）" data-comment-card-close="">
           <Icon name="chevD" size={16} />
         </button>
         <div className="pn-cbox-quote">
-          On {on} ({diagramTargetName(target)}){draft.sourceLine !== null && ` · line ${draft.sourceLine[0]}`}{draft.additional.length > 0 && ` · +${draft.additional.length} more`}
+          关于 {on}（{diagramTargetName(target)}）{draft.sourceLine !== null && ` · 第 ${draft.sourceLine[0]} 行`}{draft.additional.length > 0 && ` · 另有 ${draft.additional.length} 处`}
         </div>
-        {unsavedPart && <p className="pn-cbox-note">This part is only in your unsaved draft. Save the diagram to comment on it.</p>}
+        {unsavedPart && <p className="pn-cbox-note">此部分仅存在于未保存的草稿中。保存图表后即可评论。</p>}
         <div className="pn-cbox-field">
           <textarea
             ref={textareaRef}
             value={text}
             onChange={(event) => setText(event.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Comment…"
+            placeholder="评论…"
             rows={1}
             disabled={submitting || asking}
             className="pn-cbox-ta pn-cbox-plain"
@@ -206,9 +206,9 @@ export function DiagramComposer({
         {error !== null && <p role="alert" className="pn-cbox-note pn-cbox-err">{error}</p>}
         <div className="pn-cbox-row">
           {onAskAI !== undefined && (
-            <button type="button" data-diagram-ask-ai="" className="pn-cbox-tool pn-cbox-word" onClick={() => void askAI()} disabled={!canAskAI} title={canAskAI ? 'Ask AI this question' : 'Type a question to ask AI'}>
+            <button type="button" data-diagram-ask-ai="" className="pn-cbox-tool pn-cbox-word" onClick={() => void askAI()} disabled={!canAskAI} title={canAskAI ? '向 AI 询问此问题' : '输入问题以询问 AI'}>
               <SparklesIcon className="h-3.5 w-3.5" />
-              Ask AI
+              询问 AI
             </button>
           )}
           <span className="pn-cbox-mid" />
@@ -217,15 +217,15 @@ export function DiagramComposer({
               type="button"
               className="pn-cbox-tool pn-cbox-bin"
               onClick={() => { cardDrafts.delete(cardKey); setTextState(''); onCancel(); }}
-              aria-label="Discard this comment"
-              title="Discard this comment"
+              aria-label="丢弃此评论"
+              title="丢弃此评论"
               data-comment-card-discard=""
             >
               <Icon name="trash" size={15} />
             </button>
           )}
           <button type="button" className="pn-cbox-save" disabled={!canWrite || submitting || asking || text.trim() === ''} onClick={submit} data-comment-card-submit="">
-            Comment
+            评论
           </button>
         </div>
       </div>
@@ -237,7 +237,7 @@ export function DiagramComposer({
       ref={rootRef}
       data-diagram-composer=""
       role="dialog"
-      aria-label={`Comment on ${diagramTargetText(target)}`}
+      aria-label={`评论 ${diagramTargetText(target)}`}
       className="pointer-events-auto absolute z-10 flex w-72 max-w-full flex-col gap-1.5 rounded-md border border-border bg-card p-2 shadow-lg"
       style={{ left, top }}
       onPointerDown={(event) => event.stopPropagation()}
@@ -248,21 +248,21 @@ export function DiagramComposer({
       }}
     >
       <div className="text-[10px] text-muted-foreground">
-        On <span className="font-medium text-foreground">{diagramTargetText(target)}</span> ({diagramTargetName(target)})
-        {draft.sourceLine !== null && ` · line ${draft.sourceLine[0]}`}
-        {draft.additional.length > 0 && ` · +${draft.additional.length} more`}
+        关于 <span className="font-medium text-foreground">{diagramTargetText(target)}</span>（{diagramTargetName(target)}）
+        {draft.sourceLine !== null && ` · 第 ${draft.sourceLine[0]} 行`}
+        {draft.additional.length > 0 && ` · 另有 ${draft.additional.length} 处`}
       </div>
       {disabledReason === undefined ? (
         <>
           {unsavedPart && (
-            <p className="text-[10px] text-warning">This part is only in your unsaved draft. Save the diagram to comment on it.</p>
+            <p className="text-[10px] text-warning">此部分仅存在于未保存的草稿中。保存图表后即可评论。</p>
           )}
           <textarea
             ref={textareaRef}
             value={text}
             onChange={(event) => setText(event.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Add a comment..."
+            placeholder="添加评论…"
             rows={3}
             disabled={submitting || asking}
             className={cn(
@@ -283,17 +283,17 @@ export function DiagramComposer({
                 onClick={() => void askAI()}
                 disabled={!canAskAI}
                 className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
-                title={canAskAI ? 'Ask AI this question' : 'Type a question to ask AI'}
+                title={canAskAI ? '向 AI 询问此问题' : '输入问题以询问 AI'}
               >
                 <SparklesIcon className="h-3 w-3" />
-                Ask AI
+                询问 AI
               </button>
             )}
             <Button type="button" variant="ghost" size="xs" onClick={onCancel}>
-              Cancel
+              取消
             </Button>
             <Button type="button" size="xs" disabled={!canWrite || submitting || asking || text.trim() === ''} onClick={submit}>
-              Comment
+              评论
             </Button>
           </div>
         </>
@@ -302,7 +302,7 @@ export function DiagramComposer({
           <p className="text-xs text-muted-foreground">{disabledReason}</p>
           <div className="flex justify-end">
             <Button type="button" variant="ghost" size="xs" onClick={onCancel}>
-              Close
+              关闭
             </Button>
           </div>
         </>

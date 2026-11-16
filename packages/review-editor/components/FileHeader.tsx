@@ -101,10 +101,10 @@ function frontEllipsize(text: string, visibleChars: number): string {
  * Modified is bare — the +/- counts already say it changed within the file.
  */
 const STATUS_LETTER: Record<DiffFileStatus, { letter: string; className: string; title: string }> = {
-  added: { letter: 'A', className: 'text-success', title: 'Added file' },
-  modified: { letter: 'M', className: 'text-muted-foreground', title: 'Modified file' },
-  deleted: { letter: 'D', className: 'text-destructive', title: 'Deleted file' },
-  renamed: { letter: 'R', className: 'text-[#007aff]', title: 'Renamed file' },
+  added: { letter: 'A', className: 'text-success', title: '新增文件' },
+  modified: { letter: 'M', className: 'text-muted-foreground', title: '已修改文件' },
+  deleted: { letter: 'D', className: 'text-destructive', title: '已删除文件' },
+  renamed: { letter: 'R', className: 'text-[#007aff]', title: '已重命名文件' },
 };
 
 const FileStatusLetter: React.FC<{ status: DiffFileStatus; oldPath?: string }> = ({ status, oldPath }) => {
@@ -112,7 +112,7 @@ const FileStatusLetter: React.FC<{ status: DiffFileStatus; oldPath?: string }> =
   // bare (the +/- counts already convey that it changed within the file).
   if (status === 'modified') return null;
   const meta = STATUS_LETTER[status];
-  const title = status === 'renamed' && oldPath ? `Renamed from ${oldPath}` : meta.title;
+  const title = status === 'renamed' && oldPath ? `重命名自 ${oldPath}` : meta.title;
   return (
     <span
       className={`flex-none font-semibold leading-none ${meta.className}`}
@@ -199,9 +199,9 @@ export const FileHeader: React.FC<FileHeaderProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  const stageLabel = isVeryTight ? '' : isCompact ? (isStaging ? 'Adding' : isStaged ? 'Added' : 'Add') : (isStaging ? 'Adding...' : isStaged ? 'Added' : 'Git Add');
-  const commentLabel = isVeryTight ? '' : 'Comment';
-  const viewedLabel = isVeryTight ? '' : 'Viewed';
+  const stageLabel = isVeryTight ? '' : isCompact ? (isStaging ? '暂存中' : isStaged ? '已暂存' : '暂存') : (isStaging ? '暂存中…' : isStaged ? '已暂存' : 'Git 暂存');
+  const commentLabel = isVeryTight ? '' : '评论';
+  const viewedLabel = isVeryTight ? '' : '已查看';
   const { additions, deletions } = React.useMemo(() => countChanges(patch), [patch]);
 
   return (
@@ -267,7 +267,7 @@ export const FileHeader: React.FC<FileHeaderProps> = ({
             </>
           )}
         </span>
-        {isTest && <FileKindIcon kind="test" size={13} className="ml-1.5 flex-none text-muted-foreground" title="Test file" />}
+        {isTest && <FileKindIcon kind="test" size={13} className="ml-1.5 flex-none text-muted-foreground" title="测试文件" />}
         {(additions > 0 || deletions > 0 || (status && status !== 'modified') || isGenerated) && (
           <span className="flex-none ml-2 flex items-center gap-1.5 text-xs leading-none">
             {additions > 0 && <span className="font-mono text-success">+{additions}</span>}
@@ -277,9 +277,9 @@ export const FileHeader: React.FC<FileHeaderProps> = ({
               <span
                 data-pn-generated-badge
                 className="flex-none rounded-sm border border-border/60 bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground"
-                title="Marked linguist-generated in .gitattributes"
+                title="在 .gitattributes 中标记为 linguist-generated"
               >
-                generated
+                已生成
               </span>
             )}
           </span>
@@ -296,7 +296,7 @@ export const FileHeader: React.FC<FileHeaderProps> = ({
                 ? 'bg-success/15 text-success'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
-            title={`${isViewed ? 'Mark as not viewed' : 'Mark as viewed'}${viewedKeyHint ? ' (V)' : ''}`}
+            title={`${isViewed ? '标记为未查看' : '标记为已查看'}${viewedKeyHint ? '（V）' : ''}`}
           >
             {isViewed ? (
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -321,7 +321,7 @@ export const FileHeader: React.FC<FileHeaderProps> = ({
                   ? 'bg-primary/15 text-primary'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
-            title={isStaged ? "Unstage this file (A)" : "Stage this file (A)"}
+            title={isStaged ? "取消暂存此文件（A）" : "暂存此文件（A）"}
           >
             {isStaging ? (
               <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -353,7 +353,7 @@ export const FileHeader: React.FC<FileHeaderProps> = ({
             }}
             onClick={() => fileCommentRef.current && onFileComment(fileCommentRef.current)}
             className={`text-xs rounded transition-colors flex items-center text-muted-foreground hover:text-foreground hover:bg-muted ${commentLabel ? 'gap-1 px-2 py-1' : 'px-1.5 py-1'}`}
-            title="Add file-scoped comment"
+            title="添加文件级评论"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4v-4z" />
@@ -378,13 +378,13 @@ export const FileHeader: React.FC<FileHeaderProps> = ({
                 ? 'opacity-50 cursor-not-allowed text-muted-foreground'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
-            title={editDisabledReason ?? 'Edit this file to author a suggestion (experimental)'}
+            title={editDisabledReason ?? '编辑此文件以撰写建议（实验性）'}
             data-testid="edit-session-start"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
-            {!isVeryTight && <span>Edit</span>}
+            {!isVeryTight && <span>编辑</span>}
           </button>
         )}
         {/* File actions: open in app (when the live checkout matches this

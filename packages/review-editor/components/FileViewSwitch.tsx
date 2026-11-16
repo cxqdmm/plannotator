@@ -21,7 +21,7 @@ export const FileViewSwitch: React.FC<{
         data-file-view={key}
         aria-pressed={view === key}
         disabled={disabled}
-        title={disabled ? wholeUnavailableReason ?? undefined : key === 'whole' ? 'The whole file at the diff\'s new side, with change bars' : 'The diff'}
+        title={disabled ? wholeUnavailableReason ?? undefined : key === 'whole' ? 'diff 新侧的整份文件，带更改标记' : 'diff'}
         onClick={() => onSelect(key)}
         className={`px-2 py-0.5 rounded-sm text-xs whitespace-nowrap transition-colors ${
           view === key ? 'bg-background text-foreground shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'
@@ -32,9 +32,9 @@ export const FileViewSwitch: React.FC<{
     );
   };
   return (
-    <div className="flex-none flex items-center bg-muted/50 rounded p-0.5 mr-1" role="group" aria-label="File view" data-file-view-switch>
-      {segment('changes', 'Changes')}
-      {segment('whole', 'Whole file')}
+    <div className="flex-none flex items-center bg-muted/50 rounded p-0.5 mr-1" role="group" aria-label="文件视图" data-file-view-switch>
+      {segment('changes', '更改')}
+      {segment('whole', '整份文件')}
     </div>
   );
 };

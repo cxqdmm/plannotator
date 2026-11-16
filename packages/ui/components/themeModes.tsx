@@ -9,9 +9,9 @@ interface ThemeMode {
 
 /** The shared catalog rendered by every Light/Dark/System picker. */
 export const THEME_MODES = [
-  { id: 'light', label: 'Light', Icon: SunIcon },
-  { id: 'dark', label: 'Dark', Icon: MoonIcon },
-  { id: 'system', label: 'System', Icon: SystemIcon },
+  { id: 'light', label: '浅色', Icon: SunIcon },
+  { id: 'dark', label: '深色', Icon: MoonIcon },
+  { id: 'system', label: '跟随系统', Icon: SystemIcon },
 ] as const satisfies readonly ThemeMode[];
 
 /** A persisted theme-mode preference. */

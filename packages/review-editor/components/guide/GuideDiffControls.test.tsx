@@ -88,7 +88,7 @@ describe('GuideScreen top-bar diff controls', () => {
     expect(group).not.toBeNull();
     // The Inbox's order: Split/Unified, Collapse all, gear.
     const buttons = Array.from(group.querySelectorAll('button'));
-    expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual(['Switch to Split view', 'Collapse all files', 'Diff display options']);
+    expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual(['切换为分屏视图', '折叠所有文件', 'Diff 显示选项']);
     // The owner's order: Close · Approve | these | Annotations · Ask AI · Review Agents | ☰. The divider after them
     // separates them from the tool icons that follow in the bar.
     expect(group.nextElementSibling?.hasAttribute('data-guide-diff-controls-divider')).toBe(true);
@@ -101,7 +101,7 @@ describe('GuideScreen top-bar diff controls', () => {
 
     const collapse = bar!.querySelector<HTMLButtonElement>('[data-guide-collapse-all]')!;
     await act(async () => collapse.click());
-    expect(collapse.getAttribute('aria-label')).toBe('Expand all files');
+    expect(collapse.getAttribute('aria-label')).toBe('展开所有文件');
   });
 
   test.skipIf(!hasDom)('a compact touch layout draws none of them', async () => {

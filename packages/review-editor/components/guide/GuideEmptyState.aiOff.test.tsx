@@ -36,10 +36,10 @@ test.skipIf(!hasDom)('AI off: the saved guides are listed and open; no Generate'
     root!.render(<GuideEmptyState capabilities={null} launchJob={async () => null} onBack={() => {}} onOpenSavedGuide={(id) => opened.push(id)} launchOff />);
   });
   await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
-  expect(host.querySelector('h1')?.textContent).toBe('Saved guides');
+  expect(host.querySelector('h1')?.textContent).toBe('已保存的指南');
   const entry = Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.includes('Locale fallback chain'));
   expect(entry).toBeDefined();
   await act(async () => entry!.click());
   expect(opened).toEqual(['saved:g1']);
-  expect(Array.from(host.querySelectorAll('button')).some((b) => /generate/i.test(b.textContent ?? ''))).toBe(false);
+  expect(Array.from(host.querySelectorAll('button')).some((b) => /生成/.test(b.textContent ?? ''))).toBe(false);
 });

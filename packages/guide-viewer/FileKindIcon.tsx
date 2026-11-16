@@ -16,9 +16,9 @@ const KIND_PATHS: Record<FileKind, string> = {
 
 /** The label each kind goes by in headers and subheads. */
 export const FILE_KIND_LABELS: Record<FileKind, string> = {
-  code: 'Code',
-  test: 'Tests',
-  generated: 'Generated',
+  code: '代码',
+  test: '测试',
+  generated: '生成文件',
 };
 
 export const FileKindIcon: React.FC<{ kind: FileKind; size?: number; className?: string; title?: string }> = ({

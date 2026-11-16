@@ -19,9 +19,9 @@ describe('CompactAnnotationControls', () => {
     );
 
     expect(html).toContain('data-pn-compact-annotate-entry="true"');
-    expect(html).toContain('Annotate');
-    expect(html).toContain('Pinpoint');
-    expect(html).not.toContain('Select text</span>');
+    expect(html).toContain('标注');
+    expect(html).toContain('点选');
+    expect(html).not.toContain('选择文本</span>');
     expect(html).not.toContain('Comment');
     expect(html).not.toContain('Redline');
     expect(html).not.toContain('Label');
@@ -47,7 +47,7 @@ describe('CompactAnnotationControls', () => {
 
     expect(host.querySelector('[data-pn-compact-annotate-choices]')).not.toBeNull();
     const selectText = Array.from(host.querySelectorAll<HTMLButtonElement>('button'))
-      .find((button) => button.textContent?.includes('Select text'))!;
+      .find((button) => button.textContent?.includes('选择文本'))!;
     expect(selectText.getAttribute('data-pn-touch-target')).not.toBeNull();
 
     await act!(async () => selectText.click());

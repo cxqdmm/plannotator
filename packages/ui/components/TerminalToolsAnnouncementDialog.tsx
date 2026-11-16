@@ -60,23 +60,23 @@ const HERDR_BRAND_VARS = {
 export const TERMINAL_TOOLS_DEMOS: readonly TerminalToolsDemo[] = [
   {
     id: 'full',
-    label: 'Full',
+    label: '完整',
     mp4: `${MEDIA_BASE_URL}/tui-herdr-full-demo.mp4`,
     webm: `${MEDIA_BASE_URL}/tui-herdr-full-demo.webm`,
     poster: `${MEDIA_BASE_URL}/tui-herdr-full-poster.jpg`,
     watchUrl: 'https://x.com/plannotator/status/2093419561077154287',
     description:
-      'Herdr Annotate reviewing a Markdown file with Plannotator TUI: a file tree, a selected block with its comment, and the feedback sent to the agent.',
+      'Herdr Annotate 使用 Plannotator TUI 评审一个 Markdown 文件：文件树、带评论的选中块，以及发送给 agent 的反馈。',
   },
   {
     id: 'lite',
-    label: 'Lite',
+    label: '精简',
     mp4: `${MEDIA_BASE_URL}/tui-herdr-lite-demo.mp4`,
     webm: `${MEDIA_BASE_URL}/tui-herdr-lite-demo.webm`,
     poster: `${MEDIA_BASE_URL}/tui-herdr-lite-poster.jpg`,
     watchUrl: 'https://x.com/plannotator/status/2092757422322627008',
     description:
-      'Herdr Annotate Lite: terminal text selected in an agent session, a comment written in a popover, and the notes sent back to the agent.',
+      'Herdr Annotate Lite：在 agent 会话中选中终端文本，在弹出框中撰写评论，然后把笔记发送回 agent。',
   },
 ];
 
@@ -188,7 +188,7 @@ function DemoPlayer({ demo, reducedMotion }: DemoPlayerProps) {
           reducedMotion ? '' : ' terminal-tools-announcement-tag--sheen'
         }`}
       >
-        New · Watch:
+        新 · 观看：
       </span>
       <video
         ref={videoRef}
@@ -220,14 +220,14 @@ function DemoPlayer({ demo, reducedMotion }: DemoPlayerProps) {
             className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-sm font-medium text-foreground outline-none hover:bg-surface-1 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <XMark className="size-3.5" />
-            Watch on X
+            在 X 上观看
           </a>
         </div>
       ) : (
         <button
           type="button"
           onClick={toggle}
-          aria-label={playing ? 'Pause demo' : 'Play demo'}
+          aria-label={playing ? '暂停演示' : '播放演示'}
           data-terminal-tools-playback={playing ? 'pause' : 'play'}
           className={
             playing
@@ -269,7 +269,7 @@ function DemoSwitch({ active, onChange }: DemoSwitchProps) {
   return (
     <div
       role="tablist"
-      aria-label="Demo"
+      aria-label="演示"
       className="inline-flex shrink-0 rounded-lg border border-border bg-surface-0/60 p-0.5"
     >
       {TERMINAL_TOOLS_DEMOS.map((demo) => {
@@ -401,7 +401,7 @@ export function TerminalToolsAnnouncementDialog({
         <div
           id="terminal-tools-announcement-demo"
           role="tabpanel"
-          aria-label={`${activeDemo.label} demo`}
+          aria-label={`${activeDemo.label} 演示`}
           className="shrink-0 border-b border-border"
         >
           {/* Keyed so a switch resets playback and load-failure state with the footage. */}
@@ -415,13 +415,13 @@ export function TerminalToolsAnnouncementDialog({
                 id="terminal-tools-announcement-title"
                 className="text-balance text-xl font-semibold tracking-tight sm:text-2xl"
               >
-                Plannotator TUI and Herdr Annotate
+                Plannotator TUI 与 Herdr Annotate
               </h2>
               <p
                 id="terminal-tools-announcement-description"
                 className="mt-1 text-pretty text-sm leading-relaxed text-muted-foreground"
               >
-                Annotate Markdown and terminal text, then send the notes to your agent.
+                标注 Markdown 和终端文本，然后把笔记发送给你的 agent。
               </p>
             </div>
             <DemoSwitch active={activeDemo.id} onChange={setActiveDemoId} />
@@ -429,13 +429,13 @@ export function TerminalToolsAnnouncementDialog({
 
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <OutboundAction href={TUI_REPO} icon={<GitHubMark className="size-4" />}>
-              Star plannotator-tui
+              为 plannotator-tui 加星标
             </OutboundAction>
             <OutboundAction href={HERDR_REPO} icon={<GitHubMark className="size-4" />}>
-              Star herdr-annotate
+              为 herdr-annotate 加星标
             </OutboundAction>
             <OutboundAction href={activeDemo.watchUrl} icon={<XMark className="size-3.5" />}>
-              Watch on X
+              在 X 上观看
             </OutboundAction>
             <button
               ref={dismissRef}
@@ -443,7 +443,7 @@ export function TerminalToolsAnnouncementDialog({
               onClick={onDismiss}
               className="ml-auto min-h-9 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground outline-none transition-opacity motion-reduce:transition-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
             >
-              Got it
+              知道了
             </button>
           </div>
         </div>

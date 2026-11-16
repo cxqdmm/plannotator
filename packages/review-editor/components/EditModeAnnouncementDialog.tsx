@@ -69,15 +69,15 @@ function EditModeDemoPlaceholder() {
         <span className="font-mono text-[11px] font-medium text-foreground/80">src/retry.ts</span>
         <span className="ml-auto inline-flex items-center gap-1 rounded border border-border bg-background/70 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
           <Pencil className="h-2.5 w-2.5" />
-          Edit
+          编辑
         </span>
       </div>
       <div className="flex items-center gap-2 border-b border-warning/25 bg-warning/10 px-3.5 py-1">
-        <span className="text-[10px] font-semibold text-warning">Editing</span>
+        <span className="text-[10px] font-semibold text-warning">编辑中</span>
         <span className="rounded border border-border/60 px-1 py-px text-[8px] font-medium uppercase tracking-wide text-muted-foreground/70">
-          Experimental
+          实验性
         </span>
-        <span className="text-[10px] text-muted-foreground">1 change</span>
+        <span className="text-[10px] text-muted-foreground">1 处更改</span>
       </div>
 
       {/* Mock diff lines with an in-place edit */}
@@ -106,7 +106,7 @@ function EditModeDemoPlaceholder() {
         <div className="rounded-lg border border-primary/25 bg-primary/[0.06] p-2.5">
           <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
             <MessageSquarePlus className="h-3 w-3" />
-            Suggestion
+            建议
           </div>
           <div className="mt-1 font-mono text-[10px] leading-4 text-muted-foreground">
             <span className="block text-destructive/80">- const delay = 1000;</span>
@@ -192,23 +192,21 @@ export function EditModeAnnouncementDialog({
       >
         <header className="border-b border-border px-7 py-6">
           <span className="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.13em] text-primary">
-            New · Experimental
+            新增 · 实验性
           </span>
           <h2 id="edit-mode-announcement-title" className="mt-3 text-2xl font-semibold tracking-tight">
-            Edit code to suggest
+            编辑代码以提出建议
           </h2>
           <p
             id="edit-mode-announcement-description"
             className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted-foreground"
           >
-            A new way to give review feedback: make the change you want to see, right in the
-            diff. It is experimental and off by default. Turn it on with the switch below, or
-            leave it off, and nothing else changes.
+            一种提交评审反馈的新方式：直接在 diff 中做出你希望看到的改动。该功能为实验性，默认关闭。用下方开关开启，或保持关闭，其他一切都不变。
           </p>
         </header>
 
         <div className="grid min-h-0 flex-1 grid-cols-[1.1fr_1fr] gap-6 overflow-y-auto px-7 py-6 max-[820px]:grid-cols-1">
-          <section aria-label="Edit Mode demo" className="min-h-[300px]">
+          <section aria-label="编辑模式演示" className="min-h-[300px]">
             {demoVideoSrc ? (
               <video
                 src={demoVideoSrc}
@@ -227,33 +225,33 @@ export function EditModeAnnouncementDialog({
             )}
           </section>
 
-          <section aria-label="How Edit Mode works" className="flex min-w-0 flex-col gap-3">
+          <section aria-label="编辑模式的工作方式" className="flex min-w-0 flex-col gap-3">
             <FactRow
               icon={<Pencil className="h-4 w-4" />}
-              title="Edit in the diff"
-              description="Click Edit on a file in the all-files review view, then type your change directly into the diff in your browser. One file at a time."
+              title="在 diff 中编辑"
+              description="在全部文件评审视图中点击文件上的“编辑”，然后直接在浏览器里的 diff 中输入修改。一次一个文件。"
             />
             <FactRow
               icon={<Send className="h-4 w-4" />}
-              title="Edits become suggestions"
-              description="When you finish, your net changes become ordinary suggestion annotations, the same kind the suggestion editor creates, and flow into your review feedback."
+              title="编辑会变成建议"
+              description="完成后，你的净改动会变成普通的建议标注，与建议编辑器创建的标注相同，并汇入你的评审反馈。"
             />
             <FactRow
               icon={<Ban className="h-4 w-4" />}
-              title="Your files stay untouched"
-              description="The browser never writes to your files on disk. The agent applies the suggestions from your feedback."
+              title="你的文件保持不变"
+              description="浏览器不会写入磁盘上的文件。agent 会根据你的反馈应用这些建议。"
             />
             <FactRow
               icon={<MessageSquarePlus className="h-4 w-4" />}
-              title="Annotate mid-edit"
-              description="You can also select text inside the diff while editing and turn the selection into an annotation."
+              title="编辑过程中标注"
+              description="编辑时还可以选中 diff 中的文本，将其转为标注。"
             />
           </section>
         </div>
 
         <footer className="flex items-center justify-between gap-4 border-t border-border px-7 py-5">
           <p className="text-xs text-muted-foreground">
-            Change this anytime in Settings → Experimental → Edit Code to Suggest.
+            之后可随时在 设置 → 实验性 → 编辑代码以提出建议 中更改。
           </p>
           {/* The enable decision is an explicit switch, deliberately separate from the
               dismiss action: a primary "Turn it on" button reads as a generic continue
@@ -263,7 +261,7 @@ export function EditModeAnnouncementDialog({
             <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/20 px-3.5 py-2">
               <span id="edit-mode-enable-label">
                 <TextShimmer className="text-sm font-medium" duration={2.5} spread={1.5}>
-                  Enable Edit Mode
+                  启用编辑模式
                 </TextShimmer>
               </span>
               <button
@@ -289,7 +287,7 @@ export function EditModeAnnouncementDialog({
               onClick={() => (enableChoice ? onEnable() : onDismiss())}
               className="min-h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
             >
-              Done
+              完成
             </button>
           </div>
         </footer>

@@ -8,19 +8,19 @@
  * new word still fills it.
  */
 export const STAR_ASK_WORDS = {
-  title: 'Would you star Plannotator?',
-  body: 'It’s free and open source. A star helps more people find it, and helps us keep it going.',
-  notNow: 'Not now',
-  star: 'Star on GitHub',
-  starring: 'Starring…',
+  title: '给 Plannotator 点个 Star 吗？',
+  body: '它免费且开源。一个 Star 能让更多人发现它，也能帮我们把它做下去。',
+  notNow: '暂时不要',
+  star: '在 GitHub 上加星标',
+  starring: '加星标中…',
   /** gh starred it. */
-  starred: 'Starred. Thank you!',
+  starred: '已加星标，谢谢！',
   /** The link opened GitHub in a new tab (no gh, or gh could not check). */
-  opened: 'Thank you! GitHub is open in a new tab.',
+  opened: '谢谢！GitHub 已在新标签页中打开。',
   /** gh could not star it on the click (a token not allowed to star, the network): the link follows. */
-  failed: 'Couldn’t star it from here.',
-  openGitHub: 'Open GitHub',
-  close: 'Close',
+  failed: '无法从这里加星标。',
+  openGitHub: '打开 GitHub',
+  close: '关闭',
   art: {
     label: 'plannotator · open source',
     ask: 'a small ask',

@@ -15,8 +15,8 @@ export const SessionAskStatus: React.FC<{ response: AIResponse }> = ({ response 
     <span className="text-xs text-muted-foreground" data-session-ask-status={response.status}>
       <span className="ai-streaming-cursor" />{' '}
       {response.status === 'waiting'
-        ? 'Waiting for the session to finish its current turn…'
-        : 'Interrupting the session…'}
+        ? '等待会话完成当前回合…'
+        : '正在中断会话…'}
     </span>
   );
 };
@@ -55,15 +55,15 @@ export const SessionAskActions: React.FC<{
           onClick={() => onAction('wait')}
           className={`${buttonClass} bg-primary text-primary-foreground hover:opacity-90`}
         >
-          Ask when it finishes
+          完成后询问
         </button>
         {canInterrupt && <button
           type="button"
           onClick={() => onAction('interrupt')}
           className={`${buttonClass} bg-muted text-foreground hover:bg-muted/80`}
-          title="Stops the session's current work, then asks your question"
+          title="中断会话当前工作，然后询问你的问题"
         >
-          Interrupt and ask now
+          立即中断并询问
         </button>}
       </div>
     );
@@ -77,8 +77,8 @@ export const SessionAskActions: React.FC<{
         data-session-ask-unreachable={gone ? 'gone' : 'blocked'}
       >
         {gone
-          ? 'Ask AI answers only from the session that opened Plannotator, and that session is gone, so Ask AI can\'t reach it.'
-          : 'Ask AI answers only from the session that opened Plannotator, and that session is waiting on this decision, so Ask AI can\'t reach it until you decide.'}
+          ? 'Ask AI 只由打开 Plannotator 的会话作答，而该会话已不存在，因此 Ask AI 无法联系到它。'
+          : 'Ask AI 只由打开 Plannotator 的会话作答，而该会话正在等待你的决定，因此在你做出决定前 Ask AI 无法联系到它。'}
       </p>
     );
   }

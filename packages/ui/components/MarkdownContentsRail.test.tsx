@@ -519,7 +519,7 @@ describe.if(hasDom)('Markdown Contents rail', () => {
       const current = document.querySelector<HTMLElement>('[data-contents-index][aria-current="location"] .pn-contents-rail-label');
       return current?.textContent ?? null;
     };
-    const listMarked = () => document.querySelector('nav[aria-label="Table of contents"] button[aria-current="location"]')?.textContent ?? null;
+    const listMarked = () => document.querySelector('nav[aria-label="目录"] button[aria-current="location"]')?.textContent ?? null;
     expect(railMarked()).toBe('Overview');
     expect(listMarked()).toBe('Overview');
     // Headings at 40, 260, 480, 700 and 920 px; the line is 80 px down; the end is 600.

@@ -530,11 +530,11 @@ describe.if(hasDom)('Markdown preview (DOM)', () => {
   test('while All files holds the file in an edit session, its menu here is disabled and says why', async () => {
     const doc = '# A\n';
     const el = await render({
-      patch: addedPatch('a.md', doc), filePath: 'a.md', status: 'added', markdownViewDisabledReason: 'Finish editing first',
+      patch: addedPatch('a.md', doc), filePath: 'a.md', status: 'added', markdownViewDisabledReason: '请先结束编辑',
     }, { oldContent: null, newContent: doc });
     const button = el.querySelector<HTMLButtonElement>(TOGGLE)!;
     expect(button.disabled).toBe(true);
-    expect(button.getAttribute('title')).toBe('Finish editing first');
+    expect(button.getAttribute('title')).toBe('请先结束编辑');
   });
 
   test('a large file asks before rendering', async () => {

@@ -60,11 +60,11 @@ export function DiagramPopout({
             data-diagram-source-toggle=""
             aria-pressed={sourceOpen}
             className={cn('shrink-0', sourceOpen && 'bg-primary/15 text-primary')}
-            title={sourceOpen ? 'Close the source pane' : 'Open the diagram source beside the canvas'}
+            title={sourceOpen ? '关闭源码面板' : '在画布旁打开图表源码'}
             onClick={() => setSourceOpen((value) => !value)}
           >
             <Code className="size-3.5" aria-hidden="true" />
-            <span>Source</span>
+            <span>源码</span>
           </Button>
         )}
       </div>

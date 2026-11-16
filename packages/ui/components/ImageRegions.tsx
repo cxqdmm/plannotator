@@ -297,12 +297,12 @@ export const RegionToolStrip: React.FC<{
         <>
           <div
             role="radiogroup"
-            aria-label="Image tool"
+            aria-label="图片工具"
             onKeyDown={onKeyDown}
             className="inline-flex gap-0.5 rounded-[9px] border border-border/30 bg-muted/50 p-0.5"
           >
-            {radio('move', 'Move', <HandIcon size={phone ? 17 : 15} />, moveRef)}
-            {radio('region', 'Region', <RegionIcon size={phone ? 17 : 15} />, regionRef)}
+            {radio('move', '移动', <HandIcon size={phone ? 17 : 15} />, moveRef)}
+            {radio('region', '区域', <RegionIcon size={phone ? 17 : 15} />, regionRef)}
           </div>
           <span className="h-5 w-px bg-border" aria-hidden="true" />
         </>
@@ -313,7 +313,7 @@ export const RegionToolStrip: React.FC<{
         data-region-count=""
         aria-expanded={drawerOpen}
         aria-controls={drawerId}
-        aria-label={`${count} ${count === 1 ? 'comment' : 'comments'} on this image`}
+        aria-label={`此图片上有 ${count} 条评论`}
         onClick={onToggleDrawer}
         className={`inline-flex items-center gap-1.5 rounded-[7px] font-medium tabular-nums transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${seg} ${
           drawerOpen ? 'bg-primary/12 text-primary' : 'text-muted-foreground hover:text-foreground'

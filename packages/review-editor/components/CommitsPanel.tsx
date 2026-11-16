@@ -76,11 +76,11 @@ const CommitRow: React.FC<{
 const BaseBoundary: React.FC<{ base: string }> = ({ base }) => (
   <div
     className="flex items-center gap-2 px-2 py-2"
-    title={`Commits from here down are already part of ${base} — shared history, not branch work.`}
+    title={`从这里往下的 commit 已属于 ${base}——共享历史，而非分支上的工作。`}
   >
     <span className="h-px flex-1 bg-foreground/30" />
     <span className="text-[11px] font-semibold text-foreground/80 truncate max-w-[160px]">
-      In {base}
+      位于 {base}
     </span>
     <span className="h-px flex-1 bg-foreground/30" />
   </div>
@@ -123,7 +123,7 @@ export const CommitsPanel: React.FC<CommitsPanelProps> = ({
       {commits.length > 0 && (
         <div className="px-4 py-1 flex items-center justify-end flex-shrink-0">
           <span className="text-xs text-muted-foreground tabular-nums">
-            {commits.length} {commits.length === 1 ? 'commit' : 'commits'}
+            {commits.length} 个 commit
           </span>
         </div>
       )}
@@ -141,21 +141,21 @@ export const CommitsPanel: React.FC<CommitsPanelProps> = ({
                 onClick={onRetry}
                 className="text-[11px] text-primary/80 underline underline-offset-2 decoration-primary/40 hover:text-primary transition-colors"
               >
-                Retry
+                重试
               </button>
             </div>
           ) : isLoading && commits.length === 0 ? (
-            <div className="py-6 text-center text-xs text-muted-foreground/50">Loading commits…</div>
+            <div className="py-6 text-center text-xs text-muted-foreground/50">正在加载 commit…</div>
           ) : commits.length === 0 ? (
-            <div className="py-6 text-center text-xs text-muted-foreground/50">No commits</div>
+            <div className="py-6 text-center text-xs text-muted-foreground/50">没有 commit</div>
           ) : (
             <>
               {commits.map((commit, index) => (
                 <React.Fragment key={commit.sha}>
                   {showGroups && index === 0 && boundaryIndex > 0 && (
                     <GroupHeader
-                      label="On this branch"
-                      title={`Commits that exist only on this branch — not yet part of ${base}.`}
+                      label="此分支上"
+                      title={`仅存在于此分支的 commit——尚未包含在 ${base} 中。`}
                     />
                   )}
                   {showGroups && index === boundaryIndex && <BaseBoundary base={base!} />}
@@ -173,7 +173,7 @@ export const CommitsPanel: React.FC<CommitsPanelProps> = ({
                   disabled={isLoadingMore}
                   className="w-full text-left px-2 py-1 text-[11px] text-primary/80 underline underline-offset-2 decoration-primary/40 hover:text-primary hover:decoration-primary transition-colors disabled:opacity-50"
                 >
-                  {isLoadingMore ? 'Loading…' : 'Show more'}
+                  {isLoadingMore ? '加载中…' : '显示更多'}
                 </button>
               )}
               {error && (
@@ -183,7 +183,7 @@ export const CommitsPanel: React.FC<CommitsPanelProps> = ({
                     onClick={onRetry}
                     className="flex-shrink-0 text-primary/80 underline underline-offset-2 decoration-primary/40 hover:text-primary transition-colors"
                   >
-                    Retry
+                    重试
                   </button>
                 </div>
               )}

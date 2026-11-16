@@ -692,7 +692,7 @@ export function MarkdownContentsRail({
     <nav
       ref={railRef}
       className="pn-contents-rail"
-      aria-label="Document contents"
+      aria-label="文档目录"
       data-revealed={titlesVisible ? '' : undefined}
       style={railStyle}
       onPointerLeave={() => setInteractionIndex(null)}
@@ -700,7 +700,7 @@ export function MarkdownContentsRail({
       <div className="pn-contents-rail-dock" aria-hidden="true" />
       <div className="pn-contents-rail-surface" aria-hidden="true" />
       <div className="pn-contents-rail-title" aria-hidden="true">
-        Contents
+        目录
       </div>
       <div ref={listRef} className="pn-contents-rail-list" role="list">
         {renderedItemIndexes.map((index, markerPosition) => {

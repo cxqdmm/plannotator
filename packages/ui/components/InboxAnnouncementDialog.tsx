@@ -75,7 +75,7 @@ function Film() {
         controls={started}
         playsInline
         preload="none"
-        aria-label="The Plannotator Inbox film"
+        aria-label="Plannotator Inbox 影片"
         // A source that cannot be fetched errors on <source>; a file that was
         // fetched but cannot be decoded errors on the element itself.
         onError={() => setFailed(true)}
@@ -89,13 +89,13 @@ function Film() {
           data-inbox-film-unavailable
           className="absolute inset-0 grid place-items-center bg-background/75 px-6 text-center text-sm text-muted-foreground backdrop-blur-sm"
         >
-          The film could not load. It is also on the Inbox page.
+          影片无法加载。它也在 Inbox 页面上。
         </p>
       ) : !started ? (
         <button
           type="button"
           onClick={play}
-          aria-label="Play the Inbox film"
+          aria-label="播放 Inbox 影片"
           data-inbox-film-play
           className="group absolute inset-0 grid place-items-center outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
         >
@@ -163,8 +163,7 @@ export function InboxAnnouncementDialog({ isOpen, onDismiss }: InboxAnnouncement
               The Plannotator Inbox
             </DialogTitle>
             <DialogDescription className="mt-1.5 max-w-xl text-pretty leading-relaxed">
-              Questions, blockers and reviews from your agents arrive in one inbox while they work,
-              and your answers go back to them.
+              agent 工作时，来自它们的问题、阻塞和评审会汇入同一个收件箱，你的回答会送回给它们。
             </DialogDescription>
           </div>
 
@@ -176,7 +175,7 @@ export function InboxAnnouncementDialog({ isOpen, onDismiss }: InboxAnnouncement
               onClick={() => onDismissRef.current()}
               className="min-h-10 rounded-lg border border-border px-4 text-sm font-medium text-foreground outline-none transition-colors motion-reduce:transition-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
             >
-              Close
+              关闭
             </button>
             <a
               href={INBOX_PAGE_URL}
@@ -191,7 +190,7 @@ export function InboxAnnouncementDialog({ isOpen, onDismiss }: InboxAnnouncement
               }}
               className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground outline-none transition-opacity motion-reduce:transition-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
             >
-              Learn about the Inbox
+              了解 Inbox
               <ArrowUpRight className="size-4" aria-hidden="true" />
             </a>
           </div>

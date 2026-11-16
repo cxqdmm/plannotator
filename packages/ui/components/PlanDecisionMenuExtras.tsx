@@ -58,7 +58,7 @@ export const AgentSwitchMenuSection: React.FC<{ agents: Agent[] }> = ({ agents }
   const stored = useConfigValue('agentSwitch');
   const setting: AgentSwitchSettings = stored ?? getAgentSwitchDefaults('plan');
   const isCustom = setting.switchTo === 'custom' && !!setting.customName;
-  const title = 'After approval, switch to';
+  const title = '通过后切换到';
 
   return (
     <>
@@ -80,7 +80,7 @@ export const AgentSwitchMenuSection: React.FC<{ agents: Agent[] }> = ({ agents }
           </RadioRow>
         ))}
         {isCustom && (
-          <RadioRow checked onSelect={() => {}} note="(custom)">
+          <RadioRow checked onSelect={() => {}} note="（自定义）">
             {setting.customName}
           </RadioRow>
         )}
@@ -88,7 +88,7 @@ export const AgentSwitchMenuSection: React.FC<{ agents: Agent[] }> = ({ agents }
           checked={setting.switchTo === 'disabled'}
           onSelect={() => saveAgentSwitchSettings({ switchTo: 'disabled' })}
         >
-          No switch
+          不切换
         </RadioRow>
       </div>
     </>
@@ -111,18 +111,18 @@ export const PermissionModeMenuLine: React.FC<{
       className="flex items-center justify-between gap-2 px-3 py-1.5 text-[10px] text-muted-foreground"
     >
       <span>
-        After approval, {agentName} runs in{' '}
-        <span className="font-medium text-foreground">{modeLabel}</span>
+        通过后，{agentName} 以{' '}
+        <span className="font-medium text-foreground">{modeLabel}</span> 运行
       </span>
       <button
         type="button"
         role="menuitem"
         onClick={onChange}
         data-permission-mode-change="true"
-        aria-label={`Change the permission mode (${modeLabel}) in Settings`}
+        aria-label={`在设置中更改权限模式（${modeLabel}）`}
         className="rounded px-1 py-0.5 text-[10px] text-primary outline-none hover:underline focus-visible:ring-1 focus-visible:ring-ring/60"
       >
-        Change
+        更改
       </button>
     </div>
   </>

@@ -110,11 +110,11 @@ export const GuideExportButton: React.FC<GuideExportButtonProps> = ({ jobId }) =
         href={`/api/guide/${encoded}/export`}
         download={info.filename}
         className={HEADER_CONTROL_CLASS}
-        title="Download this guide as one portable HTML file — opens anywhere, no Plannotator needed"
+        title="将此指南下载为单个便携 HTML 文件——随处可打开，无需 Plannotator"
         data-testid="guide-export"
       >
         <Download size={13} />
-        <span>Download portable guide</span>
+        <span>下载便携指南</span>
         <span className="font-mono text-[10px] text-muted-foreground/60">{formatShareBytes(info.bytes)}</span>
       </a>
       {shareEnabled && (
@@ -124,13 +124,13 @@ export const GuideExportButton: React.FC<GuideExportButtonProps> = ({ jobId }) =
           className={HEADER_CONTROL_CLASS}
           title={
             hasLink
-              ? 'This guide has a share link. Open to copy or remove it.'
-              : 'Upload this guide and its diff to the share service and get a link anyone can open'
+              ? '此指南已有分享链接。打开以复制或移除。'
+              : '将此指南及其 diff 上传到分享服务，获得任何人都能打开的链接'
           }
           data-testid="guide-share"
         >
           <Link2 size={13} />
-          <span>{hasLink ? 'Share link' : 'Create share link'}</span>
+          <span>{hasLink ? '分享链接' : '创建分享链接'}</span>
         </button>
       )}
       {shareEnabled && (

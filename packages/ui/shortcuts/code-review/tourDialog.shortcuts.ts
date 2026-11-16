@@ -3,13 +3,13 @@ import { createShortcutScopeHook } from '../runtime';
 
 export const reviewTourDialogShortcuts = defineShortcutScope({
   id: 'review-tour-dialog',
-  title: 'Tour Dialog',
+  title: '导览对话框',
   shortcuts: {
     close: {
-      description: 'Close tour',
+      description: '关闭导览',
       bindings: ['Escape'],
-      section: 'Tour',
-      hint: 'Available while the code tour dialog is open.',
+      section: '导览',
+      hint: '代码导览对话框打开时可用。',
       displayOrder: 10,
     },
   },

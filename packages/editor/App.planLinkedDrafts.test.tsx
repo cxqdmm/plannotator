@@ -187,7 +187,7 @@ async function clickLink(text: string): Promise<void> {
   for (let attempt = 0; attempt < 14; attempt += 1) await settle(60);
 }
 
-async function answerBanner(label: "Restore" | "Dismiss"): Promise<void> {
+async function answerBanner(label: "恢复" | "忽略"): Promise<void> {
   const button = findButton(label);
   if (!button) throw new Error(`Draft recovery dialog did not offer ${label}`);
   await act(async () => { button.click(); });
@@ -209,8 +209,8 @@ describe.if(hasDom)("plan review: linked documents in a recovered draft", () => 
       ts: Date.now(),
     };
     await mount();
-    expect(document.body.textContent).toContain("Found 2 annotations (including comments on 1 linked document)");
-    await answerBanner("Restore");
+    expect(document.body.textContent).toContain("2 条标注（含 1 个关联文档上的评论）");
+    await answerBanner("恢复");
     for (let attempt = 0; attempt < 10; attempt += 1) await settle(60);
 
     // The plan's own draft carries the plan's comment and never the design's.
@@ -239,14 +239,14 @@ describe.if(hasDom)("plan review: linked documents in a recovered draft", () => 
       ts: Date.now(),
     };
     await mount();
-    expect(document.body.textContent).toContain("Found 1 annotation on 1 linked document");
-    expect(document.body.textContent).not.toContain("including");
+    expect(document.body.textContent).toContain("1 条标注（位于 1 个关联文档上）");
+    expect(document.body.textContent).not.toContain("（含");
   });
 
   test("opening a linked document with no comments never deletes the plan's draft", async () => {
     sessionDraft = { annotations: [PLAN_COMMENT], globalAttachments: [], draftGeneration: 1, ts: Date.now() };
     await mount();
-    await answerBanner("Restore");
+    await answerBanner("恢复");
     const since = requests.length;
     await clickLink("the empty page");
 
@@ -263,7 +263,7 @@ describe.if(hasDom)("plan review: linked documents in a recovered draft", () => 
       ts: Date.now(),
     };
     await mount();
-    await answerBanner("Dismiss");
+    await answerBanner("忽略");
 
     expect(requests.some((r) => r.path === "/api/draft" && r.method === "DELETE")).toBe(true);
     const cleared = documentWrites().flatMap((w) => w.documents);

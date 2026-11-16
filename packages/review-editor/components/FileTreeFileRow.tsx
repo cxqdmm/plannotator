@@ -95,7 +95,7 @@ export const FileTreeFileRow = React.memo(function FileTreeFileRow({
               ) : sinceBaseMode && onStageFile ? (
                 <span className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
               ) : isStaged && !sinceBaseMode ? (
-                <span className="text-[10px] text-primary font-medium flex items-center justify-center w-4 flex-shrink-0" title="Staged (git add)">+</span>
+                <span className="text-[10px] text-primary font-medium flex items-center justify-center w-4 flex-shrink-0" title="已暂存（git add）">+</span>
               ) : null
             )}
             <span className="review-change-letter">
@@ -106,13 +106,13 @@ export const FileTreeFileRow = React.memo(function FileTreeFileRow({
               <span
                 data-file-tree-markdown-preview=""
                 className="ml-1 inline-flex flex-shrink-0 text-primary/80"
-                title="Shown rendered"
+                title="以渲染视图显示"
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
-                <span className="sr-only">(rendered)</span>
+                <span className="sr-only">（已渲染）</span>
               </span>
             )}
             <AnnotationBadge count={annotationCount} />
@@ -126,20 +126,20 @@ export const FileTreeFileRow = React.memo(function FileTreeFileRow({
             onClick={() => { void copyTextToClipboard(path); }}
             className="flex items-center gap-2 mx-1 px-2 py-1.5 text-xs rounded cursor-pointer outline-none text-foreground/80 data-[highlighted]:bg-muted data-[highlighted]:text-foreground"
           >
-            Copy path
+            复制路径
           </ContextMenu.Item>
           <ContextMenu.Item
             onClick={() => { void copyTextToClipboard(name); }}
             className="flex items-center gap-2 mx-1 px-2 py-1.5 text-xs rounded cursor-pointer outline-none text-foreground/80 data-[highlighted]:bg-muted data-[highlighted]:text-foreground"
           >
-            Copy filename
+            复制文件名
           </ContextMenu.Item>
           {repoRoot && (
             <ContextMenu.Item
               onClick={() => { void copyTextToClipboard(`${repoRoot.replace(/\/$/, '')}/${path}`); }}
               className="flex items-center gap-2 mx-1 px-2 py-1.5 text-xs rounded cursor-pointer outline-none text-foreground/80 data-[highlighted]:bg-muted data-[highlighted]:text-foreground"
             >
-              Copy full path
+              复制完整路径
             </ContextMenu.Item>
           )}
           </ContextMenu.Popup>

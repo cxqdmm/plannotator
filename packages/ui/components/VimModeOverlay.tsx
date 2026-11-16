@@ -117,7 +117,7 @@ export function VimModeOverlay({
     : state.phase === 'text'
       ? 'NORMAL'
       : state.phase.toUpperCase();
-  const inputLabel = inputMethod === 'pinpoint' ? 'PINPOINT' : 'SELECT';
+  const inputLabel = inputMethod === 'pinpoint' ? '精准定位' : '选择';
   const hudPhase = getVimHudPhase(state.phase, hudCommand?.actionId);
 
   return (
@@ -180,7 +180,7 @@ export function VimModeOverlay({
           className="fixed inset-0 z-[140] flex items-center justify-center bg-background/65 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
-          aria-label="Vim controls"
+          aria-label="Vim 控制"
           onKeyDown={(event) => {
             if (event.key === 'Escape' || event.key === '?') {
               event.preventDefault();
@@ -195,9 +195,9 @@ export function VimModeOverlay({
           <div className="w-full max-w-lg rounded-xl border border-border bg-popover p-5 shadow-2xl">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
-                <div className="text-sm font-semibold">Vim controls</div>
+                <div className="text-sm font-semibold">Vim 控制</div>
                 <div className="text-xs text-muted-foreground">
-                  Move through document structure, refine into text, then annotate.
+                  在文档结构间移动，细化到文本，然后标注。
                 </div>
               </div>
               <button
@@ -205,26 +205,26 @@ export function VimModeOverlay({
                 onClick={() => onHelpOpenChange(false)}
                 className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
               >
-                Close
+                关闭
               </button>
             </div>
             <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs">
               <kbd className="font-mono text-primary">j / k · gg / G</kbd>
-              <span>Previous / next block or sibling; first / last block</span>
+              <span>上一块 / 下一块或同级块；第一块 / 最后一块</span>
               <kbd className="font-mono text-primary">h / l · Esc</kbd>
-              <span>Move out, refine inward, or back out one level</span>
+              <span>向外移动、向内细化，或返回上一级</span>
               <kbd className="font-mono text-primary">v / V</kbd>
-              <span>Precise text / whole-block selection</span>
+              <span>精确文本 / 整块选择</span>
               <kbd className="font-mono text-primary">h j k l · w b e · 0 $</kbd>
-              <span>Text motions after entering NORMAL</span>
+              <span>进入 NORMAL 后的文本移动</span>
               <kbd className="font-mono text-primary">o</kbd>
-              <span>Swap the ends of a Visual selection</span>
+              <span>交换可视选择的两端</span>
               <kbd className="font-mono text-primary">Enter</kbd>
-              <span>Use the active annotation mode</span>
+              <span>使用当前标注模式</span>
               <kbd className="font-mono text-primary">Space · c d m t y</kbd>
-              <span>Actions, comment, delete, markup, tag, copy</span>
+              <span>操作、评论、删除、标记、标签、复制</span>
               <kbd className="font-mono text-primary">Esc · ?</kbd>
-              <span>Cancel current state / toggle this help</span>
+              <span>取消当前状态 / 切换此帮助</span>
             </div>
           </div>
         </div>,

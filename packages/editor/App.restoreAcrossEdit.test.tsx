@@ -217,7 +217,7 @@ async function mountAndRestore(document_: string): Promise<void> {
   for (let attempt = 0; attempt < 20; attempt += 1) await settle();
 
   const restore = Array.from(document.querySelectorAll("button"))
-    .find((button) => button.textContent?.trim() === "Restore");
+    .find((button) => button.textContent?.trim() === "恢复");
   if (!restore) throw new Error("Draft recovery dialog did not offer Restore");
   await act(async () => { restore.click(); });
   await settleRepaint();

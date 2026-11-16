@@ -11,20 +11,20 @@ import { defineShortcutScope } from './core';
  */
 export const decisionControlShortcuts = defineShortcutScope({
   id: 'decision-control',
-  title: 'Decision control',
+  title: '决策控件',
   shortcuts: {
     submitNote: {
-      description: 'Send the note with the decision you picked',
+      description: '把备注随所选决策一起发送',
       bindings: ['Mod+Enter'],
-      section: 'Actions',
-      hint: "Available while the decision control's note field is open. Enter inserts a newline.",
+      section: '操作',
+      hint: '当决策控件的备注框打开时可用。Enter 会插入换行。',
       displayOrder: 12,
     },
     closeNote: {
-      description: 'Step back to the decision menu, keeping the note',
+      description: '返回决策菜单，并保留备注',
       bindings: ['Escape'],
-      section: 'Actions',
-      hint: "Available while the decision control's note field is open.",
+      section: '操作',
+      hint: '当决策控件的备注框打开时可用。',
       displayOrder: 14,
     },
   },

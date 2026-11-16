@@ -28,8 +28,8 @@ export function modelSourceToolForProvider(providerType: string | null | undefin
 export function modelSourceHint(tool: ModelSourceTool | null | undefined, info: ModelSourceInfo | null | undefined): string | null {
   if (!tool || !info?.toolVersion) return null;
   const name = TOOL_NAME[tool];
-  if (info.modelsSource === 'discovered') return `From your installed ${name} ${info.toolVersion}`;
-  if (info.modelsSource === 'fallback') return `Using the built-in list — update or sign in to ${name} to see its latest models`;
+  if (info.modelsSource === 'discovered') return `来自你安装的 ${name} ${info.toolVersion}`;
+  if (info.modelsSource === 'fallback') return `正在使用内置列表，更新或登录 ${name} 即可查看其最新模型`;
   return null;
 }
 

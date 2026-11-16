@@ -141,17 +141,17 @@ function boxShowMePart(scope: ParentNode, sel: ShapeBoxSelection): Omit<ShapeSho
     const code = (el?.closest('[data-code]') ?? el?.querySelector('[data-code]'))?.getAttribute('data-code') ?? sel.code[0];
     return { name: names[0]!, ...(code ? { code } : {}), picture: sel.picture };
   }
-  return { name: 'A part of the board', ...(names.length > 1 ? { parts: names } : {}), picture: sel.picture };
+  return { name: '看板的一部分', ...(names.length > 1 ? { parts: names } : {}), picture: sel.picture };
 }
 
 /**
  * A Change it the host refused or never got (a server that restarted, Shape turned off, a server that is gone):
  * the composer opens again with the person's words and says so (approved: shape-skill, q-f1ff983a A).
  */
-export const SHAPE_CHANGE_NOT_SENT = "Your change wasn't saved. Press Change it to try again.";
+export const SHAPE_CHANGE_NOT_SENT = "更改未保存。请按“修改它”重试。";
 
 /** An Ask the host did not take: the question stays in the Ask panel with this line (the Inbox Ask's words, AskChat). */
-export const SHAPE_ASK_NOT_SENT = 'That question did not go through. Try again.';
+export const SHAPE_ASK_NOT_SENT = '该问题未能送达。请重试。';
 
 const key = (view: string, id: string) => `${view}/${id}`;
 
@@ -187,7 +187,7 @@ function partWords(el: HTMLElement): string {
 
 /** The Ask panel's words once the session ended: what answers a question then depends on the host. */
 export function shapeEndedLabel(host: Pick<ShapeHost, 'askWaitsWhenEnded'>): string {
-  return host.askWaitsWhenEnded ? 'Session ended · your question waits for the agent' : 'Session ended · Ask AI answers; changes wait for the agent';
+  return host.askWaitsWhenEnded ? '会话已结束 · 你的问题正等待 agent' : '会话已结束 · Ask AI 会作答，更改则等待 agent';
 }
 
 /**
@@ -196,7 +196,7 @@ export function shapeEndedLabel(host: Pick<ShapeHost, 'askWaitsWhenEnded'>): str
 function shapeBoxPart(target: { el: HTMLElement; view: string | null; id: string | null; text: string }): { name: string; code?: string } {
   const whole = partWords(target.el).replace(/\s+/g, ' ').trim();
   const words = !!target.text && target.text !== whole;
-  const name = (words ? target.text || whole : partName(target.el)) || target.id || 'A part of the board';
+  const name = (words ? target.text || whole : partName(target.el)) || target.id || '看板的一部分';
   const code = (target.el.closest('[data-code]') ?? target.el.querySelector('[data-code]'))?.getAttribute('data-code') ?? undefined;
   return { name: Array.from(name).slice(0, 600).join(''), ...(code ? { code } : {}) };
 }
@@ -739,11 +739,11 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
   };
 
   const quoteLabel = (t: Target) => {
-    const where = t.view ? tabLabel(t.view) : 'Board';
+    const where = t.view ? tabLabel(t.view) : '看板';
     // A host without the box keeps its label as it was.
     if (!boxSelect) return `${where} · “${t.text.length > 48 ? `${t.text.slice(0, 46)}…` : t.text}”`;
     // A box across several parts: how many, not their words run together.
-    if (t.box && t.box.parts.length > 1) return `${where} · ${t.box.parts.length} parts`;
+    if (t.box && t.box.parts.length > 1) return `${where} · ${t.box.parts.length} 个部分`;
     if (!t.text) return where;
     return `${where} · “${t.text.length > 40 ? `${t.text.slice(0, 38).trimEnd()}…` : t.text}”`;
   };
@@ -760,11 +760,11 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
         setTarget(null);
         setGeneral({ el: e.currentTarget, view: forView });
       }}
-      title="Add global comment"
+      title="添加全局评论"
       aria-haspopup="dialog"
     >
       <GlobeIcon />
-      <span>Global comment</span>
+      <span>全局评论</span>
     </button>
   );
 
@@ -849,20 +849,20 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
       .filter((n) => n.from === 'you' && (n.kind === 'change' || n.kind === 'ask'))
       .map((q) => {
         const a = answers.get(q.id);
-        const where = q.view ? tabLabel(q.view) : 'The whole board';
+        const where = q.view ? tabLabel(q.view) : '整个看板';
         const scope: AIChatEntry['question']['scope'] = !boxSelect
           ? (q.part
             ? { kind: 'selection', label: `${where} · “${(q.quote ?? '').slice(0, 46)}”`, text: q.quote ?? undefined }
-            : { kind: 'general', label: q.view ? `${where} · general` : where })
+            : { kind: 'general', label: q.view ? `${where} · 整体` : where })
           : q.part || q.box
           ? { kind: 'selection', label: q.quote ? `${where} · “${q.quote.slice(0, 46)}”` : where, text: q.quote ?? undefined }
           : { kind: 'general', label: q.view ? `${where} · general` : where };
         const at = Date.parse(q.at);
         const status = q.kind !== 'change' || a
           ? undefined
-          : shapeNoteWaits(q) && session.state === 'gone' ? 'Waits for the agent' : q.delivered ? `${agent} has it` : `Sent to ${agent}`;
+          : shapeNoteWaits(q) && session.state === 'gone' ? '等待 agent' : q.delivered ? `${agent} 已收到` : `已发送给 ${agent}`;
         return {
-          question: { id: q.id, prompt: q.kind === 'change' ? `Change: ${q.text}` : q.text, createdAt: at, scope },
+          question: { id: q.id, prompt: q.kind === 'change' ? `更改：${q.text}` : q.text, createdAt: at, scope },
           response: { questionId: q.id, text: a?.text ?? '', isStreaming: false, createdAt: a ? Date.parse(a.at) : at, ...(status ? { notice: status } : {}) },
         };
       });
@@ -879,7 +879,7 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
   const provider = useMemo<AIProviderOption[]>(() => [{
     id: 'shape-session',
     name: 'session-bridge',
-    label: session.state === 'gone' ? shapeEndedLabel(host) : `Ask this session · ${agent}`,
+    label: session.state === 'gone' ? shapeEndedLabel(host) : `询问此会话 · ${agent}`,
     sessionBridge: { host: agent, status: session.state === 'gone' ? 'gone' : session.state === 'busy' ? 'busy' : 'ready', modes: { turn: true, transient: true } },
   }], [session.state, agent, host]);
 
@@ -1004,7 +1004,7 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
       <div ref={attachRoot} className={`shp-root${phone ? ' phone' : ''}${panel ? ' panel-open' : ''}${follow.sheet ? ' follow-sheet' : ''}`}>
         <RefHoverCards rootRef={rootRef} />
 
-        <section className="shp-surface" aria-label="Shape" onClickCapture={onShapeClickCapture}>
+        <section className="shp-surface" aria-label="看板" onClickCapture={onShapeClickCapture}>
           {/*
             The title comes first (owner feedback 2026-11-04, shape-board-look): no eyebrow row above it. What the row
             said that the board still needs sits in the group at the title's right: the agent drawing, Finished, and
@@ -1016,19 +1016,19 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
               <h1 className={fresh('title').trim()}>{version.title}</h1>
               <div className="shp-head-side">
                 {agentDrawing && (
-                  <span className="shp-drawing" role="status" title={`${agent} is drawing v${version.n + 1}…`}>
+                  <span className="shp-drawing" role="status" title={`${agent} 正在绘制 v${version.n + 1}…`}>
                     <Pebble alive reshaping size={16} />
-                    <span className={phone ? 'shp-sr' : undefined}>{`${agent} is drawing v${version.n + 1}…`}</span>
+                    <span className={phone ? 'shp-sr' : undefined}>{`${agent} 正在绘制 v${version.n + 1}…`}</span>
                   </span>
                 )}
-                {finished && <span className="shp-finished">Finished</span>}
+                {finished && <span className="shp-finished">已完成</span>}
                 {headSide}
                 {!phone && generalButton(null)}
                 {host.refresh && !finished && (
-                  <button type="button" className="shp-quiet-btn" onClick={() => void bringUpToDate()} disabled={busy}>{host.refreshLabel ?? 'Bring it up to date'}</button>
+                  <button type="button" className="shp-quiet-btn" onClick={() => void bringUpToDate()} disabled={busy}>{host.refreshLabel ?? '更新到最新'}</button>
                 )}
                 {onClose && (
-                  <button type="button" className="shp-icon-btn shp-close" onClick={onClose} aria-label="Close Shape" title="Close Shape">×</button>
+                  <button type="button" className="shp-icon-btn shp-close" onClick={onClose} aria-label="关闭看板" title="关闭看板">×</button>
                 )}
               </div>
             </div>
@@ -1062,32 +1062,32 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
           ) : waiting > 0 && session.state === 'gone' ? (
             <div ref={pillRef} className="shp-pill waits" role="status">
               <Pebble alive={false} size={16} />
-              {waiting === 1 ? '1 change waits for the agent' : `${waiting} changes wait for the agent`}
+              {waiting === 1 ? '1 项更改等待 agent' : `${waiting} 项更改等待 agent`}
               {host.resumePrompt && (
-                <button type="button" onClick={() => void copyPrompt()}>{copied ? 'Copied' : 'Copy prompt'}</button>
+                <button type="button" onClick={() => void copyPrompt()}>{copied ? '已复制' : '复制提示词'}</button>
               )}
             </div>
           ) : null}
 
           {canMore && (
             <button type="button" className="shp-more" onClick={toggleMore} aria-pressed={more}>
-              {more ? 'Back to the main board' : 'Show more'}
+              {more ? '返回主看板' : '显示更多'}
             </button>
           )}
 
-          <div ref={dockRef} className="shp-dock" role="toolbar" aria-label="Shape toolbar">
+          <div ref={dockRef} className="shp-dock" role="toolbar" aria-label="看板工具栏">
             {/* A board with no view to show (only `views.know`, say) has no empty group in the dock. */}
-            {views.length > 0 && <div className="shp-tgroup" role="group" aria-label="Views">
+            {views.length > 0 && <div className="shp-tgroup" role="group" aria-label="视图">
               {views.map((v) => (
                 <button key={v.id} type="button" className={`shp-tbtn${view === v.id ? ' on' : ''}`} onClick={() => go(v.id)} aria-pressed={view === v.id} title={v.label}>
                   <ViewIcon id={v.id} />
                   {(!phone || view === v.id) && <span className="tl">{phone ? v.short : v.label}</span>}
-                  {behind[v.id]?.length ? <span className="shp-tdot" aria-label="changed" /> : null}
+                  {behind[v.id]?.length ? <span className="shp-tdot" aria-label="已更改" /> : null}
                 </button>
               ))}
             </div>}
             {follow.button && (
-              <div className="shp-tgroup" role="group" aria-label="Examples">
+              <div className="shp-tgroup" role="group" aria-label="示例">
                 {follow.button}
               </div>
             )}
@@ -1112,8 +1112,8 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
                   type="button"
                   className={`shp-tbtn shp-cross-btn${annotating ? ' on' : ''}`}
                   aria-pressed={annotating}
-                  aria-label="Comment"
-                  title={annotating ? 'Stop commenting' : 'Comment: click a part, or drag across what you mean'}
+                  aria-label="评论"
+                  title={annotating ? '停止评论' : '评论：点击某个部分，或拖选你想说明的内容'}
                   disabled={finished}
                   onClick={() => {
                     setAnnotating(!annotating);
@@ -1132,7 +1132,7 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
                   type="button"
                   className={`shp-tbtn${annotating ? ' on' : ''}`}
                   aria-pressed={annotating}
-                  title={annotating ? 'Stop annotating' : 'Annotate: point at a part to change it or ask about it'}
+                  title={annotating ? '停止标注' : '标注：指向某个部分，即可修改或提问'}
                   disabled={finished}
                   onClick={() => {
                     setAnnotating(!annotating);
@@ -1141,7 +1141,7 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
                   }}
                 >
                   <PenIcon />
-                  {!phone && <span className="tl">Annotate</span>}
+                  {!phone && <span className="tl">标注</span>}
                 </button>
                 {annotating && !phone && (
                   <AnnotationToolstrip
@@ -1157,10 +1157,10 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
                 )}
               </div>
             )}
-            <div className="shp-tgroup side" role="group" aria-label="Panel">
-              <button type="button" className={`shp-tbtn${panel === 'refs' ? ' on' : ''}`} onClick={() => (panel === 'refs' ? closePanel() : openPanel('refs'))} aria-pressed={panel === 'refs'} title="References">
+            <div className="shp-tgroup side" role="group" aria-label="面板">
+              <button type="button" className={`shp-tbtn${panel === 'refs' ? ' on' : ''}`} onClick={() => (panel === 'refs' ? closePanel() : openPanel('refs'))} aria-pressed={panel === 'refs'} title="引用">
                 <RefsIcon />
-                {!phone && <span className="tl">References</span>}
+                {!phone && <span className="tl">引用</span>}
                 {refs.length > 0 && <span className="shp-tcount">{refs.length}</span>}
               </button>
               <button
@@ -1168,14 +1168,14 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
                 className={`shp-tbtn chat${chatOn ? ' on' : ''}${answerReady ? ' ready' : ''}`}
                 onClick={() => (chatOn ? closePanel() : openPanel(answerReady ? 'ask' : lastTab === 'refs' || (lastTab === 'thread' && !renderThread) ? 'ask' : lastTab))}
                 aria-pressed={chatOn}
-                title={answerReady ? 'Answer ready' : 'Chat'}
+                title={answerReady ? '回答已就绪' : '对话'}
               >
                 <ChatIcon />
-                {(!phone || answerReady) && <span className="tl">{answerReady ? (phone ? 'Answer' : 'Answer ready') : 'Chat'}</span>}
+                {(!phone || answerReady) && <span className="tl">{answerReady ? (phone ? '回答' : '回答已就绪') : '对话'}</span>}
                 {answerReady && <span className="shp-ready-dot" aria-hidden="true" />}
               </button>
               {phone && (
-                <button type="button" className="shp-tbtn" onClick={(e) => { setTarget(null); setGeneral({ el: e.currentTarget, view: null }); }} title="Add global comment" aria-label="Global comment" disabled={finished}>
+                <button type="button" className="shp-tbtn" onClick={(e) => { setTarget(null); setGeneral({ el: e.currentTarget, view: null }); }} title="添加全局评论" aria-label="全局评论" disabled={finished}>
                   <GlobeIcon />
                 </button>
               )}
@@ -1196,7 +1196,7 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
               extraActions={target.box ? [
                 // The box's Show me is the host's own (`host.showMe`, `extraAction` below): one button, the board's.
                 ...(boxSelect?.onAddToReply ? [{
-                  label: 'Add to reply',
+                  label: '添加到回复',
                   spends: true,
                   onSelect: (text: string) => {
                     boxSelect.onAddToReply!({ ...target.box!, label: quoteLabel(target) }, text);
@@ -1208,8 +1208,8 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
               allowImages={false}
               // The words typed for this part survive a close (Escape, X) and come back when it is chosen again.
               draftKey={shapeCommentDraftKey(id, target)}
-              submitLabel="Change it"
-              askAILabel="Ask"
+              submitLabel="修改它"
+              askAILabel="提问"
               extraAction={showMeAction(target.boxPart ?? shapeBoxPart(target))}
               // The board's own footer order (Ask, Change it, Show me), never a host's comment card.
               allowCard={false}
@@ -1246,12 +1246,12 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
               anchorEl={general.el}
               contextText=""
               isGlobal
-              headerText={general.view ? `${tabLabel(general.view)} · the whole guide` : 'The whole board'}
+              headerText={general.view ? `${tabLabel(general.view)} · 整个指南` : '整个看板'}
               allowImages={false}
               draftKey={shapeCommentDraftKey(id, { view: general.view, id: null, text: '' })}
-              submitLabel="Change it"
-              askAILabel="Ask"
-              extraAction={showMeAction({ name: 'The whole board' })}
+              submitLabel="修改它"
+              askAILabel="提问"
+              extraAction={showMeAction({ name: '整个看板' })}
               allowCard={false}
               initialText={general.retry?.text}
               errorText={general.retry?.error}
@@ -1263,7 +1263,7 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
                 setGeneral(null);
               }}
               onAskAI={(question) => {
-                const label = general.view ? `${tabLabel(general.view)} · general` : 'The whole board';
+                const label = general.view ? `${tabLabel(general.view)} · 整个` : '整个看板';
                 void sendAsk({ view: general.view, part: null, quote: null, text: question }, { kind: 'general', label });
                 setGeneral(null);
                 return true;
@@ -1277,7 +1277,7 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
         {phone && panel && <div className="shp-scrim" onClick={closePanel} aria-hidden="true" />}
         <aside
           className={`shp-sidep${phone ? ' sheet' : ''}${panel ? ' open' : ''}`}
-          aria-label="Chat and references"
+          aria-label="对话与引用"
           aria-hidden={!panel}
           inert={!panel}
           onClickCapture={(e) => {
@@ -1293,13 +1293,13 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
           {phone && <div className="shp-grab" aria-hidden="true" />}
           <div className="shp-sidep-head">
             <div className="shp-tabs" role="tablist">
-              <button type="button" role="tab" aria-selected={panel === 'ask'} className={panel === 'ask' ? 'on' : ''} onClick={() => openPanel('ask')}><SparklesIcon className="w-3.5 h-3.5" />Ask</button>
+              <button type="button" role="tab" aria-selected={panel === 'ask'} className={panel === 'ask' ? 'on' : ''} onClick={() => openPanel('ask')}><SparklesIcon className="w-3.5 h-3.5" />提问</button>
               {renderThread && (
-                <button type="button" role="tab" aria-selected={panel === 'thread'} className={panel === 'thread' ? 'on' : ''} onClick={() => openPanel('thread')}><ChatIcon />Thread</button>
+                <button type="button" role="tab" aria-selected={panel === 'thread'} className={panel === 'thread' ? 'on' : ''} onClick={() => openPanel('thread')}><ChatIcon />会话</button>
               )}
-              <button type="button" role="tab" aria-selected={panel === 'refs'} className={panel === 'refs' ? 'on' : ''} onClick={() => openPanel('refs')}><RefsIcon />References</button>
+              <button type="button" role="tab" aria-selected={panel === 'refs'} className={panel === 'refs' ? 'on' : ''} onClick={() => openPanel('refs')}><RefsIcon />引用</button>
             </div>
-            <button type="button" className="shp-icon-btn" onClick={closePanel} aria-label="Close panel" title="Close (Esc)">×</button>
+            <button type="button" className="shp-icon-btn" onClick={closePanel} aria-label="关闭面板" title="关闭（Esc）">×</button>
           </div>
           <div className="shp-sidep-body">
             {panel === 'ask' && (
@@ -1307,7 +1307,7 @@ export function ShapeSurface({ host, id, onClose, onCode, CodeGuide, CodeHoverCa
                 messages={entries}
                 isCreatingSession={false}
                 isStreaming={streaming}
-                onAskGeneral={finished ? undefined : (text) => void sendAsk({ view: null, part: null, quote: null, text }, { kind: 'general', label: 'The whole board' })}
+                onAskGeneral={finished ? undefined : (text) => void sendAsk({ view: null, part: null, quote: null, text }, { kind: 'general', label: '整个看板' })}
                 aiProviders={provider}
                 hideProviderBar={host.sessionless}
               />

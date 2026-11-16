@@ -37,7 +37,7 @@ export const SuggestionModal: React.FC<SuggestionModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-foreground">Suggest Changes</span>
+            <span className="text-xs font-medium text-foreground">建议更改</span>
             {language && (
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                 {language}
@@ -45,9 +45,11 @@ export const SuggestionModal: React.FC<SuggestionModalProps> = ({
             )}
             {toolbarState && (
               <span className="text-[10px] font-mono text-muted-foreground">
-                L{Math.min(toolbarState.range.start, toolbarState.range.end)}
-                {toolbarState.range.start !== toolbarState.range.end &&
-                  `-${Math.max(toolbarState.range.start, toolbarState.range.end)}`}
+                {`第 ${Math.min(toolbarState.range.start, toolbarState.range.end)}${
+                  toolbarState.range.start !== toolbarState.range.end
+                    ? `-${Math.max(toolbarState.range.start, toolbarState.range.end)}`
+                    : ''
+                } 行`}
               </span>
             )}
           </div>
@@ -56,7 +58,7 @@ export const SuggestionModal: React.FC<SuggestionModalProps> = ({
             <button
               onClick={() => setModalLayout(modalLayout === 'horizontal' ? 'vertical' : 'horizontal')}
               className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              title={modalLayout === 'horizontal' ? 'Switch to vertical layout' : 'Switch to horizontal layout'}
+              title={modalLayout === 'horizontal' ? '切换为垂直布局' : '切换为水平布局'}
             >
               {modalLayout === 'horizontal' ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -84,22 +86,22 @@ export const SuggestionModal: React.FC<SuggestionModalProps> = ({
           {/* Original code (read-only) */}
           <div className={`flex-1 flex flex-col min-w-0 min-h-0 ${modalLayout === 'vertical' ? 'border-b border-border' : 'border-r border-border'}`}>
             <div className="px-3 py-1.5 border-b border-border/50 bg-muted/30">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Original</span>
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">原始代码</span>
             </div>
             <pre className="flex-1 overflow-auto p-3 m-0 text-xs leading-relaxed suggestion-modal-original">
-              <HighlightedCode code={selectedOriginalCode || '(no lines selected)'} language={fileHighlightLanguage(filePath)} />
+              <HighlightedCode code={selectedOriginalCode || '（未选择行）'} language={fileHighlightLanguage(filePath)} />
             </pre>
           </div>
 
           {/* Suggested code input */}
           <div className="flex-1 flex flex-col min-w-0 min-h-0">
             <div className="px-3 py-1.5 border-b border-border/50 bg-muted/30">
-              <span className="text-[10px] font-medium text-success uppercase tracking-wider">Suggestion</span>
+              <span className="text-[10px] font-medium text-success uppercase tracking-wider">建议</span>
             </div>
             <textarea
               value={suggestedCode}
               onChange={(e) => setSuggestedCode(e.target.value)}
-              placeholder={selectedOriginalCode || 'Enter code suggestion...'}
+              placeholder={selectedOriginalCode || '输入代码建议…'}
               className="suggested-code-input flex-1 rounded-none border-0 min-h-[300px]"
               autoFocus
               spellCheck={false}
@@ -116,12 +118,12 @@ export const SuggestionModal: React.FC<SuggestionModalProps> = ({
 
         {/* Footer */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-          <span className="text-[10px] text-muted-foreground">Tip: Edit the suggestion based on the original code on the left</span>
+          <span className="text-[10px] text-muted-foreground">提示：参考左侧的原始代码来修改建议</span>
           <button
             onClick={onClose}
             className="review-toolbar-btn primary"
           >
-            Done
+            完成
           </button>
         </div>
       </div>

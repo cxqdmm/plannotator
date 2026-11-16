@@ -80,12 +80,12 @@ export function useCookieHostSetting(): {
         if (saved) setState(saved);
         if (!res.ok) {
           if (!saved) setState((current) => (current ? { ...current, on: !next } : current));
-          setError(typeof body.error === 'string' ? body.error : 'The setting could not be saved.');
+          setError(typeof body.error === 'string' ? body.error : '无法保存设置。');
         }
       })
       .catch(() => {
         setState((current) => (current ? { ...current, on: !next } : current));
-        setError('The setting could not be saved.');
+        setError('无法保存设置。');
       });
   }, []);
 

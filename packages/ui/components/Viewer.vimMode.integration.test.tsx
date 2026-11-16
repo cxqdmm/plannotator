@@ -328,9 +328,9 @@ describe.if(hasDom)('Viewer Vim mode with repository fixtures', () => {
     expect(hud?.style.backdropFilter).toBe('blur(10px)');
     expect(document.querySelector('[data-vim-hud-active-key="j"]')).not.toBeNull();
     expect(document.querySelector('[data-vim-hud-phase]')?.textContent)
-      .toBe('BLOCK / PINPOINT');
+      .toBe('BLOCK / 精准定位');
     expect(document.querySelector('[data-vim-hud-command]')?.textContent)
-      .toBe('Next block');
+      .toBe('下一个块');
 
     act(() => { keydown(article, 'k'); });
     act(() => { keydown(article, 'j'); });
@@ -359,10 +359,10 @@ describe.if(hasDom)('Viewer Vim mode with repository fixtures', () => {
     )).not.toBeNull();
     expect(document.querySelector(
       '[data-vim-key-map-action="wordForward"]',
-    )?.textContent).toContain('Move to next word');
+    )?.textContent).toContain('移到下一个词');
     expect(document.querySelector(
       '[data-vim-key-map-action="comment"]',
-    )?.textContent).toContain('Comment selection or target');
+    )?.textContent).toContain('评论所选内容或目标');
 
     act(() => { keydown(article, '?'); });
     expect(document.querySelector('[data-vim-key-map]')).toBeNull();

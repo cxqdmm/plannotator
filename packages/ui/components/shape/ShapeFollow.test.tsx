@@ -197,7 +197,7 @@ function nowOnPicture(): string[] {
   return [...d.querySelectorAll('[data-ex-s="now"], .shp-ex-tag[data-s="now"]')].map((el) => el.getAttribute('data-ex-i')!);
 }
 
-describe.if(hasDom)('Follow an example', () => {
+describe.if(hasDom)('跟随一个示例', () => {
   test('the dock shows it only on How it works, and only when the board has examples', async () => {
     await mount(fakeHost(board()));
     expect(document.querySelector('[data-follow]')).toBeNull();
@@ -213,22 +213,22 @@ describe.if(hasDom)('Follow an example', () => {
 
   test('next, next, back: the card and the picture agree on one step, with no stray dot', async () => {
     await mount(fakeHost(board([EXAMPLE])));
-    await press('Follow an example');
+    await press('跟随一个示例');
     // All steps: every part on the path is lit, none is "now".
     expect(nowOnPicture()).toEqual([]);
     expect(drawing()!.querySelector('[data-mark="how-off"]')!.hasAttribute('data-ex-dim')).toBe(true);
 
-    await press('Step through');
-    expect(count()).toBe('1 of 3');
-    await press('Next step');
+    await press('逐步查看');
+    expect(count()).toBe('1 / 3');
+    await press('下一步');
     // Forward: the dot runs on the arrow to the next part.
     expect(drawing()!.querySelectorAll('.shp-ex-dot').length).toBe(1);
-    await press('Next step');
+    await press('下一步');
     expect(drawing()!.querySelectorAll('.shp-ex-dot').length).toBe(1);
-    await press('Previous step');
+    await press('上一步');
     await wait();
 
-    expect(count()).toBe('2 of 3');
+    expect(count()).toBe('2 / 3');
     const now = nowOnPicture();
     expect(now.length).toBeGreaterThan(0);
     expect(new Set(now)).toEqual(new Set(['1']));
@@ -237,58 +237,58 @@ describe.if(hasDom)('Follow an example', () => {
     // The arrow taken to step 2 is lit with it.
     expect(drawing()!.querySelector('g[data-edge="hot"]')!.getAttribute('data-ex-s')).toBe('now');
 
-    await press('Stop following');
+    await press('停止跟随');
     await wait();
     expect(drawing()!.querySelector('[data-ex-dim], [data-ex-s], .shp-ex-layer, .shp-ex-lit')).toBeNull();
   });
 
   test('a click on a lit part jumps to its step, and opens no composer', async () => {
     await mount(fakeHost(board([EXAMPLE])));
-    await press('Follow an example');
+    await press('跟随一个示例');
     await act(async () => {
       drawing()!.querySelector('[data-mark="how-c"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
     });
-    expect(count()).toBe('3 of 3');
+    expect(count()).toBe('3 / 3');
     expect(nowOnPicture().every((i) => i === '2')).toBe(true);
     expect(document.querySelector('[data-comment-popover]')).toBeNull();
   });
 
   test('with Annotate on, a click on the drawing annotates it, and the tags still step', async () => {
     await mount(fakeHost(board([EXAMPLE])), 'how', true);
-    await press('Follow an example');
-    await press('Step through');
+    await press('跟随一个示例');
+    await press('逐步查看');
     await act(async () => {
       drawing()!.querySelector('[data-mark="how-c"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
     });
     // Annotate off: it jumps.
-    expect(count()).toBe('3 of 3');
-    await press('Previous step');
-    await press('Annotate: point at a part to change it or ask about it');
+    expect(count()).toBe('3 / 3');
+    await press('上一步');
+    await press('标注：指向某个部分，即可修改或提问');
     await act(async () => {
       drawing()!.querySelector('[data-mark="how-c"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
     });
-    expect(count()).toBe('2 of 3');
+    expect(count()).toBe('2 / 3');
     expect(document.querySelectorAll('[data-comment-popover]').length).toBe(1);
     await act(async () => {
       drawing()!.querySelector('.shp-ex-tag[data-ex-i="0"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
     });
-    expect(count()).toBe('1 of 3');
+    expect(count()).toBe('1 / 3');
   });
 
   test('a step still to come has no tag to land on with the keys', async () => {
     await mount(fakeHost(board([EXAMPLE])));
-    await press('Follow an example');
+    await press('跟随一个示例');
     const stops = () => [...drawing()!.querySelectorAll<HTMLButtonElement>('.shp-ex-tag')].map((t) => [t.tabIndex, t.getAttribute('aria-hidden')]);
     expect(stops()).toEqual([[0, null], [0, null], [0, null]]);
-    await press('Step through');
+    await press('逐步查看');
     expect(stops()).toEqual([[0, null], [-1, 'true'], [-1, 'true']]);
-    await press('Next step');
+    await press('下一步');
     expect(stops()).toEqual([[0, null], [0, null], [-1, 'true']]);
   });
 
   test('every number that steps the example carries a bug, hidden from screen readers, and keeps its name', async () => {
     await mount(fakeHost(board([EXAMPLE])));
-    await press('Follow an example');
+    await press('跟随一个示例');
     const tags = [...drawing()!.querySelectorAll<HTMLButtonElement>('.shp-ex-tag')];
     expect(tags.map((t) => t.querySelectorAll('.n + .bug[aria-hidden="true"] svg').length)).toEqual([1, 1, 1]);
     expect(tags.map((t) => t.getAttribute('aria-label'))).toEqual(EXAMPLE.steps.map((s, i) => `Step ${i + 1}: ${s.text}. ${s.tag}`));
@@ -325,7 +325,7 @@ describe.if(hasDom)('Follow an example', () => {
       Object.defineProperty(surface, 'clientHeight', { configurable: true, get: () => tall });
       surface.getBoundingClientRect = () => new DOMRect(0, 0, 390, tall);
       surface.querySelector<HTMLElement>('.shp-head')!.getBoundingClientRect = () => new DOMRect(0, 0, 390, 60);
-      await press('Follow an example');
+      await press('跟随一个示例');
       const card = document.querySelector<HTMLElement>('.shp-ex-card')!;
       Object.defineProperty(card, 'offsetHeight', { configurable: true, get: () => 200 });
       const view = () => document.querySelector('.shp-view.v-how')!;
@@ -352,8 +352,8 @@ describe.if(hasDom)('Follow an example', () => {
   test('Esc stops following and is marked used; a panel goes first', async () => {
     reduceMotion = true;
     await mount(fakeHost(board([EXAMPLE])));
-    await press('Follow an example');
-    await press('References');
+    await press('跟随一个示例');
+    await press('引用');
     expect(document.querySelectorAll('.shp-sidep.open').length).toBe(1);
     const esc = async () => {
       const e = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
@@ -372,8 +372,8 @@ describe.if(hasDom)('Follow an example', () => {
   test('the function opens its file in the host', async () => {
     const reads: string[] = [];
     await mount(fakeHost(board([EXAMPLE]), reads));
-    await press('Follow an example');
-    await press('Step through');
+    await press('跟随一个示例');
+    await press('逐步查看');
     await act(async () => {
       document.querySelector<HTMLButtonElement>('.shp-ex-text.cur .shp-ex-fn')!.click();
     });
@@ -384,10 +384,10 @@ describe.if(hasDom)('Follow an example', () => {
   test('open, the path names every step and jumps with the picture; folded, it is gone', async () => {
     reduceMotion = true; // Closing waits on no fade.
     await mount(fakeHost(board([EXAMPLE])));
-    await press('Follow an example');
-    await press('Step through');
+    await press('跟随一个示例');
+    await press('逐步查看');
     expect(document.querySelectorAll('.shp-ex-stop').length).toBe(0);
-    await press('Inputs and outputs');
+    await press('输入与输出');
 
     const stops = () => [...document.querySelectorAll<HTMLButtonElement>('.shp-ex-stop')];
     expect(stops().map((b) => b.getAttribute('aria-label'))).toEqual(['Step 1: at how-a', 'Step 2: at how-b', 'Step 3: at how-c']);
@@ -397,17 +397,17 @@ describe.if(hasDom)('Follow an example', () => {
     expect(stops().map((b) => b.getAttribute('aria-current'))).toEqual([null, null, 'step']);
     expect(new Set(nowOnPicture())).toEqual(new Set(['2']));
 
-    await press('Hide inputs and outputs');
+    await press('隐藏输入与输出');
     expect(document.querySelectorAll('.shp-ex-stop').length).toBe(0);
-    expect(count()).toBe('3 of 3');
+    expect(count()).toBe('3 / 3');
   });
 
   test('a long step scrolls its checks: the signature stays out of the scroller', async () => {
     await mount(fakeHost(board([EXAMPLE])));
-    await press('Follow an example');
-    await press('Step through');
-    await press('Inputs and outputs');
-    await press('What happens');
+    await press('跟随一个示例');
+    await press('逐步查看');
+    await press('输入与输出');
+    await press('发生了什么');
     const cur = document.querySelector('.shp-ex-io.cur')!;
     expect(cur.querySelectorAll('.shp-ex-sig').length).toBe(1);
     expect(cur.querySelectorAll('.shp-ex-scroll .shp-ex-sig').length).toBe(0);
@@ -417,16 +417,16 @@ describe.if(hasDom)('Follow an example', () => {
   test('reduced motion: no dot, no slide and no flight, only short fades', async () => {
     reduceMotion = true;
     await mount(fakeHost(board([EXAMPLE])));
-    await press('Follow an example');
-    await press('Step through');
-    await press('Inputs and outputs');
+    await press('跟随一个示例');
+    await press('逐步查看');
+    await press('输入与输出');
     recorded = [];
-    await press('Next step');
-    await press('Next step');
-    await press('Previous step');
+    await press('下一步');
+    await press('下一步');
+    await press('上一步');
     await wait();
 
-    expect(count()).toBe('2 of 3');
+    expect(count()).toBe('2 / 3');
     expect(drawing()!.querySelectorAll('.shp-ex-dot').length).toBe(0);
     expect(document.querySelector('.shp-ex-ghost')).toBeNull();
     expect(recorded.length).toBeGreaterThan(0);
@@ -439,11 +439,11 @@ describe.if(hasDom)('Follow an example', () => {
 
   test('without reduced motion, forward hands the output on: it flies into the next step', async () => {
     await mount(fakeHost(board([EXAMPLE])));
-    await press('Follow an example');
-    await press('Step through');
-    await press('Inputs and outputs');
-    await press('Goes in');
-    await press('Next step');
+    await press('跟随一个示例');
+    await press('逐步查看');
+    await press('输入与输出');
+    await press('输入');
+    await press('下一步');
     const flights = recorded.filter((r) => (r.el as HTMLElement).classList?.contains('shp-ex-ghost'));
     expect(flights.length).toBe(1);
     expect(String(flights[0]!.frames[0]!.transform)).toContain('translate(');

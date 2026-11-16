@@ -8,17 +8,17 @@ interface PRChecksTabProps {
 }
 
 const DECISION_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  APPROVED: { bg: 'bg-success/15', text: 'text-success', label: 'Approved' },
-  CHANGES_REQUESTED: { bg: 'bg-destructive/15', text: 'text-destructive', label: 'Changes Requested' },
-  REVIEW_REQUIRED: { bg: 'bg-yellow-500/15', text: 'text-yellow-500', label: 'Review Required' },
+  APPROVED: { bg: 'bg-success/15', text: 'text-success', label: '已批准' },
+  CHANGES_REQUESTED: { bg: 'bg-destructive/15', text: 'text-destructive', label: '已要求修改' },
+  REVIEW_REQUIRED: { bg: 'bg-yellow-500/15', text: 'text-yellow-500', label: '需要评审' },
 };
 
 const MERGE_STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  CLEAN: { bg: 'bg-success/15', text: 'text-success', label: 'Ready to merge' },
-  BLOCKED: { bg: 'bg-yellow-500/15', text: 'text-yellow-500', label: 'Blocked' },
-  BEHIND: { bg: 'bg-yellow-500/15', text: 'text-yellow-500', label: 'Behind base branch' },
-  DIRTY: { bg: 'bg-destructive/15', text: 'text-destructive', label: 'Has conflicts' },
-  UNKNOWN: { bg: 'bg-muted', text: 'text-muted-foreground', label: 'Unknown' },
+  CLEAN: { bg: 'bg-success/15', text: 'text-success', label: '可以合并' },
+  BLOCKED: { bg: 'bg-yellow-500/15', text: 'text-yellow-500', label: '已阻止' },
+  BEHIND: { bg: 'bg-yellow-500/15', text: 'text-yellow-500', label: '落后于基础分支' },
+  DIRTY: { bg: 'bg-destructive/15', text: 'text-destructive', label: '存在冲突' },
+  UNKNOWN: { bg: 'bg-muted', text: 'text-muted-foreground', label: '未知' },
 };
 
 function CheckIcon({ check }: { check: PRCheck }) {
@@ -68,7 +68,7 @@ export const PRChecksTab: React.FC<PRChecksTabProps> = ({ context, bare = false 
   const groupedChecks = useMemo(() => {
     const groups = new Map<string, PRCheck[]>();
     for (const check of context.checks) {
-      const workflow = check.workflowName || 'Other';
+      const workflow = check.workflowName || '其他';
       const existing = groups.get(workflow) || [];
       existing.push(check);
       groups.set(workflow, existing);
@@ -89,9 +89,9 @@ export const PRChecksTab: React.FC<PRChecksTabProps> = ({ context, bare = false 
   const isClosed = context.state === 'CLOSED';
   const decisionStyle = DECISION_STYLES[context.reviewDecision];
   const mergeStyle = isMerged
-    ? { bg: 'bg-violet-500/15', text: 'text-violet-400', label: 'Merged' }
+    ? { bg: 'bg-violet-500/15', text: 'text-violet-400', label: '已合并' }
     : isClosed
-      ? { bg: 'bg-destructive/15', text: 'text-destructive', label: 'Closed' }
+      ? { bg: 'bg-destructive/15', text: 'text-destructive', label: '已关闭' }
       : MERGE_STATUS_STYLES[context.mergeStateStatus] ?? MERGE_STATUS_STYLES.UNKNOWN;
   const mergeableConflict = !isMerged && !isClosed && context.mergeable === 'CONFLICTING';
 
@@ -100,7 +100,7 @@ export const PRChecksTab: React.FC<PRChecksTabProps> = ({ context, bare = false 
       {/* Merge readiness */}
       <div className="space-y-2">
         <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Merge Status
+          合并状态
         </h3>
 
         <div className="space-y-1.5">
@@ -116,7 +116,7 @@ export const PRChecksTab: React.FC<PRChecksTabProps> = ({ context, bare = false 
           {/* Merge state */}
           <div className={`flex items-center gap-2 px-2 py-1.5 rounded ${mergeStyle.bg}`}>
             <span className={`text-xs font-medium ${mergeStyle.text}`}>
-              {mergeableConflict ? 'Has merge conflicts' : mergeStyle.label}
+              {mergeableConflict ? '存在合并冲突' : mergeStyle.label}
             </span>
           </div>
         </div>
@@ -127,12 +127,12 @@ export const PRChecksTab: React.FC<PRChecksTabProps> = ({ context, bare = false 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Checks
+              检查
             </h3>
             <span className="text-[10px] font-mono text-muted-foreground">
-              {checkSummary.passed}/{checkSummary.total} passed
-              {checkSummary.failed > 0 && <span className="text-destructive ml-1">{checkSummary.failed} failed</span>}
-              {checkSummary.pending > 0 && <span className="text-yellow-500 ml-1">{checkSummary.pending} pending</span>}
+              {checkSummary.passed}/{checkSummary.total} 项通过
+              {checkSummary.failed > 0 && <span className="text-destructive ml-1">{checkSummary.failed} 项失败</span>}
+              {checkSummary.pending > 0 && <span className="text-yellow-500 ml-1">{checkSummary.pending} 项待处理</span>}
             </span>
           </div>
 
@@ -167,7 +167,7 @@ export const PRChecksTab: React.FC<PRChecksTabProps> = ({ context, bare = false 
 
       {context.checks.length === 0 && !decisionStyle && (
         <div className="flex flex-col items-center justify-center h-24 text-center">
-          <p className="text-xs text-muted-foreground">No checks configured.</p>
+          <p className="text-xs text-muted-foreground">未配置检查。</p>
         </div>
       )}
     </div>

@@ -33,7 +33,7 @@ export const AIProviderBar: React.FC<AIProviderBarProps> = ({
     return (
       <>
       <div className="border-t border-border/50 px-2 py-1.5 text-[11px] text-muted-foreground/50">
-        No AI providers available
+        没有可用的 AI 提供方
       </div>
       <AskSessionSetupHint text={setupHint} />
       </>
@@ -77,7 +77,7 @@ export const AIProviderBar: React.FC<AIProviderBarProps> = ({
         value={effectiveProviderId ?? ''}
         onChange={(event) => onProviderChange(event.target.value)}
         className="min-w-0 max-w-[8rem] bg-transparent text-[11px] text-foreground focus:outline-none [&>option]:bg-card [&>option]:text-foreground"
-        aria-label="AI provider"
+        aria-label="AI 提供方"
       >
         {providers.map(provider => {
           const providerMeta = getProviderMeta(provider.name, provider.label);
@@ -94,7 +94,7 @@ export const AIProviderBar: React.FC<AIProviderBarProps> = ({
           value={effectiveModel}
           onChange={(event) => onModelChange(event.target.value)}
           className="min-w-0 flex-1 bg-transparent text-[11px] text-foreground focus:outline-none [&>option]:bg-card [&>option]:text-foreground"
-          aria-label="AI model"
+          aria-label="AI 模型"
         >
           {models.map(model => (
             <option key={model.id} value={model.id}>
@@ -109,9 +109,9 @@ export const AIProviderBar: React.FC<AIProviderBarProps> = ({
           value={selectedReasoningEffort ?? ''}
           onChange={(event) => onReasoningEffortChange?.(event.target.value || null)}
           className="w-16 bg-transparent text-[11px] text-foreground focus:outline-none [&>option]:bg-card [&>option]:text-foreground"
-          aria-label="Reasoning effort"
+          aria-label="推理投入"
         >
-          <option value="">Auto</option>
+          <option value="">自动</option>
           {reasoningEfforts.map(effort => (
             <option key={effort.id} value={effort.id}>
               {effort.label}

@@ -75,7 +75,7 @@ describe.if(hasDom)('AnnotationToolbar commentOnly seam', () => {
     expect(titles).toContain('Comment');
     expect(titles).not.toContain('Delete');
     expect(titles).not.toContain('Quick label');
-    expect(titles).not.toContain('Looks good');
+    expect(titles).not.toContain('看起来不错');
   });
 
   test('commentOnly with a label handler restores ONLY the thumbs-up (no Delete, no picker)', async () => {
@@ -84,7 +84,7 @@ describe.if(hasDom)('AnnotationToolbar commentOnly seam', () => {
     // Delete) re-opens the comment-only ruling this seam enforces.
     const titles = await mount({ commentOnly: true, withQuickLabels: true });
     expect(titles).toContain('Comment');
-    expect(titles).toContain('Looks good');
+    expect(titles).toContain('看起来不错');
     expect(titles).not.toContain('Delete');
     expect(titles).not.toContain('Quick label');
   });
@@ -94,6 +94,6 @@ describe.if(hasDom)('AnnotationToolbar commentOnly seam', () => {
     expect(titles).toContain('Delete');
     expect(titles).toContain('Comment');
     expect(titles).toContain('Quick label');
-    expect(titles).toContain('Looks good');
+    expect(titles).toContain('看起来不错');
   });
 });

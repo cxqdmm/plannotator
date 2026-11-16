@@ -18,11 +18,11 @@ export const ViewedControl: React.FC<{
   /** Deprecated no-op — the control is always visible now. */
   forceVisible?: boolean;
 }> = ({ isViewed, onToggle, name }) => (
-  <Tooltip content={isViewed ? 'Viewed — click to unmark' : 'Mark as viewed'} side="bottom">
+  <Tooltip content={isViewed ? '已查看，点击取消标记' : '标记为已查看'} side="bottom">
     <span
       role="checkbox"
       aria-checked={isViewed}
-      aria-label={name ? (isViewed ? `${name}: viewed, unmark` : `Mark ${name} as viewed`) : isViewed ? 'Viewed — unmark' : 'Mark as viewed'}
+      aria-label={name ? (isViewed ? `${name}：已查看，取消标记` : `将 ${name} 标记为已查看`) : isViewed ? '已查看，取消标记' : '标记为已查看'}
       // tabIndex + key handling: these controls live INSIDE the row <button>
       // (a real nested <button> is invalid HTML), so they need their own
       // focus stop and Enter/Space activation to be keyboard-operable.

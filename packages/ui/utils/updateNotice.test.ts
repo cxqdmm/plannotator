@@ -46,11 +46,11 @@ describe('the server advert, validated', () => {
 
 describe('the toast per host', () => {
   test('the binary the script manages: Update runs it', () => {
-    expect(describeUpdateToast(advert())).toMatchObject({ title: 'Plannotator 0.28.12 is available', primary: 'update' });
+    expect(describeUpdateToast(advert())).toMatchObject({ title: 'Plannotator 0.28.12 已发布', primary: 'update' });
   });
   test('Pi: its own command, never the install script', () => {
     const pi = describeUpdateToast(advert({ action: 'pi', command: 'pi update --extensions' }));
-    expect(pi.title).toBe('Plannotator for Pi 0.28.12 is available');
+    expect(pi.title).toBe('Plannotator for Pi 0.28.12 已发布');
     expect(pi.description).toContain('pi update --extensions');
     expect(pi.primary).toBe('copy');
   });

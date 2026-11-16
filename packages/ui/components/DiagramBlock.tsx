@@ -339,7 +339,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
                   type="button"
                   onClick={() => RETRY_EPOCHS[kind].bump()}
                   className="ml-auto rounded-md border border-destructive/30 px-2 py-0.5 text-xs text-destructive hover:bg-destructive/10"
-                  title="Retry loading the diagram renderer"
+                  title="重试加载图表渲染器"
                 >
                   Retry
                 </button>
@@ -385,8 +385,8 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
               type="button"
               onClick={() => setShowSource(true)}
               className="p-1.5 rounded-md bg-muted/85 hover:bg-muted text-muted-foreground hover:text-foreground"
-              title="Show source"
-              aria-label="Show source"
+              title="显示源码"
+              aria-label="显示源码"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
@@ -396,8 +396,8 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
               type="button"
               onClick={() => setIsExpanded(true)}
               className="p-1.5 rounded-md bg-muted/85 hover:bg-muted text-muted-foreground hover:text-foreground"
-              title="Expand diagram"
-              aria-label="Expand diagram"
+              title="展开图表"
+              aria-label="展开图表"
               data-diagram-expand=""
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -412,8 +412,8 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
               type="button"
               onClick={() => setShowSource(false)}
               className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-muted/85 hover:bg-muted text-muted-foreground hover:text-foreground"
-              title="Show diagram"
-              aria-label="Show diagram"
+              title="显示图表"
+              aria-label="显示图表"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />

@@ -145,44 +145,44 @@ afterAll(() => {
 describe.if(hasDom)("config.json annotateView", () => {
   test("unset opens exactly as today: no view pressed, not editing", async () => {
     await mount(annotateFile({}));
-    expect(toolbarButton("Focus")).not.toBeUndefined();
-    expect(pressed("Wide")).toBe(false);
-    expect(pressed("Focus")).toBe(false);
+    expect(toolbarButton("专注")).not.toBeUndefined();
+    expect(pressed("宽屏")).toBe(false);
+    expect(pressed("专注")).toBe(false);
     expect(editing()).toBe(false);
   });
 
   test("focus opens the session in Focus", async () => {
     await mount(annotateFile({ annotateView: "focus" }));
-    expect(pressed("Focus")).toBe(true);
-    expect(pressed("Wide")).toBe(false);
+    expect(pressed("专注")).toBe(true);
+    expect(pressed("宽屏")).toBe(false);
     expect(editing()).toBe(false);
   });
 
   test("wide opens the session in Wide", async () => {
     await mount(annotateFile({ annotateView: "wide" }));
-    expect(pressed("Wide")).toBe(true);
-    expect(pressed("Focus")).toBe(false);
+    expect(pressed("宽屏")).toBe(true);
+    expect(pressed("专注")).toBe(false);
   });
 
   test("edit opens the session in the editor", async () => {
     await mount(annotateFile({ annotateView: "edit" }));
     expect(editing()).toBe(true);
-    expect(toolbarButton("Done")).not.toBeUndefined();
+    expect(toolbarButton("完成")).not.toBeUndefined();
   });
 
   test("a click in the toolbar wins for the session, and the key is not applied again", async () => {
     await mount(annotateFile({ annotateView: "focus" }));
-    expect(pressed("Focus")).toBe(true);
+    expect(pressed("专注")).toBe(true);
 
-    await act(async () => { toolbarButton("Wide")?.click(); });
-    expect(pressed("Wide")).toBe(true);
-    expect(pressed("Focus")).toBe(false);
+    await act(async () => { toolbarButton("宽屏")?.click(); });
+    expect(pressed("宽屏")).toBe(true);
+    expect(pressed("专注")).toBe(false);
 
     // Leaving the view returns to the plain layout and stays there.
-    await act(async () => { toolbarButton("Wide")?.click(); });
+    await act(async () => { toolbarButton("宽屏")?.click(); });
     for (let attempt = 0; attempt < 5; attempt += 1) await settle();
-    expect(pressed("Wide")).toBe(false);
-    expect(pressed("Focus")).toBe(false);
+    expect(pressed("宽屏")).toBe(false);
+    expect(pressed("专注")).toBe(false);
   });
 
   test("edit on a document that cannot be edited (annotate-last) falls back to today's default", async () => {
@@ -195,10 +195,10 @@ describe.if(hasDom)("config.json annotateView", () => {
       serverConfig: { annotateView: "edit" },
     });
     expect(document.body.textContent).toContain("The reply text.");
-    expect(toolbarButton("Focus")).not.toBeUndefined();
+    expect(toolbarButton("专注")).not.toBeUndefined();
     expect(editing()).toBe(false);
-    expect(pressed("Wide")).toBe(false);
-    expect(pressed("Focus")).toBe(false);
+    expect(pressed("宽屏")).toBe(false);
+    expect(pressed("专注")).toBe(false);
   });
 
   test("edit stays off while a saved draft is offered, so restoring it is never refused", async () => {
@@ -216,7 +216,7 @@ describe.if(hasDom)("config.json annotateView", () => {
       globalAttachments: [],
       ts: 1,
     });
-    expect(document.body.textContent).toContain("Draft Recovered");
+    expect(document.body.textContent).toContain("已恢复草稿");
     expect(editing()).toBe(false);
   });
 
@@ -228,6 +228,6 @@ describe.if(hasDom)("config.json annotateView", () => {
       serverConfig: { annotateView: "focus" },
     });
     expect(document.body.textContent).toContain("Step one.");
-    expect(pressed("Focus")).toBe(false);
+    expect(pressed("专注")).toBe(false);
   });
 });

@@ -75,37 +75,37 @@ describe('shortcuts', () => {
     const reviewSections = listRegistryShortcutSections(reviewSettingsShortcutRegistry);
 
     expect(planReviewSections.map(section => section.title)).toEqual([
-      'Actions',
-      'View',
-      'Input Method',
-      'Annotations',
-      'Vim Document Navigation',
-      'Vim Text Navigation',
-      'Vim Annotation Actions',
-      'Image Annotator',
-      'History',
+      '操作',
+      '视图',
+      '输入方式',
+      '标注',
+      'Vim 文档导航',
+      'Vim 文本导航',
+      'Vim 标注操作',
+      '图片标注器',
+      '历史记录',
     ]);
 
     expect(annotateSections.map(section => section.title)).toEqual([
-      'Actions',
-      'Sidebar',
-      'View',
-      'Input Method',
-      'Annotations',
-      'Vim Document Navigation',
-      'Vim Text Navigation',
-      'Vim Annotation Actions',
-      'Image Annotator',
-      'History',
+      '操作',
+      '侧边栏',
+      '视图',
+      '输入方式',
+      '标注',
+      'Vim 文档导航',
+      'Vim 文本导航',
+      'Vim 标注操作',
+      '图片标注器',
+      '历史记录',
     ]);
 
-    expect(getShortcut(planReviewSettingsShortcutRegistry, 'plan-review-editor-settings', 'submitPlan')?.description).toBe('Approve / Send feedback');
+    expect(getShortcut(planReviewSettingsShortcutRegistry, 'plan-review-editor-settings', 'submitPlan')?.description).toBe('通过 / 发送反馈');
     expect(getShortcut(planReviewSettingsShortcutRegistry, 'plan-review-editor-settings', 'submitAnnotations')).toBeUndefined();
     // Fact-guard, not a prose pin: the annotate registry's submit action must
     // describe the adaptive Done/Send primary (distinct from plan review's).
-    expect(getShortcut(annotateSettingsShortcutRegistry, 'annotate-editor-settings', 'submitAnnotations')?.description).toContain('Done / Send feedback');
+    expect(getShortcut(annotateSettingsShortcutRegistry, 'annotate-editor-settings', 'submitAnnotations')?.description).toContain('完成 / 发送反馈');
     expect(getShortcut(annotateSettingsShortcutRegistry, 'annotate-editor-settings', 'submitPlan')).toBeUndefined();
-    expect(getShortcut(annotateSettingsShortcutRegistry, 'annotate-sidebar', 'toggleContents')?.description).toBe('Toggle Contents sidebar');
+    expect(getShortcut(annotateSettingsShortcutRegistry, 'annotate-sidebar', 'toggleContents')?.description).toBe('切换目录侧边栏');
 
     expect(reviewSections.map(section => section.title)).toEqual([
       'Actions',
@@ -113,16 +113,18 @@ describe('shortcuts', () => {
       'Layout',
       'File Actions',
       'File Navigation',
-      'History',
-      'Go to',
-      'Call tree',
-      'All-Files View',
-      'Markdown Files',
-      'Annotations',
-      'Suggestion Editor',
-      'AI Assistant',
-      'PR Comments',
-      'Tour',
+      '操作',
+      '历史记录',
+      '文件导航',
+      '跳转',
+      '调用树',
+      '所有文件视图',
+      'Markdown 文件',
+      '标注',
+      '建议编辑器',
+      'AI 助手',
+      'PR 评论',
+      '导览',
     ]);
   });
 

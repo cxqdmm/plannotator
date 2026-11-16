@@ -461,7 +461,7 @@ const HostResolvedImage: React.FC<{
   return (
     <>
       {failed && (
-        <span key="unavailable" className={`${UNAVAILABLE_IMAGE_CLASS} annotation-exclude`} title="Image could not be loaded" data-image-unavailable="">
+        <span key="unavailable" className={`${UNAVAILABLE_IMAGE_CLASS} annotation-exclude`} title="图片无法加载" data-image-unavailable="">
           {alt || 'Image'}
         </span>
       )}
@@ -1106,7 +1106,7 @@ export const InlineMarkdown: React.FC<{
           <span
             key={key++}
             className="text-muted-foreground line-through decoration-muted-foreground/60"
-            title="Document deleted"
+            title="文档已删除"
           >
             {display}
           </span>,

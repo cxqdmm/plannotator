@@ -283,7 +283,7 @@ interface HumanOnlySkillNoticeProps {
 // human-only line says the instructions go with, unless the composer says.
 // Plannotator's comments go with "your feedback"; the Inbox's comments on
 // attached files ride a reply.
-const DEFAULT_DESTINATION = 'your feedback';
+const DEFAULT_DESTINATION = '你的反馈';
 let defaultDestination = DEFAULT_DESTINATION;
 
 export function setSkillInstructionsDestination(destination: string): void {
@@ -312,18 +312,16 @@ export const HumanOnlySkillNotice: React.FC<HumanOnlySkillNoticeProps> = ({ skil
     <details data-skill-human-only-notice="true" className="group mt-1 px-1">
       <summary className="list-none [&::-webkit-details-marker]:hidden inline-flex cursor-pointer select-none items-center gap-1 rounded text-[10px] text-muted-foreground/80 transition-colors hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
         <DisclosureChevron />
-        Includes skill instructions
+        包含技能说明
       </summary>
       <p className="mt-0.5 pl-3.5 text-[11px] leading-snug text-muted-foreground">
         {skills.length === 1 ? (
           <>
-            <span className="font-mono">{names}</span> cannot be invoked by a model, so
-            its instructions will be included with {destination}.
+            <span className="font-mono">{names}</span> 无法由模型调用，因此其说明会随{destination}一并发送。
           </>
         ) : (
           <>
-            <span className="font-mono">{names}</span> cannot be invoked by a model, so
-            their instructions will be included with {destination}.
+            <span className="font-mono">{names}</span> 无法由模型调用，因此其说明会随{destination}一并发送。
           </>
         )}
       </p>

@@ -110,7 +110,7 @@ async function pick(id: string): Promise<HTMLTextAreaElement> {
 }
 
 async function openWholeBoard(root: HTMLElement): Promise<HTMLTextAreaElement> {
-  const button = root.querySelector<HTMLButtonElement>('button[title="Add global comment"]');
+  const button = root.querySelector<HTMLButtonElement>('button[title="添加全局评论"]');
   if (!button) throw new Error('Global comment button missing');
   await act(async () => { button.click(); });
   const el = textarea();

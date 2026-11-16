@@ -3,13 +3,13 @@ import { createShortcutScopeHook } from '../runtime';
 
 export const reviewPrCommentsShortcuts = defineShortcutScope({
   id: 'review-pr-comments',
-  title: 'PR Comments',
+  title: 'PR 评论',
   shortcuts: {
     focusSearch: {
-      description: 'Focus PR comments search',
+      description: '聚焦 PR 评论搜索',
       bindings: ['Mod+Shift+F'],
-      section: 'PR Comments',
-      hint: 'Available while the PR Comments tab is open in the review sidebar.',
+      section: 'PR 评论',
+      hint: '评审侧边栏中 PR 评论标签页打开时可用。',
       displayOrder: 10,
     },
   },

@@ -36,12 +36,12 @@ export const CodeFilePicker: React.FC<{
 		<div
 			ref={popoverRef}
 			role="menu"
-			aria-label="Choose file"
+			aria-label="选择文件"
 			className="fixed z-[100] min-w-[240px] max-w-[480px] bg-popover text-popover-foreground border border-border/70 rounded-lg shadow-xl py-1"
 			style={{ top: pos.top, left: pos.left }}
 		>
 			<div className="px-3 py-1.5 text-xs uppercase tracking-wide opacity-60 border-b border-border/40">
-				{matches.length} matches
+				{matches.length} 个匹配
 			</div>
 			<ul className="max-h-72 overflow-y-auto">
 				{matches.map((m) => (

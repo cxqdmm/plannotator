@@ -23,10 +23,10 @@ function relativeTime(dateStr: string): string {
   const then = new Date(dateStr + "T12:00:00").getTime();
   const diff = now - then;
 
-  if (diff < 86_400_000) return "today";
-  if (diff < 172_800_000) return "yesterday";
-  if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)}d ago`;
-  if (diff < 2_592_000_000) return `${Math.floor(diff / 604_800_000)}w ago`;
+  if (diff < 86_400_000) return "今天";
+  if (diff < 172_800_000) return "昨天";
+  if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)} 天前`;
+  if (diff < 2_592_000_000) return `${Math.floor(diff / 604_800_000)} 周前`;
   return dateStr;
 }
 
@@ -39,7 +39,7 @@ export const ArchiveBrowser: React.FC<ArchiveBrowserProps> = ({
   if (isLoading) {
     return (
       <div className="p-4 text-xs text-muted-foreground text-center">
-        Loading archive...
+        正在加载归档…
       </div>
     );
   }
@@ -47,7 +47,7 @@ export const ArchiveBrowser: React.FC<ArchiveBrowserProps> = ({
   if (plans.length === 0) {
     return (
       <div className="p-4 text-xs text-muted-foreground text-center">
-        No archived plans found.
+        未找到已归档的计划。
       </div>
     );
   }

@@ -124,9 +124,9 @@ const oneLine = (value: string): string => value.replace(/\s+/g, ' ').trim();
 
 const answerSummary = (answer: QuestionAnswer): string => {
   const parts = [...answer.selected.map(oneLine)];
-  if (answer.other?.trim()) parts.push(`Other: ${oneLine(answer.other)}`);
+  if (answer.other?.trim()) parts.push(`其他：${oneLine(answer.other)}`);
   if (answer.text?.trim()) parts.push(oneLine(answer.text));
-  return parts.join('; ');
+  return parts.join('；');
 };
 
 /**
@@ -152,9 +152,9 @@ export const buildQuestionPanelRows = (
     const answerText = status === 'answered' && answer
       ? answerSummary(answer)
       : status === 'skipped'
-        ? 'Skipped'
+        ? '已跳过'
         : status === 'settled'
-          ? `${settledLabels.join('; ')} (settled)`
+          ? `${settledLabels.join('；')}（已确定）`
           : undefined;
     rows.push({
       key: question.key,
@@ -172,7 +172,7 @@ export const buildQuestionPanelRows = (
   for (const answer of answers.values()) {
     if (seen.has(answer.key)) continue;
     const status: QuestionStatus = isQuestionAnswered(answer) ? 'answered' : answer.skipped ? 'skipped' : 'open';
-    const answerText = status === 'answered' ? answerSummary(answer) : status === 'skipped' ? 'Skipped' : undefined;
+    const answerText = status === 'answered' ? answerSummary(answer) : status === 'skipped' ? '已跳过' : undefined;
     rows.push({
       key: answer.key,
       prompt: answer.prompt,

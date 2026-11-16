@@ -133,9 +133,9 @@ export const CallFlowFileBadge: React.FC<{ filePath: string; oldPath?: string }>
         type="button"
         className="call-flow-file-badge call-flow-file-badge-missing"
         onClick={state.openCallFlowPanel}
-        title={`${skippedLanguage.label} support is not installed`}
+        title={`未安装 ${skippedLanguage.label} 支持`}
       >
-        <span className="call-flow-file-badge-label">flow</span>
+        <span className="call-flow-file-badge-label">流</span>
         <span className="call-flow-file-badge-count">—</span>
       </button>
     );
@@ -149,9 +149,9 @@ export const CallFlowFileBadge: React.FC<{ filePath: string; oldPath?: string }>
         className={`call-flow-file-badge ${failed ? 'call-flow-file-badge-error' : 'call-flow-file-badge-disabled'}`}
         onClick={failed ? state.openCallFlowPanel : undefined}
         disabled={!failed}
-        title={failed ? 'Call-flow analysis needs attention' : analysis.status === 'loading' ? 'Tracing call flow…' : 'No changed call paths in this file'}
+        title={failed ? '调用流分析需要处理' : analysis.status === 'loading' ? '正在追踪调用流…' : '此文件没有变更的调用路径'}
       >
-        <span className="call-flow-file-badge-label">flow</span>
+        <span className="call-flow-file-badge-label">流</span>
         <span className="call-flow-file-badge-count">{failed ? '!' : analysis.status === 'loading' ? '…' : '0'}</span>
       </button>
     );
@@ -172,11 +172,11 @@ export const CallFlowFileBadge: React.FC<{ filePath: string; oldPath?: string }>
           className="call-flow-file-badge"
           onMouseEnter={() => { pointerInsideRef.current = true; scheduleOpen(); }}
           onMouseLeave={() => { pointerInsideRef.current = false; cancelScheduledOpen(); scheduleClose(); }}
-          title={`${impacts.length} changed call-flow ${impacts.length === 1 ? 'step' : 'steps'} in this file`}
-          aria-label={`Call-flow impact for ${filePath}`}
+          title={`此文件中有 ${impacts.length} 处调用流变更`}
+          aria-label={`${filePath} 的调用流影响`}
         />
       }>
-        <span className="call-flow-file-badge-label">flow</span>
+        <span className="call-flow-file-badge-label">流</span>
         <span className="call-flow-file-badge-count">{impacts.length}</span>
       </Popover.Trigger>
       <Popover.Portal>
@@ -192,12 +192,12 @@ export const CallFlowFileBadge: React.FC<{ filePath: string; oldPath?: string }>
               <div className="call-flow-popover-title" title={filePath}>
                 <span className="call-flow-popover-path">{displayPath.name}</span>
                 <span className="call-flow-popover-meta">
-                  {trees.length} {trees.length === 1 ? 'path' : 'paths'} · {impacts.length} changed
+                  {trees.length} 条路径 · {impacts.length} 处变更
                 </span>
               </div>
-              <div className="call-flow-popover-view-switch" aria-label="Call flow Lens view">
-                <button type="button" aria-pressed={view === 'paths'} onClick={() => setView('paths')}>Paths</button>
-                <button type="button" aria-pressed={view === 'raw'} onClick={() => setView('raw')}>Raw</button>
+              <div className="call-flow-popover-view-switch" aria-label="调用流 Lens 视图">
+                <button type="button" aria-pressed={view === 'paths'} onClick={() => setView('paths')}>路径</button>
+                <button type="button" aria-pressed={view === 'raw'} onClick={() => setView('raw')}>原始</button>
               </div>
             </div>
             {view === 'paths' ? (
@@ -231,7 +231,7 @@ export const CallFlowFileBadge: React.FC<{ filePath: string; oldPath?: string }>
               />
             )}
             <button type="button" className="call-flow-open-dock" onClick={() => { closeLens(); state.openCallFlowPanel(); }}>
-              Open full call flow
+              打开完整调用流
               <span aria-hidden="true">→</span>
             </button>
           </Popover.Popup>

@@ -155,7 +155,7 @@ describe('recovered draft with other documents', () => {
   test.skipIf(!hasDom)('a root-only draft keeps its banner exactly as before', async () => {
     setDraftTransport(transportServing({ annotations: [note('on-plan')], globalAttachments: [], ts: Date.now() }).transport);
     const session = await mount();
-    expect(session.result.current!.draftBanner).toEqual({ count: 1, timeAgo: 'just now', hasEdits: false });
+    expect(session.result.current!.draftBanner).toEqual({ count: 1, timeAgo: '刚刚', hasEdits: false });
     await session.unmount();
   });
 });

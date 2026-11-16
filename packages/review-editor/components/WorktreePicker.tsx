@@ -23,7 +23,7 @@ export const WorktreePicker: React.FC<WorktreePickerProps> = ({
   const [query, setQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const mainLabel = currentBranch || 'Main repo';
+  const mainLabel = currentBranch || '主仓库';
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -47,7 +47,7 @@ export const WorktreePicker: React.FC<WorktreePickerProps> = ({
     ? worktrees.find((wt) => wt.path === activeWorktreePath)
     : null;
   const activeLabel = active
-    ? (active.branch || active.path.split('/').pop() || 'worktree')
+    ? (active.branch || active.path.split('/').pop() || '工作树')
     : mainLabel;
   const isCustom = activeWorktreePath !== null;
 
@@ -76,7 +76,7 @@ export const WorktreePicker: React.FC<WorktreePickerProps> = ({
           <span className="truncate flex-1 text-left">{activeLabel}</span>
           {isCustom && (
             <span className="text-[10px] uppercase tracking-wide opacity-60 flex-shrink-0">
-              worktree
+              工作树
             </span>
           )}
           <svg
@@ -110,7 +110,7 @@ export const WorktreePicker: React.FC<WorktreePickerProps> = ({
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search worktrees…"
+                placeholder="搜索工作树…"
                 className="w-full px-2 py-1.5 bg-muted rounded text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
               />
             </div>
@@ -131,12 +131,12 @@ export const WorktreePicker: React.FC<WorktreePickerProps> = ({
                   <div className="h-px bg-border/50 mx-2 my-1" />
                 )}
                 <div className="px-3 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Worktrees
+                  工作树
                 </div>
                 {filtered.map((wt) => (
                   <WorktreeRow
                     key={wt.path}
-                    label={wt.branch || wt.path.split('/').pop() || 'worktree'}
+                    label={wt.branch || wt.path.split('/').pop() || '工作树'}
                     sublabel={wt.path}
                     isSelected={wt.path === activeWorktreePath}
                     onClick={() => handleSelect(wt.path)}
@@ -147,7 +147,7 @@ export const WorktreePicker: React.FC<WorktreePickerProps> = ({
 
             {!mainMatchesQuery && filtered.length === 0 && (
               <div className="px-3 py-2 text-xs text-muted-foreground">
-                No worktrees match.
+                没有匹配的工作树。
               </div>
             )}
           </div>

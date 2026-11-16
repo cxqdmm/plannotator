@@ -107,7 +107,7 @@ export const ImageThumbnail: React.FC<ImageThumbnailProps> = ({
       ) : (
         <img
           src={getImageSrc(path)}
-          alt="Attachment"
+          alt="附件"
           loading="lazy"
           onClick={onClick}
           onLoad={() => setLoading(false)}

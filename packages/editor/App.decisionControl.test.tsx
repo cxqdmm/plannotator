@@ -624,9 +624,9 @@ describe.if(hasDom)("annotate completion screen", () => {
 
   function expectNoSentClaim(): void {
     const text = completionText();
-    expect(text).not.toContain("Feedback Sent");
-    expect(text).not.toContain("address your feedback");
-    expect(text).not.toContain("has been sent");
+    expect(text).not.toContain("反馈已发送");
+    expect(text).not.toContain("处理你对");
+    expect(text).not.toContain("已发送");
   }
 
   test("Done with nothing to send shows the Done screen, not Feedback Sent", async () => {
@@ -640,7 +640,7 @@ describe.if(hasDom)("annotate completion screen", () => {
     expect(submissions[0]!.nothingToSend).toBe(true);
     expect(completionState()).toBe("done");
     // Deliberate label: the title names the decision the reviewer made.
-    expect(completionTitle()).toBe("Done");
+    expect(completionTitle()).toBe("完成");
     expectNoSentClaim();
   });
 
@@ -656,10 +656,10 @@ describe.if(hasDom)("annotate completion screen", () => {
 
     expect(submissions[0]!.nothingToSend).toBeUndefined();
     expect(completionState()).toBe("denied");
-    expect(completionTitle()).toBe("Feedback Sent");
+    expect(completionTitle()).toBe("反馈已发送");
     // Something was sent, so the footer still says so (this also proves the
     // harness reaches the footer line the nothing-sent tests assert away).
-    expect(completionText()).toContain("has been sent");
+    expect(completionText()).toContain("你的回复已发送");
   });
 
   test("Close keeps Session Closed but does not claim a response was sent", async () => {
@@ -669,7 +669,7 @@ describe.if(hasDom)("annotate completion screen", () => {
     await mountAnnotate();
 
     const close = document.querySelector<HTMLButtonElement>(
-      'button[aria-label^="Close session without sending"]',
+      'button[aria-label^="关闭会话但不发送"]',
     );
     if (!close) throw new Error("Close button not found");
     await act(async () => close.click());
@@ -677,7 +677,7 @@ describe.if(hasDom)("annotate completion screen", () => {
 
     expect(submissions).toHaveLength(0);
     expect(completionState()).toBe("exited");
-    expect(completionTitle()).toBe("Session Closed");
+    expect(completionTitle()).toBe("会话已关闭");
     expectNoSentClaim();
   });
 
@@ -729,7 +729,7 @@ describe.if(hasDom)("annotate completion screen", () => {
     expect(body.feedback).toContain("alpha needs work");
     expect(body.nothingToSend).toBeUndefined();
     expect(completionState()).toBe("denied");
-    expect(completionTitle()).toBe("Feedback Sent");
+    expect(completionTitle()).toBe("反馈已发送");
   });
 
   test("discarding every annotation finishes on the Done screen", async () => {

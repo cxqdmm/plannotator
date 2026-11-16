@@ -372,7 +372,7 @@ describe.if(hasDom)("bridge theme handler (DOM)", () => {
     const initial = document.querySelector(".plannotator-pinpoint-hover");
     expect(initial?.textContent).toBe("Keyboard document");
     expect(document.querySelector("[data-plannotator-vim-badge]")?.textContent)
-      .toBe("BLOCK · PINPOINT");
+      .toBe("BLOCK · 精准定位");
 
     const tab = new KeyboardEvent("keydown", {
       key: "Tab",
@@ -559,13 +559,13 @@ describe.if(hasDom)("bridge theme handler (DOM)", () => {
     });
     document.body.dispatchEvent(action);
     expect(document.querySelector("[data-plannotator-vim-badge]")?.textContent)
-      .toBe("ACTION · SELECT");
+      .toBe("ACTION · 选择");
 
     postBridge({
       type: "plannotator-bridge-cancel-selection",
     });
     expect(document.querySelector("[data-plannotator-vim-badge]")?.textContent)
-      .toBe("VISUAL · SELECT");
+      .toBe("VISUAL · 选择");
     expect(window.getSelection()?.toString()).toBe("Alpha ");
 
     postBridge({
@@ -600,7 +600,7 @@ describe.if(hasDom)("bridge theme handler (DOM)", () => {
     document.body.dispatchEvent(collapsedCopy);
     expect(collapsedCopy.defaultPrevented).toBe(false);
     expect(document.querySelector("[data-plannotator-vim-badge]")?.textContent)
-      .toBe("NORMAL · SELECT");
+      .toBe("NORMAL · 选择");
     document.body.dispatchEvent(new KeyboardEvent("keydown", {
       key: "Escape",
       bubbles: true,
@@ -847,7 +847,7 @@ describe.if(hasDom)("bridge theme handler (DOM)", () => {
       }));
     }
     expect(document.querySelector("[data-plannotator-vim-badge]")?.textContent)
-      .toBe("ACTION · SELECT");
+      .toBe("ACTION · 选择");
 
     postBridge({
       type: "plannotator-bridge-create-mark",
@@ -856,7 +856,7 @@ describe.if(hasDom)("bridge theme handler (DOM)", () => {
     });
 
     expect(document.querySelector("[data-plannotator-vim-badge]")?.textContent)
-      .toBe("VISUAL · SELECT");
+      .toBe("VISUAL · 选择");
     expect(window.getSelection()?.toString()).toBe("Alpha ");
     // Committed range EXTENT: the record's range binds exactly the visual
     // selection ("Alpha ") — the pre-overlay test verified the inline mark
@@ -908,7 +908,7 @@ describe.if(hasDom)("bridge theme handler (DOM)", () => {
       }));
     }
     expect(document.querySelector("[data-plannotator-vim-badge]")?.textContent)
-      .toBe("ACTION · SELECT");
+      .toBe("ACTION · 选择");
 
     postBridge({
       type: "plannotator-bridge-create-mark",
@@ -917,7 +917,7 @@ describe.if(hasDom)("bridge theme handler (DOM)", () => {
     });
 
     expect(document.querySelector("[data-plannotator-vim-badge]")?.textContent)
-      .toBe("VISUAL BLOCK · SELECT");
+      .toBe("VISUAL BLOCK · 选择");
     expect(window.getSelection()?.toString()).toBe("Whole block target");
     // Committed range EXTENT: the whole-block commit binds exactly the
     // block's text, not merely "some range that produced one marker".
@@ -1043,7 +1043,7 @@ describe.if(hasDom)("bridge theme handler (DOM)", () => {
     const driftMarkers = markersFor("pin-badge");
     expect(driftMarkers.length).toBe(1);
     expect(markerNumber(driftMarkers[0]!)).toBe("1");
-    expect(driftMarkers[0]!.getAttribute("aria-label")).toBe("Comment 1");
+    expect(driftMarkers[0]!.getAttribute("aria-label")).toBe("评论 1");
     expect(driftMarkers[0]!.tagName).toBe("BUTTON");
     expect(document.body.innerHTML).toBe(pageSnapshot);
 
@@ -2155,7 +2155,7 @@ describe.if(hasDom)("bridge theme handler (DOM)", () => {
     expect(commitMarkers.length).toBeGreaterThanOrEqual(2);
     for (const marker of commitMarkers) {
       expect(markerNumber(marker)).toBe("1");
-      expect(marker.getAttribute("aria-label")).toBe("Comment 1");
+      expect(marker.getAttribute("aria-label")).toBe("评论 1");
     }
     expect(pinnedBoxCount()).toBe(0); // draft state fully cleared
 
@@ -2934,9 +2934,9 @@ describe.if(hasDom)("bridge theme handler (DOM)", () => {
       annotations: [{ id: "n-2", number: 1 }, { id: "n-1", number: 2 }],
     });
     expect(markerNumber(markersFor("n-2")[0]!)).toBe("1");
-    expect(markersFor("n-2")[0]!.getAttribute("aria-label")).toBe("Comment 1");
+    expect(markersFor("n-2")[0]!.getAttribute("aria-label")).toBe("评论 1");
     expect(markerNumber(markersFor("n-1")[0]!)).toBe("2");
-    expect(markersFor("n-1")[0]!.getAttribute("aria-label")).toBe("Comment 2");
+    expect(markersFor("n-1")[0]!.getAttribute("aria-label")).toBe("评论 2");
 
     postBridge({ type: "plannotator-bridge-clear-marks" });
     document.body.replaceChildren();

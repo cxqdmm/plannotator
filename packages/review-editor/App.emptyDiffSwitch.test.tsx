@@ -170,8 +170,8 @@ function dockTabs(): string[] {
 
 // The every-change dock tab is titled "All changes" (approved design record
 // "review-sidebar-header"), so it never reads like the All files scope.
-const allFilesShown = () => dockTabs().some((title) => title.includes("All changes"));
-const noChangesShown = () => document.body.textContent?.includes("No changes") ?? false;
+const allFilesShown = () => dockTabs().some((title) => title.includes("所有更改"));
+const noChangesShown = () => document.body.textContent?.includes("没有更改") ?? false;
 
 function panelSegment(label: string): HTMLButtonElement | undefined {
   const group = document.querySelector<HTMLElement>('[role="tablist"][aria-label="Panel view"]');

@@ -116,11 +116,11 @@ export function buildSavedFileChangePanelItems(changes: SavedFileChangePanelInpu
     const stats = computeEditStats(change.beforeText, change.afterText);
     return {
       id: `saved:${change.key}`,
-      title: 'Edits',
+      title: '编辑',
       label: change.path,
       added: stats.added,
       removed: stats.removed,
-      description: 'Saved to disk; sent with feedback as context.',
+      description: '已保存到磁盘；作为上下文随反馈发送。',
       diffText: createTwoFilesPatch(
         `${change.basename} (opened)`,
         `${change.basename} (saved)`,

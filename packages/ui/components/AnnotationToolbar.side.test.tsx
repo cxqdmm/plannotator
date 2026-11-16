@@ -76,12 +76,12 @@ describe.if(hasDom)('AnnotationToolbar Side', () => {
     const row = await mount({});
     expect(document.querySelectorAll('[data-annotation-side]')).toHaveLength(0);
     expect([...row.querySelectorAll('button')].some((b) => b.textContent?.includes('Side'))).toBe(false);
-    expect(rowOrder(row).slice(-3)).toEqual(['Looks good', '|', 'Cancel']);
+    expect(rowOrder(row).slice(-3)).toEqual(['看起来不错', '|', 'Cancel']);
   });
 
   test('with onSide: Copy · Delete · Comment · 👍 | Side | ×, the word and the two bubbles on it', async () => {
     const row = await mount({ onSide: () => {} });
-    expect(rowOrder(row)).toEqual(['Copy', '|', 'Delete', 'Comment', 'Looks good', '|', 'Side', '|', 'Cancel']);
+    expect(rowOrder(row)).toEqual(['Copy', '|', 'Delete', 'Comment', '看起来不错', '|', 'Side', '|', 'Cancel']);
     const side = sideButton()!;
     expect(side.textContent?.trim()).toBe('Side');
     expect(side.querySelectorAll('svg path')).toHaveLength(2);
@@ -92,7 +92,7 @@ describe.if(hasDom)('AnnotationToolbar Side', () => {
 
   test('sideButton: icon-only in the same place, the host\'s glyph on it, named by the host\'s label', async () => {
     const row = await mount({ onSide: () => {}, sideButton: { icon: <svg data-host-mark="" />, label: 'Side chat with Claude' } });
-    expect(rowOrder(row)).toEqual(['Copy', '|', 'Delete', 'Comment', 'Looks good', '|', 'Side chat with Claude', '|', 'Cancel']);
+    expect(rowOrder(row)).toEqual(['Copy', '|', 'Delete', 'Comment', '看起来不错', '|', 'Side chat with Claude', '|', 'Cancel']);
     const side = sideButton()!;
     // Named as its neighbours are (HostTitle: a native title here, an aria-label and ui's tooltip in the Inbox).
     expect(nameOf(side)).toBe('Side chat with Claude');
@@ -119,7 +119,7 @@ describe.if(hasDom)('AnnotationToolbar Side', () => {
   test('sideButton without onSide: no button', async () => {
     const row = await mount({ sideButton: { label: 'Side chat' } });
     expect(document.querySelectorAll('[data-annotation-side]')).toHaveLength(0);
-    expect(rowOrder(row).slice(-3)).toEqual(['Looks good', '|', 'Cancel']);
+    expect(rowOrder(row).slice(-3)).toEqual(['看起来不错', '|', 'Cancel']);
   });
 
   test('a sideButton press hands the host the selected words and closes the toolbar, as the word does', async () => {

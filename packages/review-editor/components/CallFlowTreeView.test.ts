@@ -100,10 +100,10 @@ describe('Call Flow source selections', () => {
     }));
 
     expect(outside).toContain('disabled=""');
-    expect(outside).toContain('Outside the reviewed patch');
-    expect(outside).toContain('Comment on authorize() as Call Flow feedback');
+    expect(outside).toContain('不在本次评审的更改范围内');
+    expect(outside).toContain('将 authorize() 作为调用流反馈评论');
     expect(outside).toContain('call-flow-row-selectable');
-    expect(inside).toContain('Comment on authorize()');
+    expect(inside).toContain('评论 authorize()');
     expect(inside).not.toContain('call-flow-comment');
   });
 
@@ -135,9 +135,9 @@ describe('Call Flow source selections', () => {
     expect(text).not.toContain('deepContext()');
     expect(text).toContain('changedPath()');
     expect(text).toContain('changedCall()');
-    expect(markup).toContain('aria-label="Collapse changedPath()"');
-    expect(text).toContain('more context steps hidden');
-    expect(text).toContain('Show all context');
+    expect(markup).toContain('aria-label="收起 changedPath()"');
+    expect(text).toContain('个上下文步骤已隐藏');
+    expect(text).toContain('显示全部上下文');
   });
 
   test('shows adjacent structural context without expanding the complete tree', () => {
@@ -165,6 +165,6 @@ describe('Call Flow source selections', () => {
     expect(text).toContain('changedCall()');
     expect(text).toContain('afterContext()');
     expect(text).not.toContain('deepContext()');
-    expect(text).toContain('Show all context');
+    expect(text).toContain('显示全部上下文');
   });
 });

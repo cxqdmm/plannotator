@@ -174,7 +174,7 @@ describe('guide overview (format version 2)', () => {
     };
     await mount(<View guide={guide} value={hostValue({ renderOverviewDiagram: (d) => (d.kind === 'mermaid' ? <div /> : null) })} />);
     const box = host!.querySelector('[data-guide-overview-diagram="html"]')!;
-    expect(box.textContent).toContain('does not draw');
+    expect(box.textContent).toContain('无法绘制');
     expect(host!.querySelector('[data-agent]')).toBeNull();
     expect((globalThis as { __pwned?: number }).__pwned).toBeUndefined();
   });

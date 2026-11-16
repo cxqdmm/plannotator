@@ -15,18 +15,18 @@ export interface LabelDef {
 
 export const CONVENTIONAL_LABELS: LabelDef[] = [
   // Everyday — the three you reach for on 90%+ of comments
-  { label: 'suggestion', display: 'suggestion', tone: 'info',    showBlockingToggle: true,  hint: 'Proposes an improvement' },
-  { label: 'nitpick',    display: 'nit',        tone: 'neutral', showBlockingToggle: false, hint: 'Trivial, preference-based' },
-  { label: 'question',   display: 'question',   tone: 'info',    showBlockingToggle: true,  hint: 'Seeking clarification' },
+  { label: 'suggestion', display: '建议', tone: 'info',    showBlockingToggle: true,  hint: '提出一项改进' },
+  { label: 'nitpick',    display: '小问题', tone: 'neutral', showBlockingToggle: false, hint: '琐碎、基于个人偏好' },
+  { label: 'question',   display: '疑问', tone: 'info',    showBlockingToggle: true,  hint: '寻求澄清' },
   // High-signal
-  { label: 'issue',      display: 'issue',      tone: 'danger',  showBlockingToggle: true,  hint: 'A problem that needs addressing' },
-  { label: 'praise',     display: 'praise',     tone: 'success', showBlockingToggle: false, hint: 'Highlight something positive' },
+  { label: 'issue',      display: '问题', tone: 'danger',  showBlockingToggle: true,  hint: '需要处理的问题' },
+  { label: 'praise',     display: '赞扬', tone: 'success', showBlockingToggle: false, hint: '指出值得肯定的地方' },
   // Soft / meta
-  { label: 'thought',    display: 'thought',    tone: 'neutral', showBlockingToggle: false, hint: 'An idea, not a request' },
-  { label: 'note',       display: 'note',       tone: 'neutral', showBlockingToggle: false, hint: 'Informational, no action needed' },
+  { label: 'thought',    display: '想法', tone: 'neutral', showBlockingToggle: false, hint: '一个想法，而非请求' },
+  { label: 'note',       display: '备注', tone: 'neutral', showBlockingToggle: false, hint: '仅供参考，无需处理' },
   // Process
-  { label: 'todo',       display: 'todo',       tone: 'warn',    showBlockingToggle: true,  hint: 'Small, necessary change' },
-  { label: 'chore',      display: 'chore',      tone: 'warn',    showBlockingToggle: true,  hint: 'Process task (CI, changelog, etc.)' },
+  { label: 'todo',       display: '待办', tone: 'warn',    showBlockingToggle: true,  hint: '小而必要的改动' },
+  { label: 'chore',      display: '杂务', tone: 'warn',    showBlockingToggle: true,  hint: '流程性任务（CI、changelog 等）' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -119,12 +119,12 @@ export const ConventionalLabelPicker: React.FC<ConventionalLabelPickerProps> = (
             type="button"
             className={`cc-blocking-toggle ${isBlocking ? 'is-blocking' : ''}`}
             onClick={toggleBlocking}
-            title={isBlocking ? 'Must resolve before merge' : 'Optional, not blocking'}
+            title={isBlocking ? '合并前必须解决' : '可选，不阻塞'}
           >
             <span className="cc-toggle-track">
               <span className="cc-toggle-thumb" />
             </span>
-            {isBlocking ? 'blocking' : 'non-blocking'}
+            {isBlocking ? '阻塞' : '非阻塞'}
           </button>
         )}
       </div>
@@ -153,7 +153,7 @@ export const ConventionalLabelBadge: React.FC<{
       {display}
       {hasDecoration && (
         <span className={`cc-inline-dec${isBlocking ? ' cc-inline-dec-blocking' : ''}`}>
-          {isBlocking ? 'blocking' : 'non-blocking'}
+          {isBlocking ? '阻塞' : '非阻塞'}
         </span>
       )}
     </span>

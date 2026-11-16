@@ -65,7 +65,7 @@ const CodePreview: React.FC<{
   if (!preview) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
-        Select a reference to preview
+        选择一个引用以预览
       </div>
     );
   }
@@ -235,7 +235,7 @@ export const ReviewCodeNavPanel: React.FC<IDockviewPanelProps> = (props) => {
     return (
       <div className="h-full flex items-center justify-center text-muted-foreground text-xs gap-2">
         <div className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
-        Searching for <code className="bg-muted px-1 py-0.5 rounded">{codeNavActiveSymbol}</code>
+        正在搜索 <code className="bg-muted px-1 py-0.5 rounded">{codeNavActiveSymbol}</code>
       </div>
     );
   }
@@ -243,7 +243,7 @@ export const ReviewCodeNavPanel: React.FC<IDockviewPanelProps> = (props) => {
   if (codeNavResult?.backend === 'unavailable') {
     return (
       <div className="h-full flex items-center justify-center text-muted-foreground text-xs">
-        Install <a href="https://github.com/BurntSushi/ripgrep" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline mx-1">ripgrep</a> for code navigation
+        安装 <a href="https://github.com/BurntSushi/ripgrep" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline mx-1">ripgrep</a> 以使用代码导航
       </div>
     );
   }
@@ -251,7 +251,7 @@ export const ReviewCodeNavPanel: React.FC<IDockviewPanelProps> = (props) => {
   if (!codeNavResult || allLocations.length === 0) {
     return (
       <div className="h-full flex items-center justify-center text-muted-foreground text-xs">
-        No results for <code className="bg-muted px-1 py-0.5 rounded ml-1">{codeNavActiveSymbol}</code>
+        没有找到 <code className="bg-muted px-1 py-0.5 rounded mx-1">{codeNavActiveSymbol}</code> 的结果
       </div>
     );
   }

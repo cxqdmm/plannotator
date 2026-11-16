@@ -286,7 +286,7 @@ describe('GuideSectionCard: a chapter\'s diagram (format version 5)', () => {
     expect(narrative().querySelector('[data-guide-chapter-diagram]')).toBeNull();
     const firstFile = card().querySelector('[data-guide-file-shell]')!;
     expect(box!.compareDocumentPosition(firstFile) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(header()?.textContent).toBe('Diagram');
+    expect(header()?.textContent).toBe('图表');
     expect(header()?.getAttribute('aria-expanded')).toBe('true');
   });
 

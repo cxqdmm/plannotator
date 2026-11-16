@@ -18,7 +18,7 @@ describe('CompactEditControls', () => {
     );
 
     expect(html).toContain('data-pn-compact-edit-controls="true"');
-    expect(html).toContain('Editing notes.md');
+    expect(html).toContain('正在编辑 notes.md');
     expect(html).toContain('>Save<');
     expect(html).toContain('>Cancel<');
     expect(html.match(/data-pn-touch-target/g)).toHaveLength(2);
@@ -50,8 +50,8 @@ describe('CompactEditControls', () => {
       />,
     );
 
-    expect(plan).toContain('>Done<');
-    expect(plan).not.toContain('>Save<');
-    expect(discard).toContain('>Discard changes<');
+    expect(plan).toContain('>完成<');
+    expect(plan).not.toContain('>保存<');
+    expect(discard).toContain('>放弃更改<');
   });
 });

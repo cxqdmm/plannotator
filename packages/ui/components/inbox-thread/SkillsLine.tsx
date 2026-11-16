@@ -13,9 +13,9 @@ import type { InboxSkillsSplit } from '@plannotator/core/skill-reference-block';
 export function SkillsLine({ split }: { split: InboxSkillsSplit }) {
   const names = split.skills.map((s) => s.name).join(', ');
   return (
-    <div className="ib-skills" data-skills-line="" title={`Skills you referenced: ${names}`}>
+    <div className="ib-skills" data-skills-line="" title={`你引用的技能：${names}`}>
       <SkillCube />
-      <span className="ib-sr">Skills: </span>
+      <span className="ib-sr">技能：</span>
       <span className="ib-skills-n">
         {split.skills.map((s, i) => (
           <span key={s.name}>

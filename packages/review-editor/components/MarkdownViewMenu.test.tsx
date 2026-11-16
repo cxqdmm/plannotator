@@ -127,9 +127,9 @@ describe.if(hasDom)('MarkdownViewMenu', () => {
   });
 
   test('while the file holds the edit session the button is disabled, says why, and opens nothing', async () => {
-    await mount({ disabledReason: 'Finish editing first' });
+    await mount({ disabledReason: '请先结束编辑' });
     expect(trigger().disabled).toBe(true);
-    expect(trigger().getAttribute('title')).toBe('Finish editing first');
+    expect(trigger().getAttribute('title')).toBe('请先结束编辑');
     await open();
     expect(menu()).toBeNull();
     expect(chosen).toEqual([]);

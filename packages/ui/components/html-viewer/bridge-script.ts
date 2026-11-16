@@ -1631,7 +1631,7 @@ ${SANDBOX_SHIM_SCRIPT}
     // label "Comment N" — never the element beneath. Moving off the bubble
     // restores normal element hover/annotate.
     if (lastRawHitMarker && !pendingPinEl) {
-      var markerLabel = lastRawHitMarker.getAttribute('aria-label') || 'Comment';
+      var markerLabel = lastRawHitMarker.getAttribute('aria-label') || '评论';
       pinpointHover = null;
       hidePinpointBox();
       positionPinpointLabel(lastRawHitMarker, markerLabel);
@@ -2793,7 +2793,7 @@ ${SANDBOX_SHIM_SCRIPT}
       btn.style.left = marker.x + 'px';
       btn.style.top = marker.y + 'px';
       btn.setAttribute('data-selected', focusedAnnotationId === marker.id ? 'true' : 'false');
-      btn.setAttribute('aria-label', 'Comment ' + marker.number);
+      btn.setAttribute('aria-label', '评论 ' + marker.number);
       var num = btn.querySelector('.pn-marker-num');
       if (num) num.textContent = String(marker.number);
     }
@@ -5792,7 +5792,7 @@ ${SANDBOX_SHIM_SCRIPT}
     if (badge) badge.style.display = vimHudEnabled ? 'none' : 'block';
     var phaseLabel = vimPhase === 'text' ? 'NORMAL' : vimPhase.toUpperCase().replace('-', ' ');
     if (badge) {
-      badge.textContent = phaseLabel + ' · ' + (currentInputMethod === 'pinpoint' ? 'PINPOINT' : 'SELECT');
+      badge.textContent = phaseLabel + ' · ' + (currentInputMethod === 'pinpoint' ? '精准定位' : '选择');
     }
     if (vimPhase !== 'text') {
       cursor.style.display = 'none';

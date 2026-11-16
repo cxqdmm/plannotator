@@ -3,7 +3,7 @@ import { createShortcutScopeHook } from '../runtime';
 
 export const goalSetupShortcuts = defineShortcutScope({
   id: 'goal-setup-surface',
-  title: 'Goal Setup',
+  title: '目标设置',
   shortcuts: {},
 });
 

@@ -111,13 +111,13 @@ export const GoToFile: React.FC<GoToFileProps> = ({
       fetchImpl(`${REPO_FILES_SEARCH_ENDPOINT}?${params}`, { signal: controller.signal })
         .then(async (response) => {
           const body = await response.json();
-          if (!response.ok) throw new Error(body?.error ?? 'Search failed');
+          if (!response.ok) throw new Error(body?.error ?? '搜索失败');
           setServerMatches({ query, matches: body.matches });
           setServerError(null);
         })
         .catch((error: unknown) => {
           if ((error as { name?: string })?.name === 'AbortError') return;
-          setServerError(error instanceof Error ? error.message : 'Search failed');
+          setServerError(error instanceof Error ? error.message : '搜索失败');
         });
     }, SERVER_DEBOUNCE_MS);
     return () => {
@@ -151,12 +151,12 @@ export const GoToFile: React.FC<GoToFileProps> = ({
 
   const total = repo.status === 'ready' ? repo.total : null;
   const scopeNote = !repoSupported
-    ? 'Changed files only: this review has no repository to list'
+    ? '仅已更改文件：此评审没有可列出的仓库'
     : total != null
-      ? `${total.toLocaleString('en-US')} files · changed ones marked`
+      ? `${total.toLocaleString('en-US')} 个文件 · 已更改的文件有标记`
       : repo.status === 'unavailable' || repo.status === 'error'
-        ? 'Changed files only'
-        : 'Listing the repository…';
+        ? '仅已更改文件'
+        : '正在列出仓库文件…';
 
   const open = (index: number, side: boolean) => {
     const row = rows[index];
@@ -191,7 +191,7 @@ export const GoToFile: React.FC<GoToFileProps> = ({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Go to File"
+        aria-label="转到文件"
         data-go-to-file
         onKeyDown={onKeyDown}
         className="absolute left-1/2 top-[8vh] -translate-x-1/2 w-[min(680px,calc(100vw-32px))] rounded-lg border border-border bg-popover text-popover-foreground shadow-2xl overflow-hidden"
@@ -204,7 +204,7 @@ export const GoToFile: React.FC<GoToFileProps> = ({
             ref={inputRef}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Go to File…"
+            placeholder="转到文件…"
             className="flex-1 min-w-0 bg-transparent border-0 shadow-none outline-none focus:outline-none focus:ring-0 text-sm placeholder:text-muted-foreground"
             role="combobox"
             aria-expanded="true"
@@ -216,14 +216,14 @@ export const GoToFile: React.FC<GoToFileProps> = ({
             data-go-to-file-input
           />
         </div>
-        <div ref={listRef} id={listId} role="listbox" aria-label="Files" className="max-h-[min(420px,60vh)] overflow-y-auto py-1">
+        <div ref={listRef} id={listId} role="listbox" aria-label="文件" className="max-h-[min(420px,60vh)] overflow-y-auto py-1">
           {rows.length === 0 && (
             <div className="px-4 py-6 text-center text-xs text-muted-foreground" data-go-to-file-empty>
               {serverError
                 ? serverError
                 : query.trim()
-                  ? searchOnServer && serverMatches?.query !== query ? 'Searching…' : `No file matches “${query.trim()}”`
-                  : 'Type to search every file'}
+                  ? searchOnServer && serverMatches?.query !== query ? '正在搜索…' : `没有匹配“${query.trim()}”的文件`
+                  : '输入以搜索所有文件'}
             </div>
           )}
           {rows.map((row, index) => {
@@ -233,7 +233,7 @@ export const GoToFile: React.FC<GoToFileProps> = ({
             const positions = new Set(row.positions);
             const file = changed.get(row.path);
             const heading = row.group && row.group !== lastGroup
-              ? row.group === 'recent' ? 'Recently opened' : 'Changed files'
+              ? row.group === 'recent' ? '最近打开' : '已更改文件'
               : null;
             lastGroup = row.group ?? null;
             return (
@@ -281,9 +281,9 @@ export const GoToFile: React.FC<GoToFileProps> = ({
           })}
         </div>
         <div className="flex items-center gap-3 px-3 h-8 border-t border-border/60 text-[11px] text-muted-foreground">
-          <span><kbd className="font-mono">↑</kbd> <kbd className="font-mono">↓</kbd> move</span>
-          <span><kbd className="font-mono">↵</kbd> open</span>
-          <span><kbd className="font-mono">{altKey}</kbd> <kbd className="font-mono">↵</kbd> open to the side</span>
+          <span><kbd className="font-mono">↑</kbd> <kbd className="font-mono">↓</kbd> 移动</span>
+          <span><kbd className="font-mono">↵</kbd> 打开</span>
+          <span><kbd className="font-mono">{altKey}</kbd> <kbd className="font-mono">↵</kbd> 在侧边打开</span>
           <span className="flex-1" />
           <span data-go-to-file-scope>{scopeNote}</span>
         </div>

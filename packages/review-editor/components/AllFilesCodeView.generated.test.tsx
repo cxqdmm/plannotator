@@ -244,7 +244,7 @@ describe.if(hasDom)('generated-file default collapse (#1317)', () => {
 
     const collapsedHeader = await renderHeaderFor('gen/schema.sql');
     expect(collapsedHeader.querySelector('[data-pn-generated-badge]')).not.toBeNull();
-    const chevron = collapsedHeader.querySelector<HTMLButtonElement>('button[title="Expand diff"]');
+    const chevron = collapsedHeader.querySelector<HTMLButtonElement>('button[title="展开 diff"]');
     expect(chevron).not.toBeNull();
 
     await act(async () => chevron!.click());
@@ -255,7 +255,7 @@ describe.if(hasDom)('generated-file default collapse (#1317)', () => {
 
     // The header re-render reflects the expanded item.
     const expandedHeader = await renderHeaderFor('gen/schema.sql');
-    expect(expandedHeader.querySelector('button[title="Collapse diff"]')).not.toBeNull();
+    expect(expandedHeader.querySelector('button[title="收起 diff"]')).not.toBeNull();
 
     // A normal file's header carries no generated tag.
     const normalHeader = await renderHeaderFor('src/app.ts');

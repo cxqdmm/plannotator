@@ -22,8 +22,8 @@ export function ModeToggle() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors relative pointer-coarse:before:absolute pointer-coarse:before:-inset-2 pointer-coarse:before:content-['']"
-        title="Toggle theme"
-        aria-label="Toggle theme"
+        title="切换主题"
+        aria-label="切换主题"
       >
         {/* Sun */}
         <svg

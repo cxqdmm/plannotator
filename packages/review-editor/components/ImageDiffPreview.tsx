@@ -54,22 +54,22 @@ function initialState(snapshotId: string | undefined, path: string, side: Review
 function describeError(error: ReviewImageError): string {
   switch (error.reason) {
     case 'lfs-pointer':
-      return 'the file is stored in Git LFS';
+      return '文件存储在 Git LFS 中';
     case 'not-image':
-      return 'not a recognized image format';
+      return '不是可识别的图片格式';
     case 'decode':
-      return 'the image could not be decoded';
+      return '无法解码该图片';
     case 'too-large':
-      if (error.width && error.height) return `${error.width} × ${error.height} px is over the preview limit`;
-      return `larger than ${MAX_REVIEW_IMAGE_PREVIEW_LABEL}${error.bytes ? ` (${formatImageBytes(error.bytes)})` : ''}`;
+      if (error.width && error.height) return `${error.width} × ${error.height} px 超出预览上限`;
+      return `大于 ${MAX_REVIEW_IMAGE_PREVIEW_LABEL}${error.bytes ? `（${formatImageBytes(error.bytes)}）` : ''}`;
     case 'missing':
-      return 'the file could not be found at this version';
+      return '此版本中找不到该文件';
     case 'stale':
-      return 'the diff changed; refresh the review';
+      return 'diff 已变化，请刷新评审';
     case 'network':
-      return 'the server could not be reached';
+      return '无法连接服务器';
     default:
-      return 'the file could not be loaded';
+      return '无法加载该文件';
   }
 }
 
@@ -231,7 +231,7 @@ export const ImageDiffPreview: React.FC<ImageDiffPreviewProps> = ({
     const state = states[side];
     const image = state.state === 'ok' ? state.image : undefined;
     const dims = dimsOf(side, image);
-    const label = unchanged ? 'Image' : side === 'old' ? 'Before' : 'After';
+    const label = unchanged ? '图片' : side === 'old' ? '之前' : '之后';
     const showDelta = !unchanged && side === 'new' && before && after;
     return (
       <figure key={side} className="m-0 min-w-0 flex flex-col gap-1.5" data-image-side={side}>
@@ -243,7 +243,7 @@ export const ImageDiffPreview: React.FC<ImageDiffPreviewProps> = ({
           style={variant === 'all-files' ? { height: paneHeight } : { minHeight: 120 }}
         >
           {state.state === 'loading' && (
-            <div className="absolute inset-0 animate-pulse bg-muted/40" aria-label="Loading image" />
+            <div className="absolute inset-0 animate-pulse bg-muted/40" aria-label="正在加载图片" />
           )}
           {image && (
             <img
@@ -265,7 +265,7 @@ export const ImageDiffPreview: React.FC<ImageDiffPreviewProps> = ({
           )}
           {state.state === 'error' && (
             <p className="px-4 text-center text-xs text-muted-foreground" data-image-error={state.error.reason}>
-              Preview unavailable: {describeError(state.error)}
+              无法预览：{describeError(state.error)}
             </p>
           )}
         </div>
@@ -309,7 +309,7 @@ export const ImageDiffPreview: React.FC<ImageDiffPreviewProps> = ({
       </div>
       {unchanged && (
         <p className="mt-2 text-xs text-muted-foreground" data-image-unchanged="">
-          Contents unchanged.
+          内容未变。
         </p>
       )}
     </div>

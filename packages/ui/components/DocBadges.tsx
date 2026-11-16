@@ -175,7 +175,7 @@ export const DocBadges: React.FC<DocBadgesProps> = ({
       {/* Demo badge: only in column (top-of-doc) layout */}
       {!isRow && showDemoBadge && !linkedDocInfo && (
         <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-amber-500/15 text-amber-600 dark:text-amber-400">
-          Demo
+          演示
         </span>
       )}
 
@@ -191,10 +191,10 @@ export const DocBadges: React.FC<DocBadgesProps> = ({
             }`}
           >
             {archiveInfo.status === 'approved'
-              ? 'Approved'
+              ? '已通过'
               : archiveInfo.status === 'denied'
-                ? 'Denied'
-                : 'Unknown'}
+                ? '已拒绝'
+                : '未知'}
           </span>
           {archiveInfo.timestamp && (
             <span
@@ -225,7 +225,7 @@ export const DocBadges: React.FC<DocBadgesProps> = ({
                 onClick={linkedDocInfo.onBack}
                 className="rounded-sm text-[9px] font-medium text-primary transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
-                Close
+                关闭
               </button>
             )}
             {/* The hover text is the whole path, so it shows whether or not the name is cut. */}
@@ -255,10 +255,10 @@ export const DocBadges: React.FC<DocBadgesProps> = ({
                   d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
                 />
               </svg>
-              {linkedDocInfo.backLabel || 'plan'}
+              {linkedDocInfo.backLabel || '计划'}
             </button>
             <span className="px-1.5 py-0.5 bg-primary/10 text-primary/80 rounded flex-shrink-0">
-              {linkedDocInfo.label || 'Linked File'}
+              {linkedDocInfo.label || '链接文件'}
             </span>
             <HostTitle title={linkedDocInfo.filepath}>
               <span className="min-w-0 px-1.5 py-0.5 bg-muted/50 text-muted-foreground rounded truncate">

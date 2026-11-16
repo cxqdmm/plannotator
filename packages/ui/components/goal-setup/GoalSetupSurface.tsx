@@ -56,7 +56,7 @@ async function submitGoalSetup(payload: unknown): Promise<void> {
   });
 
   if (!response.ok) {
-    let message = 'Submission failed';
+    let message = '提交失败';
     try {
       const body = await response.json();
       if (typeof body.error === 'string') message = body.error;
@@ -83,7 +83,7 @@ async function copyGoalSetupText(text: string): Promise<void> {
   // All strategies failed. When the API existed but rejected, surface its
   // real error; use the generic message only when the API was absent.
   if (writeError instanceof Error) throw writeError;
-  throw new Error('Clipboard is unavailable in this browser');
+  throw new Error('此浏览器中无法使用剪贴板');
 }
 
 function useGoalSetupCopy(onError: (message: string) => void) {
@@ -102,7 +102,7 @@ function useGoalSetupCopy(onError: (message: string) => void) {
         onError('');
         setCopied(id);
       } catch (err) {
-        onError(err instanceof Error ? err.message : 'Copy failed');
+        onError(err instanceof Error ? err.message : '复制失败');
       }
     },
     [onError]
@@ -270,7 +270,7 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
       setSubmitState('submitted');
       onSubmitted?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Submission failed');
+      setError(err instanceof Error ? err.message : '提交失败');
       setSubmitState('error');
     }
   };
@@ -291,7 +291,7 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
       canSubmit: true,
       isSubmitting: submitState === 'submitting',
       submitted: submitState === 'submitted',
-      submitLabel: 'Submit Answers',
+      submitLabel: '提交回答',
     });
   }, [onActionStateChange, submitState]);
 
@@ -421,20 +421,20 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
         onClose={() => setShowIncompleteWarning(false)}
         onConfirm={doSubmit}
         variant="warning"
-        title="Submit with incomplete answers?"
+        title="回答不完整，仍要提交吗？"
         message={
           <>
             {skippedQuestions.length > 0 && (
-              <span>{skippedQuestions.length} skipped question{skippedQuestions.length !== 1 ? 's' : ''} will be sent as skipped, including any notes. </span>
+              <span>有 {skippedQuestions.length} 个问题被跳过，将连同备注一起按已跳过发送。 </span>
             )}
             {incompleteQuestions.length > 0 && (
-              <span>{incompleteQuestions.length} required question{incompleteQuestions.length !== 1 ? 's' : ''} {incompleteQuestions.length !== 1 ? 'are' : 'is'} still unanswered. </span>
+              <span>还有 {incompleteQuestions.length} 个必答问题未回答。 </span>
             )}
-            <span>The agent will work with whatever you've provided.</span>
+            <span>agent 会以你目前已提供的内容继续工作。</span>
           </>
         }
-        confirmText="Submit anyway"
-        cancelText="Go back"
+        confirmText="仍然提交"
+        cancelText="返回"
         showCancel
       />
 
@@ -442,10 +442,10 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
         <header className="mb-3 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              Goal interview
+              目标访谈
             </div>
             <h1 className="mt-0.5 truncate text-lg font-medium leading-tight text-foreground">
-              {bundle.title || 'Answer the setup questions'}
+              {bundle.title || '回答设置问题'}
             </h1>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -454,17 +454,17 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                 onClick={copyInterviewJson}
                 copied={copied === 'interview-json'}
                 format="JSON"
-                title="Copy all questions and answers as raw JSON"
+                title="以原始 JSON 复制所有问题和回答"
               />
               <GoalCopyButton
                 onClick={copyInterviewMarkdown}
                 copied={copied === 'interview-markdown'}
                 format="Markdown"
-                title="Copy all questions and answers as markdown"
+                title="以 Markdown 复制所有问题和回答"
               />
             </div>
             <div className="font-mono text-[11px] text-muted-foreground">
-              {completedCount}/{bundle.questions.length} answered
+              已回答 {completedCount}/{bundle.questions.length}
             </div>
           </div>
         </header>
@@ -481,7 +481,7 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
           const skipped = skippedIds.has(question.id) && !complete;
           const noteSummary = answer.note?.trim();
           const summary = skipped
-            ? noteSummary ? `Skipped · ${noteSummary}` : 'Skipped'
+            ? noteSummary ? `已跳过 · ${noteSummary}` : '已跳过'
             : complete
               ? buildAnswerText(question, answer).replace(/\s*\n+\s*/g, ' · ').trim()
               : '';
@@ -527,7 +527,7 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                 </span>
                 {question.required === false && !complete && !skipped && (
                   <span className="shrink-0 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
-                    opt
+                    可选
                   </span>
                 )}
                 {skipped && <Check className="h-3.5 w-3.5 shrink-0 text-warning" />}
@@ -668,7 +668,7 @@ const QuestionAnswerControls: React.FC<{
       {(question.recommendedAnswer || question.recommendedOptionIds?.length) && !hasAnyAnswer && (
         <div className="mb-2.5 flex items-start gap-2.5 rounded-md bg-muted/30 px-3 py-2">
           <div className="min-w-0 flex-1">
-            <RecommendedBadge label="Recommended" />
+            <RecommendedBadge label="推荐" />
             <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
               {question.recommendedAnswer || question.recommendedOptionIds!.map((id) =>
                 question.options?.find((o) => o.id === id)?.label ?? id
@@ -681,7 +681,7 @@ const QuestionAnswerControls: React.FC<{
               onClick={applyRecommendation}
               className="mt-0.5 shrink-0 rounded-md bg-primary/15 px-2.5 py-1 text-[12px] font-medium text-primary hover:bg-primary/25"
             >
-              Use
+              采用
             </button>
           )}
         </div>
@@ -747,7 +747,7 @@ const QuestionAnswerControls: React.FC<{
               <input
                 value={answer.customAnswer}
                 onChange={(event) => updateCustomOption(event.target.value)}
-                placeholder="Other…"
+                placeholder="其他…"
                 className="goal-answer-focus goal-custom-input min-w-0 flex-1 bg-transparent text-[13px] leading-snug text-foreground outline-none placeholder:text-muted-foreground/50"
               />
               <kbd className="goal-shortcut-pill ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border/40 bg-muted/40 font-mono text-[10px] text-muted-foreground">/</kbd>
@@ -761,7 +761,7 @@ const QuestionAnswerControls: React.FC<{
           ref={textareaRef}
           value={textValue}
           onChange={(event) => updateTextValue(event.target.value)}
-          placeholder={question.recommendedAnswer || 'Type your answer'}
+          placeholder={question.recommendedAnswer || '输入你的回答'}
           className="goal-answer-focus"
         />
       )}
@@ -770,7 +770,7 @@ const QuestionAnswerControls: React.FC<{
         {noteOpen ? (
           <div className="rounded-md bg-muted/25 p-2">
             <div className="mb-1 flex items-center justify-between gap-2">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Note</span>
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">备注</span>
               <button
                 type="button"
                 onClick={() => {
@@ -778,8 +778,8 @@ const QuestionAnswerControls: React.FC<{
                   onNoteOpenChange(false);
                 }}
                 className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-                title="Remove note"
-                aria-label="Remove note"
+                title="删除备注"
+                aria-label="删除备注"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -787,12 +787,12 @@ const QuestionAnswerControls: React.FC<{
             <Textarea
               value={answer.note || ''}
               onChange={(event) => onChange({ note: event.target.value })}
-              placeholder="Add context, constraints, or questions for the agent"
+              placeholder="为 agent 添加背景、约束或问题"
               className="goal-note-textarea min-h-16 border-0 bg-transparent focus:ring-0"
             />
             <div className="mt-2 flex justify-end">
               <Button type="button" variant="ghost" size="sm" onClick={onSkip}>
-                {answer.note?.trim() ? 'Skip with note' : 'Skip'}
+                {answer.note?.trim() ? '带备注跳过' : '跳过'}
                 <ChevronDown className="h-3 w-3 -rotate-90" />
               </Button>
             </div>
@@ -801,10 +801,10 @@ const QuestionAnswerControls: React.FC<{
           <div className="flex items-center gap-1">
             <Button type="button" variant="ghost" size="sm" onClick={() => onNoteOpenChange(true)}>
               <Plus className="h-3.5 w-3.5" />
-              Add note
+              添加备注
             </Button>
             <Button type="button" variant="ghost" size="sm" onClick={onSkip}>
-              Skip
+              跳过
               <ChevronDown className="h-3 w-3 -rotate-90" />
             </Button>
           </div>
@@ -815,11 +815,11 @@ const QuestionAnswerControls: React.FC<{
 };
 
 const FACTS_HELP_ITEMS = [
-  { icon: Check, label: 'Accept', color: 'text-success', description: 'Mark a fact as accepted. Accepted facts become part of the final fact sheet.' },
-  { icon: Edit3, label: 'Edit', color: 'text-primary', description: 'Edit the fact text before accepting. Click again to finish editing.' },
-  { icon: MessageSquare, label: 'Comment', color: 'text-primary', description: 'Add a note or context to a fact. The agent sees your comments alongside the fact.' },
-  { icon: TestTube2, label: 'Auto-verify', color: 'text-primary', description: 'Flag this fact for automated verification. The agent will write concrete test checks for flagged facts in the plan.' },
-  { icon: Trash2, label: 'Remove', color: 'text-destructive', description: 'Remove a fact entirely. It won\'t appear in the final fact sheet or plan.' },
+  { icon: Check, label: '接受', color: 'text-success', description: '将一条事实标记为已接受。已接受的事实会成为最终事实清单的一部分。' },
+  { icon: Edit3, label: '编辑', color: 'text-primary', description: '在接受前编辑事实文本。再次点击即可完成编辑。' },
+  { icon: MessageSquare, label: '评论', color: 'text-primary', description: '为一条事实添加备注或背景。agent 会同时看到该事实和你的评论。' },
+  { icon: TestTube2, label: '自动验证', color: 'text-primary', description: '将这条事实标记为需要自动验证。agent 会在计划中为标记的事实编写具体的测试检查。' },
+  { icon: Trash2, label: '移除', color: 'text-destructive', description: '彻底移除一条事实。它不会出现在最终事实清单或计划中。' },
 ];
 
 const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
@@ -878,7 +878,7 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
     const factsToSubmit = withOpenCommentDraft(nextFacts);
     const blankFact = factsToSubmit.find((fact) => !fact.removed && !fact.text.trim());
     if (blankFact) {
-      setError('Fact text cannot be empty. Edit the blank fact or remove it before submitting.');
+      setError('事实文本不能为空。请编辑或移除空白事实后再提交。');
       setEditingId(blankFact.id);
       return;
     }
@@ -894,7 +894,7 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
       setSubmitState('submitted');
       onSubmitted?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Submission failed');
+      setError(err instanceof Error ? err.message : '提交失败');
       setSubmitState('error');
     }
   }, [bundle.goalSlug, bundle.title, facts, onSubmitted, submitState, withOpenCommentDraft]);
@@ -924,7 +924,7 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
       canSubmit: true,
       isSubmitting: submitState === 'submitting',
       submitted: submitState === 'submitted',
-      submitLabel: 'Submit Facts',
+      submitLabel: '提交事实',
     });
   }, [onActionStateChange, submitState]);
 
@@ -934,18 +934,18 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
         <header className="mb-3 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              Fact review
+              事实审阅
             </div>
             <div className="mt-0.5 flex items-baseline gap-2">
               <h1 className="truncate text-lg font-medium leading-tight text-foreground">
-                {bundle.title || 'Review the facts'}
+                {bundle.title || '审阅事实'}
               </h1>
               <button
                 type="button"
                 onClick={() => setShowHelp(true)}
                 className="shrink-0 text-[11px] text-muted-foreground hover:text-foreground"
               >
-                help
+                帮助
               </button>
             </div>
           </div>
@@ -955,26 +955,26 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                 onClick={copyFactsJson}
                 copied={copied === 'facts-json'}
                 format="JSON"
-                title="Copy all facts as raw JSON"
+                title="以原始 JSON 复制所有事实"
               />
               <GoalCopyButton
                 onClick={copyFactsMarkdown}
                 copied={copied === 'facts-markdown'}
                 format="Markdown"
-                title="Copy all facts as markdown"
+                title="以 Markdown 复制所有事实"
               />
               <GoalHeaderButton
                 onClick={acceptAllFacts}
                 disabled={liveFacts.length === 0 || submitState === 'submitting'}
-                title="Accept every visible fact"
+                title="接受所有可见事实"
                 className="gap-1.5 text-success hover:bg-success/10 hover:text-success"
               >
                 <Check className="h-3.5 w-3.5" />
-                Accept all
+                全部接受
               </GoalHeaderButton>
             </div>
             <div className="font-mono text-[11px] text-muted-foreground">
-              {acceptedCount}/{liveFacts.length} accepted
+              已接受 {acceptedCount}/{liveFacts.length}
             </div>
           </div>
         </header>
@@ -982,10 +982,10 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
         <ConfirmDialog
           isOpen={showHelp}
           onClose={() => setShowHelp(false)}
-          title="Fact actions"
+          title="事实操作"
           variant="info"
           wide
-          confirmText="Got it"
+          confirmText="知道了"
           message={
             <div className="space-y-3">
               {FACTS_HELP_ITEMS.map((item) => (
@@ -1020,7 +1020,7 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
               <button
                 type="button"
                 onClick={() => updateFact(fact.id, { accepted: !fact.accepted })}
-                title={fact.accepted ? 'Unaccept' : 'Accept'}
+                title={fact.accepted ? '取消接受' : '接受'}
                 className="shrink-0"
               >
                 <StatusDot complete={fact.accepted} />
@@ -1047,7 +1047,7 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                 <button
                   type="button"
                   onClick={() => updateFact(fact.id, { accepted: !fact.accepted })}
-                  title={fact.accepted ? 'Unaccept' : 'Accept'}
+                  title={fact.accepted ? '取消接受' : '接受'}
                   className={cx(
                     'inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors',
                     fact.accepted ? 'bg-success/15 text-success' : 'text-muted-foreground hover:bg-success/10 hover:text-success'
@@ -1058,7 +1058,7 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                 <button
                   type="button"
                   onClick={() => setEditingId(editing ? null : fact.id)}
-                  title={editing ? 'Done editing' : 'Edit'}
+                  title={editing ? '完成编辑' : '编辑'}
                   className={cx(
                     'inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors',
                     editing ? 'bg-primary/10 text-primary' : 'hover:bg-muted hover:text-foreground'
@@ -1073,7 +1073,7 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                     else commentButtons.current.delete(fact.id);
                   }}
                   onClick={() => setCommentingId(fact.id)}
-                  title="Comment"
+                  title="评论"
                   className={cx(
                     'inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors',
                     fact.comment ? 'bg-primary/10 text-primary' : 'hover:bg-muted hover:text-foreground'
@@ -1084,7 +1084,7 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                 <button
                   type="button"
                   onClick={() => updateFact(fact.id, { automatedVerification: !fact.automatedVerification })}
-                  title={fact.automatedVerification ? 'Disable auto-verify' : 'Enable auto-verify'}
+                  title={fact.automatedVerification ? '关闭自动验证' : '启用自动验证'}
                   className={cx(
                     'inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors',
                     fact.automatedVerification ? 'bg-primary/10 text-primary' : 'hover:bg-muted hover:text-foreground'
@@ -1095,7 +1095,7 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                 <button
                   type="button"
                   onClick={() => updateFact(fact.id, { removed: true, accepted: false })}
-                  title="Remove"
+                  title="移除"
                   className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -1107,7 +1107,7 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
 
         {liveFacts.length === 0 && (
           <div className="goal-row px-4 py-8 text-center text-sm text-muted-foreground">
-            All facts have been removed.
+            所有事实已移除。
           </div>
         )}
       </div>
@@ -1172,8 +1172,8 @@ const GoalCopyButton: React.FC<{
       copied && 'bg-success/10 text-success hover:bg-success/10 hover:text-success',
       className
     )}
-    title={copied ? `Copied ${format}` : title}
-    aria-label={`Copy ${format}`}
+    title={copied ? `已复制 ${format}` : title}
+    aria-label={`复制 ${format}`}
     {...props}
   >
     {copied ? (
@@ -1181,30 +1181,30 @@ const GoalCopyButton: React.FC<{
     ) : (
       <Copy className="h-3.5 w-3.5" aria-hidden="true" />
     )}
-    <span>Copy {format}</span>
+    <span>复制 {format}</span>
   </GoalHeaderButton>
 );
 
 const GoalShortcutPill: React.FC = () => (
   <div
     role="status"
-    aria-label="Keyboard shortcuts"
+    aria-label="键盘快捷键"
     className="goal-shortcut-pill pointer-events-none fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-lg border border-border/50 bg-popover/85 px-3 py-1.5 text-[10px] text-muted-foreground shadow-xl backdrop-blur-md"
   >
     <kbd>tab</kbd>
-    <span>next</span>
+    <span>下一个</span>
     <span className="text-muted-foreground/40">·</span>
     <span className="flex"><kbd>ctrl</kbd><kbd>u</kbd></span>
-    <span>use rec</span>
+    <span>采用推荐</span>
     <span className="text-muted-foreground/40">·</span>
     <span className="flex"><kbd>ctrl</kbd><kbd>k</kbd></span>
-    <span>skip</span>
+    <span>跳过</span>
     <span className="text-muted-foreground/40">·</span>
     <span className="flex"><kbd>ctrl</kbd><kbd>j</kbd></span>
-    <span>note</span>
+    <span>备注</span>
     <span className="text-muted-foreground/40">·</span>
     <span className="flex"><kbd>cmd</kbd><kbd>enter</kbd></span>
-    <span>submit</span>
+    <span>提交</span>
   </div>
 );
 

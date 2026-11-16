@@ -313,10 +313,10 @@ describe.if(hasDom)("annotate bundle Back keeps the reader's place", () => {
   test("the switcher still opens a bundle file at its top", async () => {
     await mount();
     await scrollToMiddle();
-    await act(async () => { document.querySelector<HTMLButtonElement>('[data-bundle-switcher] button[aria-label="Next file"]')!.click(); });
+    await act(async () => { document.querySelector<HTMLButtonElement>('[data-bundle-switcher] button[aria-label="下一个文件"]')!.click(); });
     await waitFor(() => headingText().includes("Second document"), "review-beta.md");
     expect(main().scrollTop).toBe(0);
-    await act(async () => { document.querySelector<HTMLButtonElement>('[data-bundle-switcher] button[aria-label="Previous file"]')!.click(); });
+    await act(async () => { document.querySelector<HTMLButtonElement>('[data-bundle-switcher] button[aria-label="上一个文件"]')!.click(); });
     await waitFor(showsAlpha, "review-alpha.md again");
     await settle(1_300);
     expect(main().scrollTop).toBe(0);

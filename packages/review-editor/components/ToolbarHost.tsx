@@ -159,8 +159,8 @@ export const ToolbarHost = forwardRef<ToolbarHostHandle, ToolbarHostProps>(funct
 
   const expandedCommentTitle = useMemo(() => {
     const toolbarState = toolbar.toolbarState;
-    if (!toolbarState) return 'Comment';
-    if (toolbar.editingAnnotationId) return 'Edit annotation';
+    if (!toolbarState) return '评论';
+    if (toolbar.editingAnnotationId) return '编辑标注';
     if (toolbarState.tokenSelection) return formatTokenContext(toolbarState.tokenSelection);
     return formatLineRange(toolbarState.range.start, toolbarState.range.end);
   }, [toolbar.editingAnnotationId, toolbar.toolbarState]);

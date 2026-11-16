@@ -105,7 +105,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
       <div className="flex items-center p-0.5 gap-0.5">
         <button
           onClick={handleCopyMarkdown}
-          title={copiedMd ? 'Copied!' : 'Copy as markdown'}
+          title={copiedMd ? '已复制！' : '复制为 Markdown'}
           className={`p-1 rounded transition-colors ${
             copiedMd ? 'text-success' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
           }`}
@@ -114,7 +114,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
         </button>
         <button
           onClick={handleCopyCsv}
-          title={copiedCsv ? 'Copied as CSV!' : 'Copy as CSV'}
+          title={copiedCsv ? '已复制为 CSV！' : '复制为 CSV'}
           className={`px-1.5 py-1 rounded text-[10px] font-bold tracking-tight uppercase leading-none transition-colors ${
             copiedCsv ? 'text-success' : 'text-primary hover:bg-primary/10'
           }`}
@@ -124,7 +124,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
         {onExpand && (
           <button
             onClick={onExpand}
-            title="Expand table"
+            title="展开表格"
             className="p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <ExpandIcon />

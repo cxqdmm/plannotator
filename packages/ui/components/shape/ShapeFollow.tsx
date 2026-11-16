@@ -39,7 +39,7 @@ import {
   type FollowPhase,
 } from './followState';
 
-const NOTE = 'An example, read from the code. Nothing was run.';
+const NOTE = '一个示例，依据代码解读。未运行任何内容。';
 
 /** The width the dock needs with "Follow an example" in words. */
 const DOCK_ROOM = 920;
@@ -376,7 +376,7 @@ function InputRow({ v, tall, wide, long, home, room, onCode, canOpen, onStep }: 
  * file name longer than half the pane is ever cut.
  */
 function Inputs({ step, onCode, canOpen, onStep, pane }: PartProps) {
-  if (!step.inputs.length) return <p className="shp-ex-none">Nothing</p>;
+  if (!step.inputs.length) return <p className="shp-ex-none">无</p>;
   const names = step.inputs.map((v) => v.name.length).filter((n) => n <= pane / 2);
   const nw = names.length ? Math.max(...names) : 0;
   const room = Math.floor(pane / 2);
@@ -410,8 +410,8 @@ function CheckRow({ c, sheet }: { c: ShapeExampleCheck; sheet?: number }) {
       <Mark result={c.result} />
       <Code className="cond" code={sheet === undefined ? followCheckCode(c) : c.code} />
       <span className="got">
-        {c.decides && c.result === 'fail' && c.short ? <b className="short">{c.short}</b> : c.decides ? <span className="dec">Decided it</span> : null}
-        {c.result === 'not-reached' ? <span className="say">not reached</span> : c.saw && FOLLOW_LITERAL.test(c.saw) ? <Val v={c.saw} /> : <span className="say">{c.saw}</span>}
+        {c.decides && c.result === 'fail' && c.short ? <b className="short">{c.short}</b> : c.decides ? <span className="dec">判定为</span> : null}
+        {c.result === 'not-reached' ? <span className="say">未执行到</span> : c.saw && FOLLOW_LITERAL.test(c.saw) ? <Val v={c.saw} /> : <span className="say">{c.saw}</span>}
         {sheet !== undefined && c.constant && <code className="cm">// {c.constant}</code>}
       </span>
     </li>
@@ -435,7 +435,7 @@ const Signature = ({ step, chars }: Pick<PartProps, 'step' | 'chars'>) => <Code 
 function Output({ step }: { step: ShapeExampleStep }) {
   return (
     <div className="shp-ex-ret shp-ex-row">
-      <span className="shp-ex-cap">Comes out</span>
+      <span className="shp-ex-cap">输出</span>
       <code className="nm" title={step.output.name}><Dotted name={step.output.name} /></code>
       {step.output.note && <span className="pl">{step.output.note}</span>}
       <span className="shp-ex-rr">
@@ -460,25 +460,25 @@ function StepPanes({ k, cur, withInputs, sheet, onMore, ...p }: PartProps & { k:
   return (
     <div className={`shp-ex-io panes${cur ? ' cur' : ''}`} data-io={k} aria-hidden={cur ? undefined : true} inert={!cur}>
       {withInputs && (
-        <section className="shp-ex-col in" aria-label="Goes in">
+        <section className="shp-ex-col in" aria-label="输入">
           {!sheet ? (
             <p className="shp-ex-cap">
-              Goes in{many !== undefined && <span className="shp-ex-many"> {many}</span>}
+              输入{many !== undefined && <span className="shp-ex-many"> {many}</span>}
             </p>
           ) : step.inputs.length ? (
-            <Reveal label="Goes in" n={many} open={sheet.in} onClick={() => onMore?.('in')} />
+            <Reveal label="输入" n={many} open={sheet.in} onClick={() => onMore?.('in')} />
           ) : (
             <div className="shp-ex-caps">
-              <p className="shp-ex-cap">Goes in</p>
+              <p className="shp-ex-cap">输入</p>
               <Inputs {...p} />
             </div>
           )}
           {(!sheet || (sheet.in && step.inputs.length > 0)) && <Inputs {...p} />}
         </section>
       )}
-      <section className="shp-ex-col fn" aria-label="What happens">
+      <section className="shp-ex-col fn" aria-label="发生了什么">
         <div className="shp-ex-caps">
-          {sheet && step.checks.length ? <Reveal label="What happens" open={sheet.fn} onClick={() => onMore?.('fn')} /> : <p className="shp-ex-cap">What happens</p>}
+          {sheet && step.checks.length ? <Reveal label="发生了什么" open={sheet.fn} onClick={() => onMore?.('fn')} /> : <p className="shp-ex-cap">发生了什么</p>}
           <FnLink {...p} chars={sheet ? p.chars + 2 : p.chars} />
         </div>
         {allFn && <Signature step={step} chars={p.chars} />}
@@ -557,7 +557,7 @@ function openWidth(card: HTMLElement): number {
 
 const nameOf = (el: Element) => el.getAttribute('aria-label') ?? el.textContent?.trim() ?? '';
 /** Where the keys go when a press takes its own button away, best first. */
-const FOCUS_NEXT = ['Next step', 'Previous step', 'Step through', 'Stop following'];
+const FOCUS_NEXT = ['下一步', '上一步', '逐步查看', '停止跟随'];
 
 /**
  * A press that hid, disabled or unmounted its own button leaves the keys where
@@ -1077,10 +1077,10 @@ export function useShapeFollow(options: ShapeFollowOptions): { button: React.Rea
 
   const stepNav = (
     <div className={`shp-ex-nav${step ? ' cur' : ''}`} aria-hidden={step ? undefined : true}>
-      <button type="button" className="shp-ex-icon" onClick={() => dispatch({ type: 'back' })} disabled={!step || (phase.open && phase.step === 0)} aria-label="Previous step" title="Previous step">
+      <button type="button" className="shp-ex-icon" onClick={() => dispatch({ type: 'back' })} disabled={!step || (phase.open && phase.step === 0)} aria-label="上一步" title="上一步">
         <Huge name="left" />
       </button>
-      <button type="button" className="shp-ex-icon" onClick={() => dispatch({ type: 'next' })} disabled={!step || !ex || (phase.open && phase.step === ex.steps.length - 1)} aria-label="Next step" title="Next step">
+      <button type="button" className="shp-ex-icon" onClick={() => dispatch({ type: 'next' })} disabled={!step || !ex || (phase.open && phase.step === ex.steps.length - 1)} aria-label="下一步" title="下一步">
         <Huge name="right" />
       </button>
     </div>
@@ -1088,7 +1088,7 @@ export function useShapeFollow(options: ShapeFollowOptions): { button: React.Rea
   const startNav = (
     <div className={`shp-ex-nav${step ? '' : ' cur'}`} aria-hidden={step ? true : undefined}>
       <button type="button" className="shp-ex-step" onClick={() => dispatch({ type: 'step', step: 0 })} tabIndex={step ? -1 : undefined}>
-        Step through
+        逐步查看
         <Huge name="right" size={14} />
       </button>
     </div>
@@ -1104,27 +1104,27 @@ export function useShapeFollow(options: ShapeFollowOptions): { button: React.Rea
       type="button"
       className={`shp-ex-more${expanded ? ' icon' : ''}`}
       aria-expanded={expanded}
-      aria-label={expanded ? 'Hide inputs and outputs' : 'Inputs and outputs'}
-      title={expanded ? 'Hide inputs and outputs' : undefined}
+      aria-label={expanded ? '隐藏输入与输出' : '输入与输出'}
+      title={expanded ? '隐藏输入与输出' : undefined}
       onClick={() => setExpanded(!expanded)}
       data-flip="more"
     >
-      {!expanded && 'Inputs and outputs'}
+      {!expanded && '输入与输出'}
       <Huge name={expanded ? 'up' : 'down'} size={14} />
     </button>
   );
   const allSteps = step && !expanded && (
     <button type="button" className="shp-ex-quiet" onClick={() => dispatch({ type: 'step', step: null })} data-flip="all">
-      All steps
+      全部步骤
     </button>
   );
   const close = (
-    <button type="button" className="shp-ex-icon" onClick={() => dispatch({ type: 'close' })} aria-label="Stop following" title="Stop following" data-flip="close">
+    <button type="button" className="shp-ex-icon" onClick={() => dispatch({ type: 'close' })} aria-label="停止跟随" title="停止跟随" data-flip="close">
       <Huge name="close" />
     </button>
   );
   const tabs = examples.length > 1 && (
-    <div className="shp-tgroup shp-ex-tabs" role="group" aria-label="Which example" data-flip="tabs">
+    <div className="shp-tgroup shp-ex-tabs" role="group" aria-label="选择示例" data-flip="tabs">
       {examples.map((e, i) => (
         <button key={`${e.name}-${i}`} type="button" className={`shp-tbtn${phase.open && i === phase.ex ? ' on' : ''}`} aria-pressed={phase.open && i === phase.ex} title={e.name} style={{ flexShrink: e.name.length > 16 ? 1 : 0 }} onClick={() => dispatch({ type: 'example', ex: i })}>
           <span className="tn">{e.name}</span>
@@ -1143,13 +1143,13 @@ export function useShapeFollow(options: ShapeFollowOptions): { button: React.Rea
       type="button"
       className={`shp-tbtn${phase.open ? ' on' : ''}`}
       aria-pressed={phase.open}
-      title="Follow one example through this picture"
-      aria-label="Follow an example"
+      title="通过此图跟随一个示例"
+      aria-label="跟随一个示例"
       data-follow=""
       onClick={() => dispatch({ type: 'toggle' })}
     >
       <RouteIcon />
-      {!phone && !dockTight && <span className="tl">Follow an example</span>}
+      {!phone && !dockTight && <span className="tl">跟随一个示例</span>}
     </button>
   ) : null;
 
@@ -1159,7 +1159,7 @@ export function useShapeFollow(options: ShapeFollowOptions): { button: React.Rea
     ex.steps.map((s, i) => {
       const on = phase.open && phase.step === i;
       return (
-        <button key={i} type="button" className={`shp-ex-stop${on ? ' on' : ''}`} aria-current={on ? 'step' : undefined} onClick={() => toStep(i)} title={s.text} aria-label={`Step ${i + 1}: ${s.tag}`}>
+        <button key={i} type="button" className={`shp-ex-stop${on ? ' on' : ''}`} aria-current={on ? 'step' : undefined} onClick={() => toStep(i)} title={s.text} aria-label={`第 ${i + 1} 步：${s.tag}`}>
           <StepN n={i + 1} now={on} />
           {(withRail || (on && !phone)) && <span className="st">{s.tag}</span>}
         </button>
@@ -1183,16 +1183,16 @@ export function useShapeFollow(options: ShapeFollowOptions): { button: React.Rea
 
   const card =
     how && ex ? (
-      <section ref={cardRef} className={`shp-ex-card${phone ? ' phone' : ''}${showIO ? ' expanded' : ''}${narrow ? ' narrow' : ''}`} aria-label={`Example: ${ex.title}`} data-follow-card="">
+      <section ref={cardRef} className={`shp-ex-card${phone ? ' phone' : ''}${showIO ? ' expanded' : ''}${narrow ? ' narrow' : ''}`} aria-label={`示例：${ex.title}`} data-follow-card="">
         <div className="shp-ex-skin" data-flip="skin" aria-hidden="true" />
         <div className="shp-ex-in">
           {phone && (
-            <button type="button" className="shp-ex-grab" onClick={() => step && setExpanded(!expanded)} aria-label={expanded ? 'Show less' : 'Show more'} disabled={!step} data-flip="grab">
+            <button type="button" className="shp-ex-grab" onClick={() => step && setExpanded(!expanded)} aria-label={expanded ? '收起' : '展开'} disabled={!step} data-flip="grab">
               <span />
             </button>
           )}
           {withRail && (
-            <nav className="shp-ex-rail" aria-label="Steps">
+            <nav className="shp-ex-rail" aria-label="步骤">
               {tabs}
               <div className="shp-ex-stops" data-flip="stops">{stops}</div>
               {note}
@@ -1211,14 +1211,14 @@ export function useShapeFollow(options: ShapeFollowOptions): { button: React.Rea
                   return (
                     <div key={i} className={`shp-ex-text${on ? ' cur' : ''}`} aria-hidden={on ? undefined : true}>
                       <span className="shp-ex-count">
-                        <StepN n={i + 1} now /> of {ex.steps.length}
+                        <StepN n={i + 1} now /> / {ex.steps.length}
                       </span>
                       <div>
                         <p className="shp-ex-does" title={showIO ? s.text : undefined}>{s.text}</p>
                         {!showIO && (
                           <p className="shp-ex-sub">
                             {canOpen(s.code.path) ? (
-                              <button type="button" className="shp-ex-fn" onClick={() => onCode(s.code)} title={`Open ${fileOf(s.code.path)} at line ${s.code.line}`} tabIndex={on ? undefined : -1}>
+                              <button type="button" className="shp-ex-fn" onClick={() => onCode(s.code)} title={`打开 ${fileOf(s.code.path)} 的第 ${s.code.line} 行`} tabIndex={on ? undefined : -1}>
                                 {followFnName(s.signature)}
                               </button>
                             ) : (

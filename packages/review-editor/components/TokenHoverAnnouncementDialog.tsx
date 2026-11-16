@@ -39,16 +39,16 @@ interface TokenHoverAnnouncementDialogProps {
 
 const TRIGGER_COPY: Record<TokenHoverTrigger, { label: string; description: string }> = {
   hover: {
-    label: 'On hover',
-    description: 'Rest the pointer on a symbol and the card appears. This is the default.',
+    label: '悬停时',
+    description: '将指针停在符号上，卡片就会显示。这是默认设置。',
   },
   modifier: {
-    label: `While holding ${modKeyWord}`,
-    description: `Cards stay out of the way until you hold ${modKeyWord}. Nothing is searched while the key is up.`,
+    label: `按住 ${modKeyWord} 时`,
+    description: `在你按住 ${modKeyWord} 之前，卡片不会出现。按键未按下时不会进行任何搜索。`,
   },
   off: {
-    label: 'Off',
-    description: 'No cards, no listeners, no searches.',
+    label: '关闭',
+    description: '不显示卡片，不监听，不搜索。',
   },
 };
 
@@ -142,12 +142,12 @@ function HoverCardTryIt({
       // Interactive, so it is labeled rather than hidden. The mock code inside
       // is decorative and stays hidden; the prompt line carries the meaning.
       role="group"
-      aria-label="Try it: a live hover card demo"
+      aria-label="试一试：实时悬停卡片演示"
       data-token-hover-example
       className="flex h-full flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4"
     >
       <p className="text-xs text-muted-foreground" data-token-hover-tryit-prompt>
-        Try it: rest your pointer on <span className="font-mono text-foreground">{EXAMPLE_SYMBOL}</span> below.
+        试一试：将指针停在下方的 <span className="font-mono text-foreground">{EXAMPLE_SYMBOL}</span> 上。
       </p>
 
       <div
@@ -305,18 +305,17 @@ export function TokenHoverAnnouncementDialog({
       >
         <header className="border-b border-border px-7 py-6">
           <span className="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.13em] text-primary">
-            New
+            新
           </span>
           <h2 id="token-hover-announcement-title" className="mt-3 text-2xl font-semibold tracking-tight">
-            Hover cards
+            悬停卡片
           </h2>
           <p
             id="token-hover-announcement-description"
             className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted-foreground"
           >
-            Rest the pointer on a symbol in a diff and Plannotator shows you where it is
-            defined, an approximate signature, its doc comment, and a sample of its
-            references. Every location on the card opens in the References panel.
+            将指针停在 Diff 中的某个符号上，Plannotator 会显示它的定义位置、近似签名、
+            文档注释，以及部分引用示例。卡片上的每个位置都会在引用面板中打开。
           </p>
         </header>
 
@@ -339,7 +338,7 @@ export function TokenHoverAnnouncementDialog({
                 id="token-hover-announcement-choice-label"
                 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
               >
-                Show cards
+                显示卡片
               </div>
               {TOKEN_HOVER_TRIGGERS.map((value, index) => {
                 const selected = trigger === value;
@@ -384,16 +383,15 @@ export function TokenHoverAnnouncementDialog({
             </div>
 
             <p className="rounded-lg border border-border bg-muted/25 p-3 text-xs leading-relaxed text-muted-foreground">
-              {modKeyWord}+click on a symbol still opens the References panel, whichever option
-              you pick. Hover cards need ripgrep and a local checkout, and nothing appears when
-              the search comes back empty.
+              无论选择哪个选项，{modKeyWord}+点击符号仍会打开引用面板。悬停卡片需要 ripgrep
+              和本地检出；搜索无结果时不会显示任何内容。
             </p>
           </section>
         </div>
 
         <footer className="flex items-center justify-between gap-4 border-t border-border px-7 py-5">
           <p className="text-xs text-muted-foreground">
-            Change this anytime in Settings, in the Editor tab.
+            你可以随时在“设置”的“编辑器”标签页中更改此设置。
           </p>
           <button
             ref={primaryActionRef}
@@ -401,7 +399,7 @@ export function TokenHoverAnnouncementDialog({
             onClick={onDismiss}
             className="min-h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
           >
-            Done
+            完成
           </button>
         </footer>
       </div>

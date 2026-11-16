@@ -53,13 +53,13 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({
   const displayText = useMemo(() => {
     if (content.length <= maxRenderSize) return content;
     const sliceFrom = content.indexOf('\n', content.length - maxRenderSize);
-    return '[earlier output truncated]\n' + content.slice(sliceFrom === -1 ? content.length - maxRenderSize : sliceFrom + 1);
+    return '[较早的输出已截断]\n' + content.slice(sliceFrom === -1 ? content.length - maxRenderSize : sliceFrom + 1);
   }, [content, maxRenderSize]);
 
   if (!content && !isLive) {
     return (
       <div className={`flex items-center justify-center py-8 ${className ?? ''}`}>
-        <p className="text-xs text-muted-foreground">No output captured.</p>
+        <p className="text-xs text-muted-foreground">未捕获任何输出。</p>
       </div>
     );
   }
@@ -73,7 +73,7 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({
         <div className="p-3">
         {!content && isLive ? (
           <span className="text-xs text-muted-foreground/50 animate-pulse">
-            Waiting for output...
+            正在等待输出…
           </span>
         ) : (
           <pre className="text-xs leading-relaxed font-mono whitespace-pre-wrap break-words text-foreground/80">

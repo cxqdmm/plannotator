@@ -61,7 +61,7 @@ const DialogContent = React.forwardRef<
             className="absolute top-3.5 right-3.5 inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
           >
             <X className="size-4" />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">关闭</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Popup>

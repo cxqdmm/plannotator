@@ -5,10 +5,10 @@ import { navLocationLabel, type JumpCrumb as JumpCrumbData } from '../utils/expl
 function viaLabel(via: JumpCrumbData['via']): string {
   if (via === 'definition') {
     const key = resolveShortcutBindings(reviewExplorerShortcuts.shortcuts.goToDefinition)[0];
-    return `Go to Definition${key ? ` (${formatShortcutBindingText(key, getShortcutPlatform())})` : ''}`;
+    return `转到定义${key ? `（${formatShortcutBindingText(key, getShortcutPlatform())}）` : ''}`;
   }
-  if (via === 'references') return 'References';
-  return 'Go to File';
+  if (via === 'references') return '引用';
+  return '转到文件';
 }
 
 /**
@@ -24,15 +24,15 @@ export const JumpCrumb: React.FC<{ crumb: JumpCrumbData; onBack?: () => void; ri
           type="button"
           onClick={onBack}
           className="p-0.5 rounded hover:bg-muted hover:text-foreground"
-          title={`Go back${back ? ` (${formatShortcutBindingText(back, getShortcutPlatform())})` : ''}`}
-          aria-label="Go back"
+          title={`返回${back ? `（${formatShortcutBindingText(back, getShortcutPlatform())}）` : ''}`}
+          aria-label="返回"
           data-jump-crumb-back
         >
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
       )}
       <span className="truncate">
-        From <span className="text-foreground font-medium">{navLocationLabel(crumb.from)}</span> · {viaLabel(crumb.via)}
+        来自 <span className="text-foreground font-medium">{navLocationLabel(crumb.from)}</span> · {viaLabel(crumb.via)}
       </span>
       {right && <span className="ml-auto flex-none">{right}</span>}
     </div>

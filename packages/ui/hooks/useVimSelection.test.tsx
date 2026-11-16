@@ -442,27 +442,27 @@ describe.if(hasDom)('useVimSelection', () => {
     act(() => { keydown(article, 'j'); });
     expect(article.dataset.targetKey).toBe('matrix:table');
     expect(article.dataset.hudKey).toBe('j');
-    expect(article.dataset.hudCommand).toBe('Next block');
+    expect(article.dataset.hudCommand).toBe('下一个块');
     act(() => { keydown(article, 'k'); });
     expect(article.dataset.targetKey).toBe('intro:block');
-    expect(article.dataset.hudCommand).toBe('Previous block');
+    expect(article.dataset.hudCommand).toBe('上一个块');
     act(() => { keydown(article, 'G'); });
     expect(article.dataset.targetKey).toBe('code:code');
-    expect(article.dataset.hudCommand).toBe('End of document');
+    expect(article.dataset.hudCommand).toBe('文档结尾');
     act(() => {
       keydown(article, 'g');
       keydown(article, 'g');
     });
     expect(article.dataset.targetKey).toBe('intro:block');
     expect(article.dataset.hudKey).toBe('gg');
-    expect(article.dataset.hudCommand).toBe('Start of document');
+    expect(article.dataset.hudCommand).toBe('文档开头');
 
     act(() => { keydown(article, 'V'); });
     expect(article.dataset.phase).toBe('visual-block');
     expect(window.getSelection()?.toString()).toContain('Alpha');
     act(() => { keydown(article, 'j'); });
     expect(window.getSelection()?.toString()).toContain('B2');
-    expect(article.dataset.hudCommand).toBe('Extend to next block');
+    expect(article.dataset.hudCommand).toBe('扩展到下一个块');
     act(() => { keydown(article, 'd'); });
     expect(actions).toHaveLength(1);
     expect(actions[0]?.mode).toBe('redline');

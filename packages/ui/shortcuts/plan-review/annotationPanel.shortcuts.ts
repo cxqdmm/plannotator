@@ -3,20 +3,20 @@ import { createShortcutScopeHook } from '../runtime';
 
 export const annotationPanelShortcuts = defineShortcutScope({
   id: 'annotation-panel',
-  title: 'Annotation Panel',
+  title: '标注面板',
   shortcuts: {
     saveEdit: {
-      description: 'Save annotation edit',
+      description: '保存标注编辑',
       bindings: ['Mod+Enter'],
-      section: 'Annotations',
-      hint: 'Available while editing an annotation in the side panel. With Settings → General → “Enter saves a comment” on, Enter saves too.',
+      section: '标注',
+      hint: '在侧边栏编辑标注时可用。开启设置 → 通用 → “Enter 保存评论”后，Enter 也可保存。',
       displayOrder: 50,
     },
     cancelEdit: {
-      description: 'Cancel annotation edit',
+      description: '取消标注编辑',
       bindings: ['Escape'],
-      section: 'Annotations',
-      hint: 'Available while editing an annotation in the side panel.',
+      section: '标注',
+      hint: '在侧边栏编辑标注时可用。',
       displayOrder: 60,
     },
   },

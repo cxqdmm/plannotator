@@ -3,20 +3,20 @@ import { createShortcutScopeHook } from '../runtime';
 
 export const reviewSuggestionModalShortcuts = defineShortcutScope({
   id: 'review-suggestion-modal',
-  title: 'Suggestion Editor',
+  title: '建议编辑器',
   shortcuts: {
     indent: {
-      description: 'Indent (insert spaces)',
+      description: '缩进（插入空格）',
       bindings: ['Tab'],
-      section: 'Suggestion Editor',
-      hint: 'Available in the expanded suggestion editor.',
+      section: '建议编辑器',
+      hint: '在展开的建议编辑器中可用。',
       displayOrder: 10,
     },
     close: {
-      description: 'Close suggestion editor',
+      description: '关闭建议编辑器',
       bindings: ['Escape'],
-      section: 'Suggestion Editor',
-      hint: 'Closes the modal; suggestion text is preserved on the underlying comment.',
+      section: '建议编辑器',
+      hint: '关闭弹窗；建议文本会保留在底层的评论上。',
       displayOrder: 20,
     },
   },

@@ -180,7 +180,7 @@ const findButton = (label: string): HTMLButtonElement | undefined =>
 /** Restore the root's comment from the session draft, then open the linked document. */
 async function restoreRootThenOpenLinked(): Promise<number> {
   await mount();
-  const restore = findButton("Restore");
+  const restore = findButton("恢复");
   if (!restore) throw new Error("Draft recovery dialog did not offer Restore");
   await act(async () => { restore.click(); });
   for (let attempt = 0; attempt < 6; attempt += 1) await settle(60);
@@ -265,7 +265,7 @@ describe.if(hasDom)("per-document draft copies", () => {
   test("Restore reads every restored copy under the page's id", async () => {
     offeredDocuments = [{ path: LINKED_PATH, annotations: [SAVED_COMMENT], globalAttachments: [] }];
     await mount();
-    const restore = findButton("Restore");
+    const restore = findButton("恢复");
     if (!restore) throw new Error("Draft recovery dialog did not offer Restore");
     await act(async () => { restore.click(); });
     for (let attempt = 0; attempt < 6; attempt += 1) await settle(60);
@@ -288,7 +288,7 @@ describe.if(hasDom)("per-document draft copies", () => {
     await act(async () => { link.click(); });
     for (let attempt = 0; attempt < 6; attempt += 1) await settle(60);
     // Restoring while the linked document is open puts the comment on it.
-    const restore = findButton("Restore");
+    const restore = findButton("恢复");
     if (!restore) throw new Error("Draft recovery dialog did not offer Restore");
     await act(async () => { restore.click(); });
     for (let attempt = 0; attempt < 14; attempt += 1) await settle(60);

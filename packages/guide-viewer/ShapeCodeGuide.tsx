@@ -59,14 +59,14 @@ export function ShapeCodeGuide({ code, renderDiff, openLine, onOpenFile, headerA
   const renderFileActions = useCallback(
     (file: { path: string }) => {
       const action = fileAction?.(file.path);
-      if (before) return <>{action}<span className="shp-proposed" title="A proposed change. Nothing is applied yet.">Proposed · not applied</span></>;
+      if (before) return <>{action}<span className="shp-proposed" title="提议的更改，尚未应用。">提议 · 未应用</span></>;
       const line = openLine?.(file.path);
       if (!line || !onOpenFile) return action ?? null;
       return (
         <>
           {action}
-          <button type="button" className="shp-g-open" onClick={() => onOpenFile(file.path, line)} title={`Open ${file.path} at line ${line}`}>
-            Open at line {line}
+          <button type="button" className="shp-g-open" onClick={() => onOpenFile(file.path, line)} title={`在 ${file.path} 第 ${line} 行打开`}>
+            在第 {line} 行打开
           </button>
         </>
       );
@@ -97,12 +97,12 @@ export function ShapeCodeGuide({ code, renderDiff, openLine, onOpenFile, headerA
       const planned = code.planned?.[index] ?? [];
       return (
         <div className="shp-g-planned">
-          <p className="shp-g-planned-h">Not built yet · no diff until the change exists</p>
+          <p className="shp-g-planned-h">尚未构建 · 更改出现前没有 Diff</p>
           {planned.length > 0 && (
             <ul>
               {planned.map((f) => (
                 <li key={f.path}>
-                  <span className={`shp-g-kind ${f.kind}`}>{f.kind === 'new' ? 'new' : 'changes'}</span>
+                  <span className={`shp-g-kind ${f.kind}`}>{f.kind === 'new' ? '新增' : '修改'}</span>
                   <code>{f.path}</code>
                   {f.kind !== 'new' && fileAction?.(f.path)}
                 </li>
@@ -124,7 +124,7 @@ export function ShapeCodeGuide({ code, renderDiff, openLine, onOpenFile, headerA
   const sourceLine = code.source
     ? <>{renderInlineMarkdown(code.source, { renderLink })}</>
     : before
-      ? <>Before implementation · nothing applied{proposed ? ` · ${proposed} proposed diff${proposed === 1 ? '' : 's'}` : ''}</>
+      ? <>实现前 · 尚未应用任何内容{proposed ? ` · ${proposed} 个提议的 Diff` : ''}</>
       : undefined;
 
   return (

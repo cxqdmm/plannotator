@@ -260,8 +260,8 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
   }, []);
 
   const clipped = !expanded && height !== undefined && height > EMBED_CLIP_PX;
-  const title = host.author ? `HTML from ${host.author}` : 'HTML page';
-  const caption = host.author ? `From ${host.author}. It runs in a sandbox and can load from the web.` : 'It runs in a sandbox and can load from the web.';
+  const title = host.author ? `来自 ${host.author} 的 HTML` : 'HTML 页面';
+  const caption = host.author ? `来自 ${host.author}。它在沙箱中运行，并可加载网络内容。` : '它在沙箱中运行，并可加载网络内容。';
   const live = !showCode && url !== null;
 
   const body = useMemo(() => {
@@ -275,7 +275,7 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
           style={{ minHeight: height ? Math.min(height, EMBED_CLIP_PX) : EMBED_FIRST_HEIGHT }}
           onClick={() => setForced(true)}
         >
-          Show page
+          显示页面
         </button>
       );
     }
@@ -321,7 +321,7 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
                 className="rounded-full border border-border bg-background px-3.5 py-1 text-xs font-medium text-foreground shadow-sm hover:bg-muted"
                 onClick={() => setExpanded(true)}
               >
-                Show more
+                显示更多
               </button>
             </div>
           )}
@@ -330,12 +330,12 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
       <figcaption data-html-embed-caption="" className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
         <Code aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
         <HostTitle title={caption}>
-          <span className="truncate">HTML · sandboxed</span>
+          <span className="truncate">HTML · 沙箱中运行</span>
         </HostTitle>
         <span className="flex-1" />
         {expanded && !showCode && (
           <button type="button" className="rounded px-1.5 py-0.5 hover:bg-muted hover:text-foreground" onClick={() => setExpanded(false)}>
-            Show less
+            收起
           </button>
         )}
         <button
@@ -345,7 +345,7 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
           className={`rounded px-1.5 py-0.5 hover:bg-muted hover:text-foreground ${showCode ? 'bg-muted text-foreground' : ''}`}
           onClick={() => setShowCode((value) => !value)}
         >
-          Code
+          代码
         </button>
         <button
           type="button"
@@ -354,7 +354,7 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
           className="rounded px-1.5 py-0.5 hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
           onClick={() => setFull(true)}
         >
-          Full screen
+          全屏
         </button>
       </figcaption>
       {full && url !== null && (

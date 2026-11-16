@@ -189,7 +189,7 @@ describe.if(hasDom)("markdown unanchored chip", () => {
     await mount();
     expect(chipCount()).toBe(0);
 
-    const restore = findButton("Restore");
+    const restore = findButton("恢复");
     if (!restore) throw new Error("Draft recovery dialog did not offer Restore");
     await act(async () => { restore.click(); });
     await settleRepaint();

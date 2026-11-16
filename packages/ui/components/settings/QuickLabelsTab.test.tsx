@@ -127,16 +127,16 @@ async function labelForAltDigit(digit: number): Promise<QuickLabel | undefined> 
 describe.if(hasDom)('Settings → Labels: reorder and editable emoji (#1736)', () => {
   test('moving a label carries emoji, text, colour and tip, and Alt+N follows the new order', async () => {
     const verify = labelsModule!.DEFAULT_QUICK_LABELS[2]!;
-    expect(verify.text).toBe('Verify this');
+    expect(verify.text).toBe('核实此处');
 
     await openLabelsTab();
-    const before = rowByText('Verify this');
+    const before = rowByText('核实此处');
     expect(before.querySelector('[data-quick-label-shortcut]')!.textContent).toMatch(/3$/);
     await click(before.querySelector('[data-quick-label-move="up"]')!);
-    await click(rowByText('Verify this').querySelector('[data-quick-label-move="up"]')!);
+    await click(rowByText('核实此处').querySelector('[data-quick-label-move="up"]')!);
 
-    expect(rowTexts().slice(0, 3)).toEqual(['Verify this', 'Clarify this', 'Missing overview']);
-    const moved = rowByText('Verify this');
+    expect(rowTexts().slice(0, 3)).toEqual(['核实此处', '澄清此处', '缺少概述']);
+    const moved = rowByText('核实此处');
     expect(moved.querySelector('[data-quick-label-shortcut]')!.textContent).toMatch(/1$/);
     expect(moved.querySelector<HTMLInputElement>('[data-quick-label-emoji]')!.value).toBe(verify.emoji);
     // At the top the up button is disabled; focus stays on this row's controls.
@@ -145,13 +145,13 @@ describe.if(hasDom)('Settings → Labels: reorder and editable emoji (#1736)', (
     await unmount();
 
     expect(await labelForAltDigit(1)).toEqual(verify);
-    expect((await labelForAltDigit(2))?.text).toBe('Clarify this');
-    expect((await labelForAltDigit(3))?.text).toBe('Missing overview');
+    expect((await labelForAltDigit(2))?.text).toBe('澄清此处');
+    expect((await labelForAltDigit(3))?.text).toBe('缺少概述');
   });
 
   test('an edited emoji is saved and a new annotation uses it; an invalid entry is not saved', async () => {
     await openLabelsTab();
-    const emojiInput = rowByText('Clarify this').querySelector<HTMLInputElement>('[data-quick-label-emoji]')!;
+    const emojiInput = rowByText('澄清此处').querySelector<HTMLInputElement>('[data-quick-label-emoji]')!;
 
     await typeInto(emojiInput, 'ab');
     expect(emojiInput.getAttribute('aria-invalid')).toBe('true');
@@ -204,27 +204,27 @@ describe.if(hasDom)('Settings → Labels: reorder and editable emoji (#1736)', (
     await act(async () => pressAltDigit(1));
 
     expect(added).toHaveLength(1);
-    expect(added[0]!.text).toBe('🤔 Clarify this');
+    expect(added[0]!.text).toBe('🤔 澄清此处');
     expect(added[0]!.isQuickLabel).toBe(true);
   });
 
   test('after editing text and moving, typing and the tip editor stay on the moved row', async () => {
     await openLabelsTab();
-    const verifyRow = rowByText('Verify this');
+    const verifyRow = rowByText('核实此处');
     const textInput = verifyRow.querySelector<HTMLInputElement>('[data-quick-label-text]')!;
     await typeInto(textInput, 'Verify against the code');
     await click(verifyRow.querySelector('[data-quick-label-tip-toggle]')!);
     expect(document.querySelectorAll('[data-quick-label-tip]')).toHaveLength(1);
 
     await click(rowByText('Verify against the code').querySelector('[data-quick-label-move="up"]')!);
-    expect(rowTexts().slice(0, 3)).toEqual(['Clarify this', 'Verify against the code', 'Missing overview']);
+    expect(rowTexts().slice(0, 3)).toEqual(['澄清此处', 'Verify against the code', '缺少概述']);
 
     // The tip editor moved with its row and still holds that label's tip.
     const movedRow = rowByText('Verify against the code');
     const tipInput = movedRow.querySelector<HTMLInputElement>('[data-quick-label-tip]');
     expect(tipInput).not.toBeNull();
     expect(tipInput!.value).toBe(labelsModule!.DEFAULT_QUICK_LABELS[2]!.tip!);
-    expect(rowByText('Missing overview').querySelector('[data-quick-label-tip]')).toBeNull();
+    expect(rowByText('缺少概述').querySelector('[data-quick-label-tip]')).toBeNull();
 
     // The text field the person was typing into is the same element, and
     // further typing edits the moved label, not whoever took its old slot.
@@ -239,7 +239,7 @@ describe.if(hasDom)('Settings → Labels: reorder and editable emoji (#1736)', (
     expect(saved[1]!.text).toBe('Verify against the code first');
     expect(saved[1]!.tip).toBe('Read the code before trusting this.');
     expect(saved[1]!.emoji).toBe('🔍');
-    expect(saved[2]!.text).toBe('Missing overview');
+    expect(saved[2]!.text).toBe('缺少概述');
     expect(saved[2]!.tip).toBe(labelsModule!.DEFAULT_QUICK_LABELS[1]!.tip!);
   });
 

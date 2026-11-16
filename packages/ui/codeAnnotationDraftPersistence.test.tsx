@@ -397,7 +397,7 @@ describe('code-review annotation draft persistence', () => {
     // empty-state autosave must NOT fire a delete (the guard keys on having had
     // annotations this session, which we haven't).
     const s = await mountSession(options());
-    expect(s.result.current!.draftBanner).toEqual({ count: 1, viewedCount: 0, timeAgo: 'just now' });
+    expect(s.result.current!.draftBanner).toEqual({ count: 1, viewedCount: 0, timeAgo: '刚刚' });
 
     // Re-render still-empty (new Set identity) to actually run the autosave
     // effect through the guard path, then wait past the debounce.

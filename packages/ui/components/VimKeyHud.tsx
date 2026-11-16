@@ -173,7 +173,7 @@ function VimKeyMapGroup({
               letterSpacing: '0.11em',
             }}
           >
-            NOW
+            当前
           </span>
         )}
       </div>
@@ -312,15 +312,15 @@ export function VimKeyHud({
     .filter((entry) => entry.sequence !== command?.sequence)
     .slice(-3);
   const keyLabel = command?.key ?? '·';
-  const description = command?.description ?? 'Move by document meaning';
-  const inputLabel = inputMethod === 'pinpoint' ? 'PINPOINT' : 'SELECT';
+  const description = command?.description ?? '按文档含义移动';
+  const inputLabel = inputMethod === 'pinpoint' ? '精准定位' : '选择';
 
   return (
     <div
       data-vim-key-hud
       data-expanded={expanded ? 'true' : 'false'}
       role="region"
-      aria-label="Vim keyboard HUD"
+      aria-label="Vim 键盘 HUD"
       onBlur={(event) => {
         if (
           event.relatedTarget instanceof Node
@@ -455,7 +455,7 @@ export function VimKeyHud({
             aria-live="polite"
             className="sr-only"
           >
-            {phase} {inputLabel}: {keyLabel}, {description}
+            {phase} {inputLabel}：{keyLabel}，{description}
           </span>
         </div>
 
@@ -463,8 +463,8 @@ export function VimKeyHud({
           <button
             type="button"
             data-vim-key-panel-hide
-            aria-label="Hide Vim key panel"
-            title="Hide key panel (keep target reticle)"
+            aria-label="隐藏 Vim 按键面板"
+            title="隐藏按键面板（保留目标准星）"
             onPointerDown={(event) => {
               // Preserve document ownership for pointer users. Keyboard
               // activation is handed back by the owner after hiding.
@@ -496,7 +496,7 @@ export function VimKeyHud({
           data-vim-key-map-toggle
           aria-expanded={expanded}
           aria-controls="vim-hud-key-map"
-          aria-label={expanded ? 'Collapse Vim key map' : 'Expand Vim key map'}
+          aria-label={expanded ? '收起 Vim 键位图' : '展开 Vim 键位图'}
           onPointerDown={(event) => {
             // Keep keyboard ownership on the document/iframe while the pointer
             // toggles this fixed HUD control.
@@ -538,7 +538,7 @@ export function VimKeyHud({
           >
             <span>VIM</span>
             <span style={{ color: '#b39ce7' }}>
-              {expanded ? 'CLOSE' : 'KEY MAP'}
+              {expanded ? '关闭' : '键位图'}
             </span>
           </span>
           <kbd
@@ -595,7 +595,7 @@ export function VimKeyHud({
                   lineHeight: 1.15,
                 }}
               >
-                Vim key map
+                Vim 键位图
               </div>
               <div
                 style={{
@@ -605,7 +605,7 @@ export function VimKeyHud({
                   fontWeight: 570,
                 }}
               >
-                The highlighted section matches your current navigation level.
+                高亮的分区对应你当前的导航层级。
               </div>
             </div>
             <div
@@ -631,7 +631,7 @@ export function VimKeyHud({
                   boxShadow: '0 0 12px rgba(167,139,250,0.82)',
                 }}
               />
-              {phase} MODE
+              {phase} 模式
             </div>
           </div>
 
@@ -685,8 +685,8 @@ export function VimKeyHud({
               letterSpacing: '0.08em',
             }}
           >
-            <span>PRESS ? TO CLOSE</span>
-            <span>ESC BACKS OUT ONE LEVEL</span>
+            <span>按 ? 关闭</span>
+            <span>ESC 返回上一级</span>
           </div>
         </div>
       )}

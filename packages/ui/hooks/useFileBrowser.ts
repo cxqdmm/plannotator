@@ -220,7 +220,7 @@ export function useFileBrowser(): UseFileBrowserReturn {
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        const error = data.error || "Failed to load";
+        const error = data.error || "加载失败";
         const shouldSurfaceError = !options.quiet || isPermanentFileBrowserFetchError(res.status);
         setDirs((prev) =>
           prev.map((d) =>
@@ -273,7 +273,7 @@ export function useFileBrowser(): UseFileBrowserReturn {
       setDirs((prev) =>
         prev.map((d) =>
           d.path === dirPath
-            ? { ...d, isLoading: false, error: options.quiet ? d.error : "Failed to connect to server" }
+            ? { ...d, isLoading: false, error: options.quiet ? d.error : "无法连接到服务器" }
             : d
         )
       );
@@ -329,7 +329,7 @@ export function useFileBrowser(): UseFileBrowserReturn {
       if (!res.ok || data.error) {
         setDirs((prev) =>
           prev.map((d) =>
-            d.path === vaultPath ? { ...d, isLoading: false, error: data.error || "Failed to load" } : d
+            d.path === vaultPath ? { ...d, isLoading: false, error: data.error || "加载失败" } : d
           )
         );
         return;
@@ -352,7 +352,7 @@ export function useFileBrowser(): UseFileBrowserReturn {
     } catch {
       setDirs((prev) =>
         prev.map((d) =>
-          d.path === vaultPath ? { ...d, isLoading: false, error: "Failed to connect to server" } : d
+          d.path === vaultPath ? { ...d, isLoading: false, error: "无法连接到服务器" } : d
         )
       );
     }

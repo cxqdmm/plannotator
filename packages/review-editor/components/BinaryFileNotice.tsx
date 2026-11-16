@@ -25,7 +25,7 @@ export const BinaryFileNotice: React.FC<{
       data-binary-file-notice=""
       className="px-4 py-2 text-xs leading-relaxed text-muted-foreground border-b border-border bg-muted/30"
     >
-      Binary or oversized file, content not shown.
+      二进制文件或文件过大，未显示内容。
     </div>
   );
 };

@@ -103,26 +103,26 @@ export function describeUpdateToast(advert: UpdateAdvert): { title: string; desc
   switch (advert.action) {
     case 'script':
       return {
-        title: `Plannotator ${advert.version} is available`,
-        description: `You have ${advert.current}. Update installs it in the background; this review keeps working.`,
+        title: `Plannotator ${advert.version} 已发布`,
+        description: `你当前使用的是 ${advert.current}。更新将在后台安装，本次评审不受影响。`,
         primary: 'update',
       };
     case 'copy':
       return {
-        title: `Plannotator ${advert.version} is available`,
-        description: `You have ${advert.current}. This copy was not installed by the install script: run the install command to update.`,
+        title: `Plannotator ${advert.version} 已发布`,
+        description: `你当前使用的是 ${advert.current}。此副本不是通过安装脚本安装的：运行安装命令即可更新。`,
         primary: 'copy',
       };
     case 'pi':
       return {
-        title: `Plannotator for Pi ${advert.version} is available`,
-        description: `Run ${advert.command}, then type /reload in Pi.`,
+        title: `Plannotator for Pi ${advert.version} 已发布`,
+        description: `运行 ${advert.command}，然后在 Pi 中输入 /reload。`,
         primary: 'copy',
       };
     case 'opencode':
       return {
-        title: `Plannotator ${advert.version} is available`,
-        description: "Run the install script again, then run opencode2 reload (OpenCode 1: restart it). It also clears OpenCode's cached plugin.",
+        title: `Plannotator ${advert.version} 已发布`,
+        description: '再次运行安装脚本，然后运行 opencode2 reload（OpenCode 1：重启即可）。这也会清除 OpenCode 缓存的插件。',
         primary: 'copy',
       };
   }
@@ -132,11 +132,11 @@ export function describeUpdateToast(advert: UpdateAdvert): { title: string; desc
 export async function requestUpdateNow(): Promise<{ ok: true; version: string } | { ok: false; error: string }> {
   try {
     const res = await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(withServerSession({})) });
-    if (await noteServerSessionMismatch(res)) return { ok: false, error: 'This review was replaced by a newer Plannotator session. Reload the page.' };
+    if (await noteServerSessionMismatch(res)) return { ok: false, error: '此评审已被较新的 Plannotator 会话取代。请刷新页面。' };
     const body = (await res.json().catch(() => ({}))) as { version?: string; error?: string };
     if (res.ok && typeof body.version === 'string') return { ok: true, version: body.version };
-    return { ok: false, error: body.error ?? `The update could not start (HTTP ${res.status}).` };
+    return { ok: false, error: body.error ?? `更新无法启动（HTTP ${res.status}）。` };
   } catch {
-    return { ok: false, error: 'The update could not start: the session is not reachable.' };
+    return { ok: false, error: '更新无法启动：会话无法连接。' };
   }
 }

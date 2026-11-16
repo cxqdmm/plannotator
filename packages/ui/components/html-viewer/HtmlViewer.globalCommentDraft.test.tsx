@@ -47,7 +47,7 @@ async function mountViewer(rawHtml: string, added: Annotation[]) {
 }
 
 async function openGlobalComposer(): Promise<HTMLTextAreaElement> {
-  const button = host!.querySelector<HTMLButtonElement>('button[title="Add global comment"]');
+  const button = host!.querySelector<HTMLButtonElement>('button[title="添加全局评论"]');
   if (!button) throw new Error('Global comment button missing');
   await act(async () => { button.click(); });
   const el = document.querySelector<HTMLTextAreaElement>('[data-comment-popover] textarea');

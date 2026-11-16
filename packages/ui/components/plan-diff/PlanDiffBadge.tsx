@@ -50,8 +50,8 @@ export const PlanDiffBadge: React.FC<PlanDiffBadgeProps> = ({
       }`}
       title={
         isActive
-          ? "Exit plan diff view"
-          : baselineTooltip ?? "Show what changed from previous version"
+          ? "退出计划 Diff 视图"
+          : baselineTooltip ?? "查看相较上一版本的变化"
       }
     >
       <span className={isActive ? "text-success" : "text-success/70"}>

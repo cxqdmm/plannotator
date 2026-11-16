@@ -48,7 +48,7 @@ export const EvoLogPicker: React.FC<EvoLogPickerProps> = ({
           <button
             type="button"
             disabled={disabled}
-            title={`Compare against evolog entry: ${selectedCommitId}`}
+            title={`与 evolog 条目比较：${selectedCommitId}`}
             className={`w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium overflow-hidden transition-colors focus:outline-none focus:ring-1 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed ${
               isCustom
                 ? 'bg-primary/10 border border-primary/30 text-foreground'
@@ -58,7 +58,7 @@ export const EvoLogPicker: React.FC<EvoLogPickerProps> = ({
         }
       >
           <span className="text-[10px] uppercase tracking-wide opacity-60 flex-shrink-0">
-            from
+            对比自
           </span>
           <span className="truncate flex-1 text-left font-mono">
             {(selected?.commitId ?? selectedCommitId).slice(0, 8)}
@@ -83,7 +83,7 @@ export const EvoLogPicker: React.FC<EvoLogPickerProps> = ({
           <Popover.Popup className="w-80 bg-popover text-popover-foreground border border-border rounded shadow-lg overflow-hidden origin-[var(--transform-origin)] transition-opacity data-starting-style:opacity-0 data-ending-style:opacity-0">
           <div className="px-3 py-2 border-b border-border/50">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Evolution history — pick a previous state to compare against
+              演化历史——选择一个先前状态进行对比
             </p>
           </div>
           <div className="max-h-72 overflow-y-auto py-1">
@@ -128,12 +128,12 @@ export const EvoLogPicker: React.FC<EvoLogPickerProps> = ({
                     <span className="flex gap-1">
                       {isCurrent && (
                         <span className="text-[10px] uppercase tracking-wide text-muted-foreground px-1 py-0.5 rounded bg-muted">
-                          current
+                          当前
                         </span>
                       )}
                       {isDetected && !isCurrent && (
                         <span className="text-[10px] uppercase tracking-wide text-muted-foreground px-1 py-0.5 rounded bg-muted">
-                          default
+                          默认
                         </span>
                       )}
                     </span>
@@ -149,7 +149,7 @@ export const EvoLogPicker: React.FC<EvoLogPickerProps> = ({
                 onClick={handleReset}
                 className="w-full text-left px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded"
               >
-                Reset to default ({detectedCommitId.slice(0, 8)})
+                重置为默认（{detectedCommitId.slice(0, 8)}）
               </button>
             </div>
           )}

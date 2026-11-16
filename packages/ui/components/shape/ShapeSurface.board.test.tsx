@@ -72,7 +72,7 @@ function inDrawing<T extends Element>(selector: string): T | null {
   }
   return null;
 }
-const dock = (words: string) => [...document.querySelectorAll<HTMLElement>('.shp-tbtn')].find((b) => b.textContent?.includes(words) || b.title === 'Stop annotating' && words === 'Annotate') ?? null;
+const dock = (words: string) => [...document.querySelectorAll<HTMLElement>('.shp-tbtn')].find((b) => b.textContent?.includes(words) || b.title === '停止标注' && words === '标注') ?? null;
 const click = (el: Element, composed = true) => act(async () => { el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed })); });
 const popover = () => document.querySelector('[data-comment-popover]');
 
@@ -98,7 +98,7 @@ describe.if(hasDom)('a dragged box is opt-in', () => {
 
   test('a host without boxSelect: no cross, no box, no words on its drawing', async () => {
     await mount({ picture: PICTURE });
-    await click(dock('Annotate')!);
+    await click(dock('标注')!);
     await wait();
     await dragAcross();
     expect(!!document.querySelector('.shp-stage.boxing')).toBe(false);
@@ -108,7 +108,7 @@ describe.if(hasDom)('a dragged box is opt-in', () => {
 
   test('with it: one crosshair in place of Annotate and its tools; a drag draws the band only once it is on', async () => {
     await mount({ picture: PICTURE }, { boxSelect: {} });
-    expect(dock('Annotate')).toBe(null);
+    expect(dock('标注')).toBe(null);
     expect(document.querySelectorAll('.shp-tstrip button').length).toBe(1);
     expect(!!document.querySelector('.shp-stage.boxing')).toBe(false);
     await dragAcross();
@@ -128,14 +128,14 @@ describe.if(hasDom)('a part’s composer: a host without boxSelect keeps it as i
 
   test('its header is the quoted label', async () => {
     await mount({ picture: PICTURE });
-    await click(dock('Annotate')!);
+    await click(dock('标注')!);
     await click(inDrawing('[data-mark="whistle"]')!);
     expect(header()).toBe('"Shape · “One whistle”"');
   });
 
   test('a long part’s is cut where it was', async () => {
     await mount({ picture: { html: `<p data-mark="long">${LONG}</p>` } });
-    await click(dock('Annotate')!);
+    await click(dock('标注')!);
     await click(inDrawing('[data-mark="long"]')!);
     expect(header()).toBe(`"${`Shape · “${LONG.slice(0, 46)}…”`.slice(0, 50)}..."`);
   });
@@ -154,15 +154,15 @@ describe.if(hasDom)('a part’s composer: a host without boxSelect keeps it as i
     await mount({ picture: PICTURE }, { boxSelect: {}, host: h });
     await click(document.querySelector('.shp-tstrip button[aria-label="Comment"]')!);
     await click(inDrawing('[data-mark="whistle"]')!);
-    await click(dock('References')!);
-    expect(dock('References')?.getAttribute('aria-pressed')).toBe('true');
+    await click(dock('引用')!);
+    expect(dock('引用')?.getAttribute('aria-pressed')).toBe('true');
     const box = popover()!.querySelector<HTMLTextAreaElement>('textarea')!;
     const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
     await act(async () => {
       setter.call(box, 'louder');
       box.dispatchEvent(new Event('input', { bubbles: true }));
     });
-    const change = [...popover()!.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Change it')!;
+    const change = [...popover()!.querySelectorAll('button')].find((b) => b.textContent?.trim() === '修改它')!;
     await click(change);
     await wait();
     expect(sent.length).toBe(1);
@@ -174,7 +174,7 @@ describe.if(hasDom)('a host that does not ask for readFirst keeps its board', ()
 
   test('a part can be marked at once, with no Annotate button, and the strip keeps its modes', async () => {
     await mount({ picture: PICTURE }, asHost);
-    expect(!!dock('Annotate')).toBe(false);
+    expect(!!dock('标注')).toBe(false);
     expect(!!document.querySelector('.shp-tstrip')).toBe(true);
     await click(inDrawing('[data-mark="whistle"]')!);
     for (let i = 0; i < 20 && !popover(); i++) await wait();
@@ -231,19 +231,19 @@ describe.if(hasDom)('annotation: off until asked for', () => {
     await mount({ picture: PICTURE });
     await click(inDrawing('[data-mark="whistle"]')!);
     expect(!!popover()).toBe(false);
-    expect(dock('Annotate')?.getAttribute('aria-pressed')).toBe('false');
+    expect(dock('标注')?.getAttribute('aria-pressed')).toBe('false');
     expect(document.querySelectorAll('.shp-tstrip button').length).toBe(1);
   });
 
   test('Annotate turns it on, a part then opens its box, and off it stops again', async () => {
     await mount({ picture: PICTURE });
-    await click(dock('Annotate')!);
-    expect(dock('Annotate')?.getAttribute('aria-pressed')).toBe('true');
+    await click(dock('标注')!);
+    expect(dock('标注')?.getAttribute('aria-pressed')).toBe('true');
     // Select and Pinpoint only: the board's box decides the action.
     expect(document.querySelectorAll('.shp-tstrip button').length).toBe(3);
     await click(inDrawing('[data-mark="whistle"]')!);
     expect(popover()?.textContent).toContain('One whistle');
-    await click(dock('Annotate')!);
+    await click(dock('标注')!);
     expect(!!popover()).toBe(false);
     await click(inDrawing('[data-mark="whistle"]')!);
     expect(!!popover()).toBe(false);
@@ -251,14 +251,14 @@ describe.if(hasDom)('annotation: off until asked for', () => {
 
   test('a part inside an SVG can be picked, and its quote is its labels', async () => {
     await mount({ picture: PICTURE });
-    await click(dock('Annotate')!);
+    await click(dock('标注')!);
     await click(inDrawing('[data-mark="svg-part"]')!);
     expect(popover()?.textContent).toContain('Kettle boils');
   });
 });
 
 describe.if(hasDom)('views.know is not shown (approval shape-know-removed)', () => {
-  const bar = () => [...document.querySelectorAll<HTMLElement>('.shp-dock [aria-label="Views"] .shp-tbtn')].map((b) => b.title);
+  const bar = () => [...document.querySelectorAll<HTMLElement>('.shp-dock [aria-label="视图"] .shp-tbtn')].map((b) => b.title);
   const shown = () => document.querySelector('.shp-view:not(.leaving)')!;
   const WORDS = 'Sent anyway, never shown [^1].\n\nA second paragraph.';
 
@@ -293,7 +293,7 @@ describe.if(hasDom)('views.know is not shown (approval shape-know-removed)', () 
     try {
       await mount({ picture: PICTURE, know: 'Only this.' });
       expect(document.querySelector('.shp-root')?.classList.contains('phone')).toBe(true);
-      expect(document.querySelector('.shp-dock [aria-label="Views"] .shp-tbtn.on .tl')?.textContent).toBe('Shape');
+      expect(document.querySelector('.shp-dock [aria-label="视图"] .shp-tbtn.on .tl')?.textContent).toBe('Shape');
       expect(bar()).toEqual(['Shape']);
     } finally {
       Object.defineProperty(HTMLElement.prototype, 'clientWidth', was);
@@ -307,7 +307,7 @@ describe.if(hasDom)('views.know is not shown (approval shape-know-removed)', () 
       expect(document.querySelector('.shp-claim')?.textContent).toBe('Built.');
       expect(bar()).toEqual([]);
       // No empty Views group left in the dock.
-      expect(document.querySelector('.shp-dock [aria-label="Views"]')).toBeNull();
+      expect(document.querySelector('.shp-dock [aria-label="视图"]')).toBeNull();
       expect(shown().textContent).toBe('');
       expect(document.body.textContent).not.toContain('Only this.');
       expect(document.body.textContent).not.toContain('Line one');
@@ -374,13 +374,13 @@ describe.if(hasDom)('Show more', () => {
     document.body.innerHTML = '';
     await mount({ picture });
     const button = document.querySelector<HTMLElement>('.shp-more')!;
-    expect(button.textContent).toBe('Show more');
+    expect(button.textContent).toBe('显示更多');
     await click(button);
     for (let i = 0; i < 40 && !inDrawing('.shp-view [data-mark="deep"], [data-mark="deep"]'); i++) await wait();
     expect(!!inDrawing('[data-mark="deep"]')).toBe(true);
     expect(button.textContent).toBe('Back to the main board');
     await click(button);
-    expect(button.textContent).toBe('Show more');
+    expect(button.textContent).toBe('显示更多');
   });
 
   test('Esc comes back to the main board, and is not left for the host to close it', async () => {
@@ -392,7 +392,7 @@ describe.if(hasDom)('Show more', () => {
     const esc = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
     await act(async () => { window.dispatchEvent(esc); });
     expect(esc.defaultPrevented).toBe(true);
-    expect(document.querySelector('.shp-more')?.textContent).toBe('Show more');
+    expect(document.querySelector('.shp-more')?.textContent).toBe('显示更多');
     const again = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
     await act(() => new Promise((r) => setTimeout(r, 1600)));
     await act(async () => { window.dispatchEvent(again); });
@@ -404,7 +404,7 @@ describe.if(hasDom)('Show more', () => {
     await click(document.querySelector('.shp-more')!);
     await click(dock('How it works')!);
     await click(dock('Shape')!);
-    expect(document.querySelector('.shp-more')?.textContent).toBe('Show more');
+    expect(document.querySelector('.shp-more')?.textContent).toBe('显示更多');
   });
 });
 
@@ -499,10 +499,10 @@ describe.if(hasDom)('a host\'s control beside a file (fileAction)', () => {
     await wait();
     const spans = () => document.querySelectorAll('.shp-claim [data-host-span="src/a.ts"]').length;
     expect(spans()).toBe(1);
-    await click(dock('Annotate')!);
+    await click(dock('标注')!);
     expect(spans()).toBe(0);
     expect(document.querySelector('.shp-claim code')?.textContent).toBe('src/a.ts');
-    await click(dock('Annotate')!);
+    await click(dock('标注')!);
     expect(spans()).toBe(1);
   });
 

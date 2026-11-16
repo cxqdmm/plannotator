@@ -481,7 +481,7 @@ export function DiagramCanvas({
       ref={hostRef}
       data-diagram-canvas=""
       tabIndex={0}
-      aria-label="Diagram canvas. Drag or arrow keys to pan, wheel or plus and minus to zoom, 0 to fit, click a part to comment."
+      aria-label="图表面板。拖动或使用方向键平移，滚轮或加号、减号缩放，0 键适应画布，点击某个部分即可评论。"
       className={cn(
         'relative h-full w-full touch-pan-y select-none overflow-hidden outline-none',
         panning ? 'cursor-grabbing' : 'cursor-grab',
@@ -515,20 +515,20 @@ export function DiagramCanvas({
         data-diagram-zoom-strip=""
         className="absolute bottom-3 right-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-card/85 p-0.5 backdrop-blur max-md:bottom-4 max-md:left-4 max-md:right-auto"
         role="group"
-        aria-label="Zoom"
+        aria-label="缩放"
       >
         <Button
           type="button"
           variant="ghost"
           size="icon"
           className="size-7"
-          aria-label="Zoom out"
-          title="Zoom out (-)"
+          aria-label="缩小"
+          title="缩小（-）"
           onClick={() => zoomBy(1 / ZOOM_STEP)}
         >
           <Minus aria-hidden="true" />
         </Button>
-        <Button type="button" variant="ghost" size="icon" className="size-7" aria-label="Fit diagram" title="Fit (0)" onClick={fit}>
+        <Button type="button" variant="ghost" size="icon" className="size-7" aria-label="适应画布" title="适应（0）" onClick={fit}>
           <Maximize2 aria-hidden="true" />
         </Button>
         <Button
@@ -536,8 +536,8 @@ export function DiagramCanvas({
           variant="ghost"
           size="icon"
           className="size-7"
-          aria-label="Zoom in"
-          title="Zoom in (+)"
+          aria-label="放大"
+          title="放大（+）"
           onClick={() => zoomBy(ZOOM_STEP)}
         >
           <Plus aria-hidden="true" />

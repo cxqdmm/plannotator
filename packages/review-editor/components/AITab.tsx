@@ -191,7 +191,7 @@ export const AITab: React.FC<AITabProps> = ({
             <SparklesIcon className="w-5 h-5" />
           </div>
           <p className="text-xs">
-            Select lines and click <strong>Ask AI</strong>, or ask a general question below.
+            选中行并点击 <strong>询问 AI</strong>，或在下方提出一个通用问题。
           </p>
         </div>
         <AIConfigBar
@@ -224,7 +224,7 @@ export const AITab: React.FC<AITabProps> = ({
       <div ref={scrollRef} className="p-2">
         {isCreatingSession && messages.length === 0 && (
           <div className="text-xs text-muted-foreground text-center py-4">
-            <span className="ai-streaming-cursor" /> Starting AI session...
+            <span className="ai-streaming-cursor" /> 正在启动 AI 会话…
           </div>
         )}
 
@@ -267,7 +267,7 @@ export const AITab: React.FC<AITabProps> = ({
             {fileGroups.length > 0 && (
               <div className="flex items-center gap-2 px-2 mb-1.5">
                 <div className="flex-1 border-t border-border/40" />
-                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">General</span>
+                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">通用</span>
                 <div className="flex-1 border-t border-border/40" />
               </div>
             )}
@@ -348,7 +348,7 @@ const GeneralInput: React.FC<{
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Ask about the overall changes..."
+          placeholder="询问关于整体更改的问题…"
           rows={1}
           className="flex-1 px-2.5 py-1.5 bg-muted rounded-md text-xs text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 leading-relaxed"
           style={{ maxHeight: 120 }}
@@ -364,10 +364,10 @@ const GeneralInput: React.FC<{
           <button
             onClick={onStop}
             className="p-1.5 mb-px rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
-            title={observationOnly ? 'Stop listening; the question keeps running in the session' : 'Stop generating'}
-            aria-label={observationOnly ? 'Stop listening' : 'Stop generating'}
+            title={observationOnly ? '停止监听；问题仍会在会话中继续运行' : '停止生成'}
+            aria-label={observationOnly ? '停止监听' : '停止生成'}
           >
-            {observationOnly && <span className="text-[10px] mr-1">Stop listening</span>}
+            {observationOnly && <span className="text-[10px] mr-1">停止监听</span>}
             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
               <rect x="6" y="6" width="12" height="12" rx="2" />
             </svg>
@@ -377,7 +377,7 @@ const GeneralInput: React.FC<{
             onClick={onSubmit}
             disabled={disabled || !value.trim()}
             className="p-1.5 mb-px rounded-md text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-            title={`Send (${submitHint})`}
+            title={`发送（${submitHint}）`}
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
@@ -451,7 +451,7 @@ const QAPair = memo<{
           <SessionAskStatus response={response} />
         ) : response.isStreaming ? (
           <span className="text-xs text-muted-foreground">
-            <span className="ai-streaming-cursor" /> Thinking...
+            <span className="ai-streaming-cursor" /> 思考中…
           </span>
         ) : null}
         {!response.error && <SessionAskNote response={response} />}

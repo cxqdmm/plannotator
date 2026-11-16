@@ -141,7 +141,7 @@ describe.if(hasDom)('Stack badges', () => {
     // A tag says it opens a dialog, and is closed until its card opens.
     expect(tag('how-b', 12).getAttribute('aria-haspopup')).toBe('dialog');
     expect(tag('how-b', 12).getAttribute('aria-expanded')).toBe('false');
-    expect(document.querySelector('[data-shp-stack-row]')?.textContent).toContain('Stack of 3');
+    expect(document.querySelector('[data-shp-stack-row]')?.textContent).toContain('堆叠：3 个 PR');
     act(() => root!.unmount());
     document.body.innerHTML = '';
 
@@ -160,7 +160,7 @@ describe.if(hasDom)('Stack badges', () => {
     const withOff: ShapeStack = { ...STACK, changes: [...STACK.changes, { part: 'how-off', pr: 11, said: 'Nobody.', files: [{ path: 'src/off.ts' }] }] };
     await mount(board(withOff, true));
     for (let i = 0; i < 50 && !document.querySelector('[data-follow]'); i++) await wait();
-    await click([...document.querySelectorAll('button')].find((b) => [b.getAttribute('aria-label'), b.title, b.textContent?.trim()].includes('Follow an example')) ?? null);
+    await click([...document.querySelectorAll('button')].find((b) => [b.getAttribute('aria-label'), b.title, b.textContent?.trim()].includes('跟随一个示例')) ?? null);
     const d = drawing()!;
     expect(d.querySelector('[data-mark="how-off"]')!.hasAttribute('data-ex-dim')).toBe(true);
     const layer = d.querySelector('.shp-stk-layer')!;
@@ -177,7 +177,7 @@ describe.if(hasDom)('Stack badges', () => {
     expect(card()!.textContent).toContain('#13The whistle');
     expect(card()!.textContent).toContain('In It boils');
     expect(card()!.textContent).toContain('Adds the whistle on top.');
-    expect(card()!.textContent).toContain('Also changed here by');
+    expect(card()!.textContent).toContain('同时在此更改的还有');
     expect(tag('how-b', 13).getAttribute('aria-expanded')).toBe('true');
 
     await click(card()!.querySelector('[data-shp-stack-switch="12"]'));

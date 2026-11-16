@@ -14,21 +14,21 @@ import { createShortcutScopeHook } from '../runtime';
 // one. X is unassigned in Chrome, Firefox, Safari and Edge on every platform.
 export const htmlAnnotateShortcuts = defineShortcutScope({
   id: 'html-annotate',
-  title: 'HTML Annotate',
+  title: 'HTML 标注',
   shortcuts: {
     toggleAnnotateMode: {
-      description: 'Toggle annotate mode',
+      description: '切换标注模式',
       bindings: ['Mod+Shift+A'],
-      section: 'Annotations',
-      hint: 'On HTML and live app surfaces: arm annotation capture, or hand clicks back to the page. Esc also exits Annotate; this chord is the way back in.',
+      section: '标注',
+      hint: '在 HTML 和实时应用界面上：启用标注捕获，或把点击交还给页面。Esc 也会退出标注；此组合键是重新进入的方式。',
       preventDefault: true,
       displayOrder: 0,
     },
     toggleTools: {
-      description: 'Show or hide tools',
+      description: '显示或隐藏工具',
       bindings: ['Mod+Shift+X'],
-      section: 'Annotations',
-      hint: 'On HTML and live app surfaces: the header eye — shows or removes all floating chrome over the page. HTML surfaces open with the tools hidden.',
+      section: '标注',
+      hint: '在 HTML 和实时应用界面上：顶栏的眼睛图标——显示或移除页面上所有浮动界面元素。HTML 界面打开时工具默认隐藏。',
       preventDefault: true,
       displayOrder: 1,
     },

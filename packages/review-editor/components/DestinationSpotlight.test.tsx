@@ -58,9 +58,9 @@ describe('DestinationSpotlight', () => {
     await act(async () => root?.render(<Harness />));
 
     expect(document.querySelector('.pn-visible-viewport-overlay')).not.toBeNull();
-    expect(document.body.textContent).toContain('Choose where reviews go');
-    expect(document.body.textContent).not.toContain('double-tap');
-    const gotIt = Array.from(document.querySelectorAll('button')).find((button) => button.textContent === 'Got it');
+    expect(document.body.textContent).toContain('选择评审的去向');
+    expect(document.body.textContent).not.toContain('双击');
+    const gotIt = Array.from(document.querySelectorAll('button')).find((button) => button.textContent === '知道了');
     expect(gotIt?.hasAttribute('data-pn-touch-target')).toBe(true);
   });
 });

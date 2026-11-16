@@ -15,8 +15,8 @@ describe('compact Plan completion', () => {
     );
 
     expect(html).toContain('data-pn-compact-plan-completion="true"');
-    expect(html).toContain('Ready to finish?');
-    expect(html).toContain('Review and finish');
+    expect(html).toContain('准备完成了吗？');
+    expect(html).toContain('查看并完成');
     expect(html).toContain('pn-compact-plan-review-trigger');
     expect(html).toContain('--pn-safe-bottom');
   });
@@ -35,7 +35,7 @@ describe('compact Plan completion', () => {
       />,
     );
 
-    expect(html).toContain('Review annotations');
+    expect(html).toContain('查看标注');
     expect(html).toContain('data-pn-compact-review-action="feedback"');
     expect(html).toContain('bg-primary text-primary-foreground');
     expect(html.indexOf('Send feedback')).toBeLessThan(html.indexOf('Approve'));

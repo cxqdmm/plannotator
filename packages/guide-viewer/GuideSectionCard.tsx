@@ -53,7 +53,7 @@ function FileChip({
       <span className="truncate font-mono text-[11px] font-medium text-foreground">{name}</span>
       {dir && <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-muted-foreground/60">{dir}</span>}
       {!file ? (
-        <span className="flex-shrink-0 font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">outdated</span>
+        <span className="flex-shrink-0 font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">已过期</span>
       ) : (
         <span className="ml-auto flex-shrink-0 font-mono text-[10px]">
           {file.additions > 0 && <span className="text-emerald-600 dark:text-emerald-400">+{file.additions}</span>}
@@ -229,10 +229,10 @@ function ChapterDiagram({ kind, foldId, children }: { kind: string; foldId: stri
         onClick={toggle}
         aria-expanded={!folded}
         className="group flex items-center gap-1.5 rounded px-1 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-        title={folded ? 'Show diagram' : 'Hide diagram'}
+        title={folded ? '显示图表' : '隐藏图表'}
       >
         <ChevronDown className={`flex-shrink-0 transition-transform ${folded ? '-rotate-90' : ''}`} size={13} />
-        Diagram
+        图表
       </button>
       {!folded && (
         <div
@@ -364,7 +364,7 @@ export const GuideSectionCard: React.FC<GuideSectionCardProps> = ({
           <button
             type="button"
             onClick={handleToggleReviewed}
-            aria-label={reviewed ? 'Un-mark as reviewed' : 'Mark as reviewed'}
+            aria-label={reviewed ? '取消已评审标记' : '标记为已评审'}
             className="flex-shrink-0 rounded relative pointer-coarse:before:absolute pointer-coarse:before:-inset-3.5 pointer-coarse:before:content-['']"
           >
             <Checkbox checked={reviewed} />
@@ -374,12 +374,12 @@ export const GuideSectionCard: React.FC<GuideSectionCardProps> = ({
           type="button"
           onClick={() => setCollapsedOverride(false)}
           className="group flex min-w-0 flex-1 items-center gap-3 text-left"
-          title="Expand"
+          title="展开"
         >
           <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground/70">{section.title}</span>
           <span className="flex-shrink-0 text-[11px] text-muted-foreground/60">
-            {section.diffs.length} diff{section.diffs.length !== 1 ? 's' : ''}
-            {reviewed ? ' · reviewed' : ''}
+            {section.diffs.length} 个 Diff
+            {reviewed ? ' · 已评审' : ''}
           </span>
           {position && <span className="flex-shrink-0 font-mono text-[10px] text-muted-foreground/40">{position}</span>}
           <ChevronDown className="flex-shrink-0 -rotate-90 text-muted-foreground/40 transition-transform group-hover:text-muted-foreground" size={13} />
@@ -403,8 +403,8 @@ export const GuideSectionCard: React.FC<GuideSectionCardProps> = ({
                 type="button"
                 onClick={() => setCollapsedOverride(true)}
                 className="mt-0.5 flex-shrink-0 rounded p-0.5 text-muted-foreground/40 transition-colors hover:text-foreground relative pointer-coarse:before:absolute pointer-coarse:before:-inset-3.5 pointer-coarse:before:content-['']"
-                title="Collapse section"
-                aria-label="Collapse section"
+                title="折叠章节"
+                aria-label="折叠章节"
               >
                 <ChevronDown className="rotate-180" size={13} />
               </button>
@@ -417,10 +417,10 @@ export const GuideSectionCard: React.FC<GuideSectionCardProps> = ({
                   type="button"
                   onClick={handleToggleReviewed}
                   className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground transition-colors hover:text-foreground pointer-coarse:-my-3 pointer-coarse:py-3"
-                  title={reviewed ? 'Un-mark as reviewed' : 'Mark as reviewed'}
+                  title={reviewed ? '取消已评审标记' : '标记为已评审'}
                 >
                   <Checkbox checked={reviewed} />
-                  Reviewed
+                  已评审
                 </button>
               )}
             </div>
@@ -475,8 +475,8 @@ export const GuideSectionCard: React.FC<GuideSectionCardProps> = ({
           ) : host.renderSectionEmpty?.(index) ?? (
             <div className="flex min-h-[150px] items-center justify-center px-6 text-center">
               <div>
-                <p className="text-xs font-medium text-foreground">No chapter files in the current diff</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">The generated references may be out of date.</p>
+                <p className="text-xs font-medium text-foreground">当前 Diff 中没有此章节的文件</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">生成的引用可能已过期。</p>
               </div>
             </div>
           )}

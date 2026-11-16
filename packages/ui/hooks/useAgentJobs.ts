@@ -18,7 +18,7 @@ const POLL_INTERVAL_MS = 500;
 const STREAM_URL = '/api/agents/jobs/stream';
 const JOBS_URL = '/api/agents/jobs';
 const CAPABILITIES_URL = '/api/agents/capabilities';
-const DEFAULT_LAUNCH_ERROR = 'Could not start agent job.';
+const DEFAULT_LAUNCH_ERROR = '无法启动 agent 任务。';
 const AGENT_JOB_STATUSES = new Set(['starting', 'running', 'done', 'failed', 'killed']);
 
 export type AgentLaunchParams = {

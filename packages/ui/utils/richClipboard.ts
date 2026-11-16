@@ -31,16 +31,16 @@ export function richCopyOutcomeLabel(outcome: RichCopyOutcome): string {
   const notes: string[] = [];
   if (outcome.copied === 'plain') {
     notes.push(
-      outcome.reason === 'too-large' ? 'too large for rich text'
-      : outcome.reason === 'no-markup' ? 'formatting not available'
-      : 'rich clipboard unavailable',
+      outcome.reason === 'too-large' ? '超出富文本大小限制'
+      : outcome.reason === 'no-markup' ? '格式不可用'
+      : '富文本剪贴板不可用',
     );
   }
   if (outcome.truncatedTo !== undefined) {
-    notes.push(`first ${outcome.truncatedTo.toLocaleString('en-US')} characters only`);
+    notes.push(`仅前 ${outcome.truncatedTo.toLocaleString('zh-CN')} 个字符`);
   }
-  const base = outcome.copied === 'rich' ? 'Copied as rich text' : 'Copied as plain text';
-  return notes.length > 0 ? `${base} (${notes.join('; ')})` : base;
+  const base = outcome.copied === 'rich' ? '已复制为富文本' : '已复制为纯文本';
+  return notes.length > 0 ? `${base}（${notes.join('；')}）` : base;
 }
 
 const ALLOWED_TAGS = new Set([

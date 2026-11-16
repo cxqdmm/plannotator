@@ -205,7 +205,7 @@ test.skipIf(!hasDom)('with textComments: the comment-only toolbar (Comment and �
   await select(el, 'two, four and eight');
   const names = toolbarNames();
   expect(names).toContain('Comment');
-  expect(names).toContain('Looks good');
+  expect(names).toContain('看起来不错');
   expect(names).not.toContain('Delete');
   expect(names).not.toContain('Quick label');
   // Still answer-only: no Global comment or Copy.
@@ -223,7 +223,7 @@ test.skipIf(!hasDom)('with textDeletions too: Delete comes back before Comment, 
   const added: Annotation[] = [];
   const el = await mount({ textComments: true, textDeletions: true, onAddAnnotation: (annotation) => added.push(annotation) });
   await select(el, 'two, four and eight');
-  expect(toolbarNames()).toEqual(['Delete', 'Comment', 'Looks good', 'Cancel']);
+  expect(toolbarNames()).toEqual(['Delete', 'Comment', '看起来不错', 'Cancel']);
 
   await act(async () => document.querySelector<HTMLButtonElement>('.annotation-toolbar button[aria-label="Delete"], .annotation-toolbar button[title="Delete"]')!.click());
   await settle();

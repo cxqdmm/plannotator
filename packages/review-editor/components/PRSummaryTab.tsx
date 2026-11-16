@@ -23,7 +23,7 @@ export const PRSummaryTab: React.FC<PRSummaryTabProps> = React.memo(({ context, 
                   ? 'bg-muted text-muted-foreground'
                   : 'bg-success/15 text-success'
           }`}>
-            {context.isDraft ? 'Draft' : context.state}
+            {context.isDraft ? '草稿' : context.state}
           </span>
           <a
             href={metadata.url}
@@ -36,13 +36,13 @@ export const PRSummaryTab: React.FC<PRSummaryTabProps> = React.memo(({ context, 
         </div>
 
         <div className="text-[10px] text-muted-foreground font-mono break-words">
-          {metadata.author} wants to merge <code className="bg-muted px-1 rounded break-all">{metadata.headBranch}</code> into <code className="bg-muted px-1 rounded break-all">{metadata.baseBranch}</code>
+          {metadata.author} 想要将 <code className="bg-muted px-1 rounded break-all">{metadata.headBranch}</code> 合并到 <code className="bg-muted px-1 rounded break-all">{metadata.baseBranch}</code>
         </div>
         {metadata.defaultBranch && metadata.baseBranch !== metadata.defaultBranch && (
           <div className="inline-flex items-center gap-1.5 rounded border border-accent/20 bg-accent/10 px-2 py-1 text-[10px] text-accent">
-            <span className="font-medium uppercase tracking-wide">Stacked</span>
+            <span className="font-medium uppercase tracking-wide">堆叠</span>
             <span className="text-accent/80">
-              Diffs against <code className="font-mono">{metadata.baseBranch}</code>, default branch is <code className="font-mono">{metadata.defaultBranch}</code>
+              相对 <code className="font-mono">{metadata.baseBranch}</code> 的差异，默认分支为 <code className="font-mono">{metadata.defaultBranch}</code>
             </span>
           </div>
         )}
@@ -70,7 +70,7 @@ export const PRSummaryTab: React.FC<PRSummaryTabProps> = React.memo(({ context, 
       {context.linkedIssues.length > 0 && (
         <div className="space-y-1">
           <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Linked Issues
+            关联 Issue
           </h3>
           {context.linkedIssues.map((issue) => (
             <a
@@ -94,12 +94,12 @@ export const PRSummaryTab: React.FC<PRSummaryTabProps> = React.memo(({ context, 
       {context.body ? (
         <div className="space-y-1">
           <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Description
+            描述
           </h3>
           <AnnotatableDescription markdown={context.body} className="md-compact" />
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground italic">No description provided.</p>
+        <p className="text-xs text-muted-foreground italic">未提供描述。</p>
       )}
     </div>
   );

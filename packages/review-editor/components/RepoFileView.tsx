@@ -38,14 +38,14 @@ export function useRevealedLine(
 
 export const RevealMissedNote: React.FC<{ missed: { symbol: string; line: number } }> = ({ missed }) => (
   <div className="flex-none px-3 py-1 text-xs text-muted-foreground border-b border-border/40" data-reveal-missed>
-    <code className="font-mono">{missed.symbol}</code> is not near line {missed.line} in this revision; showing the top.
+    <code className="font-mono">{missed.symbol}</code> 在此版本中不在第 {missed.line} 行附近；改为显示顶部。
   </div>
 );
 
 /** "at working tree", "at index", "at a1b2c3d". */
 export function revisionPhrase(revision: RepoRevisionInfo | undefined): string | null {
   if (!revision) return null;
-  return `at ${revision.label}`;
+  return `位于 ${revision.label}`;
 }
 
 /** The lines a comment is drawn under in a whole-file view: new side, line scope, not outdated. */
@@ -124,9 +124,9 @@ export const RepoFileView: React.FC<RepoFileViewProps> = ({
         <span
           className="flex-none text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
           data-not-in-review
-          title="This file is not part of the diff under review"
+          title="此文件不属于本次评审的差异"
         >
-          Not in this review
+          不在本次评审中
         </span>
         {revisionPhrase(revision) && (
           <span className="flex-none text-xs text-muted-foreground" data-repo-file-revision>
@@ -134,21 +134,21 @@ export const RepoFileView: React.FC<RepoFileViewProps> = ({
           </span>
         )}
         <span className="ml-auto flex-none text-[11px] text-muted-foreground/80">
-          {onAddAnnotation ? 'Select lines to comment' : null}
-          {preview && !crumb && <span className="ml-3" data-preview-hint>Double-click the tab to keep it</span>}
+          {onAddAnnotation ? '选择行以评论' : null}
+          {preview && !crumb && <span className="ml-3" data-preview-hint>双击标签页以保留</span>}
         </span>
       </div>
       {crumb && crumb.targetPath === filePath && (
         <JumpCrumb
           crumb={crumb}
           onBack={onNavigateBack}
-          right={preview ? <span data-preview-hint>Double-click the tab to keep it</span> : undefined}
+          right={preview ? <span data-preview-hint>双击标签页以保留</span> : undefined}
         />
       )}
       {missed && <RevealMissedNote missed={missed} />}
       <div className="flex-1 min-h-0 overflow-auto" ref={scroll.ref} onScroll={scroll.onScroll}>
         {text.status === 'loading' ? (
-          <FileTextState>Reading the file…</FileTextState>
+          <FileTextState>正在读取文件…</FileTextState>
         ) : text.status === 'error' ? (
           <FileTextState>{text.message}</FileTextState>
         ) : text.status === 'empty' ? (

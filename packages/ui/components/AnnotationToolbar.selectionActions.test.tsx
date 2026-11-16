@@ -119,7 +119,7 @@ describe.if(hasDom)('AnnotationToolbar host seams', () => {
     await mount();
     // The pin: the exact button set and order Plannotator ships, and no
     // trace of either seam in the DOM.
-    expect(buttonTitles()).toEqual(['Copy', 'Delete', 'Comment', 'Quick label', 'Looks good', 'Cancel']);
+    expect(buttonTitles()).toEqual(['Copy', 'Delete', 'Comment', 'Quick label', '看起来不错', 'Cancel']);
     expect(wand()).toBeNull();
     expect(document.querySelectorAll('[data-selection-actions]').length).toBe(0);
     expect(document.querySelectorAll('[data-selection-actions-picker]').length).toBe(0);
@@ -133,11 +133,11 @@ describe.if(hasDom)('AnnotationToolbar host seams', () => {
   test('an EMPTY selectionActions array renders no wand', async () => {
     await mount({ selectionActions: [] });
     expect(wand()).toBeNull();
-    expect(buttonTitles()).toEqual(['Copy', 'Delete', 'Comment', 'Quick label', 'Looks good', 'Cancel']);
+    expect(buttonTitles()).toEqual(['Copy', 'Delete', 'Comment', 'Quick label', '看起来不错', 'Cancel']);
   });
 
   test('rich copy is the one Copy button, shown also where the plain Copy is hidden; without it, unchanged', async () => {
-    const rich = ['Copy', 'Delete', 'Comment', 'Quick label', 'Looks good', 'Cancel'];
+    const rich = ['Copy', 'Delete', 'Comment', 'Quick label', '看起来不错', 'Cancel'];
     await mount({ richCopyHtml: '<p><strong>SELECTED</strong></p>' });
     expect(buttonTitles()).toEqual(rich);
 
@@ -239,7 +239,7 @@ describe.if(hasDom)('AnnotationToolbar host seams', () => {
       await click(richCopy);
       expect(write).not.toHaveBeenCalled();
       expect(writeText).toHaveBeenCalledWith('the whole selection');
-      expect(buttonTitles()).toContain('Copied as plain text (too large for rich text)');
+      expect(buttonTitles()).toContain('已复制为纯文本（超出富文本大小限制）');
     } finally {
       if (descriptor) Object.defineProperty(navigator, 'clipboard', descriptor);
       else delete (navigator as Navigator & { clipboard?: Clipboard }).clipboard;
@@ -260,7 +260,7 @@ describe.if(hasDom)('AnnotationToolbar host seams', () => {
       if (!richCopy) throw new Error('rich-copy action missing');
       await click(richCopy);
       expect(writeText).toHaveBeenCalledWith('SELECTED');
-      expect(buttonTitles()).toContain('Copied as plain text (rich clipboard unavailable)');
+      expect(buttonTitles()).toContain('已复制为纯文本（富文本剪贴板不可用）');
     } finally {
       if (descriptor) Object.defineProperty(navigator, 'clipboard', descriptor);
       else delete (navigator as Navigator & { clipboard?: Clipboard }).clipboard;
@@ -344,7 +344,7 @@ describe.if(hasDom)('AnnotationToolbar host seams', () => {
       quickLabels: false,
     });
     const titles = buttonTitles();
-    expect(titles).toEqual(['Copy', 'Delete', 'Comment', 'Actions', 'Looks good', 'Cancel']);
+    expect(titles).toEqual(['Copy', 'Delete', 'Comment', 'Actions', '看起来不错', 'Cancel']);
     expect(wand()).not.toBeNull();
   });
 
@@ -372,7 +372,7 @@ describe.if(hasDom)('AnnotationToolbar host seams', () => {
   test('with both, the wand sits immediately left of the Zap', async () => {
     await mount({ selectionActions: [{ id: 'a', label: 'Ask', onSelect: () => {} }] });
     expect(buttonTitles()).toEqual([
-      'Copy', 'Delete', 'Comment', 'Actions', 'Quick label', 'Looks good', 'Cancel',
+      'Copy', 'Delete', 'Comment', 'Actions', 'Quick label', '看起来不错', 'Cancel',
     ]);
   });
 

@@ -75,7 +75,7 @@ export const QAChecklist: React.FC<QAChecklistProps> = ({
                       }}
                       className="hover:text-primary transition-colors"
                     >
-                      Stop {si + 1}
+                      第 {si + 1} 站
                     </button>
                   </React.Fragment>
                 ))}

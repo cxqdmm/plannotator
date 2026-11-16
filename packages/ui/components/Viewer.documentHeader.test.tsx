@@ -267,8 +267,8 @@ describe.if(hasDom)('Viewer annotationHeader', () => {
     expect(sharedHeader.classList.contains('absolute')).toBe(false);
     expect(sharedHeader.classList.contains('mb-3')).toBe(true);
     expect(sharedHeader.querySelector('[data-viewer-annotation-controls]')).not.toBeNull();
-    expect(actions().querySelector('button[title="Add global comment"]')).not.toBeNull();
-    expect(actions().querySelector('button[title="Copy plan"]')).not.toBeNull();
+    expect(actions().querySelector('button[title="添加全局评论"]')).not.toBeNull();
+    expect(actions().querySelector('button[title="复制计划"]')).not.toBeNull();
     expect(sharedHeader.textContent).toContain('backnotprop/plannotator');
     expect(buttonFor('Label')).toBeNull();
     expect(sharedHeader.textContent).not.toContain('How does this work?');
@@ -278,7 +278,7 @@ describe.if(hasDom)('Viewer annotationHeader', () => {
     await act(async () => pinpoint.click());
     expect(buttonFor('Pinpoint')?.getAttribute('aria-pressed')).toBe('true');
 
-    const globalComment = actions().querySelector<HTMLButtonElement>('button[title="Add global comment"]');
+    const globalComment = actions().querySelector<HTMLButtonElement>('button[title="添加全局评论"]');
     if (!globalComment) throw new Error('Expected global comment action');
     await act(async () => globalComment.click());
     expect(document.querySelector('textarea')).not.toBeNull();

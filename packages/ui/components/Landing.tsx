@@ -36,7 +36,7 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
-              Install
+              安装
             </a>
           </div>
           <ModeToggle />
@@ -50,27 +50,27 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              For Claude Code &amp; OpenCode
+              适用于 Claude Code 和 OpenCode
             </div>
 
             <div className="flex items-center gap-6 mb-4">
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-[1.1]">
-                Annotate plans.
+                标注计划。
                 <br />
                 <span className="text-muted-foreground">
-                  Not in the terminal.
+                  不必在终端里。
                 </span>
               </h1>
               <img
                 src={logoImage}
-                alt="Plannotator logo"
+                alt="Plannotator 徽标"
                 className="w-20 h-20 md:w-24 md:h-24 object-contain shrink-0 -scale-x-100"
               />
             </div>
 
             <p className="text-lg text-muted-foreground mb-8 max-w-lg">
-              Interactive Plan Review for coding agents. Mark up and refine plans visually,
-              share for team collaboration. Works with Claude Code and OpenCode.
+              为编码 agent 提供可交互的计划评审。以可视方式标注并完善计划，
+              分享给团队协作。支持 Claude Code 和 OpenCode。
             </p>
 
             <div className="flex flex-col gap-3">
@@ -89,7 +89,7 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
                   >
                     <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                   </svg>
-                  Watch for Claude Code
+                  观看 Claude Code 演示
                 </a>
 
                 {/* Open Demo button */}
@@ -98,7 +98,7 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
                     onClick={onEnter}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
                   >
-                    Open Demo
+                    打开演示
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -118,7 +118,7 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
                     href={demoUrl}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
                   >
-                    Open Demo
+                    打开演示
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -143,7 +143,7 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
                 rel="noopener noreferrer"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                Also watch for OpenCode →
+                也观看 OpenCode 演示 →
               </a>
             </div>
           </div>
@@ -154,22 +154,20 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
           <div className="grid md:grid-cols-2 gap-8 max-w-2xl">
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                The Problem
+                问题
               </h3>
               <p className="text-foreground/90">
-                Coding agents show plans in the terminal. You approve or deny, but
-                giving specific feedback means typing everything out. Hard to
-                reference exact sections. Zero collaboration features.
+                编码 agent 在终端里展示计划。你只能通过或拒绝，想给出具体反馈
+                就得把所有内容打出来。很难精确引用某些段落。完全没有协作功能。
               </p>
             </div>
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                The Solution
+                解决方案
               </h3>
               <p className="text-foreground/90">
-                Select the exact parts of the plan you want to change. Mark for
-                deletion, add a comment, or suggest a replacement. Share plans
-                with your team. Feedback flows back to your agent automatically.
+                选中计划中你想修改的具体部分。标记删除、添加评论，或建议替换。
+                与团队分享计划。反馈会自动回传给 agent。
               </p>
             </div>
           </div>
@@ -195,10 +193,10 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Runs locally.</h3>
+                <h3 className="font-semibold mb-1">本地运行。</h3>
                 <p className="text-muted-foreground text-sm">
-                  Reviews and saved data stay local by default. Every load checks
-                  GitHub for updates, with no current opt-out, but sends no review content.
+                  评审与保存的数据默认留在本地。每次加载都会检查 GitHub 更新
+                  （目前无法关闭），但不会发送任何评审内容。
                 </p>
               </div>
             </div>
@@ -219,11 +217,10 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Know what a link contains.</h3>
+                <h3 className="font-semibold mb-1">清楚链接里有什么。</h3>
                 <p className="text-muted-foreground text-sm">
-                  Small shares contain compressed, unencrypted content in the
-                  URL fragment. Short links upload encrypted ciphertext. Anyone
-                  with the full link can read the shared content. Inspired by{" "}
+                  小型分享会在 URL 片段中包含压缩但未加密的内容。短链接会上传
+                  加密后的密文。任何拿到完整链接的人都能读取分享内容。灵感来自{" "}
                   <a
                     href="https://github.com/antonmedv/textarea"
                     target="_blank"
@@ -253,11 +250,10 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Save to Obsidian.</h3>
+                <h3 className="font-semibold mb-1">保存到 Obsidian。</h3>
                 <p className="text-muted-foreground text-sm">
-                  Approved plans auto-save to your vault with frontmatter and
-                  auto-extracted tags. Build a searchable archive of every plan
-                  your agents create.
+                  通过的计划会自动保存到你的库，并带上 frontmatter 和
+                  自动提取的标签。为 agent 创建的每个计划建立可搜索的归档。
                 </p>
               </div>
             </div>
@@ -267,7 +263,7 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
         {/* Preview */}
         <section className="py-16 px-8 border-t border-border/30">
           <h2 className="text-xl font-semibold mb-8 text-center">
-            What it looks like
+            界面预览
           </h2>
 
           {/* App Preview */}
@@ -338,7 +334,7 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
               {/* Mock Sidebar */}
               <div className="w-48 border-l border-border/30 bg-card/30 p-3">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-3 flex items-center justify-between">
-                  <span>Annotations</span>
+                  <span>标注</span>
                   <span className="bg-muted px-1.5 py-0.5 rounded text-[9px]">
                     2
                   </span>
@@ -350,7 +346,7 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
                     <div className="flex items-center gap-1 mb-1.5">
                       <div className="w-3 h-3 rounded bg-destructive/20" />
                       <span className="text-[9px] font-semibold text-destructive uppercase">
-                        Delete
+                        删除
                       </span>
                     </div>
                     <div className="h-1.5 w-full bg-muted rounded" />
@@ -360,7 +356,7 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
                     <div className="flex items-center gap-1 mb-1.5">
                       <div className="w-3 h-3 rounded bg-accent/20" />
                       <span className="text-[9px] font-semibold text-accent uppercase">
-                        Comment
+                        评论
                       </span>
                     </div>
                     <div className="h-1.5 w-3/4 bg-muted rounded mb-1" />
@@ -372,53 +368,53 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
           </div>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
-            Select text → annotate → export feedback
+            选择文本 → 标注 → 导出反馈
           </p>
         </section>
 
         {/* How it works */}
         <section className="py-16 px-8 border-t border-border/30 bg-card/30">
-          <h2 className="text-xl font-semibold mb-8">How it works</h2>
+          <h2 className="text-xl font-semibold mb-8">工作原理</h2>
 
           <div className="space-y-6 max-w-2xl">
-            <Step num={1} title="Agent triggers Plannotator">
+            <Step num={1} title="Agent 触发 Plannotator">
               <span className="text-xs">
-                <strong>Claude Code:</strong> ExitPlanMode hook opens UI<br />
-                <strong>OpenCode:</strong> Agent calls submit_plan tool
+                <strong>Claude Code：</strong>ExitPlanMode hook 打开界面<br />
+                <strong>OpenCode：</strong>agent 调用 submit_plan 工具
               </span>
             </Step>
 
-            <Step num={2} title="Annotate visually">
-              Select text → choose action (delete, comment, replace) → annotations appear
-              in the sidebar
+            <Step num={2} title="可视化标注">
+              选择文本 → 选择操作（删除、评论、替换）→ 标注会出现在
+              侧边栏
             </Step>
 
-            <Step num={3} title="Approve or request changes">
-              Click approve to proceed, or provide feedback with annotations.
-              Feedback flows back to your agent automatically.
+            <Step num={3} title="通过或请求修改">
+              点击通过即可继续，或用标注提供反馈。
+              反馈会自动回传给 agent。
             </Step>
           </div>
         </section>
 
         {/* Technical */}
         <section className="py-16 px-8 border-t border-border/30 bg-card/30">
-          <h2 className="text-xl font-semibold mb-6">Technical details</h2>
+          <h2 className="text-xl font-semibold mb-6">技术细节</h2>
           <ul className="space-y-2 text-sm text-muted-foreground max-w-2xl mb-6">
             <li className="flex items-center gap-2">
               <span className="text-primary">•</span>
-              Single HTML file build — runs from Bun server on random port
+              单 HTML 文件构建——由 Bun 服务器在随机端口运行
             </li>
             <li className="flex items-center gap-2">
               <span className="text-primary">•</span>
-              <strong>Claude Code:</strong> Binary + plugin with PermissionRequest hook
+              <strong>Claude Code：</strong>二进制文件 + 带 PermissionRequest hook 的插件
             </li>
             <li className="flex items-center gap-2">
               <span className="text-primary">•</span>
-              <strong>OpenCode:</strong> npm package with submit_plan tool
+              <strong>OpenCode：</strong>含 submit_plan 工具的 npm 包
             </li>
             <li className="flex items-center gap-2">
               <span className="text-primary">•</span>
-              Hash-based URL sharing, with an optional encrypted paste service
+              基于哈希的 URL 分享，另可选加密粘贴服务
             </li>
           </ul>
 
@@ -441,7 +437,7 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
               </span>
             </span>
             <span className="underline underline-offset-2">
-              View GitHub repository
+              查看 GitHub 仓库
             </span>
           </a>
         </section>
@@ -471,7 +467,7 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
             </a>
           </p>
           <p className="text-xs text-muted-foreground/60 mt-2">
-            &copy; 2025 backnotprop. All rights reserved.
+            &copy; 2025 backnotprop。保留所有权利。
           </p>
         </footer>
       </div>

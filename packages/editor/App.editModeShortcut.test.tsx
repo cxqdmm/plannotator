@@ -124,11 +124,11 @@ const findButton = (label: string): HTMLButtonElement | undefined =>
  *  in front of its live label, so `textContent` is never the label alone. */
 function saveLabel(): string | undefined {
   const button = Array.from(document.querySelectorAll("button"))
-    .find((candidate) => candidate.textContent?.startsWith("Saving"));
+    .find((candidate) => candidate.textContent?.startsWith("保存中"));
   if (!button) return undefined;
   return Array.from(button.querySelectorAll("span"))
     .map((span) => span.textContent ?? "")
-    .find((text) => text === "Saved" || text === "Save");
+    .find((text) => text === "已保存" || text === "保存");
 }
 
 function pressModE(target: EventTarget): void {
@@ -272,7 +272,7 @@ describe.if(hasDom)("Mod+E edit-mode toggle", () => {
     await act(async () => { pressModE(document.body); });
     const content = document.querySelector<HTMLElement>(".cm-editor .cm-content");
     if (!content) throw new Error("CodeMirror content DOM did not render");
-    expect(saveLabel()).toBe("Saved");
+    expect(saveLabel()).toBe("已保存");
 
     // Dirty the buffer through the editor's own input pipeline: a
     // document-changing dispatch on the mounted view. (Mutating the
@@ -297,17 +297,17 @@ describe.if(hasDom)("Mod+E edit-mode toggle", () => {
     });
     // The dirty flip lands through React state — poll (bounded) rather than
     // racing a single macrotask, same settle pattern as mount().
-    for (let attempt = 0; attempt < 40 && saveLabel() !== "Save"; attempt += 1) {
+    for (let attempt = 0; attempt < 40 && saveLabel() !== "保存"; attempt += 1) {
       await settle();
     }
-    expect(saveLabel()).toBe("Save");
-    expect(findButton("Cancel")).not.toBeUndefined();
+    expect(saveLabel()).toBe("保存");
+    expect(findButton("取消")).not.toBeUndefined();
 
     // The two-step `Cancel → Discard?` refusal is deliberate: the chord refuses
     // rather than committing, and never drops the buffer silently.
     await act(async () => { pressModE(content); });
     expect(document.querySelector(".cm-editor")).not.toBeNull();
-    expect(findButton("Cancel")).not.toBeUndefined();
+    expect(findButton("取消")).not.toBeUndefined();
     expect(content.textContent).toContain("Editable body.x");
   });
 });

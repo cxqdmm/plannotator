@@ -53,26 +53,26 @@ export function modelSupportsFast(models: readonly CatalogModel[], modelId: stri
 // server reports no models (e.g. unauthenticated CLI). Used by formatModel for
 // job-card labels where the live list isn't threaded.
 const CURSOR_MODELS: Array<{ value: string; label: string }> = [
-  { value: 'auto', label: 'Auto' },
+  { value: 'auto', label: '自动' },
 ];
 
 // Fallback OpenCode model catalog. The real list is discovered server-side via
 // `opencode models` and delivered on the opencode capability; empty value means
 // "use OpenCode's configured default".
 const OPENCODE_MODELS: Array<{ value: string; label: string }> = [
-  { value: '', label: 'Default' },
+  { value: '', label: '默认' },
 ];
 
 // Fallback Pi model catalog. The real list is discovered server-side and
 // delivered on the pi capability; empty value means "use Pi's own default".
 const PI_MODELS: Array<{ value: string; label: string }> = [
-  { value: '', label: 'Default' },
+  { value: '', label: '默认' },
 ];
 
 // Fallback Copilot model catalog. The real list is discovered server-side via
 // `copilot help config`; empty value means "let Copilot pick".
 const COPILOT_MODELS: Array<{ value: string; label: string }> = [
-  { value: '', label: 'Default' },
+  { value: '', label: '默认' },
 ];
 
 // Pi's unified reasoning knob (`--thinking`), applied to whichever model is
@@ -80,15 +80,15 @@ const COPILOT_MODELS: Array<{ value: string; label: string }> = [
 // vocabulary minus `max`, which pi only accepts on `--thinking` since 0.80.6
 // (an older pi would reject the whole job). Short labels fit the segmented
 // picker.
-const PI_THINKING_SHORT_LABELS: Record<string, string> = { minimal: 'Min', medium: 'Med' };
+const PI_THINKING_SHORT_LABELS: Record<string, string> = { minimal: '最短', medium: '中' };
 export const PI_THINKING: Array<{ value: string; label: string }> = PI_THINKING_LEVELS
   .filter((level) => level !== 'max')
   .map((level) => ({ value: level, label: PI_THINKING_SHORT_LABELS[level] ?? EFFORT_LABELS[level] ?? level }));
 
 const MODE_LABEL: Record<AgentMode, string> = {
-  review: 'Code Review',
-  tour: 'Code Tour',
-  guide: 'Guided Review',
+  review: '代码评审',
+  tour: '代码导览',
+  guide: '引导式评审',
 };
 
 const ENGINE_LABEL: Record<AgentEngine, string> = {
@@ -212,14 +212,14 @@ function formatModel(provider: string, engine: string | undefined, model: string
   const claudeLabel = () => modelLabel([...catalogs.claude.models, ...CLAUDE_FALLBACK_MODELS], model);
   const codexLabel = () => modelLabel([...catalogs.codex.models, ...CODEX_FALLBACK_MODELS], model);
   if (provider === 'cursor') return catalogLabel(CURSOR_MODELS, model);
-  if (provider === 'opencode') return model ? model : 'Default';
-  if (provider === 'pi') return model || 'Default';
-  if (provider === 'copilot') return model || 'Default';
+  if (provider === 'opencode') return model ? model : '默认';
+  if (provider === 'pi') return model || '默认';
+  if (provider === 'copilot') return model || '默认';
   if (provider === 'codex' || engine === 'codex') return codexLabel();
   if ((provider === 'tour' || provider === 'guide') && engine === 'claude') return claudeLabel();
   if (provider === 'tour' || provider === 'guide') {
     if (engine === 'cursor') return catalogLabel(CURSOR_MODELS, model);
-    if (engine === 'opencode' || engine === 'pi' || engine === 'copilot') return model || 'Default';
+    if (engine === 'opencode' || engine === 'pi' || engine === 'copilot') return model || '默认';
   }
   return claudeLabel();
 }
@@ -287,11 +287,11 @@ function AddReviewDialog({
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        throw new Error(d.error ?? 'Could not add review.');
+        throw new Error(d.error ?? '无法添加评审。');
       }
       onEnabled(name);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not add review.');
+      setError(e instanceof Error ? e.message : '无法添加评审。');
       setBusy(null);
     }
   };
@@ -301,7 +301,7 @@ function AddReviewDialog({
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative z-10 flex max-h-[70vh] w-full max-w-sm flex-col overflow-hidden rounded-xl bg-card shadow-[var(--card-shadow)] ring-1 ring-border/20">
         <div className="flex items-center justify-between border-b border-border/40 px-3 py-2.5">
-          <span className="text-[12px] font-medium text-foreground">Add a review</span>
+          <span className="text-[12px] font-medium text-foreground">添加评审</span>
           <button type="button" onClick={onClose} className="text-muted-foreground/50 hover:text-foreground">
             <X size={13} />
           </button>
@@ -314,7 +314,7 @@ function AddReviewDialog({
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filter your skills"
+              placeholder="筛选你的技能"
               className="min-w-0 flex-1 bg-transparent text-[12px] text-foreground/90 outline-none placeholder:text-muted-foreground/40"
             />
           </div>
@@ -327,7 +327,7 @@ function AddReviewDialog({
             </div>
           ) : candidates.length === 0 ? (
             <p className="px-2 py-8 text-center text-[11px] text-muted-foreground/40">
-              {query ? 'No matching skills.' : 'No skills left to add.'}
+              {query ? '没有匹配的技能。' : '没有可添加的技能了。'}
             </p>
           ) : (
             candidates.map((s) => (
@@ -400,7 +400,7 @@ function JobCard({
             {job.thinking && <span className="rounded bg-surface-1 px-1 py-px">{formatThinking(job.thinking)}</span>}
             {job.fastMode && (
               <span className="rounded bg-amber-500/10 px-1 py-px text-amber-600 dark:text-amber-400">
-                <Zap className="inline" size={7} /> fast
+                <Zap className="inline" size={7} /> 快速
               </span>
             )}
             <span className="text-muted-foreground/30">·</span>
@@ -410,7 +410,7 @@ function JobCard({
             {annotationCount > 0 && (
               <>
                 <span className="text-muted-foreground/30">·</span>
-                <span className="tabular-nums">{annotationCount} finding{annotationCount !== 1 ? 's' : ''}</span>
+                <span className="tabular-nums">{annotationCount} 条发现</span>
               </>
             )}
           </div>
@@ -424,7 +424,7 @@ function JobCard({
             onKill();
           }}
           className="absolute top-1.5 right-1.5 rounded p-1 text-muted-foreground opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
-          title="Kill agent"
+          title="终止 agent"
         >
           <X size={12} />
         </button>
@@ -454,7 +454,7 @@ function JobCard({
           }}
           className="mt-2 flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 font-medium text-[10px] text-primary transition-colors hover:bg-primary/20"
         >
-          Open guide
+          打开指南
         </button>
       )}
     </div>
@@ -480,7 +480,7 @@ function PendingLaunchCard({
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-1 text-[9px] text-muted-foreground/50">
             {provider && <span className="rounded bg-surface-1 px-1 py-px">{provider}</span>}
-            <span>requesting launch</span>
+            <span>正在请求启动</span>
             <span className="text-muted-foreground/30">·</span>
             <span className="tabular-nums"><ElapsedTime startedAt={startedAt} /></span>
           </div>
@@ -580,7 +580,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
   // Review profiles (built-in default plus the user's enabled skills). Loaded
   // from the discovery endpoint and refreshed after a skill is added.
   const [reviewProfiles, setReviewProfiles] = useState<Array<{ id: string; label: string; default?: boolean }>>([
-    { id: 'builtin:default', label: 'Default', default: true },
+    { id: 'builtin:default', label: '默认', default: true },
   ]);
   // Until the list has loaded we can't tell a saved custom pick from a removed
   // one, so a launch in that window would silently fall back to Default. Gate
@@ -802,14 +802,14 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
     // resolves to the built-in default.
     const review = effectiveReviewProfileId !== 'builtin:default' ? { reviewProfileId: effectiveReviewProfileId } : {};
     if (engine === 'claude') {
-      return { provider: 'claude', label: 'Code Review', model: claudeModel, effort: claudeEffort, ...review };
+      return { provider: 'claude', label: '代码评审', model: claudeModel, effort: claudeEffort, ...review };
     }
     if (engine === 'cursor') {
       // Omission ⇒ auto: drop the model client-side when it's `auto` so the POST
       // carries no model and the server lets Cursor pick its default.
       return {
         provider: 'cursor',
-        label: 'Code Review',
+        label: '代码评审',
         ...(cursorModel && cursorModel.toLowerCase() !== 'auto' ? { model: cursorModel } : {}),
         ...review,
       };
@@ -818,7 +818,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
       // Empty model ⇒ OpenCode's configured default; only send a real model id.
       return {
         provider: 'opencode',
-        label: 'Code Review',
+        label: '代码评审',
         ...(opencodeModel ? { model: opencodeModel } : {}),
         ...review,
       };
@@ -827,7 +827,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
       // Empty model ⇒ Pi's own default; only send a real model id.
       return {
         provider: 'pi',
-        label: 'Code Review',
+        label: '代码评审',
         ...(piModel ? { model: piModel } : {}),
         thinking: piThinking,
         ...review,
@@ -837,14 +837,14 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
       // Empty model ⇒ Copilot's own pick; only send a real model id.
       return {
         provider: 'copilot',
-        label: 'Code Review',
+        label: '代码评审',
         ...(copilotModel ? { model: copilotModel } : {}),
         ...review,
       };
     }
     return {
       provider: 'codex',
-      label: 'Code Review',
+      label: '代码评审',
       model: codexModel,
       reasoningEffort: codexReasoning,
       ...(codexFast && { fastMode: true }),
@@ -853,7 +853,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
   };
   const buildTourLaunch = (): LaunchParams => ({
     provider: 'tour',
-    label: 'Code Tour',
+    label: '代码导览',
     engine: tourEngine,
     model: tourEngine === 'claude' ? tourClaudeModel : tourCodexModel,
     ...(tourEngine === 'claude'
@@ -872,7 +872,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
       // guideCursorModel's definition in useAgentSettings).
       return {
         provider: 'guide',
-        label: 'Guided Review',
+        label: '引导式评审',
         engine: 'cursor',
         ...(guideCursorModel && guideCursorModel.toLowerCase() !== 'auto' ? { model: guideCursorModel } : {}),
       };
@@ -880,7 +880,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
     if (guideEngine === 'opencode') {
       return {
         provider: 'guide',
-        label: 'Guided Review',
+        label: '引导式评审',
         engine: 'opencode',
         ...(guideOpencodeModel ? { model: guideOpencodeModel } : {}),
       };
@@ -888,7 +888,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
     if (guideEngine === 'pi') {
       return {
         provider: 'guide',
-        label: 'Guided Review',
+        label: '引导式评审',
         engine: 'pi',
         ...(guidePiModel ? { model: guidePiModel } : {}),
         thinking: guidePiThinking,
@@ -897,14 +897,14 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
     if (guideEngine === 'copilot') {
       return {
         provider: 'guide',
-        label: 'Guided Review',
+        label: '引导式评审',
         engine: 'copilot',
         ...(guideCopilotModel ? { model: guideCopilotModel } : {}),
       };
     }
     return {
       provider: 'guide',
-      label: 'Guided Review',
+      label: '引导式评审',
       engine: guideEngine,
       model: guideEngine === 'claude' ? guideClaudeModel : guideCodexModel,
       ...(guideEngine === 'claude'
@@ -938,7 +938,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
         : buildGuideLaunch();
     launchingRef.current = true;
     setPendingLaunch({
-      label: params.label ?? 'Agent job',
+      label: params.label ?? 'agent 任务',
       ...(params.provider && { provider: params.provider }),
       startedAt: Date.now(),
     });
@@ -947,10 +947,10 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
     try {
       const result = await onLaunch(params);
       if (result === null) {
-        setLaunchError('Could not start agent job.');
+        setLaunchError('无法启动 agent 任务。');
       }
     } catch (error) {
-      setLaunchError(error instanceof Error ? error.message : 'Could not start agent job.');
+      setLaunchError(error instanceof Error ? error.message : '无法启动 agent 任务。');
     } finally {
       launchingRef.current = false;
       setPendingLaunch(null);
@@ -975,7 +975,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
     engines: E[],
     iconMap: Record<E, React.FC<{ className?: string }>>,
     labelMap: Record<E, string>,
-    configLabel: string = 'Engine',
+    configLabel: string = '引擎',
   ) {
     const StaticIcon: React.FC<{ className?: string }> = iconMap[value];
     return (
@@ -1020,14 +1020,14 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
     value: string,
     onChange: (value: string) => void,
   ) => (
-    <ConfigRow label="Model" stacked>
+    <ConfigRow label="模型" stacked>
       {catalogs[engine].settled ? (
         <>
           <SelectMenu value={value} options={modelSelectOptions(catalogs[engine].models, value)} onChange={onChange} />
           <ModelSourceHint tool={engine} info={catalogs[engine]} className="text-[10px] text-muted-foreground/50" />
         </>
       ) : (
-        renderStaticChoice('Loading models…', <Loader2 className="animate-spin text-muted-foreground" size={11} />)
+        renderStaticChoice('正在加载模型…', <Loader2 className="animate-spin text-muted-foreground" size={11} />)
       )}
     </ConfigRow>
   );
@@ -1059,10 +1059,10 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
   ) => (
     <>
       <div className="flex items-center gap-1.5 text-[10px] text-amber-600 dark:text-amber-400">
-        <span className="rounded bg-amber-500/10 px-1 py-px font-medium">experimental</span>
-        <span className="text-muted-foreground/50">Findings are prompt-enforced</span>
+        <span className="rounded bg-amber-500/10 px-1 py-px font-medium">实验性</span>
+        <span className="text-muted-foreground/50">发现由提示词约束</span>
       </div>
-      <ConfigRow label="Model" stacked>
+      <ConfigRow label="模型" stacked>
         {models.length > 1 ? (
           <SelectMenu value={model} options={models} onChange={setModel} />
         ) : (
@@ -1078,7 +1078,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
       {availableModes.length > 0 && (
         <div className="border-b border-border/40 p-3">
           <div className="mb-2 font-medium text-[9px] uppercase tracking-wider text-muted-foreground/40">
-            Launch agent
+            启动 agent
           </div>
 
           <div className="space-y-2">
@@ -1088,7 +1088,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
                 options={modeOptions}
                 onChange={(next) => setSelectedMode(next as AgentMode)}
                 icon={<Bot className="shrink-0 text-muted-foreground/50" size={12} />}
-                placeholder="Select mode"
+                placeholder="选择模式"
               />
             ) : (
               renderStaticChoice(
@@ -1107,28 +1107,28 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
                   availableReviewEngines,
                   REVIEW_ENGINE_ICON,
                   REVIEW_ENGINE_LABEL,
-                  'Provider',
+                  '提供方',
                 )}
-                <ConfigRow label="Review" stacked>
+                <ConfigRow label="评审" stacked>
                   <SelectMenu
                     value={effectiveReviewProfileId}
                     options={reviewProfiles.map((p) => ({ value: p.id, label: p.label }))}
                     onChange={setReviewProfileId}
-                    footerAction={{ label: 'Add new review', onClick: () => setAddReviewOpen(true) }}
+                    footerAction={{ label: '添加新评审', onClick: () => setAddReviewOpen(true) }}
                   />
                 </ConfigRow>
                 {reviewEngine === 'claude' && (
                   <>
                     {renderCatalogModelPicker('claude', claudeModel, setClaudeModel)}
-                    {renderEffortPicker('Effort', catalogs.claude.models, claudeModel, claudeEffort, setClaudeEffort)}
+                    {renderEffortPicker('投入', catalogs.claude.models, claudeModel, claudeEffort, setClaudeEffort)}
                   </>
                 )}
                 {reviewEngine === 'codex' && (
                   <>
                     {renderCatalogModelPicker('codex', codexModel, setCodexModel)}
-                    {renderEffortPicker('Reasoning', catalogs.codex.models, codexModel, codexReasoning, setCodexReasoning)}
+                    {renderEffortPicker('推理', catalogs.codex.models, codexModel, codexReasoning, setCodexReasoning)}
                     {modelSupportsFast(catalogs.codex.models, codexModel) && (
-                      <ConfigRow label="Fast mode">
+                      <ConfigRow label="快速模式">
                         <Toggle checked={codexFast} onChange={setCodexFast} />
                       </ConfigRow>
                     )}
@@ -1139,7 +1139,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
                 {reviewEngine === 'pi' && (
                   <>
                     {renderMarkerEngineConfig(piModel, piModels, setPiModel)}
-                    <ConfigRow label="Thinking" stacked>
+                    <ConfigRow label="思考" stacked>
                       <SegmentedPicker options={PI_THINKING} value={piThinking} onChange={setPiThinking} />
                     </ConfigRow>
                   </>
@@ -1157,14 +1157,14 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
 
                 {/* Claude-only: effort level */}
                 {tourEngine === 'claude' &&
-                  renderEffortPicker('Effort', catalogs.claude.models, tourClaudeModel, tourClaudeEffort, setTourClaudeEffort)}
+                  renderEffortPicker('投入', catalogs.claude.models, tourClaudeModel, tourClaudeEffort, setTourClaudeEffort)}
 
                 {/* Codex-only: reasoning effort + fast mode */}
                 {tourEngine === 'codex' && (
                   <>
-                    {renderEffortPicker('Reasoning', catalogs.codex.models, tourCodexModel, tourCodexReasoning, setTourCodexReasoning)}
+                    {renderEffortPicker('推理', catalogs.codex.models, tourCodexModel, tourCodexReasoning, setTourCodexReasoning)}
                     {modelSupportsFast(catalogs.codex.models, tourCodexModel) && (
-                      <ConfigRow label="Fast mode">
+                      <ConfigRow label="快速模式">
                         <Toggle checked={tourCodexFast} onChange={setTourCodexFast} />
                       </ConfigRow>
                     )}
@@ -1181,13 +1181,13 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
 
                 {/* Claude-only: effort level */}
                 {guideEngine === 'claude' &&
-                  renderEffortPicker('Effort', catalogs.claude.models, guideClaudeModel, guideClaudeEffort, setGuideClaudeEffort)}
+                  renderEffortPicker('投入', catalogs.claude.models, guideClaudeModel, guideClaudeEffort, setGuideClaudeEffort)}
 
                 {/* Codex-only: reasoning effort. No "Fast mode" toggle here
                     (unlike review/tour's codex blocks above) — fast mode is
                     deliberately not offered for guide. */}
                 {guideEngine === 'codex' &&
-                  renderEffortPicker('Reasoning', catalogs.codex.models, guideCodexModel, guideCodexReasoning, setGuideCodexReasoning)}
+                  renderEffortPicker('推理', catalogs.codex.models, guideCodexModel, guideCodexReasoning, setGuideCodexReasoning)}
 
                 {/* Marker engines: same live-catalog model picker as review mode,
                     but bound to the guide-scoped settings (see useAgentSettings) so
@@ -1197,7 +1197,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
                 {guideEngine === 'pi' && (
                   <>
                     {renderMarkerEngineConfig(guidePiModel, piModels, setGuidePiModel)}
-                    <ConfigRow label="Thinking" stacked>
+                    <ConfigRow label="思考" stacked>
                       <SegmentedPicker options={PI_THINKING} value={guidePiThinking} onChange={setGuidePiThinking} />
                     </ConfigRow>
                   </>
@@ -1214,7 +1214,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
             className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2 font-medium text-[12px] text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {pendingLaunch ? <Loader2 className="animate-spin" size={11} /> : <Play size={11} />}
-            {pendingLaunch ? 'Starting...' : 'Run'}
+            {pendingLaunch ? '正在启动…' : '运行'}
           </button>
           {launchError && (
             <p className="mt-2 text-[10px] leading-snug text-destructive/80">
@@ -1238,8 +1238,8 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
             <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-surface-1/50">
               <ReviewAgentsIcon className="h-4 w-4 text-muted-foreground/40" />
             </div>
-            <p className="text-[11px] text-muted-foreground/40">No agent jobs</p>
-            <p className="mt-0.5 text-[10px] text-muted-foreground/35">Launch an agent above</p>
+            <p className="text-[11px] text-muted-foreground/40">没有 agent 任务</p>
+            <p className="mt-0.5 text-[10px] text-muted-foreground/35">在上方启动 agent</p>
           </div>
         ) : (
           sortedJobs.map((job) => (
@@ -1266,7 +1266,7 @@ export const AgentsTab: React.FC<AgentsTabProps> = ({
             className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/5 py-1.5 font-medium text-[10px] text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400"
           >
             <Square size={8} />
-            Kill all ({runningCount})
+            全部终止（{runningCount}）
           </button>
         </div>
       )}

@@ -176,7 +176,7 @@ describe.if(hasDom)('Rich-text Copy on HTML surfaces', () => {
       'text/html': '<pre>Cut &lt;quote&gt;</pre>',
       'text/plain': 'Cut <quote>',
     }]);
-    const label = 'Copied as plain text (formatting not available; first 11 characters only)';
+    const label = '已复制为纯文本（格式不可用；仅前 11 个字符）';
     expect(titles()).toContain(label);
 
     await fromBridge(answer(requests()[0].id, { html: '<p>late</p>', text: 'late' }));
@@ -196,7 +196,7 @@ describe.if(hasDom)('Rich-text Copy on HTML surfaces', () => {
     await fromBridge(answer(requests()[0].id, { text: 'a < b', tooLarge: true }));
     await settle();
     expect(clipboard.writes).toEqual([{ 'text/html': '<pre>a &lt; b</pre>', 'text/plain': 'a < b' }]);
-    expect(titles()).toContain('Copied as plain text (too large for rich text)');
+    expect(titles()).toContain('已复制为纯文本（超出富文本大小限制）');
 
     await fromBridge({ ...selection, text: 'Other words' });
     await press();
@@ -204,7 +204,7 @@ describe.if(hasDom)('Rich-text Copy on HTML surfaces', () => {
     await settle();
     expect(clipboard.write).toHaveBeenCalledTimes(2);
     expect(clipboard.writes[1]).toEqual({ 'text/html': '<pre>Other words, whole</pre>', 'text/plain': 'Other words, whole' });
-    expect(titles()).toContain('Copied as plain text (formatting not available)');
+    expect(titles()).toContain('已复制为纯文本（格式不可用）');
     expect(clipboard.writeText).not.toHaveBeenCalled();
   });
 
@@ -219,13 +219,13 @@ describe.if(hasDom)('Rich-text Copy on HTML surfaces', () => {
     await settle();
     expect(clipboard.write).toHaveBeenCalledTimes(1);
     expect(clipboard.writes[0]['text/html']).toBe('<pre>amps</pre>');
-    expect(titles()).toContain('Copied as plain text (too large for rich text)');
+    expect(titles()).toContain('已复制为纯文本（超出富文本大小限制）');
 
     await fromBridge({ ...selection, text: 'Long words' });
     await press();
     await fromBridge(answer(requests()[1].id, { text: 'x'.repeat(262_144), truncated: true, tooLarge: true }));
     await settle();
     expect(clipboard.writes[1]['text/plain']).toHaveLength(262_144);
-    expect(titles()).toContain('Copied as plain text (too large for rich text; first 262,144 characters only)');
+    expect(titles()).toContain('已复制为纯文本（超出富文本大小限制；仅前 262,144 个字符）');
   });
 });

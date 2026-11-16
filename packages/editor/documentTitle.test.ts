@@ -68,7 +68,7 @@ describe('several files (bundle)', () => {
     bundle: { index: 0, total: 2 },
   });
   test('tab names the file and its place', () => {
-    expect(documentTabTitle(input)).toBe('spec.md (1 of 2) · acme/payments');
+    expect(documentTabTitle(input)).toBe('spec.md（第 1 个，共 2 个） · acme/payments');
   });
   test('the header names nothing: the switcher already does', () => {
     expect(documentHeaderName(input)).toBeNull();
@@ -76,10 +76,10 @@ describe('several files (bundle)', () => {
   });
   test('the tab follows the switcher', () => {
     expect(documentTabTitle({ ...input, linkedPath: '/repo/mock.html', bundle: { index: 1, total: 2 } }))
-      .toBe('mock.html (2 of 2) · acme/payments');
+      .toBe('mock.html（第 2 个，共 2 个） · acme/payments');
   });
   test('compact title is unchanged', () => {
-    expect(compactDocumentTitle(input)).toBe('spec.md (1 of 2)');
+    expect(compactDocumentTitle(input)).toBe('spec.md（第 1 个，共 2 个）');
   });
 });
 
@@ -90,7 +90,7 @@ describe('folder', () => {
   test('before a file is chosen: the folder', () => {
     expect(documentTabTitle(folder)).toBe('docs/ · acme/payments');
     expect(documentHeaderName(folder)).toEqual({ name: '/repo/docs', title: '/repo/docs', cutsFromStart: true });
-    expect(compactDocumentTitle(folder)).toBe('Choose a file');
+    expect(compactDocumentTitle(folder)).toBe('选择文件');
   });
   // Fails if the header goes back to naming the open file, or the tab stops
   // naming it (several tabs of one folder stay apart only by the file, #2061).
@@ -118,11 +118,11 @@ describe('folder', () => {
 describe('last message', () => {
   const input = annotate({ annotateSource: 'message' });
   test('tab and header say Last message, with no path to show', () => {
-    expect(documentTabTitle(input)).toBe('Last message · acme/payments');
-    expect(documentHeaderName(input)).toEqual({ name: 'Last message' });
+    expect(documentTabTitle(input)).toBe('最后一条消息 · acme/payments');
+    expect(documentHeaderName(input)).toEqual({ name: '最后一条消息' });
   });
   test('compact title is unchanged', () => {
-    expect(compactDocumentTitle(input)).toBe('Message');
+    expect(compactDocumentTitle(input)).toBe('消息');
   });
 });
 
@@ -150,11 +150,11 @@ describe('URL and live app', () => {
 
 describe('plan review', () => {
   test('tab names the plan by its first heading', () => {
-    expect(documentTabTitle({ ...base, planHeading: 'Add partial refunds' })).toBe('Add partial refunds (plan) · acme/payments');
+    expect(documentTabTitle({ ...base, planHeading: 'Add partial refunds' })).toBe('Add partial refunds（计划） · acme/payments');
   });
   test('a revision with a new heading renames the tab', () => {
     expect(documentTabTitle({ ...base, planHeading: 'Add partial and full refunds' }))
-      .toBe('Add partial and full refunds (plan) · acme/payments');
+      .toBe('Add partial and full refunds（计划） · acme/payments');
   });
   test('no heading keeps today\'s title', () => {
     expect(documentTabTitle({ ...base, planHeading: null })).toBe('acme/payments · Plannotator');
@@ -164,7 +164,7 @@ describe('plan review', () => {
     expect(documentHeaderName({ ...base, planHeading: 'Add partial refunds' })).toBeNull();
   });
   test('compact title is unchanged', () => {
-    expect(compactDocumentTitle(base)).toBe('Plan');
+    expect(compactDocumentTitle(base)).toBe('计划');
   });
 });
 
@@ -172,7 +172,7 @@ describe('outside a git repository', () => {
   test('the name sits beside Plannotator, not the folder name', () => {
     const input = annotate({ sourceFilePath: '/tmp/scratch/notes.md', repo: { display: 'scratch' } });
     expect(documentTabTitle(input)).toBe('notes.md · Plannotator');
-    expect(documentTabTitle({ ...base, planHeading: 'Fix it', repo: { display: 'scratch' } })).toBe('Fix it (plan) · Plannotator');
+    expect(documentTabTitle({ ...base, planHeading: 'Fix it', repo: { display: 'scratch' } })).toBe('Fix it（计划） · Plannotator');
   });
   test('a repository with no remote still counts (it has a branch)', () => {
     const input = annotate({ sourceFilePath: '/r/a.md', repo: { display: 'local-repo', branch: 'main' } });

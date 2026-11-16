@@ -56,28 +56,28 @@ export function claimAutoUpdateNotice(notice: AutoUpdateNotice): boolean {
 /** Title and description for the toast. */
 export function describeAutoUpdateNotice(notice: AutoUpdateNotice): { title: string; description: string } {
   if (notice.kind === 'updated') {
-    return { title: `Updated to v${notice.version}`, description: 'Plannotator updated itself in the background.' };
+    return { title: `已更新至 v${notice.version}`, description: 'Plannotator 已在后台完成自我更新。' };
   }
   if (notice.reason === 'mismatch') {
     return {
-      title: `Update to v${notice.version} stopped`,
-      description: "The download didn't match the checksum Plannotator fetched for it. Nothing was changed; it tries again later.",
+      title: `更新至 v${notice.version} 已停止`,
+      description: '下载内容与 Plannotator 获取的校验和不一致。未做任何更改；稍后会重试。',
     };
   }
   if (notice.reason === 'prepare') {
     return {
-      title: "Couldn't prepare the update",
-      description: 'The temp folder couldn’t hold it. Nothing was changed. Run plannotator update to see why and what to do.',
+      title: '无法准备更新',
+      description: '临时文件夹空间不足，无法存放更新包。未做任何更改。运行 plannotator update 查看原因和处理方法。',
     };
   }
   if (notice.reason === 'download') {
     return {
-      title: "Couldn't download the update",
-      description: 'Nothing was changed. Try again later: plannotator update',
+      title: '无法下载更新',
+      description: '未做任何更改。请稍后再试：plannotator update',
     };
   }
   return {
-    title: 'Auto-update failed',
-    description: notice.logPath ? `See ${notice.logPath}` : `Could not install v${notice.version}.`,
+    title: '自动更新失败',
+    description: notice.logPath ? `参见 ${notice.logPath}` : `无法安装 v${notice.version}。`,
   };
 }

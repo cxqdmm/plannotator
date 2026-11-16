@@ -54,7 +54,7 @@ describe.if(hasDom)('DiffTypePicker since-base label (DOM)', () => {
         activeBase="feature/part-1"
       />,
     );
-    expect(el.textContent).toContain('All changes since feature/part-1');
+    expect(el.textContent).toContain('自 feature/part-1 的全部更改');
     expect(el.textContent).not.toContain('origin/main');
   });
 
@@ -68,7 +68,7 @@ describe.if(hasDom)('DiffTypePicker since-base label (DOM)', () => {
         activeBase="4f2a9c1d4f2a9c1d4f2a9c1d4f2a9c1d4f2a9c1d"
       />,
     );
-    expect(el.textContent).toContain('All changes since 4f2a9c1');
+    expect(el.textContent).toContain('自 4f2a9c1 的全部更改');
   });
 
   test('falls back to the baked label without a base picker or live base', async () => {

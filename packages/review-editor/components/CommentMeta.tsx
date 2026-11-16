@@ -55,7 +55,7 @@ export const CommentMeta: React.FC<CommentMetaProps> = ({
           }`}
         >
           {author}
-          {isCurrentUser(author) && ' (me)'}
+          {isCurrentUser(author) && '（我）'}
         </span>
       )}
     </div>

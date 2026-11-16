@@ -62,7 +62,7 @@ function DocumentPreview({
     return (
       <div ref={previewRef} className="absolute inset-0 overflow-hidden bg-white">
         <iframe
-          title={`${artifact.name} preview`}
+          title={`${artifact.name} 预览`}
           srcDoc={injectArtifactBaseUrl(state.content, artifact.url, provider)}
           sandbox=""
           tabIndex={-1}
@@ -151,7 +151,7 @@ export function PRArtifactGallery({
   if (artifacts.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-        No visible artifacts
+        没有可见的附件
       </div>
     );
   }
@@ -165,7 +165,7 @@ export function PRArtifactGallery({
           <button
             key={artifact.id}
             type="button"
-            aria-label={`Open ${artifact.name}`}
+            aria-label={`打开 ${artifact.name}`}
             className="group relative aspect-square overflow-hidden rounded-[6px] bg-card text-left shadow-sm ring-1 ring-inset ring-border/55 transition-[transform,box-shadow] duration-150 ease-out hover:shadow-md hover:ring-foreground/20 active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
             onClick={() => onSelectArtifact(artifact.id)}
           >

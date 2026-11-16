@@ -66,7 +66,7 @@ export function useAgents(origin: Origin | null, surface: AgentSwitchSurface = '
       if (settings.customName) {
         const exists = validateAgent(settings.customName);
         if (!exists) {
-          return `Agent "${settings.customName}" not found in OpenCode. It may cause errors.`;
+          return `在 OpenCode 中未找到 agent "${settings.customName}"。这可能导致错误。`;
         }
       }
       return null;
@@ -75,7 +75,7 @@ export function useAgents(origin: Origin | null, surface: AgentSwitchSurface = '
     // Regular agent selection
     const exists = validateAgent(settings.switchTo);
     if (!exists) {
-      return `Agent "${settings.switchTo}" not found in OpenCode. Select another or it may cause errors.`;
+      return `在 OpenCode 中未找到 agent "${settings.switchTo}"。请选择其他 agent，否则可能导致错误。`;
     }
 
     return null;

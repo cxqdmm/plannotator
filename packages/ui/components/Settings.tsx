@@ -208,7 +208,7 @@ interface SettingsProps {
 // --- Review-mode Display tab (diff display options) ---
 
 const DIFF_FONT_OPTIONS = [
-  { value: '', label: 'Theme Default' },
+  { value: '', label: '主题默认' },
   { value: 'Fira Code', label: 'Fira Code' },
   { value: 'Hack', label: 'Hack' },
   { value: 'IBM Plex Mono', label: 'IBM Plex Mono' },
@@ -221,8 +221,8 @@ const DIFF_FONT_OPTIONS = [
 ];
 
 export const DIFF_STYLE_OPTIONS = [
-  { value: 'split' as const, label: 'Split' },
-  { value: 'unified' as const, label: 'Unified' },
+  { value: 'split' as const, label: '并排' },
+  { value: 'unified' as const, label: '统一' },
 ];
 /**
  * The modifier gate is the platform's primary modifier: Cmd on macOS, Ctrl on
@@ -230,55 +230,55 @@ export const DIFF_STYLE_OPTIONS = [
  * the reader actually has.
  */
 export const TOKEN_HOVER_TRIGGER_OPTIONS = [
-  { value: 'hover' as const, label: 'On hover' },
-  { value: 'modifier' as const, label: `Hold ${modKeyWord}` },
-  { value: 'off' as const, label: 'Off' },
+  { value: 'hover' as const, label: '悬停时' },
+  { value: 'modifier' as const, label: `按住 ${modKeyWord}` },
+  { value: 'off' as const, label: '关闭' },
 ];
 /** SegmentedControl keys on strings, so the ms values ride as their digits. */
 export type TokenHoverDelayOption = '150' | '300' | '700';
 export const TOKEN_HOVER_DELAY_OPTIONS = [
-  { value: '150' as const, label: 'Fast' },
-  { value: '300' as const, label: 'Default' },
-  { value: '700' as const, label: 'Relaxed' },
+  { value: '150' as const, label: '快速' },
+  { value: '300' as const, label: '默认' },
+  { value: '700' as const, label: '宽松' },
 ];
 export const OVERFLOW_OPTIONS = [
-  { value: 'scroll' as const, label: 'Scroll' },
-  { value: 'wrap' as const, label: 'Wrap' },
+  { value: 'scroll' as const, label: '滚动' },
+  { value: 'wrap' as const, label: '换行' },
 ];
 export const INDICATOR_OPTIONS = [
-  { value: 'bars' as const, label: 'Bars' },
-  { value: 'classic' as const, label: 'Classic' },
-  { value: 'none' as const, label: 'None' },
+  { value: 'bars' as const, label: '条形' },
+  { value: 'classic' as const, label: '经典' },
+  { value: 'none' as const, label: '无' },
 ];
 export const LINE_DIFF_OPTIONS = [
-  { value: 'word-alt' as const, label: 'Word-Alt' },
-  { value: 'word' as const, label: 'Word' },
-  { value: 'char' as const, label: 'Char' },
-  { value: 'none' as const, label: 'None' },
+  { value: 'word-alt' as const, label: '词-交替' },
+  { value: 'word' as const, label: '词' },
+  { value: 'char' as const, label: '字符' },
+  { value: 'none' as const, label: '无' },
 ];
 export const LINE_BG_INTENSITY_OPTIONS: { value: DiffLineBgIntensity; label: string }[] = [
-  { value: 'subtle', label: 'Subtle' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'strong', label: 'Strong' },
+  { value: 'subtle', label: '轻微' },
+  { value: 'normal', label: '正常' },
+  { value: 'strong', label: '强烈' },
 ];
 const DEFAULT_DIFF_TYPE_OPTIONS = [
   // "All Changes" belongs to since-base (the flagship composite); uncommitted
   // reverts to its plain name so the two stay distinguishable side by side.
-  { value: 'since-base' as const, label: 'All Changes (Recommended)', description: "Everything since your branch split from main — committed, uncommitted, and untracked" },
-  { value: 'local-vs-remote' as const, label: 'Local vs Remote Branch', description: "Your local branch and working tree compared with its last-fetched remote-tracking branch" },
-  { value: 'uncommitted' as const, label: 'Uncommitted', description: "Everything you've changed since your last commit" },
-  { value: 'unstaged' as const, label: 'Unstaged', description: "Only changes you haven't staged yet" },
-  { value: 'staged' as const, label: 'Staged', description: "Only changes you've staged for commit" },
-  { value: 'merge-base' as const, label: 'Committed changes (PR view)', description: "Everything you've committed on this branch" },
-  { value: 'all' as const, label: 'All Files (HEAD)', description: "Every tracked file at HEAD, shown as additions" },
+  { value: 'since-base' as const, label: '全部更改（推荐）', description: "自你的分支从 main 分出以来的所有内容——已提交、未提交和未跟踪的更改" },
+  { value: 'local-vs-remote' as const, label: '本地分支与远程分支', description: "将本地分支和工作树与其最近拉取的远程跟踪分支进行比较" },
+  { value: 'uncommitted' as const, label: '未提交', description: "自上次提交以来的所有更改" },
+  { value: 'unstaged' as const, label: '未暂存', description: "仅显示你尚未暂存的更改" },
+  { value: 'staged' as const, label: '已暂存', description: "仅显示你已暂存待提交的更改" },
+  { value: 'merge-base' as const, label: '已提交的更改（PR 视图）', description: "你在本分支上提交的所有内容" },
+  { value: 'all' as const, label: '所有文件（HEAD）', description: "HEAD 处的每个已跟踪文件，以新增形式显示" },
 ];
 // Labels match the jj diff picker (getJjContext in packages/shared/jj-core.ts).
 const JJ_DEFAULT_DIFF_TYPE_OPTIONS = [
-  { value: 'jj-current', label: 'Current change', description: 'Only the working-copy change (@)' },
-  { value: 'jj-last', label: 'Last change', description: 'The change just before the working copy (@-)' },
-  { value: 'jj-line', label: 'Line of work', description: 'Every change on your line of work since it left trunk' },
-  { value: 'jj-evolog', label: 'Evolution diff', description: 'How the current change has evolved' },
-  { value: 'jj-all', label: 'Every file', description: 'Every file at the working copy, shown as additions' },
+  { value: 'jj-current', label: '当前更改', description: '仅工作副本中的更改（@）' },
+  { value: 'jj-last', label: '上一个更改', description: '紧邻工作副本之前的更改（@-）' },
+  { value: 'jj-line', label: '工作线', description: '自离开主干以来你的工作线上的所有更改' },
+  { value: 'jj-evolog', label: '演化 Diff', description: '当前更改是如何演化的' },
+  { value: 'jj-all', label: '所有文件', description: '工作副本中的每个文件，以新增形式显示' },
 ] as const;
 const JJ_REVIEW_DEFAULTS: VcsReviewSettingsDescriptor = {
   id: 'jj',
@@ -287,9 +287,9 @@ const JJ_REVIEW_DEFAULTS: VcsReviewSettingsDescriptor = {
   diffOptions: JJ_DEFAULT_DIFF_TYPE_OPTIONS.map(({ value, label, description }) => ({ id: value, label, description })),
 };
 const AGENT_TERMINAL_SIDE_OPTIONS: { value: AnnotateAgentTerminalSide; label: string }[] = [
-  { value: 'left', label: 'Left' },
-  { value: 'right', label: 'Right' },
-  { value: 'hidden', label: 'Hidden' },
+  { value: 'left', label: '左侧' },
+  { value: 'right', label: '右侧' },
+  { value: 'hidden', label: '隐藏' },
 ];
 
 function SegmentedControl<T extends string>({ options, value, onChange, disabled = false }: {
@@ -387,7 +387,7 @@ function AgentToolSettingRow({ setting, onChange }: {
     try {
       await onChange(next);
     } catch (e) {
-      setError(e instanceof Error && e.message ? e.message : 'Could not save the setting.');
+      setError(e instanceof Error && e.message ? e.message : '无法保存设置。');
     } finally {
       setSaving(false);
     }
@@ -398,11 +398,11 @@ function AgentToolSettingRow({ setting, onChange }: {
         checked={setting.enabled}
         onChange={(next) => void change(next)}
         disabled={locked}
-        label="Let the agent open reviews (plannotator tool)"
+        label="允许 agent 自行打开评审（plannotator 工具）"
         description={
           locked
-            ? `Set by PLANNOTATOR_AGENT_TOOL in your environment, so it is ${setting.enabled ? 'on' : 'off'} here.`
-            : `${agentToolHostName(setting.host)} can open reviews itself and keep working. ${agentToolCostNote(setting.host)} Applies from ${agentToolAppliesWhen(setting.host)}.`
+            ? `由环境变量 PLANNOTATOR_AGENT_TOOL 设置，因此此处为${setting.enabled ? '开启' : '关闭'}。`
+            : `${agentToolHostName(setting.host)} 可以自行打开评审并继续工作。${agentToolCostNote(setting.host)} 从${agentToolAppliesWhen(setting.host)}起生效。`
         }
       />
       {error && (
@@ -435,9 +435,9 @@ function VimSettingsTab({
   return (
     <div className="space-y-5">
       <div>
-        <div className="text-sm font-semibold">Vim mode</div>
+        <div className="text-sm font-semibold">Vim 模式</div>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          Navigate, select, and annotate the rendered document without reaching for the mouse.
+          无需使用鼠标即可导航、选择并标注渲染后的文档。
         </p>
       </div>
 
@@ -445,8 +445,8 @@ function VimSettingsTab({
         <ToggleSwitch
           checked={vimModeEnabled}
           onChange={onVimModeChange}
-          label="Vim controls"
-          description="Use Vim-style keys for document navigation and annotation. Off by default."
+          label="Vim 控制"
+          description="使用 Vim 风格按键进行文档导航和标注。默认关闭。"
         />
         <div className="border-t border-border" />
         <ToggleSwitch
@@ -455,8 +455,8 @@ function VimSettingsTab({
           label="Vim HUD"
           description={
             vimModeEnabled
-              ? 'Show the four-corner target reticle and navigation context.'
-              : 'Enable Vim controls first to use the target reticle.'
+              ? '显示四角目标准星和导航上下文。'
+              : '请先启用 Vim 控制以使用目标准星。'
           }
           disabled={!vimModeEnabled}
         />
@@ -464,11 +464,11 @@ function VimSettingsTab({
         <ToggleSwitch
           checked={vimModeEnabled && vimHudEnabled && vimHudKeyPanelEnabled}
           onChange={onVimHudKeyPanelChange}
-          label="Key panel"
+          label="按键面板"
           description={
             vimModeEnabled && vimHudEnabled
-              ? 'Show the bottom-right live keypress legend and command panel.'
-              : 'Enable the Vim HUD first to use the live keypress legend.'
+              ? '显示右下角的实时按键图例和命令面板。'
+              : '请先启用 Vim HUD 以使用实时按键图例。'
           }
           disabled={!vimModeEnabled || !vimHudEnabled}
         />
@@ -480,14 +480,14 @@ function VimSettingsTab({
             ?
           </span>
           <div>
-            <div className="text-xs font-semibold">Learn while you navigate</div>
+            <div className="text-xs font-semibold">边导航边学习</div>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Vim takes focus automatically when the page is ready. From other app controls, press{' '}
-              <span className="font-mono text-foreground">Esc</span> to return to the document, then
-              use <span className="font-mono text-foreground">j</span> and{' '}
-              <span className="font-mono text-foreground">k</span> to move by block. Press{' '}
-              <span className="font-mono text-foreground">?</span> for the complete key map,
-              even when the Key panel is hidden.
+              页面就绪后，Vim 会自动获得焦点。在其他应用控件中时，按{' '}
+              <span className="font-mono text-foreground">Esc</span> 返回文档，然后用{' '}
+              <span className="font-mono text-foreground">j</span> 和{' '}
+              <span className="font-mono text-foreground">k</span> 按块移动。按{' '}
+              <span className="font-mono text-foreground">?</span> 查看完整键位表，
+              即使按键面板已隐藏也可使用。
             </p>
           </div>
         </div>
@@ -502,9 +502,9 @@ function ReviewAnalysisTab({ packageChangesSetting }: { packageChangesSetting?: 
   return (
     <div className="space-y-5">
       <div>
-        <div className="text-sm font-semibold">Analysis layers</div>
+        <div className="text-sm font-semibold">分析层</div>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          Add structural context to the ordinary code diff. Each layer is independent and does no work while disabled.
+          为普通代码 Diff 添加上下文结构。每一层都相互独立，停用时不做任何工作。
         </p>
       </div>
 
@@ -512,15 +512,15 @@ function ReviewAnalysisTab({ packageChangesSetting }: { packageChangesSetting?: 
         <AnalysisLayerToggle
           checked={semanticDiffEnabled}
           onChange={(enabled) => configStore.set('semanticDiffEnabled', enabled)}
-          label="Semantic changes"
-          description="Organize added, changed, moved, and removed functions, classes, and other named code. Enabled by default."
+          label="语义更改"
+          description="整理新增、修改、移动和删除的函数、类及其他具名代码。默认启用。"
         />
         <div className="border-t border-border" />
         <AnalysisLayerToggle
           checked={callFlowEnabled}
           onChange={(enabled) => configStore.set('callFlowEnabled', enabled)}
-          label="Call flow"
-          description="Diffs for function call stacks across git commits. 22 languages supported (AST-based, built using Tree-sitter)."
+          label="调用流"
+          description="跨 git commit 的函数调用栈 Diff。支持 22 种语言（基于 AST，使用 Tree-sitter 构建）。"
         />
         {packageChangesSetting && (
           <>
@@ -528,18 +528,18 @@ function ReviewAnalysisTab({ packageChangesSetting }: { packageChangesSetting?: 
             <AnalysisLayerToggle
               checked={packageChangesSetting.card}
               onChange={(on) => packageChangesSetting.setCard(on)}
-              label="Package changes"
-              description="Added, removed and changed dependencies above package.json and lockfile diffs."
+              label="依赖包更改"
+              description="在 package.json 和 lockfile 的 Diff 上方显示新增、移除和更改的依赖。"
             />
             <div className="border-t border-border" />
             <AnalysisLayerToggle
               checked={packageChangesSetting.lookup}
               onChange={(on) => void packageChangesSetting.setLookup(on)}
               disabled={packageChangesSetting.lookupEnv === false}
-              label="Look up packages on npm"
+              label="在 npm 上查询包"
               description={packageChangesSetting.lookupEnv === false
-                ? 'Off: PLANNOTATOR_PACKAGE_LOOKUP=0.'
-                : 'License, release date and weekly downloads. Sends the names of changed public packages to registry.npmjs.org and api.npmjs.org.'}
+                ? '已关闭：PLANNOTATOR_PACKAGE_LOOKUP=0。'
+                : '许可证、发布日期和每周下载量。会把有更改的公共包名称发送到 registry.npmjs.org 和 api.npmjs.org。'}
             />
           </>
         )}
@@ -549,26 +549,26 @@ function ReviewAnalysisTab({ packageChangesSetting }: { packageChangesSetting?: 
         <div className="rounded-xl border border-border p-3.5">
           <div className="flex items-center gap-2 text-xs font-semibold">
             <span className="grid h-6 w-6 place-items-center rounded-md bg-primary/10 font-mono text-primary">▣</span>
-            Dock
+            停靠面板
           </div>
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            Open the complete analysis from the file panel. Rows jump to the relevant code location.
+            从文件面板打开完整分析。每一行都会跳转到相关代码位置。
           </p>
         </div>
         <div className="rounded-xl border border-border p-3.5">
           <div className="flex items-center gap-2 text-xs font-semibold">
             <span className="grid h-6 w-6 place-items-center rounded-md bg-primary/10 font-mono text-primary">⌁</span>
-            File lens
+            文件透镜
           </div>
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            File headers show compact counts and a focused popover for that file.
+            文件标题会显示简洁的计数，以及针对该文件的聚焦弹出框。
           </p>
         </div>
       </div>
 
       <div className="rounded-xl border border-warning/25 bg-warning/[0.05] p-4 text-xs leading-relaxed text-muted-foreground">
-        <span className="font-semibold text-foreground">Call flow is syntactic.</span>{' '}
-        It does not use type resolution or runtime traces, so treat it as navigation context—not proof that a path executes.
+        <span className="font-semibold text-foreground">调用流是语法层面的。</span>{' '}
+        它不使用类型解析或运行时追踪，因此请把它当作导航上下文——而不是某条路径确实会被执行的证据。
       </div>
     </div>
   );
@@ -623,15 +623,15 @@ const ReviewTab: React.FC<{ sinceBaseUnavailable?: boolean }> = ({ sinceBaseUnav
   return (
     <div className="space-y-5">
       <div className="space-y-2">
-        <div className={REVIEW_SECTION_HEADING}>Viewed files</div>
+        <div className={REVIEW_SECTION_HEADING}>已查看的文件</div>
         {/* Never write `reviewAutoViewed` directly — setReviewAutoViewed also
             consumes the first-time notice, since an explicit toggle is proof
             the reviewer already found the switch. */}
         <ToggleSwitch
           checked={reviewAutoViewed}
           onChange={(v) => setReviewAutoViewed(v)}
-          label="Auto-mark viewed"
-          description="Mark a file viewed when you scroll past it or move on to another file. Files you un-view stay un-viewed, and files that change on refresh become un-viewed."
+          label="自动标记为已查看"
+          description="滚动经过某个文件或切换到其他文件时，将其标记为已查看。手动取消查看的文件保持未查看；刷新后发生更改的文件会变回未查看。"
         />
       </div>
 
@@ -641,8 +641,8 @@ const ReviewTab: React.FC<{ sinceBaseUnavailable?: boolean }> = ({ sinceBaseUnav
         <div id="settings-review-git" className={REVIEW_SECTION_HEADING}>Git</div>
         <div className="space-y-2">
           <div>
-            <div className="text-sm font-medium">Default review view</div>
-            <div className="text-xs text-muted-foreground">Which panel a code review opens in</div>
+            <div className="text-sm font-medium">默认评审视图</div>
+            <div className="text-xs text-muted-foreground">代码评审默认打开的侧栏面板</div>
             {/* This is a GLOBAL preference — never hide the options because the
                 CURRENT repo can't serve them; just say so. Without this note,
                 picking Git status on a repo whose base ref doesn't resolve
@@ -659,8 +659,8 @@ const ReviewTab: React.FC<{ sinceBaseUnavailable?: boolean }> = ({ sinceBaseUnav
               via the panel toggle) and is never the opening view. */}
           <SegmentedControl
             options={[
-              { value: 'sections' as const, label: 'Git status' },
-              { value: 'tree' as const, label: 'Tree' },
+              { value: 'sections' as const, label: 'Git 状态' },
+              { value: 'tree' as const, label: '树形' },
             ]}
             value={reviewPanelView}
             onChange={setReviewPanelView}
@@ -668,8 +668,8 @@ const ReviewTab: React.FC<{ sinceBaseUnavailable?: boolean }> = ({ sinceBaseUnav
         </div>
         <div className="space-y-2">
           <div>
-            <div className="text-sm font-medium">Default diff view</div>
-            <div className="text-xs text-muted-foreground">Which changes to show when you open a code review</div>
+            <div className="text-sm font-medium">默认 Diff 视图</div>
+            <div className="text-xs text-muted-foreground">打开代码评审时显示哪些更改</div>
           </div>
           {/* Coupling (sections ⟺ since-base) lives in the shared setter —
               never write the pair by hand (see config/reviewView). */}
@@ -687,8 +687,8 @@ const ReviewTab: React.FC<{ sinceBaseUnavailable?: boolean }> = ({ sinceBaseUnav
         <div id="settings-review-jj" className={REVIEW_SECTION_HEADING}>Jujutsu</div>
         <div className="space-y-2">
           <div>
-            <div className="text-sm font-medium">Default diff view</div>
-            <div className="text-xs text-muted-foreground">Which changes to show when you open a review in a Jujutsu repository</div>
+            <div className="text-sm font-medium">默认 Diff 视图</div>
+            <div className="text-xs text-muted-foreground">在 Jujutsu 仓库中打开评审时显示哪些更改</div>
           </div>
           {/* Its own saved value: Git modes mean nothing in a jj repo, and jj has
               no Git status view, so nothing here is coupled to the Git half. */}
@@ -841,7 +841,7 @@ const FontFamilyField: React.FC<{
           />
           <div className="text-[11px]" aria-live="polite">
             {!normalizeFontFamilyName(customFontDraft) ? (
-              <span className="text-muted-foreground">Any font installed on this machine works — type its family name.</span>
+              <span className="text-muted-foreground">本机安装的任何字体都可以，直接输入字体家族名称。</span>
             ) : customFontInstalled === true ? (
               <span className="text-success">✓ Found on this machine</span>
             ) : customFontInstalled === false ? (
@@ -873,13 +873,13 @@ const ExperimentalTab: React.FC = () => {
   return (
     <div className="space-y-3" data-settings-experimental="">
       <div className="text-xs text-muted-foreground">
-        Features still being tried. Each stays off until you turn it on.
+        仍在试行中的功能。每项功能在你开启前都保持关闭。
       </div>
       <ToggleSwitch
         checked={editSuggestions}
         onChange={(v) => configStore.set('editSuggestions', v)}
-        label="Edit Code to Suggest"
-        description="Edit a file in place in the all-files view; your net change becomes a suggestion comment. Files are never written from the browser. Uses an experimental upstream editor."
+        label="编辑代码并生成建议"
+        description="在全部文件中视图原地编辑文件；你的净更改会变成一条建议评论。浏览器绝不会写入文件。使用实验性上游编辑器。"
       />
     </div>
   );
@@ -910,7 +910,7 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
           nor Off answers. */}
       <div className="space-y-3">
         <div>
-          <div className="text-sm font-medium">Hover cards</div>
+          <div className="text-sm font-medium">悬停卡片</div>
           <div className="text-xs text-muted-foreground">
             Rest the pointer on a symbol in a diff to see where it is defined and who
             references it. Needs ripgrep and a local checkout; nothing appears when the
@@ -924,7 +924,7 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
         />
         <div className="space-y-2">
           <div className="text-xs text-muted-foreground">
-            How long the pointer rests before a card is requested
+            指针停留多久后才请求卡片
           </div>
           <SegmentedControl
             options={TOKEN_HOVER_DELAY_OPTIONS}
@@ -939,16 +939,16 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
 
       {/* Font Family */}
       <FontFamilyField
-        label="Code Font"
-        description="Font family for diff code lines"
+        label="代码字体"
+        description="Diff 代码行的字体家族"
         value={diffFontFamily}
         onSave={(v) => configStore.set('diffFontFamily', v)}
         options={DIFF_FONT_OPTIONS}
         previewStack={monoFontStack}
-        previewText="Preview: const x = fn(42);"
-        customAriaLabel="Custom code font name"
-        customPlaceholder="Font name as installed, e.g. Iosevka"
-        notFoundText="Not found — diffs will fall back to monospace"
+        previewText="预览： const x = fn(42);"
+        customAriaLabel="自定义代码字体名称"
+        customPlaceholder="已安装字体的名称，例如 Iosevka"
+        notFoundText="未找到，Diff 将回退到等宽字体"
         loadFont={loadDiffFont}
         previewClassName="font-mono"
       />
@@ -959,11 +959,11 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm font-medium">Code Font Size</div>
-            <div className="text-xs text-muted-foreground">Font size for diff code lines</div>
+            <div className="text-sm font-medium">代码字号</div>
+            <div className="text-xs text-muted-foreground">Diff 代码行的字号</div>
           </div>
           <div className="text-xs tabular-nums text-muted-foreground min-w-[4ch] text-right">
-            {normalizeCssFontSize(diffFontSize) || 'Auto'}
+            {normalizeCssFontSize(diffFontSize) || '自动'}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -981,7 +981,7 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
               onClick={() => configStore.set('diffFontSize', '')}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              Reset
+              重置
             </button>
           )}
         </div>
@@ -994,8 +994,8 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
           the DESKTOP preference. Say what the phone is doing instead. */}
       <div className="space-y-2">
         <div>
-          <div className="text-sm font-medium">Diff Style</div>
-          <div className="text-xs text-muted-foreground">Split: side by side. Unified: one column.</div>
+          <div className="text-sm font-medium">Diff 样式</div>
+          <div className="text-xs text-muted-foreground">并排：左右分栏。统一：单列。</div>
           {isCompactTouchLayout && (
             <div className="text-xs text-muted-foreground mt-1">
               This layout shows unified diffs for the session; your desktop
@@ -1013,8 +1013,8 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
       {/* Line Overflow */}
       <div className="space-y-2">
         <div>
-          <div className="text-sm font-medium">Line Overflow</div>
-          <div className="text-xs text-muted-foreground">How to handle long lines in diffs</div>
+          <div className="text-sm font-medium">行溢出</div>
+          <div className="text-xs text-muted-foreground">Diff 中长行的处理方式</div>
         </div>
         <SegmentedControl options={OVERFLOW_OPTIONS} value={diffOverflow} onChange={(v) => configStore.set('diffOverflow', v)} />
       </div>
@@ -1024,7 +1024,7 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
       {/* Change Indicators */}
       <div className="space-y-2">
         <div>
-          <div className="text-sm font-medium">Change Indicators</div>
+          <div className="text-sm font-medium">更改指示器</div>
           <div className="text-xs text-muted-foreground">Style of +/- markers in the gutter</div>
         </div>
         <SegmentedControl options={INDICATOR_OPTIONS} value={diffIndicators} onChange={(v) => configStore.set('diffIndicators', v)} />
@@ -1035,8 +1035,8 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
       {/* Inline Diff Granularity */}
       <div className="space-y-2">
         <div>
-          <div className="text-sm font-medium">Inline Diff Granularity</div>
-          <div className="text-xs text-muted-foreground">Highlight granularity for inline changes</div>
+          <div className="text-sm font-medium">行内 Diff 粒度</div>
+          <div className="text-xs text-muted-foreground">行内更改的高亮粒度</div>
         </div>
         <SegmentedControl options={LINE_DIFF_OPTIONS} value={diffLineDiffType} onChange={(v) => configStore.set('diffLineDiffType', v)} />
       </div>
@@ -1047,7 +1047,7 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
       <ToggleSwitch
         checked={diffShowLineNumbers}
         onChange={(v) => configStore.set('diffShowLineNumbers', v)}
-        label="Show Line Numbers"
+        label="显示行号"
       />
 
       <div className="border-t border-border" />
@@ -1056,16 +1056,16 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
       <ToggleSwitch
         checked={diffShowBackground}
         onChange={(v) => configStore.set('diffShowBackground', v)}
-        label="Show Diff Background"
-        description="Colored backgrounds on added/deleted lines"
+        label="显示 Diff 背景"
+        description="为新增/删除的行添加彩色背景"
       />
 
       {/* Line Background Intensity */}
       {diffShowBackground && (
         <div className="space-y-2 pl-4">
           <div>
-            <div className="text-sm font-medium">Line Background Intensity</div>
-            <div className="text-xs text-muted-foreground">How prominent the colored line backgrounds appear</div>
+            <div className="text-sm font-medium">行背景强度</div>
+            <div className="text-xs text-muted-foreground">彩色行背景的显著程度</div>
           </div>
           <SegmentedControl options={LINE_BG_INTENSITY_OPTIONS} value={diffLineBgIntensity} onChange={(v) => configStore.set('diffLineBgIntensity', v)} />
         </div>
@@ -1077,8 +1077,8 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
       <ToggleSwitch
         checked={diffExpandUnchanged}
         onChange={(v) => configStore.set('diffExpandUnchanged', v)}
-        label="Expand Unchanged Regions"
-        description="Show full file content around changes by default"
+        label="展开未更改区域"
+        description="默认显示更改周围的完整文件内容"
       />
 
       <div className="border-t border-border" />
@@ -1087,8 +1087,8 @@ const ReviewDisplayTab: React.FC<{ isCompactTouchLayout?: boolean }> = ({ isComp
       <ToggleSwitch
         checked={diffHideWhitespace}
         onChange={(v) => configStore.set('diffHideWhitespace', v)}
-        label="Hide Whitespace"
-        description="Ignore whitespace-only changes in diffs"
+        label="隐藏空白字符"
+        description="忽略 Diff 中仅涉及空白的更改"
       />
 
       <div className="border-t border-border" />
@@ -1176,8 +1176,8 @@ const CommentsTab: React.FC = () => {
       <ToggleSwitch
         checked={conventionalComments}
         onChange={(v) => configStore.set('conventionalComments', v)}
-        label="Conventional Comments"
-        description="Add structured labels to review comments"
+        label="约定式评论"
+        description="为评审评论添加结构化标签"
       />
 
       <div className={`space-y-4 transition-opacity ${conventionalComments ? '' : 'opacity-40 pointer-events-none'}`}>
@@ -1187,7 +1187,7 @@ const CommentsTab: React.FC = () => {
       {/* How it works */}
       <div className="space-y-3">
         <div>
-          <div className="text-sm font-medium">How it works</div>
+          <div className="text-sm font-medium">工作原理</div>
           <div className="text-xs text-muted-foreground leading-relaxed mt-1">
             When enabled, a label picker appears above the comment input when annotating code.
             Labels classify your feedback intent, making it clear whether a comment is a blocking issue,
@@ -1203,14 +1203,14 @@ const CommentsTab: React.FC = () => {
             rel="noopener noreferrer"
             className="text-primary hover:underline"
           >
-            Conventional Comments
+            约定式评论
           </a>
           {' '}spec. Comments are exported as plain text, readable on GitHub, and parseable by tooling.
         </div>
 
         {/* Example output */}
         <div className="rounded-md border border-border bg-muted/30 p-3 space-y-1.5">
-          <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Example output</div>
+          <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">示例输出</div>
           <div className="font-mono text-[11px] text-foreground/80 leading-relaxed">
             <span className="font-bold">issue</span> <span className="text-muted-foreground">(blocking)</span>: This will throw if user is null — the guard was removed in the refactor.
           </div>
@@ -1222,9 +1222,9 @@ const CommentsTab: React.FC = () => {
       {/* Label editor */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-sm font-medium">Labels</div>
+          <div className="text-sm font-medium">标签</div>
           <div className="text-xs text-muted-foreground">
-            Customize labels and their default severity
+            自定义标签及其默认严重程度
           </div>
         </div>
         {!isDefault && (
@@ -1232,15 +1232,15 @@ const CommentsTab: React.FC = () => {
             onClick={resetToDefaults}
             className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
           >
-            Reset to defaults
+            恢复默认
           </button>
         )}
       </div>
 
       {/* Column headers */}
       <div className="flex items-end gap-2 px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-        <span className="flex-1">Label</span>
-        <span className="w-20 text-center">Blocking decorator</span>
+        <span className="flex-1">标签</span>
+        <span className="w-20 text-center">阻塞修饰符</span>
         <span className="w-6" />
       </div>
 
@@ -1278,7 +1278,7 @@ const CommentsTab: React.FC = () => {
             <button
               onClick={() => removeLabel(index)}
               className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
-              title="Remove label"
+              title="移除标签"
             >
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -1378,22 +1378,22 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
   const { agents: availableAgents, validateAgent, getAgentWarning } = useAgents(origin ?? null, agentSurface);
 
   const mainTabs = useMemo(() => {
-    const t: { id: SettingsTab; label: string }[] = [{ id: 'general', label: 'General' }];
-    t.push({ id: 'theme', label: 'Theme' });
+    const t: { id: SettingsTab; label: string }[] = [{ id: 'general', label: '通用' }];
+    t.push({ id: 'theme', label: '主题' });
     // Annotate renders the same document viewer as plan review, so the
     // document-level tabs apply there too. Only rows that describe a plan
     // decision (plan snapshots, plan-arrival auto-save, plan-time hooks,
     // post-approval permission mode / agent switch) stay plan-only.
     if (mode === 'plan' || annotateDocumentTabs) {
-      t.push({ id: 'display', label: 'Display' });
-      t.push({ id: 'saving', label: 'Saving' });
-      t.push({ id: 'labels', label: 'Labels' });
+      t.push({ id: 'display', label: '显示' });
+      t.push({ id: 'saving', label: '保存' });
+      t.push({ id: 'labels', label: '标签' });
     }
     if (mode === 'review') {
-      t.push({ id: 'review', label: 'Review' });
-      t.push({ id: 'display', label: 'Editor' });
-      t.push({ id: 'analysis', label: 'Analysis' });
-      t.push({ id: 'comments', label: 'Comments' });
+      t.push({ id: 'review', label: '评审' });
+      t.push({ id: 'display', label: '编辑器' });
+      t.push({ id: 'analysis', label: '分析' });
+      t.push({ id: 'comments', label: '评论' });
       if (aiProviders.length > 0) {
         t.push({ id: 'ai', label: 'AI' });
       }
@@ -1401,7 +1401,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
     if (mode !== 'review') {
       t.push({ id: 'vim', label: 'Vim' });
     }
-    t.push({ id: 'shortcuts', label: 'Shortcuts' });
+    t.push({ id: 'shortcuts', label: '快捷键' });
     if (mode === 'plan') {
       t.push({ id: 'hooks', label: 'Hooks' });
     }
@@ -1409,14 +1409,14 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
   }, [mode, annotateDocumentTabs, aiProviders.length]);
 
   const integrationTabs: { id: SettingsTab; label: string }[] = [
-    { id: 'files', label: 'Files' },
+    { id: 'files', label: '文件' },
     ...(mode === 'plan' || annotateDocumentTabs
       ? [{ id: 'obsidian' as SettingsTab, label: 'Obsidian' }, { id: 'bear' as SettingsTab, label: 'Bear' }, { id: 'octarine' as SettingsTab, label: 'Octarine' }, ...(isNotionAvailable() ? [{ id: 'notion' as SettingsTab, label: 'Notion' }] : [])]
       : []),
   ];
   // Experimental is the last tab, on its own below the integrations (the owner,
   // 2026-10-27). Only where it has a setting: code review's Edit Code to Suggest.
-  const experimentalTabs: { id: SettingsTab; label: string }[] = mode === 'review' ? [{ id: 'experimental', label: 'Experimental' }] : [];
+  const experimentalTabs: { id: SettingsTab; label: string }[] = mode === 'review' ? [{ id: 'experimental', label: '实验性' }] : [];
   const obsidianDefaultSaveAvailable = obsidian.enabled && getEffectiveVaultPath(obsidian).trim().length > 0;
   const bearDefaultSaveAvailable = bear.enabled;
   const octarineDefaultSaveAvailable = octarine.enabled && octarine.workspace.trim().length > 0;
@@ -1603,7 +1603,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
       <button
         onClick={() => setShowDialog(true)}
         className="relative p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        title="Settings"
+        title="设置"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -1631,10 +1631,10 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
           >
             {taterMode && <TaterSpritePullup />}
             <div className="flex items-center justify-between p-4 border-b border-border">
-              <h3 id="plannotator-settings-title" className="font-semibold text-sm">Settings</h3>
+              <h3 id="plannotator-settings-title" className="font-semibold text-sm">设置</h3>
               <button
                 type="button"
-                aria-label="Close settings"
+                aria-label="关闭设置"
                 onClick={() => setShowDialog(false)}
                 className="p-1.5 rounded-md bg-muted hover:bg-muted/80 text-foreground transition-colors"
               >
@@ -1683,7 +1683,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                   <>
                     <div className="mx-2 my-2 border-t border-border/50" />
                     <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
-                      Integrations
+                      集成
                     </div>
                     <div className="space-y-0.5">
                       {integrationTabs.map(tab => (
@@ -1733,9 +1733,9 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                   <>
                     {/* Identity */}
                     <div className="space-y-2">
-                      <div className="text-sm font-medium">Your Identity</div>
+                      <div className="text-sm font-medium">你的身份</div>
                       <div className="text-xs text-muted-foreground">
-                        Used when sharing annotations with others
+                        与他人分享标注时使用
                       </div>
                       <div className="flex items-center gap-2">
                         {identityEditable ? (
@@ -1751,7 +1751,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                               }
                             }}
                             className="flex-1 px-3 py-2 bg-muted rounded-lg text-xs font-mono truncate border border-transparent focus:border-primary/50 focus:outline-none transition-colors"
-                            placeholder="Enter your name..."
+                            placeholder="输入你的名字…"
                           />
                         ) : (
                           <div className="flex-1 px-3 py-2 bg-muted rounded-lg text-xs font-mono truncate border border-transparent">
@@ -1773,7 +1773,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                             onClick={handleRegenerateIdentity}
                             onMouseDown={(e) => e.preventDefault()}
                             className="p-2 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
-                            title="Regenerate random identity"
+                            title="重新生成随机身份"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1792,7 +1792,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                           <ToggleSwitch
                             checked={enterSavesComment}
                             onChange={(v) => configStore.set('enterSavesComment', v)}
-                            label="Enter saves a comment"
+                            label="Enter 保存评论"
                             description={`Shift+Enter adds a new line. ${modKeyWord}+Enter still saves.`}
                           />
                         </div>
@@ -1808,8 +1808,8 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                           <ToggleSwitch
                             checked={hideRepoOwner}
                             onChange={(v) => configStore.set('hideRepoOwner', v)}
-                            label="Hide the repository owner"
-                            description="When on, documents, code review and tab titles name the repository without its owner. Hover the name to see the owner."
+                            label="隐藏仓库所有者"
+                            description="开启后，文档、代码评审和标签页标题只显示仓库名，不显示所有者。悬停名称可查看所有者。"
                           />
                         </div>
                       </>
@@ -1824,11 +1824,11 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                           checked={updateChecksOn}
                           onChange={(v) => updateCheckSetting.onChange(v)}
                           disabled={updateCheckSetting.env !== undefined}
-                          label="Tell me when a new version is out"
+                          label="有新版本时通知我"
                           description={
                             updateCheckSetting.env !== undefined
                               ? 'Set by PLANNOTATOR_UPDATE_CHECK in your environment.'
-                              : 'This computer asks GitHub every few minutes, never your browser. Off makes no request at all.'
+                              : '这台电脑每隔几分钟向 GitHub 查询一次，浏览器完全不参与。关闭后不会发出任何请求。'
                           }
                         />
                       </>
@@ -1844,13 +1844,13 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                           checked={(autoUpdateSetting.env ?? autoUpdate) && updateChecksOn}
                           onChange={(v) => configStore.set('autoUpdate', v)}
                           disabled={autoUpdateSetting.env !== undefined || !updateChecksOn}
-                          label="Keep Plannotator up to date"
+                          label="让 Plannotator 保持最新"
                           description={
                             autoUpdateSetting.env !== undefined
                               ? 'Set by PLANNOTATOR_AUTO_UPDATE in your environment.'
                               : !updateChecksOn
                                 ? 'Needs update checks (above).'
-                                : 'Installs new releases in the background, at most once a day, never while another review is open.'
+                                : '在后台安装新版本，每天最多一次，且不会在其他评审进行时安装。'
                           }
                         />
                       </>
@@ -1868,7 +1868,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                             checked={cookieHostSetting.on}
                             onChange={(v) => cookieHostSetting.onChange(v)}
                             disabled={cookieHostSetting.env !== undefined || cookieHostSetting.urlHost !== undefined}
-                            label="Open Plannotator at plannotator.localhost"
+                            label="通过 plannotator.localhost 打开 Plannotator"
                             description={cookieHostDescription(cookieHostSetting)}
                           />
                           {cookieHostSetting.error && (
@@ -1898,15 +1898,15 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                         <div className="border-t border-border" />
                         <div className="flex items-center justify-between" data-webmcp-setting="true">
                           <div>
-                            <div className="text-sm font-medium">Agent tools</div>
+                            <div className="text-sm font-medium">Agent 工具</div>
                             <div className="text-xs text-muted-foreground">
-                              Let your browser's agent read this document and leave comments. Approving and sending feedback stay yours.
+                              允许浏览器的 agent 读取此文档并留下评论。通过和发送反馈仍由你决定。
                             </div>
                           </div>
                           <button
                             role="switch"
                             aria-checked={webmcpTools}
-                            aria-label="Agent tools"
+                            aria-label="Agent 工具"
                             onClick={() => setWebMcpToolsEnabled(!webmcpTools)}
                             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                               webmcpTools ? 'bg-primary' : 'bg-muted'
@@ -1928,9 +1928,9 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                         <div className="border-t border-border" />
                         <div className="space-y-2">
                           <div>
-                            <div className="text-sm font-medium">Permission Mode</div>
+                            <div className="text-sm font-medium">权限模式</div>
                             <div className="text-xs text-muted-foreground">
-                              Automation level after plan approval
+                              计划通过后的自动化级别
                             </div>
                           </div>
                           <select
@@ -1958,9 +1958,9 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                         <div className="border-t border-border" />
                         <div className="space-y-2">
                           <div>
-                            <div className="text-sm font-medium">Agent Switching</div>
+                            <div className="text-sm font-medium">Agent 切换</div>
                             <div className="text-xs text-muted-foreground">
-                              Which agent to switch to after plan approval
+                              计划通过后切换到哪个 agent
                             </div>
                           </div>
 
@@ -1995,8 +1995,8 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                                     {a.name}
                                   </option>
                                 ))}
-                                <option value="custom">Custom</option>
-                                <option value="disabled">Disabled</option>
+                                <option value="custom">自定义</option>
+                                <option value="disabled">已停用</option>
                               </>
                             ) : (
                               AGENT_OPTIONS.map((option) => (
@@ -2023,7 +2023,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                                   setAgentWarning(null);
                                 }
                               }}
-                              placeholder="Enter agent name..."
+                              placeholder="输入 agent 名称…"
                               className="w-full px-3 py-2 bg-muted rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/50"
                             />
                           )}
@@ -2031,7 +2031,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                             {agent.switchTo === 'custom' && agent.customName
                               ? `Switch to "${agent.customName}" agent after approval`
                               : agent.switchTo === 'disabled'
-                                ? 'Stay on current agent after approval'
+                                ? '通过后留在当前 agent'
                                 : `Switch to ${agent.switchTo} agent after approval`}
                           </div>
                         </div>
@@ -2050,9 +2050,9 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                         <div className="border-t border-border" />
                         <div className="space-y-2">
                           <div>
-                            <div className="text-sm font-medium">Agent TUI Position</div>
+                            <div className="text-sm font-medium">Agent TUI 位置</div>
                             <div className="text-xs text-muted-foreground">
-                              Which side the agent terminal docks on, or Hidden to keep it out of the layout
+                              agent 终端停靠在哪一侧，或选择“隐藏”使其不占布局
                             </div>
                           </div>
                           <SegmentedControl
@@ -2062,7 +2062,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                           />
                           {agentTerminalSide === 'hidden' && (
                             <div className="text-[10px] text-muted-foreground/70">
-                              You can still open it for this session from the sidebar rail.
+                              你仍可在此会话中从侧栏边缘打开它。
                             </div>
                           )}
                         </div>
@@ -2073,7 +2073,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
 
                     {/* Auto-close Tab */}
                     <div className="space-y-2">
-                      <div className="text-sm font-medium">Auto-close Tab</div>
+                      <div className="text-sm font-medium">自动关闭标签页</div>
                       <select
                         value={autoCloseDelay}
                         onChange={(e) => {
@@ -2121,9 +2121,9 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                     {showDocumentTextSize && (<>
                     <div className="space-y-3" data-document-text-size-setting>
                       <div>
-                        <div className="text-sm font-medium" id="document-text-size-label">Text size</div>
+                        <div className="text-sm font-medium" id="document-text-size-label">文字大小</div>
                         <div className="text-xs text-muted-foreground">
-                          {mode === 'annotate' ? 'Body text of the document' : 'Body text of the plan'}, in px ({DEFAULT_DOCUMENT_TEXT_SIZE} is the default)
+                          {mode === 'annotate' ? '文档正文' : '计划正文'}，单位 px，默认 {DEFAULT_DOCUMENT_TEXT_SIZE}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5" role="group" aria-labelledby="document-text-size-label">
@@ -2151,16 +2151,16 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                     {showDocumentFont && (<>
                     <div data-document-font-setting>
                       <FontFamilyField
-                        label="Document font"
-                        description={`${mode === 'annotate' ? 'Text of the document' : 'Text of the plan'}; code keeps its monospace font`}
+                        label="文档字体"
+                        description={`${mode === 'annotate' ? '文档文字' : '计划文字'}；代码保持等宽字体`}
                         value={documentFontFamily}
                         onSave={(v) => configStore.set('documentFontFamily', v)}
                         options={DOCUMENT_FONT_OPTIONS}
                         previewStack={documentFontStack}
-                        previewText="Preview: The quick brown fox jumps over the lazy dog."
-                        customAriaLabel="Custom document font name"
-                        customPlaceholder="Font name as installed, e.g. Iowan Old Style"
-                        notFoundText="Not found — the document keeps the theme font"
+                        previewText="预览：敏捷的棕色狐狸跃过懒狗。"
+                        customAriaLabel="自定义文档字体名称"
+                        customPlaceholder="已安装字体的名称，例如 Iowan Old Style"
+                        notFoundText="未找到，文档保持主题字体"
                       />
                     </div>
 
@@ -2170,7 +2170,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                     {showDocumentTextSize && (<>
                     <div className="flex items-center justify-between" data-document-source-line-numbers-setting>
                       <div>
-                        <div className="text-sm font-medium">Source line numbers</div>
+                        <div className="text-sm font-medium">源代码行号</div>
                         <div className="text-xs text-muted-foreground">
                           Each block&apos;s source lines beside the {mode === 'annotate' ? 'document' : 'plan'}
                         </div>
@@ -2178,7 +2178,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                       <button
                         type="button"
                         role="switch"
-                        aria-label="Source line numbers"
+                        aria-label="源代码行号"
                         aria-checked={documentSourceLineNumbers}
                         onClick={() => configStore.set('documentSourceLineNumbers', !documentSourceLineNumbers)}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -2199,9 +2199,9 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                     {/* Auto-open Sidebar */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm font-medium">Auto-open Sidebar</div>
+                        <div className="text-sm font-medium">自动打开侧栏</div>
                         <div className="text-xs text-muted-foreground">
-                          Open sidebar with Table of Contents on load
+                          加载时打开侧栏并显示目录
                         </div>
                       </div>
                       <button
@@ -2225,9 +2225,9 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                     {/* Sticky Actions */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm font-medium">Sticky Actions</div>
+                        <div className="text-sm font-medium">固定操作栏</div>
                         <div className="text-xs text-muted-foreground">
-                          Keep action buttons visible while scrolling
+                          滚动时保持操作按钮可见
                         </div>
                       </div>
                       <button
@@ -2251,10 +2251,10 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                     {/* Grid Background */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm font-medium">Grid Background</div>
-                        <div className="text-xs text-muted-foreground">Show the plan as a floating card on a grid</div>
+                        <div className="text-sm font-medium">网格背景</div>
+                        <div className="text-xs text-muted-foreground">将计划以网格上的浮动卡片形式显示</div>
                       </div>
-                      <button role="switch" aria-checked={gridEnabled} aria-label="Grid Background"
+                      <button role="switch" aria-checked={gridEnabled} aria-label="网格背景"
                         onClick={() => {
                           configStore.set('gridEnabled', !gridEnabled);
                           // A Settings flip is a real choice: keep it across reloads.
@@ -2270,7 +2270,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                     {/* Diagram Shadow */}
                     <div className="space-y-3" data-diagram-shadow-setting>
                       <div>
-                        <div className="text-sm font-medium">Diagram Shadow</div>
+                        <div className="text-sm font-medium">图表阴影</div>
                         <div className="text-xs text-muted-foreground">
                           Drop shadow under diagram nodes (100 = Mermaid's own)
                         </div>
@@ -2287,7 +2287,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                                 : 'text-muted-foreground hover:text-foreground'
                             }`}
                           >
-                            {value === 0 ? 'None' : String(value)}
+                            {value === 0 ? '无' : String(value)}
                           </button>
                         ))}
                       </div>
@@ -2300,7 +2300,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                       <div>
                         <div className="text-sm font-medium flex items-center gap-2">{mode === 'annotate' ? 'Document Width' : 'Plan Width'}</div>
                         <div className="text-xs text-muted-foreground">
-                          {mode === 'annotate' ? 'Maximum width of the document card' : 'Maximum width of the plan card'}
+                          {mode === 'annotate' ? '文档卡片的最大宽度' : '计划卡片的最大宽度'}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
@@ -2402,7 +2402,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
 
                     {/* Tater Mode */}
                     <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium">Tater Mode</div>
+                      <div className="text-sm font-medium">Tater 模式</div>
                       <button
                         role="switch"
                         aria-checked={taterMode}
@@ -2430,9 +2430,9 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-sm font-medium">Save Plans</div>
+                          <div className="text-sm font-medium">保存计划</div>
                           <div className="text-xs text-muted-foreground">
-                            Auto-save plans to the default data directory
+                            将计划自动保存到默认数据目录
                           </div>
                         </div>
                         <button
@@ -2453,16 +2453,16 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
 
                       {planSave.enabled && (
                         <div className="space-y-1.5 pl-0.5">
-                          <label className="text-xs text-muted-foreground">Custom Path (optional)</label>
+                          <label className="text-xs text-muted-foreground">自定义路径（可选）</label>
                           <input
                             type="text"
                             value={planSave.customPath || ''}
                             onChange={(e) => handlePlanSaveChange({ customPath: e.target.value || null })}
-                            placeholder="Leave empty for default"
+                            placeholder="留空使用默认值"
                             className="w-full px-3 py-2 bg-muted rounded-lg text-xs font-mono placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
                           />
                           <div className="text-[10px] text-muted-foreground/70">
-                            Leave empty to use default location
+                            留空则使用默认位置
                           </div>
                         </div>
                       )}
@@ -2474,7 +2474,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                     {/* Default Notes App */}
                     <div className="space-y-2">
                       <div>
-                        <div className="text-sm font-medium">Default Save Action</div>
+                        <div className="text-sm font-medium">默认保存操作</div>
                         <div className="text-xs text-muted-foreground">
                           Used for keyboard shortcut ({modKey}+S)
                         </div>
@@ -2484,8 +2484,8 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                         onChange={(e) => handleDefaultNotesAppChange(e.target.value as DefaultNotesApp)}
                         className="w-full px-3 py-2 bg-muted rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer"
                       >
-                        <option value="ask">Ask each time</option>
-                        <option value="download">Download Annotations</option>
+                        <option value="ask">每次询问</option>
+                        <option value="download">下载标注</option>
                         {obsidianDefaultSaveAvailable && <option value="obsidian">Obsidian</option>}
                         {bearDefaultSaveAvailable && <option value="bear">Bear</option>}
                         {octarineDefaultSaveAvailable && <option value="octarine">Octarine</option>}
@@ -2493,10 +2493,10 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                       </select>
                       <div className="text-[10px] text-muted-foreground/70">
                         {defaultNotesApp === 'ask'
-                          ? 'Opens Export dialog with Notes tab'
+                          ? '打开导出对话框的备注标签页'
                           : defaultNotesApp === 'download'
                             ? `${modKey}+S downloads the annotations file`
-                            : `${modKey}+S saves directly to ${{ obsidian: 'Obsidian', bear: 'Bear', octarine: 'Octarine', notion: 'Notion' }[defaultNotesApp] ?? defaultNotesApp}`}
+                            : `${modKey}+S 直接保存到 ${{ obsidian: 'Obsidian', bear: 'Bear', octarine: 'Octarine', notion: 'Notion' }[defaultNotesApp] ?? defaultNotesApp}`}
                       </div>
                     </div>
 
@@ -2505,7 +2505,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                     {/* Integration links */}
                     <div className="space-y-2">
                       <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
-                        Integrations
+                        集成
                       </div>
                       <button
                         onClick={() => setActiveTab('obsidian')}
@@ -2514,7 +2514,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                         <span className="text-foreground">Obsidian</span>
                         <span className="flex items-center gap-2">
                           <span className={`text-[10px] font-medium ${obsidian.enabled ? 'text-primary' : 'text-muted-foreground/50'}`}>
-                            {obsidian.enabled ? 'Enabled' : 'Off'}
+                            {obsidian.enabled ? '已启用' : '关闭'}
                           </span>
                           <svg className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -2528,7 +2528,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                         <span className="text-foreground">Bear Notes</span>
                         <span className="flex items-center gap-2">
                           <span className={`text-[10px] font-medium ${bear.enabled ? 'text-primary' : 'text-muted-foreground/50'}`}>
-                            {bear.enabled ? 'Enabled' : 'Off'}
+                            {bear.enabled ? '已启用' : '关闭'}
                           </span>
                           <svg className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -2542,7 +2542,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                         <span className="text-foreground">Octarine</span>
                         <span className="flex items-center gap-2">
                           <span className={`text-[10px] font-medium ${octarine.enabled ? 'text-primary' : 'text-muted-foreground/50'}`}>
-                            {octarine.enabled ? 'Enabled' : 'Off'}
+                            {octarine.enabled ? '已启用' : '关闭'}
                           </span>
                           <svg className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -2594,9 +2594,9 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                   <>
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm font-medium">File Browser</div>
+                        <div className="text-sm font-medium">文件浏览器</div>
                         <div className="text-xs text-muted-foreground">
-                          Your project files are shown automatically. Add extra directories below.
+                          项目文件会自动显示。可在下方添加其他目录。
                         </div>
                       </div>
                       <button
@@ -2622,7 +2622,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                         {/* Directory list */}
                         {fileBrowserSettings.directories.length > 0 && (
                           <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Directories</label>
+                            <label className="text-xs text-muted-foreground">目录</label>
                             {fileBrowserSettings.directories.map((dir) => (
                               <div key={dir} className="flex items-center gap-2 group">
                                 <div className="flex-1 px-3 py-2 bg-muted rounded-lg text-xs font-mono truncate" title={dir}>
@@ -2633,7 +2633,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                                     directories: fileBrowserSettings.directories.filter((d) => d !== dir),
                                   })}
                                   className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
-                                  title="Remove directory"
+                                  title="移除目录"
                                 >
                                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -2646,7 +2646,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
 
                         {/* Add directory */}
                         <div className="space-y-1.5">
-                          <label className="text-xs text-muted-foreground">Add Directory</label>
+                          <label className="text-xs text-muted-foreground">添加目录</label>
                           <div className="flex gap-2">
                             <input
                               type="text"
@@ -2663,11 +2663,11 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                               disabled={!newDirPath.trim()}
                               className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                             >
-                              Add
+                              添加
                             </button>
                           </div>
                           <div className="text-[10px] text-muted-foreground/70">
-                            Add directories outside your project that contain markdown files.
+                            添加项目之外包含 Markdown 文件的目录。
                           </div>
                         </div>
                       </>
@@ -2683,7 +2683,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                   <>
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm font-medium">Obsidian Integration</div>
+                        <div className="text-sm font-medium">Obsidian 集成</div>
                         <div className="text-xs text-muted-foreground">
                           {mode === 'annotate' ? 'Save documents to your vault from the Options menu. When on, plan review also saves each approved plan here.' : 'Auto-save approved plans to your vault'}
                         </div>
@@ -2711,10 +2711,10 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                         <div className="space-y-3">
                           <div className="flex gap-3">
                             <div className="flex-1 space-y-1.5">
-                              <label className="text-xs text-muted-foreground">Vault</label>
+                              <label className="text-xs text-muted-foreground">库</label>
                               {vaultsLoading ? (
                                 <div className="w-full px-3 py-2 bg-muted rounded-lg text-xs text-muted-foreground">
-                                  Detecting...
+                                  检测中…
                                 </div>
                               ) : detectedVaults.length > 0 ? (
                                 <>
@@ -2728,7 +2728,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                                         {basenameFromPath(vault)}
                                       </option>
                                     ))}
-                                    <option value={CUSTOM_PATH_SENTINEL}>Custom path...</option>
+                                    <option value={CUSTOM_PATH_SENTINEL}>自定义路径…</option>
                                   </select>
                                   {obsidian.vaultPath === CUSTOM_PATH_SENTINEL && (
                                     <input
@@ -2752,7 +2752,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                             </div>
 
                             <div className="w-44 space-y-1.5">
-                              <label className="text-xs text-muted-foreground">Folder</label>
+                              <label className="text-xs text-muted-foreground">文件夹</label>
                               <input
                                 type="text"
                                 value={obsidian.folder}
@@ -2764,7 +2764,7 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                           </div>
 
                           <div className="space-y-1.5">
-                            <label className="text-xs text-muted-foreground">Filename Format</label>
+                            <label className="text-xs text-muted-foreground">文件名格式</label>
                             <input
                               type="text"
                               value={obsidian.filenameFormat || ''}
@@ -2773,16 +2773,16 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                               className="w-full px-3 py-2 bg-muted rounded-lg text-xs font-mono placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
                             />
                             <div className="text-[10px] text-muted-foreground/70">
-                              Variables: <code className="text-[10px]">{'{title}'}</code> <code className="text-[10px]">{'{YYYY}'}</code> <code className="text-[10px]">{'{MM}'}</code> <code className="text-[10px]">{'{DD}'}</code> <code className="text-[10px]">{'{Mon}'}</code> <code className="text-[10px]">{'{D}'}</code> <code className="text-[10px]">{'{HH}'}</code> <code className="text-[10px]">{'{h}'}</code> <code className="text-[10px]">{'{hh}'}</code> <code className="text-[10px]">{'{mm}'}</code> <code className="text-[10px]">{'{ss}'}</code> <code className="text-[10px]">{'{ampm}'}</code>
+                              变量： <code className="text-[10px]">{'{title}'}</code> <code className="text-[10px]">{'{YYYY}'}</code> <code className="text-[10px]">{'{MM}'}</code> <code className="text-[10px]">{'{DD}'}</code> <code className="text-[10px]">{'{Mon}'}</code> <code className="text-[10px]">{'{D}'}</code> <code className="text-[10px]">{'{HH}'}</code> <code className="text-[10px]">{'{h}'}</code> <code className="text-[10px]">{'{hh}'}</code> <code className="text-[10px]">{'{mm}'}</code> <code className="text-[10px]">{'{ss}'}</code> <code className="text-[10px]">{'{ampm}'}</code>
                             </div>
                             <div className="text-[10px] text-muted-foreground/70">
-                              Preview: {(() => {
+                              预览： {(() => {
                                 const fmt = obsidian.filenameFormat?.trim() || DEFAULT_FILENAME_FORMAT;
                                 const now = new Date();
                                 const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
                                 const h24 = now.getHours(); const h12 = h24 % 12 || 12;
                                 const vars: Record<string, string> = {
-                                  title: 'My Plan Title', YYYY: String(now.getFullYear()),
+                                  title: '我的计划标题', YYYY: String(now.getFullYear()),
                                   MM: String(now.getMonth()+1).padStart(2,'0'), DD: String(now.getDate()).padStart(2,'0'),
                                   Mon: months[now.getMonth()], D: String(now.getDate()),
                                   HH: String(h24).padStart(2,'0'), h: String(h12), hh: String(h12).padStart(2,'0'),
@@ -2798,23 +2798,23 @@ export const Settings: React.FC<SettingsProps> = ({ taterMode, onTaterModeChange
                           </div>
 
                           <div className="space-y-1.5">
-                            <label className="text-xs text-muted-foreground">Filename Separator</label>
+                            <label className="text-xs text-muted-foreground">文件名分隔符</label>
                             <select
                               value={obsidian.filenameSeparator || 'space'}
                               onChange={(e) => handleObsidianChange({ filenameSeparator: e.target.value as 'space' | 'dash' | 'underscore' })}
                               className="w-full px-3 py-2 bg-muted rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary/50"
                             >
-                              <option value="space">Spaces (default)</option>
-                              <option value="dash">Dashes (-)</option>
-                              <option value="underscore">Underscores (_)</option>
+                              <option value="space">空格（默认）</option>
+                              <option value="dash">短横线（-）</option>
+                              <option value="underscore">下划线（_）</option>
                             </select>
                             <div className="text-[10px] text-muted-foreground/70">
-                              Replaces spaces in the generated filename. Useful when working with CLI tools in your vault.
+                              替换生成文件名中的空格。在库中使用 CLI 工具时很有用。
                             </div>
                           </div>
 
                           <div className="text-[10px] text-muted-foreground/70">
-                            {mode === 'annotate' ? 'Saved to' : 'Plans saved to'}: {obsidian.vaultPath === CUSTOM_PATH_SENTINEL
+                            {mode === 'annotate' ? '保存到' : '计划保存到'}: {obsidian.vaultPath === CUSTOM_PATH_SENTINEL
                               ? (obsidian.customPath || '...')
                               : (obsidian.vaultPath || '...')}/{obsidian.folder || 'plannotator'}/
                           </div>
@@ -2835,9 +2835,9 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
                           {mode === 'plan' && (<>
                           <div className="flex items-center justify-between">
                             <div>
-                              <div className="text-xs font-medium">Auto-save on Plan Arrival</div>
+                              <div className="text-xs font-medium">计划到达时自动保存</div>
                               <div className="text-[10px] text-muted-foreground">
-                                Automatically save to Obsidian when a plan loads, before you approve or deny
+                                计划加载后自动保存到 Obsidian，在你通过或拒绝之前
                               </div>
                             </div>
                             <button
@@ -2857,9 +2857,9 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
 
                           <div className="flex items-center justify-between">
                             <div>
-                              <div className="text-xs font-medium">Vault Browser</div>
+                              <div className="text-xs font-medium">库浏览器</div>
                               <div className="text-[10px] text-muted-foreground">
-                                Browse and annotate vault files from the sidebar
+                                从侧栏浏览并标注库文件
                               </div>
                             </div>
                             <button
@@ -2909,7 +2909,7 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
                     {bear.enabled && (
                       <div className="mt-3 space-y-3">
                         <div className="space-y-1.5 pl-0.5">
-                          <label className="text-xs text-muted-foreground">Custom Tags</label>
+                          <label className="text-xs text-muted-foreground">自定义标签</label>
                           <input
                             type="text"
                             value={bear.customTags}
@@ -2923,14 +2923,14 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
                           </div>
                         </div>
                         <div className="space-y-1.5 pl-0.5">
-                          <label className="text-xs text-muted-foreground">Tag Position</label>
+                          <label className="text-xs text-muted-foreground">标签位置</label>
                           <select
                             value={bear.tagPosition}
                             onChange={(e) => handleBearChange({ tagPosition: e.target.value as 'prepend' | 'append' })}
                             className="w-full px-3 py-2 bg-muted rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary/50"
                           >
-                            <option value="append">Append (end of note)</option>
-                            <option value="prepend">Prepend (after title)</option>
+                            <option value="append">追加（笔记末尾）</option>
+                            <option value="prepend">前置（标题之后）</option>
                           </select>
                         </div>
 
@@ -2939,9 +2939,9 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
 
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-xs font-medium">Auto-save on Plan Arrival</div>
+                            <div className="text-xs font-medium">计划到达时自动保存</div>
                             <div className="text-[10px] text-muted-foreground">
-                              Automatically save to Bear when a plan loads, before you approve or deny
+                              计划加载后自动保存到 Bear，在你通过或拒绝之前
                             </div>
                           </div>
                           <button
@@ -2991,20 +2991,20 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
                     {octarine.enabled && (
                       <div className="mt-3 space-y-3">
                         <div className="space-y-1.5 pl-0.5">
-                          <label className="text-xs text-muted-foreground">Workspace Name</label>
+                          <label className="text-xs text-muted-foreground">工作区名称</label>
                           <input
                             type="text"
                             value={octarine.workspace}
                             onChange={(e) => handleOctarineChange({ workspace: e.target.value })}
-                            placeholder="My Workspace"
+                            placeholder="我的工作区"
                             className="w-full px-3 py-2 bg-muted rounded-lg text-xs font-mono placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
                           />
                           <div className="text-[10px] text-muted-foreground">
-                            The Octarine workspace name to save plans into.
+                            保存计划所用的 Octarine 工作区名称。
                           </div>
                         </div>
                         <div className="space-y-1.5 pl-0.5">
-                          <label className="text-xs text-muted-foreground">Folder</label>
+                          <label className="text-xs text-muted-foreground">文件夹</label>
                           <input
                             type="text"
                             value={octarine.folder}
@@ -3013,12 +3013,12 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
                             className="w-full px-3 py-2 bg-muted rounded-lg text-xs font-mono placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
                           />
                           <div className="text-[10px] text-muted-foreground">
-                            Subfolder within the workspace for saved plans.
+                            工作区内用于保存计划的子文件夹。
                           </div>
                         </div>
 
                         <div className="text-[10px] text-muted-foreground/70">
-                          {mode === 'annotate' ? 'Saved to' : 'Plans saved to'}: {octarine.workspace || '...'} / {octarine.folder || 'plannotator'}/
+                          {mode === 'annotate' ? '保存到' : '计划保存到'}: {octarine.workspace || '…'} / {octarine.folder || 'plannotator'}/
                         </div>
 
                         {mode === 'plan' && (<>
@@ -3026,9 +3026,9 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
 
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-xs font-medium">Auto-save on Plan Arrival</div>
+                            <div className="text-xs font-medium">计划到达时自动保存</div>
                             <div className="text-[10px] text-muted-foreground">
-                              Automatically save to Octarine when a plan loads, before you approve or deny
+                              计划加载后自动保存到 Octarine，在你通过或拒绝之前
                             </div>
                           </div>
                           <button
@@ -3078,7 +3078,7 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
                     {notion.enabled && (
                       <div className="mt-3 space-y-3">
                         <div className="space-y-1.5 pl-0.5">
-                          <label className="text-xs text-muted-foreground">Parent Page</label>
+                          <label className="text-xs text-muted-foreground">父页面</label>
                           <input
                             type="text"
                             value={notion.parentPageId}
@@ -3087,7 +3087,7 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
                             className="w-full px-3 py-2 bg-muted rounded-lg text-xs font-mono placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
                           />
                           <div className="text-[10px] text-muted-foreground">
-                            A page link or ID. Each save adds a page under it. Share it with your Notion integration first.
+                            页面链接或 ID。每次保存都会在其下新增一个页面。请先将其共享给 Notion 集成。
                           </div>
                         </div>
 
@@ -3096,9 +3096,9 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
 
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-xs font-medium">Auto-save on Plan Arrival</div>
+                            <div className="text-xs font-medium">计划到达时自动保存</div>
                             <div className="text-[10px] text-muted-foreground">
-                              Automatically save to Notion when a plan loads, before you approve or deny
+                              计划加载后自动保存到 Notion，在你通过或拒绝之前
                             </div>
                           </div>
                           <button
@@ -3136,12 +3136,12 @@ tags: [${mode === 'annotate' ? 'plannotator' : 'plan'}, ...]
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-border flex-shrink-0">
-              <span className="text-xs font-medium text-muted-foreground">Theme Preview</span>
+              <span className="text-xs font-medium text-muted-foreground">主题预览</span>
               <button
                 onClick={() => { setThemePreview(false); setShowDialog(true); }}
                 className="px-2.5 py-1 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
               >
-                Done
+                完成
               </button>
             </div>
             <div className="p-3 overflow-y-auto flex-1 min-h-0">

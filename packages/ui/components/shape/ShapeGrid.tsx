@@ -30,11 +30,11 @@ export interface ShapeGridItem {
 export function shapeAgo(iso: string, now = Date.now()): string {
   const ms = Math.max(0, now - Date.parse(iso));
   const m = Math.floor(ms / 60_000);
-  if (m < 1) return 'now';
-  if (m < 60) return `${m}m`;
+  if (m < 1) return '刚刚';
+  if (m < 60) return `${m} 分`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  return `${Math.floor(h / 24)}d`;
+  if (h < 24) return `${h} 时`;
+  return `${Math.floor(h / 24)} 天`;
 }
 
 /** The items a query finds: in the title or the project, any case. */
@@ -98,7 +98,7 @@ export function ShapeGrid({
     () => filterShapeItems(items, query ?? '').sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated)),
     [items, query],
   );
-  if (!shown.length) return <div className="shp-grid-empty">{empty ?? (query ? 'No board matches.' : 'No boards yet.')}</div>;
+  if (!shown.length) return <div className="shp-grid-empty">{empty ?? (query ? '没有匹配的看板。' : '还没有看板。')}</div>;
   return (
     <div className="shp-grid" role="list">
       {shown.map((it) => (
@@ -108,7 +108,7 @@ export function ShapeGrid({
           tabIndex={0}
           className="shp-gcard"
           data-shape-card={it.id}
-          aria-label={`${it.title}${it.changed ? ', changed since you looked' : ''}`}
+          aria-label={`${it.title}${it.changed ? '，自上次查看后有更新' : ''}`}
           onClick={() => onOpen(it.id)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -124,7 +124,7 @@ export function ShapeGrid({
               <span>{it.title}</span>
             </div>
             <div className="shp-gm">
-              {it.project} · {it.drawing ? 'drawing now' : shapeAgo(it.updated, now)}
+              {it.project} · {it.drawing ? '正在绘制' : shapeAgo(it.updated, now)}
             </div>
           </div>
         </div>

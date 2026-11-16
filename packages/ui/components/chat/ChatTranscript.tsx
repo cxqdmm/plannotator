@@ -155,7 +155,7 @@ export const ChatMarkdown = memo(function ChatMarkdown({
 export function ChatPendingTurn({
   agentName,
   agentMark,
-  label = 'Thinking…',
+  label = '思考中…',
   indentContent = false,
 }: {
   agentName: string;
@@ -192,10 +192,10 @@ export function ChatMessageView<Part extends ChatMessagePart = ChatMessagePart>(
   agentName,
   agentMark,
   agentBadge,
-  userName = 'You',
+  userName = '你',
   userMark,
   stopped = false,
-  stoppedLabel = 'Stopped',
+  stoppedLabel = '已停止',
   indentContent = false,
   renderPart,
   footer,
@@ -355,7 +355,7 @@ export function ChatTranscript<Part extends ChatMessagePart = ChatMessagePart>({
   userMark,
   empty,
   statusLine,
-  label = 'Conversation',
+  label = '对话',
   panel,
   stopped,
   stoppedLabel,

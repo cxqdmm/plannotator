@@ -25,13 +25,13 @@ export const StageControl: React.FC<{
 }> = ({ isStaged, isStaging, onStage }) => {
   if (isStaged) {
     return (
-      <span className="w-4 h-4 flex items-center justify-center flex-shrink-0" title="Staged (git add)" aria-label="Staged">
+      <span className="w-4 h-4 flex items-center justify-center flex-shrink-0" title="已暂存（git add）" aria-label="已暂存">
         <span className="w-1.5 h-1.5 rounded-full bg-primary" />
       </span>
     );
   }
   return (
-    <Tooltip content="Stage file (git add)" side="bottom">
+    <Tooltip content="暂存文件（git add）" side="bottom">
       <span
         role="button"
         // tabIndex + key handling: lives INSIDE the row <button> (a real nested
@@ -50,7 +50,7 @@ export const StageControl: React.FC<{
           }
         }}
         className="stage-plus w-4 h-4 flex-shrink-0 rounded border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-muted-foreground/60 hover:bg-muted/50 transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
-        aria-label="Stage file"
+        aria-label="暂存文件"
       >
         {isStaging ? (
           <span className="inline-block w-2 h-2 border border-current border-t-transparent rounded-full animate-spin" />
@@ -68,7 +68,7 @@ export const StageControl: React.FC<{
  * can't be staged, so the slot is otherwise empty). Mirrors StageControl's
  * primary staged dot: green = already committed, primary = staged. */
 export const CommittedDot: React.FC = () => (
-  <span className="w-4 h-4 flex items-center justify-center flex-shrink-0" title="Committed" aria-label="Committed">
+  <span className="w-4 h-4 flex items-center justify-center flex-shrink-0" title="已提交" aria-label="已提交">
     <span className="w-1.5 h-1.5 rounded-full bg-success" />
   </span>
 );
@@ -91,7 +91,7 @@ export const TruncatedPath: React.FC<{ path: string }> = ({ path }) => {
 export const AnnotationBadge: React.FC<{ count: number }> = ({ count }) => {
   if (count <= 0) return null;
   return (
-    <span className="flex items-center gap-0.5 text-[10px] text-primary flex-shrink-0" title={`${count} annotation${count === 1 ? '' : 's'}`}>
+    <span className="flex items-center gap-0.5 text-[10px] text-primary flex-shrink-0" title={`${count} 条标注`}>
       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
       </svg>

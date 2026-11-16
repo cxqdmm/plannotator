@@ -20,7 +20,7 @@ const HIDE_BOTS_KEY = 'plannotator-pr-hide-bots';
 function BotTag() {
   return (
     <span className="shrink-0 text-[9px] uppercase tracking-wide font-semibold px-1 py-px rounded bg-muted text-muted-foreground/70">
-      bot
+      机器人
     </span>
   );
 }
@@ -58,10 +58,10 @@ type TimelineEntry =
   | { kind: 'thread'; data: PRReviewThread };
 
 const REVIEW_STATE_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  APPROVED: { bg: 'bg-success/15', text: 'text-success', label: 'Approved' },
-  CHANGES_REQUESTED: { bg: 'bg-destructive/15', text: 'text-destructive', label: 'Changes Requested' },
-  COMMENTED: { bg: 'bg-muted', text: 'text-muted-foreground', label: 'Commented' },
-  DISMISSED: { bg: 'bg-muted', text: 'text-muted-foreground/60', label: 'Dismissed' },
+  APPROVED: { bg: 'bg-success/15', text: 'text-success', label: '已批准' },
+  CHANGES_REQUESTED: { bg: 'bg-destructive/15', text: 'text-destructive', label: '已要求修改' },
+  COMMENTED: { bg: 'bg-muted', text: 'text-muted-foreground', label: '已评论' },
+  DISMISSED: { bg: 'bg-muted', text: 'text-muted-foreground/60', label: '已忽略' },
 };
 
 // ---------------------------------------------------------------------------
@@ -76,10 +76,10 @@ function formatRelativeTime(iso: string): string {
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 30) return `${days}d ago`;
+  if (minutes < 1) return '刚刚';
+  if (minutes < 60) return `${minutes} 分钟前`;
+  if (hours < 24) return `${hours} 小时前`;
+  if (days < 30) return `${days} 天前`;
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
@@ -303,7 +303,7 @@ export const PRCommentsTab: React.FC<PRCommentsTabProps> = React.memo(({ context
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
         </div>
-        <p className="text-xs text-muted-foreground">No comments on this PR.</p>
+        <p className="text-xs text-muted-foreground">此 PR 暂无评论。</p>
       </div>
     );
   }
@@ -331,13 +331,13 @@ export const PRCommentsTab: React.FC<PRCommentsTabProps> = React.memo(({ context
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleSearchKeyDown}
-            placeholder="Search comments..."
+            placeholder="搜索评论…"
             className="w-full h-7 pl-8 pr-20 bg-muted rounded-md text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50"
           />
           <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
             {searchQuery.trim() && (
               <span className="text-[10px] text-muted-foreground tabular-nums">
-                {filteredTimeline.length} of {baseTimeline.length}
+                共 {baseTimeline.length} 条，显示 {filteredTimeline.length} 条
               </span>
             )}
             {searchQuery && (
@@ -360,14 +360,14 @@ export const PRCommentsTab: React.FC<PRCommentsTabProps> = React.memo(({ context
                 <button
                   type="button"
                   className="inline-flex items-center gap-1 h-7 px-2 text-xs rounded-md bg-muted text-muted-foreground hover:text-foreground transition-colors data-popup-open:bg-background data-popup-open:text-foreground data-popup-open:shadow-sm"
-                  title="Filter comments"
+                  title="筛选评论"
                 />
               }
             >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h18M6 12h12M10 19h4" />
                 </svg>
-                Filters
+                筛选
                 {activeFilterCount > 0 && (
                   <span className="ml-0.5 inline-flex items-center justify-center min-w-3.5 h-3.5 px-1 rounded-full bg-primary/20 text-primary text-[9px] font-semibold tabular-nums">
                     {activeFilterCount}
@@ -381,25 +381,25 @@ export const PRCommentsTab: React.FC<PRCommentsTabProps> = React.memo(({ context
               <Popover.Positioner align="start" sideOffset={6} className="z-50">
                 <Popover.Popup className="w-56 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg origin-[var(--transform-origin)] transition-opacity data-starting-style:opacity-0 data-ending-style:opacity-0">
                 <div className="p-2 space-y-1">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground/70 px-1">Show</div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground/70 px-1">显示</div>
                   {hasBots && (
-                    <FilterSwitch label="Bot comments" checked={!hideBots} onChange={toggleHideBots} />
+                    <FilterSwitch label="机器人评论" checked={!hideBots} onChange={toggleHideBots} />
                   )}
-                  <FilterSwitch label="Resolved threads" checked={!hideResolved} onChange={() => setHideResolved((v) => !v)} />
-                  <FilterSwitch label="Outdated threads" checked={!hideOutdated} onChange={() => setHideOutdated((v) => !v)} />
+                  <FilterSwitch label="已解决的会话" checked={!hideResolved} onChange={() => setHideResolved((v) => !v)} />
+                  <FilterSwitch label="已过时的会话" checked={!hideOutdated} onChange={() => setHideOutdated((v) => !v)} />
 
                   {humanAuthors.length > 0 && (
                     <>
                       <div className="border-t border-border/50 my-1" />
                       <div className="flex items-center justify-between px-1">
-                        <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">Authors</span>
+                        <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">作者</span>
                         <div className="flex items-center gap-1.5 text-[10px]">
                           <button
                             type="button"
                             onClick={() => setExcludedAuthors(new Set())}
                             className="text-primary hover:underline"
                           >
-                            All
+                            全部
                           </button>
                           <span className="text-muted-foreground/30">·</span>
                           <button
@@ -407,7 +407,7 @@ export const PRCommentsTab: React.FC<PRCommentsTabProps> = React.memo(({ context
                             onClick={() => setExcludedAuthors(new Set(humanAuthors))}
                             className="text-primary hover:underline"
                           >
-                            None
+                            无
                           </button>
                         </div>
                       </div>
@@ -415,7 +415,7 @@ export const PRCommentsTab: React.FC<PRCommentsTabProps> = React.memo(({ context
                         {humanAuthors.map((author) => (
                           <FilterSwitch
                             key={author}
-                            label={author === platformUser ? `${author} (you)` : author}
+                            label={author === platformUser ? `${author}（你）` : author}
                             checked={!excludedAuthors.has(author)}
                             onChange={() => setExcludedAuthors((prev) => {
                               const next = new Set(prev);
@@ -439,12 +439,12 @@ export const PRCommentsTab: React.FC<PRCommentsTabProps> = React.memo(({ context
               onClick={() => setSortNewestFirst((v) => !v)}
               className="h-7 px-2 inline-flex items-center text-xs rounded-md bg-muted text-muted-foreground hover:text-foreground transition-colors"
             >
-              {sortNewestFirst ? 'Newest' : 'Oldest'}
+              {sortNewestFirst ? '最新' : '最早'}
             </button>
             <button
               onClick={() => allCollapsed ? expandAll() : collapseAll()}
               className="h-7 w-7 inline-flex items-center justify-center rounded-md bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              title={allCollapsed ? 'Expand all' : 'Collapse all'}
+              title={allCollapsed ? '展开全部' : '折叠全部'}
             >
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d={allCollapsed ? 'M4 6h16M4 12h16M4 18h16' : 'M4 14h16M4 10h16'} />
@@ -460,9 +460,9 @@ export const PRCommentsTab: React.FC<PRCommentsTabProps> = React.memo(({ context
         <div className="space-y-3 max-w-2xl">
         {displayTimeline.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-xs text-muted-foreground mb-2">No comments match your filters.</p>
+            <p className="text-xs text-muted-foreground mb-2">没有符合筛选条件的评论。</p>
             <button onClick={clearFilters} className="text-[10px] text-primary hover:underline">
-              Clear filters
+              清除筛选
             </button>
           </div>
         ) : (
@@ -510,7 +510,7 @@ export const PRCommentsTab: React.FC<PRCommentsTabProps> = React.memo(({ context
                   <Avatar src={getEntryAvatar(entry)} name={entry.data.author} />
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     <span className="text-[13px] font-semibold text-foreground truncate">
-                      {entry.data.author || 'unknown'}
+                      {entry.data.author || '未知'}
                     </span>
                     {entry.data.isBot && (
                       <BotTag />
@@ -542,7 +542,7 @@ export const PRCommentsTab: React.FC<PRCommentsTabProps> = React.memo(({ context
                     url={entry.kind === 'comment' ? (entry.data as PRComment).url : (entry.data as PRReview).url}
                     body={entry.data.body}
                     commentId={id}
-                    author={entry.data.author || 'unknown'}
+                    author={entry.data.author || '未知'}
                     onAnnotate={handleAnnotate}
                   />
                 )}
@@ -557,7 +557,7 @@ export const PRCommentsTab: React.FC<PRCommentsTabProps> = React.memo(({ context
       {annotating && (
         <CommentPopover
           anchorEl={annotating.anchorEl}
-          contextText={annotating.body ? annotating.body.slice(0, 80) : `comment by ${annotating.author}`}
+          contextText={annotating.body ? annotating.body.slice(0, 80) : `来自 ${annotating.author} 的评论`}
           isGlobal={false}
           allowImages={false}
           onSubmit={(text) => {
@@ -593,8 +593,8 @@ function ThreadCard({ thread, isSelected, isCollapsed, onSelect, onToggleCollaps
   const replies = thread.comments.slice(1);
   const isDimmed = thread.isResolved || thread.isOutdated;
   const lineLabel = thread.startLine && thread.line && thread.startLine !== thread.line
-    ? `L${thread.startLine}–${thread.line}`
-    : thread.line ? `L${thread.line}` : '';
+    ? `第 ${thread.startLine}–${thread.line} 行`
+    : thread.line ? `第 ${thread.line} 行` : '';
 
   return (
     <div
@@ -616,19 +616,19 @@ function ThreadCard({ thread, isSelected, isCollapsed, onSelect, onToggleCollaps
         <Avatar src={first.avatarUrl} name={first.author} />
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <span className={`text-[13px] font-semibold truncate ${thread.isResolved ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-            {first.author || 'unknown'}
+            {first.author || '未知'}
           </span>
           {first.isBot && (
             <BotTag />
           )}
           {thread.isOutdated && (
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-warning/15 text-warning flex-shrink-0">
-              Outdated
+              已过时
             </span>
           )}
           {thread.isResolved && (
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/15 text-success flex-shrink-0">
-              Resolved
+              已解决
             </span>
           )}
           {thread.path && (
@@ -640,7 +640,7 @@ function ThreadCard({ thread, isSelected, isCollapsed, onSelect, onToggleCollaps
         <div className="flex items-center gap-2 flex-shrink-0">
           {replies.length > 0 && (
             <span className="text-[10px] text-muted-foreground">
-              {replies.length} repl{replies.length === 1 ? 'y' : 'ies'}
+              {replies.length} 条回复
             </span>
           )}
           <span className="text-[10px] text-muted-foreground">
@@ -688,7 +688,7 @@ function ThreadCard({ thread, isSelected, isCollapsed, onSelect, onToggleCollaps
               onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }}
               className="mt-1 text-[10px] text-primary/70 hover:text-primary transition-colors"
             >
-              Show full comment{replies.length > 0 ? ` + ${replies.length} repl${replies.length === 1 ? 'y' : 'ies'}` : ''}
+              显示完整评论{replies.length > 0 ? ` + ${replies.length} 条回复` : ''}
             </button>
           )}
 
@@ -718,7 +718,7 @@ function ThreadCard({ thread, isSelected, isCollapsed, onSelect, onToggleCollaps
             url={first.url}
             body={first.body}
             commentId={thread.id}
-            author={first.author || 'unknown'}
+            author={first.author || '未知'}
             onAnnotate={onAnnotate}
           />
         </>
@@ -741,13 +741,13 @@ function PRCommentLinkActions({ url, body, commentId, author, onAnnotate }: {
       {onAnnotate && commentId && (
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onAnnotate(commentId, author || 'unknown', body, e.currentTarget); }}
+          onClick={(e) => { e.stopPropagation(); onAnnotate(commentId, author || '未知', body, e.currentTarget); }}
           className="mr-auto flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted/30 transition-colors"
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4v-4z" />
           </svg>
-          Annotate
+          标注
         </button>
       )}
       {url && (
@@ -761,10 +761,10 @@ function PRCommentLinkActions({ url, body, commentId, author, onAnnotate }: {
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
-          {url.includes('gitlab') ? 'View on GitLab' : url.includes('bitbucket.org') ? 'View on Bitbucket' : 'View on GitHub'}
+          {url.includes('gitlab') ? '在 GitLab 上查看' : url.includes('bitbucket.org') ? '在 Bitbucket 上查看' : '在 GitHub 上查看'}
         </a>
       )}
-      <CopyButton text={body} variant="inline" label="Copy" />
+      <CopyButton text={body} variant="inline" label="复制" />
     </div>
   );
 }

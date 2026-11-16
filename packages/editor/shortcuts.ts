@@ -21,48 +21,48 @@ import {
 
 export const planEditorShortcuts = defineShortcutScope({
   id: 'plan-editor',
-  title: 'Plan Editor',
+  title: '计划编辑器',
   shortcuts: {
     submitPlan: {
-      description: 'Approve / Send feedback',
+      description: '通过 / 发送反馈',
       bindings: ['Mod+Enter'],
-      section: 'Actions',
-      hint: 'Approves when there are no annotations and sends feedback when there are.',
+      section: '操作',
+      hint: '没有标注时通过，有标注时发送反馈。',
       displayOrder: 10,
     },
     submitAnnotations: {
-      description: 'Done / Send feedback, whichever the header shows',
+      description: '完成 / 发送反馈（以顶栏显示为准）',
       bindings: ['Mod+Enter'],
-      section: 'Actions',
-      hint: 'Fires the adaptive header primary: Done (or Approve in gate mode) with nothing to send, Send Feedback otherwise.',
+      section: '操作',
+      hint: '触发顶栏的主操作：无内容可发送时为“完成”（门禁模式下为“通过”），否则为“发送反馈”。',
       displayOrder: 10,
     },
     openDecisionNote: {
-      description: 'Send with a note',
+      description: '附带备注发送',
       bindings: ['Mod+Shift+Enter'],
-      section: 'Actions',
-      hint: 'Opens the note composer of the send menu; Mod+Enter then sends feedback and note together.',
+      section: '操作',
+      hint: '打开发送菜单的备注撰写框；随后按 Mod+Enter 会一并发送反馈和备注。',
       displayOrder: 15,
     },
     quickSave: {
-      description: 'Save to notes app',
+      description: '保存到笔记应用',
       bindings: ['Mod+S'],
-      section: 'Actions',
-      hint: 'Opens Export if no default notes app is configured.',
+      section: '操作',
+      hint: '未配置默认笔记应用时打开导出。',
       displayOrder: 20,
     },
     exitPlanDiff: {
-      description: 'Close diff view',
+      description: '关闭 Diff 视图',
       bindings: ['Escape'],
-      section: 'Actions',
-      hint: 'Available while plan diff is open.',
+      section: '操作',
+      hint: '计划 Diff 打开时可用。',
       displayOrder: 30,
     },
     printPlan: {
-      description: 'Print',
+      description: '打印',
       bindings: ['Mod+P'],
-      section: 'Actions',
-      hint: 'Opens the browser print dialog for the current document.',
+      section: '操作',
+      hint: '为当前文档打开浏览器打印对话框。',
       displayOrder: 40,
     },
   },
@@ -72,7 +72,7 @@ export const usePlanEditorShortcuts = createShortcutScopeHook(planEditorShortcut
 
 const planReviewEditorSettingsShortcuts = defineShortcutScope({
   id: 'plan-review-editor-settings',
-  title: 'Plan Editor',
+  title: '计划编辑器',
   shortcuts: {
     submitPlan: planEditorShortcuts.shortcuts.submitPlan,
     openDecisionNote: planEditorShortcuts.shortcuts.openDecisionNote,
@@ -84,7 +84,7 @@ const planReviewEditorSettingsShortcuts = defineShortcutScope({
 
 const annotateEditorSettingsShortcuts = defineShortcutScope({
   id: 'annotate-editor-settings',
-  title: 'Annotate Editor',
+  title: '标注编辑器',
   shortcuts: {
     submitAnnotations: planEditorShortcuts.shortcuts.submitAnnotations,
     openDecisionNote: planEditorShortcuts.shortcuts.openDecisionNote,
@@ -121,27 +121,27 @@ export const annotateSettingsShortcutRegistry = createShortcutRegistry([
 
 export const planReviewSurface: ShortcutSurface = {
   slug: 'plan-review',
-  title: 'Plan review',
-  description: 'Shortcuts surfaced by the plan review UI.',
+  title: '计划评审',
+  description: '计划评审界面中显示的快捷键。',
   registry: planReviewSettingsShortcutRegistry,
 };
 
 export const annotateSurface: ShortcutSurface = {
   slug: 'annotate-mode',
-  title: 'Annotate mode',
-  description: 'Shortcuts surfaced by the standalone annotation UI.',
+  title: '标注模式',
+  description: '独立标注界面中显示的快捷键。',
   registry: annotateSettingsShortcutRegistry,
 };
 
 const goalSetupEditorSettingsShortcuts = defineShortcutScope({
   id: 'goal-setup-editor-settings',
-  title: 'Goal Setup',
+  title: '目标设置',
   shortcuts: {
     submitGoalSetup: {
-      description: 'Submit answers / facts',
+      description: '提交回答 / 事实',
       bindings: ['Mod+Enter'],
-      section: 'Actions',
-      hint: 'Submits the bundled interview or facts review.',
+      section: '操作',
+      hint: '提交内置的访谈或事实评审。',
       displayOrder: 10,
     },
   },
@@ -154,7 +154,7 @@ export const goalSetupSettingsShortcutRegistry = createShortcutRegistry([
 
 export const goalSetupSurface: ShortcutSurface = {
   slug: 'goal-setup',
-  title: 'Goal setup',
-  description: 'Shortcuts surfaced by the bundled goal-setup interview and facts review.',
+  title: '目标设置',
+  description: '内置目标设置访谈和事实评审中显示的快捷键。',
   registry: goalSetupSettingsShortcutRegistry,
 };

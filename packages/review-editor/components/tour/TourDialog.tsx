@@ -68,9 +68,9 @@ const dotVariants: Variants = {
 // ---------------------------------------------------------------------------
 
 const severityLabel: Record<TourKeyTakeaway['severity'], string> = {
-  info: 'Info',
-  important: 'Important',
-  warning: 'Warning',
+  info: '信息',
+  important: '重要',
+  warning: '警告',
 };
 
 const severityLabelClass: Record<TourKeyTakeaway['severity'], string> = {
@@ -94,7 +94,7 @@ function TakeawaysTable({ takeaways }: { takeaways: TourKeyTakeaway[] }) {
     >
       <div className="px-4 py-2 border-b border-border/15 dark:border-border/30 bg-muted/10 dark:bg-muted/30">
         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
-          Key takeaways
+          关键要点
         </span>
       </div>
       {takeaways.map((t, i) => (
@@ -122,9 +122,9 @@ function TakeawaysTable({ takeaways }: { takeaways: TourKeyTakeaway[] }) {
 type TourPage = 'intro' | 'stops' | 'checklist';
 const PAGE_ORDER: TourPage[] = ['intro', 'stops', 'checklist'];
 const PAGE_LABELS: Record<TourPage, string> = {
-  intro: 'Overview',
-  stops: 'Walkthrough',
-  checklist: 'Checklist',
+  intro: '概览',
+  stops: '逐步导览',
+  checklist: '检查清单',
 };
 
 function getPageAnimClass(
@@ -300,9 +300,9 @@ function TourDialogContent({ jobId, onClose }: { jobId: string; onClose: () => v
   const introCards = useMemo(
     () =>
       [
-        { label: 'Intent', value: tour?.intent, dot: 'bg-primary/70' },
-        { label: 'Before', value: tour?.before, dot: 'bg-warning/70' },
-        { label: 'After', value: tour?.after, dot: 'bg-success/70' },
+        { label: '意图', value: tour?.intent, dot: 'bg-primary/70' },
+        { label: '之前', value: tour?.before, dot: 'bg-warning/70' },
+        { label: '之后', value: tour?.after, dot: 'bg-success/70' },
       ].filter((card) => card.value && card.value.trim()),
     [tour?.intent, tour?.before, tour?.after],
   );
@@ -334,8 +334,8 @@ function TourDialogContent({ jobId, onClose }: { jobId: string; onClose: () => v
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center px-8">
-          <p className="text-sm text-muted-foreground">{error ?? 'Tour not found'}</p>
-          <button onClick={retry} className="mt-3 text-xs text-primary hover:text-primary/80 transition-colors">Retry</button>
+          <p className="text-sm text-muted-foreground">{error ?? '未找到导览'}</p>
+          <button onClick={retry} className="mt-3 text-xs text-primary hover:text-primary/80 transition-colors">重试</button>
         </div>
       </div>
     );
@@ -468,7 +468,7 @@ function TourDialogContent({ jobId, onClose }: { jobId: string; onClose: () => v
                     onClick={() => navigate('stops')}
                     className="group w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-primary/85 text-primary-foreground hover:bg-primary text-sm font-medium shadow-sm hover:shadow-md active:scale-[0.98] transition-[background-color,box-shadow,transform] duration-150 ease-out"
                   >
-                    Start Tour
+                    开始导览
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
                       className="transition-transform duration-150 group-hover:translate-x-0.5">
                       <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5"
@@ -513,11 +513,11 @@ function TourDialogContent({ jobId, onClose }: { jobId: string; onClose: () => v
                 </div>
 
                 <div className="mt-8 pt-4 border-t border-border/15 dark:border-border/35 text-[10px] text-muted-foreground/50 flex items-center justify-between">
-                  <span>{tour.stops.length} stop{tour.stops.length !== 1 ? 's' : ''}</span>
+                  <span>{tour.stops.length} 个站点</span>
                   {checklistCount > 0 && (
                     <button onClick={() => navigate('checklist')}
                       className="text-muted-foreground/50 hover:text-primary/60 transition-colors">
-                      Checklist →
+                      检查清单 →
                     </button>
                   )}
                 </div>
@@ -548,7 +548,7 @@ function TourDialogContent({ jobId, onClose }: { jobId: string; onClose: () => v
                     }}
                   />
                 ) : (
-                  <p className="text-sm text-muted-foreground/50">No checklist items for this tour.</p>
+                  <p className="text-sm text-muted-foreground/50">此导览没有检查清单条目。</p>
                 )}
               </div>
             </OverlayScrollArea>

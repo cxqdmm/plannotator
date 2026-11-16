@@ -3,19 +3,19 @@ import { createShortcutScopeHook } from '../runtime';
 
 export const viewerShortcuts = defineShortcutScope({
   id: 'viewer',
-  title: 'Viewer',
+  title: '查看器',
   shortcuts: {
     copySelection: {
-      description: 'Copy selected text',
+      description: '复制所选文本',
       bindings: ['Mod+C'],
-      section: 'Annotations',
+      section: '标注',
       displayOrder: 25,
     },
     closeLightbox: {
-      description: 'Close image lightbox',
+      description: '关闭图片灯箱',
       bindings: ['Escape'],
-      section: 'Annotations',
-      hint: 'Available while an image is open in the lightbox.',
+      section: '标注',
+      hint: '图片在灯箱中打开时可用。',
       displayOrder: 70,
     },
   },

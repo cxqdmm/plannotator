@@ -22,8 +22,8 @@ describe('folder annotation empty state', () => {
       <FolderAnnotationEmptyState compactTouchLayout={false} onChooseFile={() => {}} />,
     );
 
-    expect(html).toContain('Pick a markdown, HTML, or diagram file from the sidebar to begin.');
-    expect(html).not.toContain('Choose a file</button>');
+    expect(html).toContain('从侧边栏选择一个 Markdown、HTML 或图表文件开始。');
+    expect(html).not.toContain('选择文件</button>');
   });
 
   test.skipIf(!hasDom)('makes the hidden mobile file journey directly actionable', async () => {
@@ -38,7 +38,7 @@ describe('folder annotation empty state', () => {
     });
 
     const choose = Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
-      .find((button) => button.textContent?.trim() === 'Choose a file');
+      .find((button) => button.textContent?.trim() === '选择文件');
     expect(choose?.getAttribute('data-pn-touch-target')).toBe('true');
     await act(async () => choose?.click());
     expect(onChooseFile).toHaveBeenCalledTimes(1);

@@ -134,10 +134,10 @@ describe('CallFlowTreeView annotation interaction', () => {
     });
 
     expect(host.textContent).not.toContain('unchangedContext()');
-    const search = host.querySelector<HTMLButtonElement>('[aria-label="Search call paths"]');
+    const search = host.querySelector<HTMLButtonElement>('[aria-label="搜索调用路径"]');
     expect(search).not.toBeNull();
     await act(async () => search?.click());
-    const input = host.querySelector<HTMLInputElement>('input[placeholder="Find calls or files"]');
+    const input = host.querySelector<HTMLInputElement>('input[placeholder="查找调用或文件"]');
     expect(input).not.toBeNull();
 
     await act(async () => {
@@ -155,7 +155,7 @@ describe('CallFlowTreeView annotation interaction', () => {
     await act(async () => {
       input?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }));
     });
-    expect(host.querySelector('input[placeholder="Find calls or files"]')).toBeNull();
+    expect(host.querySelector('input[placeholder="查找调用或文件"]')).toBeNull();
     expect(host.textContent).not.toContain('unchangedContext()');
   });
 
@@ -178,7 +178,7 @@ describe('CallFlowTreeView annotation interaction', () => {
     expect(host.textContent).toContain('changedCall()');
     expect(host.textContent).not.toContain('unchangedContext()');
     const toggle = [...host.querySelectorAll('button')]
-      .find((button) => button.textContent === 'Show all context');
+      .find((button) => button.textContent === '显示全部上下文');
     expect(toggle).toBeDefined();
 
     await act(async () => toggle?.click());
@@ -361,12 +361,12 @@ describe('CallFlowTreeView cards', () => {
     const removed = rowFor(container, 'validate(order)');
     expect(removed.classList.contains('call-flow-row-removed')).toBe(true);
     expect(removed.querySelector('.call-flow-marker-removed')).not.toBeNull();
-    expect(removed.querySelector('.call-flow-node-target')?.textContent).toBe('Removed: validate(order)');
-    expect(removed.querySelector('.call-flow-node-target .sr-only')?.textContent).toBe('Removed: ');
+    expect(removed.querySelector('.call-flow-node-target')?.textContent).toBe('已删除：validate(order)');
+    expect(removed.querySelector('.call-flow-node-target .sr-only')?.textContent).toBe('已删除：');
 
     const added = rowFor(container, 'Auth.authorize(session, order)');
     expect(added.querySelector('.call-flow-marker-added')).not.toBeNull();
-    expect(added.querySelector('.call-flow-node-target')?.textContent).toBe('New: Auth.authorize(session, order)');
+    expect(added.querySelector('.call-flow-node-target')?.textContent).toBe('新增：Auth.authorize(session, order)');
     // The called name is its own element, so it can lead the row.
     expect(added.querySelector('.call-flow-signature-name')?.textContent).toBe('authorize');
 
@@ -378,8 +378,8 @@ describe('CallFlowTreeView cards', () => {
 
   test.skipIf(!hasDom)('search marks a match that spans the receiver and the called name', async () => {
     const container = await renderCards();
-    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Search call paths"]')?.click());
-    const input = container.querySelector<HTMLInputElement>('input[placeholder="Find calls or files"]');
+    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="搜索调用路径"]')?.click());
+    const input = container.querySelector<HTMLInputElement>('input[placeholder="查找调用或文件"]');
     await act(async () => {
       if (!input) return;
       const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value')?.set;

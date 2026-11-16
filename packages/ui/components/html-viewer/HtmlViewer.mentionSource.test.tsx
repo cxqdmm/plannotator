@@ -74,7 +74,7 @@ async function mountViewer(
       });
     },
     async openGlobalComposer() {
-      const button = host!.querySelector<HTMLButtonElement>('button[title="Add global comment"]');
+      const button = host!.querySelector<HTMLButtonElement>('button[title="添加全局评论"]');
       if (!button) throw new Error('Global comment button missing');
       await act(async () => { button.click(); });
     },

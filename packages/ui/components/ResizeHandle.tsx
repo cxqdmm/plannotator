@@ -107,8 +107,8 @@ export const ResizeHandle: React.FC<Props> = ({
             e.stopPropagation();
             onCollapse();
           }}
-          title="Collapse sidebar"
-          aria-label="Collapse sidebar"
+          title="折叠侧栏"
+          aria-label="折叠侧栏"
           data-collapse={side}
           className="absolute top-1/2 left-1/2 z-20 flex h-6 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center before:absolute before:-inset-2 before:content-[''] rounded-sm bg-surface-1 text-muted-foreground/60 opacity-0 ring-1 ring-border/40 transition-opacity hover:text-foreground group-hover:opacity-100 group-hover/sidebar:opacity-100"
         >

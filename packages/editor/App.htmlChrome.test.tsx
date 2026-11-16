@@ -356,7 +356,7 @@ describe.if(hasDom)("HTML annotate chrome (tools toggle + pen toggle)", () => {
     expect(toolsToggle()).toBeNull();
 
     await openOptionsMenu();
-    const show = findMenuItem("Show tools");
+    const show = findMenuItem("显示工具");
     if (!show) throw new Error('compact menu is missing the "Show tools" action');
     await act(async () => show.click());
     expect(floatingCluster()).not.toBeNull();
@@ -374,14 +374,14 @@ describe.if(hasDom)("HTML annotate chrome (tools toggle + pen toggle)", () => {
     expect(armedRing()).not.toBeNull();
 
     await openOptionsMenu();
-    const interact = findMenuItem("Interact with page");
+    const interact = findMenuItem("与页面交互");
     if (!interact) throw new Error('compact menu is missing the "Interact with page" action');
     await act(async () => interact.click());
     expect(armedRing()).toBeNull();
 
     // And back: the same slot re-arms.
     await openOptionsMenu();
-    const annotate = findMenuItem("Annotate page");
+    const annotate = findMenuItem("标注页面");
     if (!annotate) throw new Error('compact menu is missing the "Annotate page" action');
     await act(async () => annotate.click());
     expect(armedRing()).not.toBeNull();
@@ -398,7 +398,7 @@ describe.if(hasDom)("HTML annotate chrome (tools toggle + pen toggle)", () => {
     expect(refreshButton()).toBeNull();
 
     await openOptionsMenu();
-    const refresh = findMenuItem("Refresh from disk");
+    const refresh = findMenuItem("从磁盘刷新");
     if (!refresh) throw new Error('compact menu is missing the "Refresh from disk" action');
     expect(refresh.disabled).toBe(false);
     await act(async () => refresh.click());
@@ -549,16 +549,16 @@ describe.if(hasDom)("HTML annotate chrome (tools toggle + pen toggle)", () => {
     await mountHtmlAnnotate(draftedFetch);
     await settle();
     // The draft arrives behind the "Draft Recovered" dialog; restore it.
-    for (let attempt = 0; attempt < 20 && !findButtonByText("Restore"); attempt += 1) {
+    for (let attempt = 0; attempt < 20 && !findButtonByText("恢复"); attempt += 1) {
       await settle();
     }
-    const restore = findButtonByText("Restore");
+    const restore = findButtonByText("恢复");
     if (!restore) throw new Error("draft restore dialog missing");
     await act(async () => restore.click());
     await settle();
     // The chip lives on the panel card; the HTML surface opens with the
     // panel collapsed, so open it.
-    const showPanel = document.querySelector<HTMLButtonElement>('button[title="Show annotations"]');
+    const showPanel = document.querySelector<HTMLButtonElement>('button[title="显示标注"]');
     if (showPanel) await act(async () => showPanel.click());
     await settle();
     expect(document.querySelector('[data-annotation-id="X"]')).not.toBeNull();

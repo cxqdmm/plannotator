@@ -127,8 +127,8 @@ function CallFlowSignature({ label, query }: { readonly label: string; readonly 
 
 /** Screen-reader word for a changed step; unchanged context says nothing. */
 function statusAnnouncement(status: CallFlowNode['status']): string | null {
-  if (status === 'added') return 'New: ';
-  if (status === 'removed') return 'Removed: ';
+  if (status === 'added') return '新增：';
+  if (status === 'removed') return '已删除：';
   return null;
 }
 
@@ -207,11 +207,11 @@ function CallFlowNodeRow({
     Boolean(loadNodeSource && node.file && node.line),
   );
   const targetTitle = annotatable
-    ? `${inPatch ? `Comment on ${node.label}.` : `Comment on ${node.label} as Call Flow feedback.`} Shift-click to add or remove this step from the open comment.`
+    ? `${inPatch ? `评论 ${node.label}。` : `将 ${node.label} 作为调用流反馈评论。`}按住 Shift 点击可将此步骤加入或移出当前评论。`
     : navigable
-      ? `Open ${location}`
+      ? `打开 ${location}`
       : node.file && node.line
-        ? 'Outside the reviewed patch'
+        ? '不在本次评审的更改范围内'
         : node.label;
 
   return (
@@ -224,7 +224,7 @@ function CallFlowNodeRow({
           <button
             type="button"
             className="call-flow-expand"
-            aria-label={`${expanded ? 'Collapse' : 'Expand'} ${node.label}`}
+            aria-label={`${expanded ? '收起' : '展开'} ${node.label}`}
             aria-expanded={expanded}
             onClick={() => onToggleNode(treePath)}
           >
@@ -257,7 +257,7 @@ function CallFlowNodeRow({
               ? <span className="call-flow-node-branch-label"><CallFlowSearchText text={node.label} query={searchQuery} /></span>
               : <CallFlowSignature label={node.label} query={searchQuery} />}
           </span>
-          {node.kind === 'branch' && <span className="call-flow-node-kind">branch</span>}
+          {node.kind === 'branch' && <span className="call-flow-node-kind">分支</span>}
         </button>
         {path && node.line ? (
           <button
@@ -273,8 +273,8 @@ function CallFlowNodeRow({
               sourcePreview.dismiss();
               onOpen(node);
             }}
-            title={navigable ? `Open ${location}` : 'Outside the reviewed patch'}
-            aria-label={navigable ? `Open ${location}` : `Source ${location} is outside the reviewed patch`}
+            title={navigable ? `打开 ${location}` : '不在本次评审的更改范围内'}
+            aria-label={navigable ? `打开 ${location}` : `源位置 ${location} 不在本次评审的更改范围内`}
           >
             <span className="call-flow-node-chip">
               <span className="call-flow-node-file"><CallFlowSearchText text={path.name} query={searchQuery} /></span>
@@ -413,10 +413,10 @@ function CallFlowEntrySection({
         onClick={() => onToggleEntry(treePath)}
       >
         <ChevronRight aria-hidden="true" size={13} strokeWidth={2} className="call-flow-entry-mark call-flow-chevron" />
-        <span className="call-flow-entry-kicker">Entry</span>
+        <span className="call-flow-entry-kicker">入口</span>
         <span className="call-flow-entry-label">{entry.entry}</span>
         <span className="call-flow-entry-meta">
-          {changedCount.toLocaleString()} changed
+          已更改 {changedCount.toLocaleString()} 处
         </span>
       </button>
       {expanded && (
@@ -504,7 +504,7 @@ export function CallFlowTreeView({
   }, [trees]);
   const { changedSubtrees, nearbySubtrees, entryChangedCounts, totalNodes } = treeShape;
   const defaultSubtrees = initialContext === 'nearby' ? nearbySubtrees : changedSubtrees;
-  const focusedContextLabel = initialContext === 'nearby' ? 'Show nearby context' : 'Show changed paths';
+  const focusedContextLabel = initialContext === 'nearby' ? '显示附近上下文' : '显示变更路径';
   const hiddenContextNodes = initialContext === 'all' ? 0 : totalNodes - defaultSubtrees.size;
   const [showAllContext, setShowAllContext] = useState(initialContext === 'all');
   const [collapsedPaths, setCollapsedPaths] = useState<ReadonlySet<string>>(() => new Set());
@@ -763,7 +763,7 @@ export function CallFlowTreeView({
   const targetChips = useMemo<CommentTargetChip[]>(() => draftTargets.map((target) => {
     const sourceLabel = target.filePath
       ? `${splitCallFlowFilePath(target.filePath).name}${target.lineStart ? `:${target.lineStart}` : ''}`
-      : 'inferred step';
+      : '推断步骤';
     return {
       key: `${treeInstanceId}:${target.treePath}`,
       label: sourceLabel,
@@ -778,8 +778,8 @@ export function CallFlowTreeView({
           <div className="call-flow-tree-toolbar">
             {hiddenContextNodes > 0 && <span className="call-flow-context-summary">
               {showAllContext
-                ? `${totalNodes.toLocaleString()} inferred steps`
-                : `${hiddenContextNodes.toLocaleString()} more context steps hidden`}
+                ? `共 ${totalNodes.toLocaleString()} 个推断步骤`
+                : `另有 ${hiddenContextNodes.toLocaleString()} 个上下文步骤已隐藏`}
             </span>}
             <div className={`call-flow-tree-actions${searchOpen ? ' call-flow-tree-actions-searching' : ''}`}>
               {hiddenContextNodes > 0 && (
@@ -788,14 +788,14 @@ export function CallFlowTreeView({
                   aria-pressed={showAllContext}
                   onClick={() => setShowAllContext((visible) => !visible)}
                 >
-                  {showAllContext ? focusedContextLabel : 'Show all context'}
+                  {showAllContext ? focusedContextLabel : '显示全部上下文'}
                 </button>
               )}
               {searchOpen ? (
                 <CallFlowSearchControls
                   inputRef={searchInputRef}
-                  label="Search call paths"
-                  placeholder="Find calls or files"
+                  label="搜索调用路径"
+                  placeholder="查找调用或文件"
                   query={searchQuery}
                   currentMatchIndex={currentSearchIndex}
                   matchCount={searchMatches.length}
@@ -809,8 +809,8 @@ export function CallFlowTreeView({
                   type="button"
                   className="call-flow-icon-button"
                   onClick={() => setSearchOpen(true)}
-                  aria-label="Search call paths"
-                  title="Search call paths (Cmd/Ctrl+F)"
+                  aria-label="搜索调用路径"
+                  title="搜索调用路径（Cmd/Ctrl+F）"
                 >
                   <Search aria-hidden="true" size={14} />
                 </button>
@@ -818,9 +818,9 @@ export function CallFlowTreeView({
               <button
                 type="button"
                 onClick={toggleAllEntries}
-                aria-label={allEntriesExpanded ? 'Collapse all paths' : 'Expand all paths'}
+                aria-label={allEntriesExpanded ? '收起全部路径' : '展开全部路径'}
               >
-                {allEntriesExpanded ? 'Collapse all' : 'Expand all'}
+                {allEntriesExpanded ? '全部收起' : '全部展开'}
               </button>
             </div>
           </div>
@@ -868,7 +868,7 @@ export function CallFlowTreeView({
       )}
       <span className="sr-only" aria-live="polite">
         {draftTargets.length > 0
-          ? `${draftTargets.length} call-flow ${draftTargets.length === 1 ? 'step' : 'steps'} selected.`
+          ? `已选择 ${draftTargets.length} 个调用流步骤。`
           : ''}
       </span>
     </>

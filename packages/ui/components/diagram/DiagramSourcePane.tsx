@@ -180,7 +180,7 @@ export function DiagramSourcePane({
   return (
     <section
       data-diagram-source-pane=""
-      aria-label="Diagram source"
+      aria-label="图表源码"
       className={cn('flex min-h-0 flex-col bg-card', className)}
       // Escape LEAVES the buffer; it never reaches whatever is behind
       // the pane. In a popout that outer handler closes it, and one
@@ -194,21 +194,21 @@ export function DiagramSourcePane({
       }}
     >
       <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3">
-        <span className="text-xs font-medium text-foreground">Source</span>
+        <span className="text-xs font-medium text-foreground">源码</span>
         {editable && draft.dirty && (
           <span data-diagram-draft-state="" className="text-[10px] text-muted-foreground">
-            Draft · unsaved
+            草稿 · 未保存
           </span>
         )}
-        {!editable && <span className="text-[10px] text-muted-foreground">Read only</span>}
+        {!editable && <span className="text-[10px] text-muted-foreground">只读</span>}
         <span className="flex-1" />
         {editable && (
           <>
             <Button type="button" variant="ghost" size="xs" disabled={!draft.dirty || draft.saving} onClick={draft.discard}>
-              Discard
+              丢弃
             </Button>
             <Button type="button" size="xs" disabled={!draft.dirty || draft.saving || draft.stale} onClick={() => void draft.save()}>
-              {draft.saving ? 'Saving…' : 'Save'}
+              {draft.saving ? '保存中…' : '保存'}
             </Button>
           </>
         )}
@@ -218,22 +218,22 @@ export function DiagramSourcePane({
           <Strip
             tone="accent"
             dataAttr="data-diagram-reload-strip"
-            title="Changed since you opened"
+            title="在你打开后有更改"
             action={
               <Button variant="outline" size="xs" onClick={draft.reload}>
-                Reload
+                重新加载
               </Button>
             }
           >
             {draft.dirty
-              ? 'Someone saved a newer version. Reload to see it; your draft stays in the pane and Save is held until you do.'
-              : 'Someone saved a newer version. Reload to see it.'}
+              ? '有人保存了更新的版本。重新加载即可查看；你的草稿会保留在面板中，重新加载前无法保存。'
+              : '有人保存了更新的版本。重新加载即可查看。'}
           </Strip>
         </div>
       )}
       {draft.saveError !== null && (
         <div className="shrink-0 border-b border-border p-2">
-          <Strip tone="destructive" dataAttr="data-diagram-save-error" title="The diagram was not saved">
+          <Strip tone="destructive" dataAttr="data-diagram-save-error" title="图表未保存">
             {draft.saveError}
           </Strip>
         </div>

@@ -3,20 +3,20 @@ import { createShortcutScopeHook } from '../runtime';
 
 export const reviewAiShortcuts = defineShortcutScope({
   id: 'review-ai',
-  title: 'AI Assistant',
+  title: 'AI 助手',
   shortcuts: {
     submit: {
-      description: 'Send message',
+      description: '发送消息',
       bindings: ['Mod+Enter'],
-      section: 'AI Assistant',
-      hint: 'Available in the AI tab and the Ask AI inline input.',
+      section: 'AI 助手',
+      hint: '在 AI 标签页和行内“询问 AI”输入框中可用。',
       displayOrder: 10,
     },
     cancel: {
-      description: 'Cancel inline AI input',
+      description: '取消行内 AI 输入',
       bindings: ['Escape'],
-      section: 'AI Assistant',
-      hint: 'Available in the Ask AI inline input.',
+      section: 'AI 助手',
+      hint: '在行内“询问 AI”输入框中可用。',
       displayOrder: 20,
     },
   },

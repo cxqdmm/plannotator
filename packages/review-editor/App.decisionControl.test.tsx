@@ -708,7 +708,7 @@ describe.if(hasDom)("review decision control (agent mode)", () => {
     expect(primaryButton()!.textContent).toContain("通过");
 
     await act(async () => {
-      document.querySelector<HTMLButtonElement>('button[title="Annotations"]')!.click();
+      document.querySelector<HTMLButtonElement>('button[title="标注"]')!.click();
     });
     await settle();
 

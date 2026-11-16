@@ -33,9 +33,9 @@ export interface AgentSwitchSettings {
 
 // Fallback options when API is unavailable or for non-OpenCode origins
 export const AGENT_OPTIONS: { value: string; label: string; description: string }[] = [
-  { value: 'build', label: 'Build', description: 'Switch to build agent after approval' },
-  { value: 'custom', label: 'Custom', description: 'Switch to a custom agent after approval' },
-  { value: 'disabled', label: 'Disabled', description: 'Stay on current agent after approval' },
+  { value: 'build', label: 'Build', description: '通过后切换到 build agent' },
+  { value: 'custom', label: '自定义', description: '通过后切换到自定义 agent' },
+  { value: 'disabled', label: '已停用', description: '通过后保持当前 agent' },
 ];
 
 /** UI surface asking for the setting — only affects the unset default. */

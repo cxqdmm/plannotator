@@ -87,7 +87,7 @@ const viewerProps = {
 };
 
 function globalCommentButton(): Element | null {
-  return document.querySelector('button[title="Add global comment"]');
+  return document.querySelector('button[title="添加全局评论"]');
 }
 
 describe('Viewer consumer props', () => {

@@ -484,13 +484,13 @@ describe.if(hasDom)('useSharing short URL lifecycle', () => {
     });
     expect(postCount).toBe(2);
     expect(capture.result?.shortShareUrl).toBe('');
-    expect(capture.result?.shortUrlError).toBe('Short URL service unavailable');
+    expect(capture.result?.shortUrlError).toBe('短链接服务不可用');
 
     await act(async () => {
       renderHarness(0, capture);
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
-    expect(capture.result?.shortUrlError).toBe('Short URL service unavailable');
+    expect(capture.result?.shortUrlError).toBe('短链接服务不可用');
 
     await act(async () => {
       capture.controls?.setMarkdown('# Local plan\n\nEdited content');
