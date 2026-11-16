@@ -42,7 +42,7 @@ function buttonsIn(container: Element, selector: string): HTMLButtonElement[] {
 }
 
 describe.if(hasDom)('Ask this session notices in the document chat panel', () => {
-  const listenOnlyProviders = [{ id: 'session-bridge', name: 'session-bridge', sessionBridge: { host: 't3', status: 'ready', modes: { turn: true, transient: false }, interruptible: false } }];
+  const listenOnlyProviders = [{ id: 'session-bridge', name: 'session-bridge', sessionBridge: { host: 'claude-code', status: 'ready', modes: { turn: true, transient: false }, interruptible: false } }];
 
   test('a session advertised as not interruptible offers waiting and stops listening without claiming to stop its turn', () => {
     const onSessionAskAction = mock((_questionId: string, _action: string) => {});

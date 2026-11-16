@@ -20,7 +20,6 @@ import {
   type InboxDeliverNowBy,
   inboxEngineTooOldForSendNow,
   inboxLoadedPredatesSendNow,
-  isInboxT3WaitReason,
   type InboxDeliveryReason,
   type InboxDeliveryState,
   type InboxReloadRuntime,
@@ -68,8 +67,7 @@ export function handedItem(connection: RecipientConnection | null | undefined, i
 }
 
 /**
- * The wait inputs of `deliveryLine` for one item: the server's clock while it waits, its own record after the mark,
- * and whether the T3 wake says why it cannot put it in now (`t3_wait`, on a reply not delivered or taken back).
+ * The wait inputs of `deliveryLine` for one item: the server's clock while it waits, and its own record after the mark.
  */
 export function waitInputs(
   connection: RecipientConnection | null | undefined,
@@ -79,11 +77,8 @@ export function waitInputs(
     deliver_now_by?: InboxDeliverNowBy | null;
     deliver_now_at?: string | null;
     into_turn?: boolean | null;
-    t3_wait?: unknown;
-    delivery?: unknown;
-    taken_back_at?: string | null;
   },
-): Pick<DeliveryLineInput, 'waitingSince' | 'autoSince' | 'nowBy' | 'nowAt' | 'intoTurn' | 'waitsOnT3'> {
+): Pick<DeliveryLineInput, 'waitingSince' | 'autoSince' | 'nowBy' | 'nowAt' | 'intoTurn'> {
   const clock = connection?.waits?.[itemId];
   return {
     waitingSince: clock?.since ?? item.wait_started_at ?? null,
@@ -91,7 +86,6 @@ export function waitInputs(
     nowBy: item.deliver_now_by ?? null,
     nowAt: item.deliver_now_at ?? null,
     intoTurn: item.into_turn ?? null,
-    waitsOnT3: !item.delivery && !item.taken_back_at && isInboxT3WaitReason(item.t3_wait),
   };
 }
 
@@ -261,8 +255,6 @@ export interface DeliveryLineInput {
   /** Its session's connection took it and stopped while delivering it (the sessions route's `asker.stuck`). */
   stuck?: boolean;
   handed?: boolean;
-  /** The T3 wake says why it cannot put it in now (`t3_wait`): queued, whatever the connection's last poll says. */
-  waitsOnT3?: boolean;
   /** When it began to wait on the busy session (the server's clock): the line says how long. */
   waitingSince?: string | null;
   /** When the clock toward going in by itself started (the server's); null: it does not go in by itself yet. */
@@ -286,7 +278,6 @@ export function deliveryLine(input: DeliveryLineInput): DeliveryLine {
     undelivered: !!input.undelivered,
     stuck: !!input.stuck,
     handed: !!input.handed,
-    waitsOnT3: !!input.waitsOnT3,
     askerEnded: !!input.askerEnded,
     wakes: input.wakes,
     sendingNow: input.sendingNow,

@@ -34,7 +34,6 @@
         "@plannotator/server": "workspace:*",
         "@plannotator/shared": "workspace:*",
         "@plannotator/system": "workspace:*",
-        "@plannotator/t3-code": "workspace:*",
         "@plannotator/ui": "workspace:*",
         "@tailwindcss/vite": "^4.3.3",
         "react": "^19.3.1",
@@ -236,7 +235,6 @@
         "@plannotator/core": "workspace:*",
         "@plannotator/shared": "workspace:*",
         "@plannotator/system": "workspace:*",
-        "@plannotator/t3-code": "workspace:*",
         "@plannotator/webtui": "0.1.0",
         "chokidar": "^5.0.0",
         "jsonc-parser": "^3.3.1",
@@ -281,21 +279,6 @@
       "peerDependencies": {
         "react": "^19.3.1",
         "react-dom": "^19.3.1",
-      },
-    },
-    "packages/t3-code": {
-      "name": "@plannotator/t3-code",
-      "version": "0.0.1",
-      "dependencies": {
-        "@modelcontextprotocol/client": "2.3.1",
-        "@plannotator/ai": "workspace:*",
-        "@plannotator/core": "workspace:*",
-        "@plannotator/server": "workspace:*",
-        "@plannotator/shared": "workspace:*",
-        "zod": "4.6.7",
-      },
-      "devDependencies": {
-        "typescript": "~5.8.2",
       },
     },
     "packages/ui": {
@@ -872,8 +855,6 @@
     "@plannotator/shared": ["@plannotator/shared@workspace:packages/shared"],
 
     "@plannotator/system": ["@plannotator/system@workspace:packages/system"],
-
-    "@plannotator/t3-code": ["@plannotator/t3-code@workspace:packages/t3-code"],
 
     "@plannotator/ui": ["@plannotator/ui@workspace:packages/ui"],
 
@@ -2146,8 +2127,6 @@
     "@plannotator/review/typescript": ["typescript@5.8.3", "https://registry.npmmirror.com/typescript/-/typescript-5.8.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
 
     "@plannotator/system/typescript": ["typescript@5.8.3", "https://registry.npmmirror.com/typescript/-/typescript-5.8.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
-
-    "@plannotator/t3-code/typescript": ["typescript@5.8.3", "https://registry.npmmirror.com/typescript/-/typescript-5.8.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
 
     "@plannotator/ui/typescript": ["typescript@5.8.3", "https://registry.npmmirror.com/typescript/-/typescript-5.8.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
 

@@ -1,7 +1,7 @@
 /**
  * The context a reply gives an agent (approval "inbox-wake-context"), through
  * the server's real doors: the connections' poll, which Claude Code's mod, Pi,
- * OpenCode 2, DeepSeek Harness share, and the wake Codex, Qwen and T3 Code share.
+ * OpenCode 2, DeepSeek Harness share, and the wake Codex and Qwen share.
  * Every test uses its own temp data dir.
  */
 import { afterEach, describe, expect, test } from "bun:test";
@@ -426,7 +426,7 @@ describe("every host", () => {
     expect(text).toContain(old.body);
   });
 
-  test("Codex, Qwen and T3 Code: the same lines, the tools as Codex lists them, and the sentence out of the wake and out of the size", async () => {
+  test("Codex and Qwen: the same lines, the tools as Codex lists them, and the sentence out of the wake and out of the size", async () => {
     const w = await setup();
     const sent = await w.send(QUESTION);
     await w.reply(sent.message_id, "Not yet.");

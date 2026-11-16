@@ -121,8 +121,6 @@ import { inboxReplyQuoteExcerpt, inboxReplyQuoteLead, inboxReplyQuoteTime, type 
 import { whenTime } from "@plannotator/core/inbox-format";
 import type { QuestionAnswer } from "@plannotator/core/question-block";
 import { isInboxCloudHost, isInboxCloudSession, type InboxCloudWake } from "@plannotator/core/inbox-cloud";
-import type { InboxT3WaitReason } from "@plannotator/core/inbox-types";
-import { INBOX_T3_HOST, isInboxT3WaitReason, isT3ThreadId } from "@plannotator/core/inbox-types";
 import { INBOX_PERMISSION_FULL, INBOX_PERMISSION_SESSION_PREFIX, isInboxPermissionSession } from "@plannotator/core/inbox-permission";
 import { inboxProjectKey } from "./project-key";
 import { parseDiagramAnchor } from "@plannotator/core/diagram-anchor";
@@ -586,12 +584,11 @@ function hasTags(message: InboxMessage): boolean {
 }
 
 /**
- * An author the Inbox's own wake sends a reply to whether or not its message promised one: a T3 thread (the T3
- * wake, once a grant reaches it and covers its mode; its `wakesItem`) or a paired cloud agent (the cloud wake, once
- * it has a wake address). The door and T3 give the id, so it never changes between a send and a read.
+ * An author the Inbox's own wake sends a reply to whether or not its message promised one: a paired cloud agent
+ * (the cloud wake, once it has a wake address). The door gives the id, so it never changes between a send and a read.
  */
 function wakesLater(author: Extract<InboxAuthor, { kind: "agent" }>): author is Extract<InboxAuthor, { kind: "agent" }> & { session: string } {
-  return (author.host === INBOX_T3_HOST && isT3ThreadId(author.session)) || (isInboxCloudHost(author.host) && isInboxCloudSession(author.session));
+  return isInboxCloudHost(author.host) && isInboxCloudSession(author.session);
 }
 
 /**
@@ -620,7 +617,7 @@ export function normalizeInboxTags(value: unknown, owner: string | null): InboxT
   for (const entry of value) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) throw new InboxError("validation_error", "tags: each one { host, session, wakes }.", { field: "tags" });
     const { host, session, name, wakes, label, joined } = entry as Record<string, unknown>;
-    if (!isInboxTagSessionId(host, session)) {
+    if (!isInboxTagSessionId(session)) {
       throw new InboxError("validation_error", "tags: each session an id.", { field: "tags" });
     }
     if (host !== null && (typeof host !== "string" || host.length > 64)) throw new InboxError("validation_error", "tags: host a string or null.", { field: "tags" });
@@ -721,8 +718,8 @@ export interface InboxDeliveryPresence {
    */
   waitOf?(session: string, itemId: string): { since: string; autoSince: string | null } | null;
   /**
-   * Whether the Inbox's own wake for this session found it gone (a T3 thread T3 no longer has, a cloud agent no
-   * longer paired): nothing will send it a reply later (`owedToAnother`). Absent: never.
+   * Whether the Inbox's own wake for this session found it gone (a cloud agent no longer paired): nothing will
+   * send it a reply later (`owedToAnother`). Absent: never.
    */
   wakeGone?(session: string): boolean;
 }
@@ -2644,8 +2641,6 @@ export class InboxStore {
       const replyWaiting = !!replySession && !last.delivery && !(lastTo === null && sent?.checked_at);
       const connection = replyWaiting ? connectionOf(replySession!) : undefined;
       const kind = last.reply_to ? "reply" : "message";
-      // The T3 wake says why it cannot go in now: the row waits on T3, as the thread's line does.
-      const t3Wait = !last.delivery && !last.taken_back_at && isInboxT3WaitReason(last.t3_wait) ? last.t3_wait : null;
       if (lastTo) {
         const to = last.delivery ?? last.to ?? lastTo;
         // "Claude Code (another session)": a reply sent to another session of the asker's own host.
@@ -2660,7 +2655,6 @@ export class InboxStore {
           delivered: !!last.delivery,
           stuck: !last.delivery && stuck(lastTo.session, last.id),
           handed: !last.delivery && handed(lastTo.session, last.id) && !uncertain(lastTo.session, last.id),
-          waitsOnT3: t3Wait !== null,
           undelivered: !last.delivery && !askerLive(lastTo.session),
           askerEnded: false,
           wakes: !uncertain(lastTo.session, last.id),
@@ -2679,7 +2673,6 @@ export class InboxStore {
           name: null,
           ...(another ? { another_session: true } : {}),
           ...waitWire(decision),
-          ...(t3Wait && decision.state === "queued" && decision.reason !== "handed" ? { t3_wait: t3Wait } : {}),
         };
       }
       // A reply that tags agents: the owner's own delivery, never another recipient's.
@@ -2694,7 +2687,6 @@ export class InboxStore {
         delivered: !!deliveredAt,
         stuck: replyWaiting && stuck(replySession, last.id),
         handed: replyWaiting && handed(replySession, last.id) && !uncertain(replySession, last.id),
-        waitsOnT3: t3Wait !== null,
         undelivered: false,
         askerEnded,
         wakes: (wakingSession !== null || (askedSession !== null && connection != null)) && !uncertain(replySession, last.id),
@@ -2717,7 +2709,6 @@ export class InboxStore {
         ...(decision.state === "delivered" && sent?.read_by ? { read_by: sent.read_by } : {}),
         ...(decision.reason === "ended" && askingAuthor ? { asking: { host: askingAuthor.host ?? null, name: askingAuthor.name ?? null } } : {}),
         ...waitWire(decision),
-        ...(t3Wait && decision.state === "queued" && decision.reason !== "handed" ? { t3_wait: t3Wait } : {}),
       };
     }
 
@@ -6694,22 +6685,6 @@ export class InboxStore {
     return next;
   }
 
-  /**
-   * Why the T3 wake cannot put the person's reply or message into its T3
-   * thread now (null: nothing known holds it). One line per change; nothing
-   * once it is delivered.
-   */
-  recordT3Wait(messageId: string, wait: InboxT3WaitReason | null): InboxMessage | null {
-    const message = this.messages.get(messageId);
-    if (!message || message.author.kind !== "person" || message.delivery) return null;
-    if ((message.t3_wait ?? null) === wait) return message;
-    const at = this.stamp();
-    const { t3_wait: _before, ...rest } = message;
-    const next: InboxMessage = wait ? { ...rest, t3_wait: wait } : rest;
-    this.appendMessage(next, at);
-    return next;
-  }
-
   /** What a delivery of this message to `session` goes by: the message's id, or a former owner's stop notice's own. */
   deliveryIdOf(message: InboxMessage, session: string): string {
     return tagOf(message, session)?.handed_away ? inboxStopNoticeId(message.id) : message.id;
@@ -6747,8 +6722,7 @@ export class InboxStore {
     }
     if (reply.delivery) return reply;
     const at = this.stamp();
-    const { t3_wait: _t3Wait, ...kept } = reply;
-    const delivered: InboxMessage = { ...kept, delivery: { state: "delivered", host: by.host, session: by.session, at, ...intoTurnOf(reply.deliver_now_by, by.intoTurn) } };
+    const delivered: InboxMessage = { ...reply, delivery: { state: "delivered", host: by.host, session: by.session, at, ...intoTurnOf(reply.deliver_now_by, by.intoTurn) } };
     this.appendMessage(delivered, at);
     // Up to it, but never past a reply still owed to another session.
     this.markAgentChecked(reply.thread_id, this.messageSeq.get(reply.id) ?? 0, at, by.session);

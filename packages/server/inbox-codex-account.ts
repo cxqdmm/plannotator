@@ -63,7 +63,7 @@ function limitOf(window: unknown): InboxCodexLimit | null {
   };
 }
 
-/** `account/rateLimits/read`'s Codex limits (its `codex` entry first, as T3 Code reads it) and the plan it names. */
+/** `account/rateLimits/read`'s Codex limits (its `codex` entry first) and the plan it names. */
 export function codexLimitsOf(result: unknown): { limits: InboxCodexLimit[]; plan: string | null } {
   const read = (result ?? {}) as { rateLimits?: unknown; rateLimitsByLimitId?: unknown };
   const byId = read.rateLimitsByLimitId && typeof read.rateLimitsByLimitId === "object" ? (read.rateLimitsByLimitId as Record<string, unknown>).codex : undefined;

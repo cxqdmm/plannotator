@@ -1,6 +1,5 @@
 import { INBOX_ROWS_USAGE_LINE } from "@plannotator/core/inbox-types";
 import { GUIDE_CLI_USAGE } from "@plannotator/server/guide-cli";
-import { T3_CLI_USAGE } from "@plannotator/t3-code/usage";
 import { INBOX_CARD_COLUMNS, INBOX_CARD_INITIATIVE_CLEAR_OUT, INBOX_CARD_INITIATIVE_FIELD, INBOX_CARD_INITIATIVE_RULE } from "@plannotator/core/inbox-types";
 import { INBOX_REF_LINK_RULE, INBOX_TOOL_ACTIONS } from "@plannotator/shared/inbox/connection";
 import { INBOX_AGENT_CALL_ACTIONS } from "@plannotator/shared/inbox/agent-pairing";
@@ -217,12 +216,11 @@ export function formatTopLevelHelp(options: { board?: boolean } = {}): string {
     "  plannotator sessions",
     "  plannotator data-dir",
     "  plannotator inbox [--background | --no-open | --open [<thread>]] [--tailscale]",
-    "  plannotator inbox mcp [--t3]",
+    "  plannotator inbox mcp",
     "  plannotator inbox status [--json] | stop | restart",
     "  plannotator inbox projects [combine <project id> --into <project id> | undo <project id>] [--json]",
     "  plannotator inbox call [--session <id>] <action> [<json> | -]",
   "  plannotator inbox connection --host <host> [--plugin-version <v>] [--no-wake]",
-    "  plannotator t3 login | logout --url <T3 MCP URL>",
     ...(options.board === true ? ["  plannotator card <create|move|say|link|ship|drop|list|initiative_delete> ..."] : []),
     `  plannotator feedback --stdin [--category <bug|idea|other>] [--contact '<text>'] <<'${FEEDBACK_HEREDOC_END}'`,
     "  plannotator update [--check]",
@@ -232,7 +230,6 @@ export function formatTopLevelHelp(options: { board?: boolean } = {}): string {
     "Run 'plannotator <command> --help' for command-specific usage.",
     "Agents: run 'plannotator inbox --help' for the full guide to the Plannotator Inbox",
     "(what it is, when to use it, its MCP tools, threads, questions, connecting agents).",
-    "Using T3 Code? Run 'plannotator t3 --help'.",
     "",
     "Note:",
     "  running 'plannotator' without arguments is for hook integration and expects JSON on stdin",
@@ -250,12 +247,10 @@ export function formatTopLevelHelp(options: { board?: boolean } = {}): string {
  * To launch one, delete it from this set, add its usage lines to
  * formatTopLevelHelp() and document it in apps/skills/core/plannotator/SKILL.md.
  *
- * `t3` (the T3 Code connection) was the last one to launch. Today:
- * `t3-hook`, the T3 Claude hook's settings helper, which only the installer
- * runs; `shape`; `system`, System's drawing commands, until the Inbox's
+ * Today: `shape`; `system`, System's drawing commands, until the Inbox's
  * System surfaces ship; and `plans`, Plans' switch and list, until its screens ship.
  */
-export const HIDDEN_SUBCOMMANDS: ReadonlySet<string> = new Set<string>(["t3-hook", "shape", "system", "plans"]);
+export const HIDDEN_SUBCOMMANDS: ReadonlySet<string> = new Set<string>(["shape", "system", "plans"]);
 
 /**
  * `plannotator card …` (card-command.ts): the Board's card call from a shell,
@@ -589,7 +584,7 @@ export const INBOX_CALL_USAGE = [
 export const INBOX_COMMAND_USAGE = [
   "Usage:",
   "  plannotator inbox [--background | --no-open | --open [<thread>]] [--tailscale]",
-  "  plannotator inbox mcp [--t3]",
+  "  plannotator inbox mcp",
   "  plannotator inbox status [--json]",
   "  plannotator inbox stop",
   "  plannotator inbox restart [--tailscale]",
@@ -628,8 +623,6 @@ export const INBOX_COMMAND_USAGE = [
   "                                  run setup or teardown unless they ask. --help for more.",
   "  plannotator inbox mcp           The stdio MCP server for agents. Starts a stopped",
   "                                  Inbox in the background (no browser tab).",
-  "                                  --t3: for T3 Code (plannotator t3 --help); lists",
-  "                                  its tools only inside a T3 Code thread.",
   "  plannotator inbox status        Whether the Inbox runs: URL, pid, version, data dir.",
   "                                  Exit 0 running, 1 not running, 2 not answering.",
   "                                  --json prints the same as one JSON object.",
@@ -902,21 +895,12 @@ export const SUBCOMMAND_HELP: Record<string, string> = {
     "Purge data is local-only: it is not stored on a Plannotator server and",
     "cannot be recovered after purge. Unrecognized custom files are preserved.",
   ].join("\n"),
-  // The Board's cards; and, unreleased (HIDDEN_SUBCOMMANDS), the opt-in T3 Code connection.
-  t3: T3_CLI_USAGE,
+  // The Board's cards.
   card: CARD_COMMAND_USAGE,
   shape: SHAPE_COMMAND_USAGE,
   plans: PLANS_COMMAND_USAGE,
   feedback: FEEDBACK_COMMAND_USAGE,
   system: SYSTEM_COMMAND_USAGE,
-  "t3-hook": [
-    "Usage:",
-    "  plannotator t3-hook install --settings <settings.json> --executable <plannotator>",
-    "  plannotator t3-hook remove --settings <settings.json>",
-    "",
-    "Internal: the Claude Bash hook of the opt-in T3 Code connection and its",
-    "settings helper (install.sh --with-t3 / --without-t3). Agents never run it.",
-  ].join("\n"),
 };
 
 // Aliases share another subcommand's help text.

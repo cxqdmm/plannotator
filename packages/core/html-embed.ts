@@ -7,11 +7,10 @@
  * Why a served document and not a srcdoc frame: a srcdoc (and a `data:` or
  * `blob:` frame) inherits the window's own CSP, which allows no remote
  * script, style, image or fetch, and a policy inside the frame can only
- * narrow it. The owner chose pages that may load from the web ("anything,
- * like t3code's pages"), so the embed is a document the Inbox serves with its
- * own policy (`EMBED_RESPONSE_CSP`).
+ * narrow it. The owner chose pages that may load from the web, so the embed
+ * is a document the Inbox serves with its own policy (`EMBED_RESPONSE_CSP`).
  *
- * A sandboxed frame, as T3 Code draws an agent's HTML:
+ * A sandboxed frame:
  * - The frame's `sandbox` is `allow-scripts allow-forms` (`EMBED_SANDBOX`):
  *   an opaque origin (no cookies, storage or parent DOM), no popups, modals
  *   or top navigation. Never `allow-same-origin`.

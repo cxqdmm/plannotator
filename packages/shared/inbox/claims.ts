@@ -6,7 +6,7 @@ const MOD_SESSION = /^[A-Za-z0-9_-][A-Za-z0-9._-]*$/;
 /**
  * The Claude Code mod's claim folder for a reply to `session`. The mod keeps a session's Inbox files under the
  * session's id with every character a file name cannot hold read `_` (`inboxSessionDirName` in
- * apps/hook/hooks/mod/inbox.ts): a T3 Code thread made by an agent has `:` in its id.
+ * apps/hook/hooks/mod/inbox.ts).
  */
 export function inboxModClaimDir(inboxDir: string, replyId: string, session: string): string | null {
   const name = session.replace(/[^A-Za-z0-9._-]/g, "_");

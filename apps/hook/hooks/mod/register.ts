@@ -74,9 +74,8 @@
  *   carries a title, costs a "hook was skipped" line under
  *   `cc-plugin-sec-default` (#2243). `command.run` on `/rename` and `/clear` keeps
  *   the name in `$.store` by session id, and each Inbox poll reads it.
- * - `PLANNOTATOR_SESSION_TAG=claude-code:<session id>` (`t3:<thread id>` in a
- *   T3 Code thread) in the environment every process the session starts
- *   inherits, so a Plannotator server can be matched to the session that
+ * - `PLANNOTATOR_SESSION_TAG=claude-code:<session id>` in the environment
+ *   every process the session starts inherits, so a Plannotator server can be matched to the session that
  *   started it. Beside it,
  *   `PLANNOTATOR_SESSION_PROJECT=claude-code:<session id>:<folder>`, the
  *   folder the session files under in the Inbox, so its shell's
@@ -94,10 +93,6 @@ import {
   promptOriginKind,
   sessionKindOf,
   SESSION_KIND_FEATURES,
-  t3ThreadOf,
-  isT3ThreadOwnTools,
-  T3_ENTRYPOINT,
-  T3_THREAD_SERVER,
   type SessionKind,
   resolveAgentToolEnabled,
   resolveClaudeModEnabled,
@@ -120,7 +115,6 @@ import {
   engineHasSessionAppend,
   inboxFirstPromptContext,
   inboxRegistryPathOf,
-  inboxT3Agent,
   type InboxOwnerAnswer,
   inboxReminderEnvValue,
   inboxReminderWithThreads,
@@ -337,8 +331,6 @@ interface Allowed {
   hostPlanMode: boolean
   /** What `session.start` does with the plan review switch (`planSwitchAction`), and this session's marker value. */
   planSwitch: 'set' | 'clear' | 'keep'
-  /** The T3 Code thread this session is (`t3ThreadOf`), or null. */
-  t3Thread: string | null
   kind: SessionKind
   /** The non-blocking reviews: the slash commands, the `plannotator` tool, the Bash take-over (`SESSION_KIND_FEATURES`). */
   reviews: boolean
@@ -346,9 +338,9 @@ interface Allowed {
   wake: boolean
 }
 
-/** The session the Inbox files this one under: the T3 Code thread, else the Claude Code session itself. */
-function inboxSessionOf(settings: Allowed | null, sessionId: string): string {
-  return settings?.t3Thread ?? sessionId
+/** The session the Inbox files this one under: the Claude Code session itself. */
+function inboxSessionOf(_settings: Allowed | null, sessionId: string): string {
+  return sessionId
 }
 
 // One plugin instance per Claude Code process.
@@ -651,7 +643,7 @@ async function currentMod($: Engine, options: { healed?: boolean } = {}): Promis
     // `session.end` has usually disposed it already; its tracker is read after (carryQueued below).
     const previous = mod
     mod?.dispose()
-    await $.env.set('PLANNOTATOR_SESSION_TAG', settings.t3Thread ? `t3:${settings.t3Thread}` : `claude-code:${sessionId}`)
+    await $.env.set('PLANNOTATOR_SESSION_TAG', `claude-code:${sessionId}`)
     // The switch's marker follows the session id (`/clear`, a resume): a binary honors a marked `0` only in its session's hook.
     if (settings.planSwitch === 'set') await Promise.resolve($.env.set('PLANNOTATOR_PLAN_REVIEW_SET_BY', `claude-code:${sessionId}`)).catch(() => undefined)
     const host = hostOf($, settings.debugPath)
@@ -675,7 +667,6 @@ async function currentMod($: Engine, options: { healed?: boolean } = {}): Promis
       firstStart: (startedAt) => sessionFirstStartOf($, String(sessionId), startedAt),
       continues: async () => [...new Set([...(await forkedFrom.read()), ...(await continuedIn.read())])],
       ...(inboxTools ? { inboxTools } : {}),
-      ...(settings.t3Thread ? { inboxAs: inboxT3Agent(settings.t3Thread), inboxOwner: () => t3ThreadOwnHere($) } : {}),
       ...(settings.wake ? {} : { inboxWake: false }),
       launchReminder: () => launchReminderFor($, String(sessionId)),
       ...(options.healed ? { healed: true } : {}),
@@ -694,35 +685,6 @@ async function currentMod($: Engine, options: { healed?: boolean } = {}): Promis
   } finally {
     switching = null
   }
-}
-
-/** Once yes, for the process: T3's `t3-code` server stays for the thread's Claude while it runs. */
-let t3ThreadOwn: InboxOwnerAnswer | null = null
-
-/**
- * Whether this process is its T3 thread's own Claude: its tools include T3's
- * `t3-code` ones (`isT3ThreadOwnTools`), or, where tool schemas load on demand
- * and the list may leave them out, its context names a `t3-code` server
- * (`$.session.usage`'s `mcpTools`, which lists a tool not searched for yet
- * too). A Claude Code whose `$.tool.list` is missing or throws cannot tell:
- * null, and the link runs as it did before the check.
- */
-async function t3ThreadOwnHere($: Engine): Promise<InboxOwnerAnswer> {
-  if (t3ThreadOwn) return t3ThreadOwn
-  let tools: unknown
-  try {
-    tools = await $.tool.list()
-  } catch (error) {
-    return { yes: null, via: `no $.tool.list here (${error instanceof Error ? error.message : String(error)})` }
-  }
-  if (!Array.isArray(tools)) return { yes: null, via: 'no $.tool.list here' }
-  if (isT3ThreadOwnTools(tools.map((tool: { name?: unknown }) => tool?.name))) return (t3ThreadOwn = { yes: true, via: 'tools' })
-  const usage = await Promise.resolve()
-    .then(() => $.session.usage({ breakdown: 'summary' }))
-    .catch(() => null)
-  const servers = usage?.context?.breakdown?.mcpTools
-  if (Array.isArray(servers) && servers.some((tool: { serverName?: unknown }) => tool?.serverName === T3_THREAD_SERVER)) return (t3ThreadOwn = { yes: true, via: 'mcp server' })
-  return { yes: false, via: `no t3-code tools or server among ${tools.length} tools` }
 }
 
 /**
@@ -827,28 +789,25 @@ async function pickShellOf($: Engine, dataDir: string): Promise<ModShell | null>
 
 /**
  * Which SDK host this non-interactive session is: a panel host's chat (VS
- * Code, Orca: `isPanelSession`), whether its host draws its own plan card
- * (`panelHostOwnsPlanMode`), or a T3 Code thread (`t3ThreadOf`), all in
- * enabled.ts. Each variable is named as a literal (env-get-literal.test.ts).
+ * Code, Orca: `isPanelSession`) and whether its host draws its own plan card
+ * (`panelHostOwnsPlanMode`), both in enabled.ts. Each variable is named as a
+ * literal (env-get-literal.test.ts).
  */
-async function sdkHostOf($: Engine): Promise<{ panel: boolean; hostPlanMode: boolean; t3Thread: string | null }> {
-  const none = { panel: false, hostPlanMode: false, t3Thread: null }
+async function sdkHostOf($: Engine): Promise<{ panel: boolean; hostPlanMode: boolean }> {
+  const none = { panel: false, hostPlanMode: false }
   const entrypoint = await $.env.get('CLAUDE_CODE_ENTRYPOINT')
-  // Read the rest only for a panel host's or T3's entrypoint: every other session decides on the first read.
-  if (!isPanelEntrypoint(entrypoint) && entrypoint !== T3_ENTRYPOINT) return none
+  // Read the rest only for a panel host's entrypoint: every other session decides on the first read.
+  if (!isPanelEntrypoint(entrypoint)) return none
   const env = {
     entrypoint,
     claudecode: await $.env.get('CLAUDECODE'),
     childSession: await $.env.get('CLAUDE_CODE_CHILD_SESSION'),
     sessionTag: await $.env.get('PLANNOTATOR_SESSION_TAG'),
   }
-  if (isPanelEntrypoint(entrypoint)) {
-    const panel = isPanelSession(env, String(await $.session.id()))
-    // Whatever the guard said: a process with Orca's entrypoint that is not the
-    // panel (an inherited tag, a nested run) still sits under Orca's card.
-    return { ...none, panel, hostPlanMode: panelHostOwnsPlanMode(entrypoint) }
-  }
-  return { ...none, t3Thread: t3ThreadOf({ ...env, thread: await $.env.get('T3CODE_THREAD_ID') }) }
+  const panel = isPanelSession(env, String(await $.session.id()))
+  // Whatever the guard said: a process with Orca's entrypoint that is not the
+  // panel (an inherited tag, a nested run) still sits under Orca's card.
+  return { ...none, panel, hostPlanMode: panelHostOwnsPlanMode(entrypoint) }
 }
 
 /** Why the mod passes an ExitPlanMode on, for the debug log. */
@@ -893,7 +852,7 @@ async function resolveAllowed($: Engine, e: { isInteractive?: unknown }): Promis
   // there would hand Plannotator's own agent Plannotator's tools and the person's Inbox.
   if ((await $.env.get('PLANNOTATOR_ASK_AI_CHILD')) === '1') return null
   const isInteractive = e.isInteractive === true
-  const host = isInteractive ? { panel: false, hostPlanMode: false, t3Thread: null } : await sdkHostOf($)
+  const host = isInteractive ? { panel: false, hostPlanMode: false } : await sdkHostOf($)
   const kind = sessionKindOf({ isInteractive, ...host })
   const features = SESSION_KIND_FEATURES[kind]
   const dataDir = await resolveDataDir(
@@ -935,7 +894,6 @@ async function resolveAllowed($: Engine, e: { isInteractive?: unknown }): Promis
     panel: host.panel,
     hostPlanMode: host.hostPlanMode,
     planSwitch,
-    t3Thread: host.t3Thread,
     kind,
     reviews: features.reviews,
     wake: features.wake,
@@ -1305,7 +1263,7 @@ export function register(on: On) {
     const ref = {
       fromUs: !!origin && origin.kind === 'plugin' && origin.name === PLUGIN_NAME,
       ...(typeof e.turnId === 'string' ? { turnId: e.turnId } : {}),
-      ...(origin && typeof origin.kind === 'string' ? { originKind: promptOriginKind(origin.kind, !!allowed?.panel || !!allowed?.t3Thread) } : {}),
+      ...(origin && typeof origin.kind === 'string' ? { originKind: promptOriginKind(origin.kind, !!allowed?.panel) } : {}),
     }
     if (live) instance.onPromptSubmitting(ref)
     // The Inbox reminder (#2243): the conversation's first prompt here carries

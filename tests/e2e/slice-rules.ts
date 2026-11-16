@@ -264,9 +264,8 @@ export const SLICE_RULES: SliceRule[] = [
       'packages/server/**',
       'packages/core/**',
       'packages/guide-viewer/**',
-      // The system pane and CLI commands (packages/inbox/api.ts, apps/hook/server/cli.ts) and the T3 Code host.
+      // The system pane and CLI commands (packages/inbox/api.ts, apps/hook/server/cli.ts).
       'packages/system/**',
-      'packages/t3-code/**',
       'apps/hook/**',
       'package.json',
       'bun.lock',

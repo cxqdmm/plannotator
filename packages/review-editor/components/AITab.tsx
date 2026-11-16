@@ -71,7 +71,7 @@ export const AITab: React.FC<AITabProps> = ({
   askSessionSetupHint,
   onNewChat,
 }) => {
-  // A session that is never interrupted (T3 Code): Stop only stops listening.
+  // A session that cannot be interrupted: Stop only stops listening.
   const listenOnly = hasNonInterruptibleSession(aiProviders);
   const scrollRef = useRef<HTMLDivElement>(null);
   // File chat groups default to expanded; this tracks the ones the user has

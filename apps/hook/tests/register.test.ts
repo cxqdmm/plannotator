@@ -448,20 +448,6 @@ describe('register', () => {
     expect(w.tools.map((t) => t.name)).toEqual(['plannotator_inbox'])
   })
 
-  // T3 Code hosts Claude Code through the Agent SDK too: CLAUDE_CODE_ENTRYPOINT=t3-code, and T3CODE_THREAD_ID for a
-  // thread's Claude. The mod runs there as the thread; T3 owns Plan mode.
-  test('a T3 Code thread runs the mod as the thread: both tools, the session tagged t3:<thread>, ExitPlanMode left to T3', async ($: any, on: any) => {
-    const w = world(on, { env: { CLAUDE_CODE_ENTRYPOINT: 't3-code', T3CODE_THREAD_ID: 'a1b2c3d4-0000-4000-8000-000000000001' } })
-    on('tool.call', () => ({ result: 'the classic flow ran' }))
-    await $.session.start({ ...SESSION, surface: null, isInteractive: false })
-
-    const answer = await $.tool.call({ tool: 'ExitPlanMode', plan: '# Plan\n' })
-
-    expect(answer.result).toBe('the classic flow ran')
-    expect(w.tools.map((t) => t.name)).toEqual(['plannotator_inbox', 'plannotator'])
-    expect(w.env.get('PLANNOTATOR_SESSION_TAG')).toBe('t3:a1b2c3d4-0000-4000-8000-000000000001')
-  })
-
   // The VS Code extension hosts Claude Code through the Agent SDK (not interactive, no surface at start) and
   // starts its chat panel's CLI with CLAUDE_CODE_ENTRYPOINT=claude-vscode (#3111): the mod runs there.
   test("the VS Code extension's chat panel runs the mod: ExitPlanMode is the mod's, and both tools are registered", async ($: any, on: any) => {

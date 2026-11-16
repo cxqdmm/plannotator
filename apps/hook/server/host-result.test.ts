@@ -148,9 +148,6 @@ describe("isAllowedHostResultPath", () => {
   test("only a result.json inside <data dir>/claude-code-mod/", () => {
     const data = "/home/me/.plannotator";
     expect(isAllowedHostResultPath(`${data}/claude-code-mod/s/l/result.json`, data)).toBe(true);
-    expect(isAllowedHostResultPath(`${data}/t3-code/env/threads/thread/reviews/pn-aabbcc/result.json`, data)).toBe(true);
-    expect(isAllowedHostResultPath(`${data}/t3-code/../config.json`, data)).toBe(false);
-    expect(isAllowedHostResultPath(`${data}/t3-code-evil/result.json`, data)).toBe(false);
     // The DeepSeek Harness plugin's launches: if this were refused, no DSH decision would arrive.
     expect(isAllowedHostResultPath(`${data}/dsh/pn-aabbcc/result.json`, data)).toBe(true);
     expect(isAllowedHostResultPath(`${data}/dsh-evil/result.json`, data)).toBe(false);

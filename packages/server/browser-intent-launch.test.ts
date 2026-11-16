@@ -130,7 +130,7 @@ describe.if(posix)("PLANNOTATOR_BROWSER=none on the Bun runtime", () => { // no-
       expect(result.stderr).not.toContain("Could not open a browser");
     }, 30_000);
 
-    // The Inbox, `sessions --open` and `t3 login` call openBrowser directly.
+    // The Inbox and `sessions --open` call openBrowser directly.
     test(`openBrowser itself opens nothing for a ${where} caller and says why`, async () => {
       const result = await run("open", remote, {
         PLANNOTATOR_BROWSER: "OFF", // the approved list, any case

@@ -73,8 +73,6 @@ import {
   INBOX_CODEX_HOST,
   INBOX_QWEN_HOST,
   isQwenSessionId,
-  INBOX_T3_HOST,
-  isT3ThreadId,
   INBOX_ANTIGRAVITY_HOST,
   antigravityConversationOfCall,
   INBOX_MCP_WAKING_HOSTS,
@@ -164,7 +162,6 @@ import { InboxError, inboxDir } from "@plannotator/shared/inbox/schema";
 import { inboxPromptsModel, parseInboxPromptsChange, saveInboxPromptsChange } from "./inbox-prompts";
 import { inboxRulesFitError } from "./inbox-rules";
 import { InboxStore } from "@plannotator/shared/inbox/store";
-import { inboxClaimDirs } from "@plannotator/shared/inbox/claims";
 import { INBOX_DB_FILE, inboxReturnHoldFromEnv, returnFromSqlite } from "@plannotator/shared/inbox/store-log/sqlite-return/return";
 import { INBOX_TIDY_WITHDRAWN_HOST, inboxTidyBodyStepsOff, inboxTidyIsStepsOnly, inboxTidyStepsOnlyWakes } from "@plannotator/shared/inbox/tidy";
 import { inboxArchivedRows, inboxListSections, inboxRowArchived } from "@plannotator/shared/inbox/list";
@@ -181,7 +178,6 @@ import {
   INBOX_REMOVED_ACTION,
   INBOX_REMOVED_ACTION_TEXT,
   INBOX_SEND_NOW_POLL_FIELD,
-  INBOX_SESSION_LIVE_MS,
   INBOX_STEER_POLLS_POLL_FIELD,
   INBOX_TAGS_POLL_FIELD,
   inboxStopNoticeId,
@@ -234,11 +230,8 @@ import { createInboxLiveSessions, takesOver, thereInThread } from "./inbox-sessi
 import { inboxAgentsGroup, inboxFolderProject, inboxMergedAgents, inboxStartOfDay, type InboxAgentWait } from "./inbox-agents-list";
 import { createInboxFirstSeen } from "./inbox-first-seen";
 import { createInboxCodexWake, type InboxCodexWake } from "./inbox-codex-wake";
-import { createT3Local, INBOX_T3_PROBE_MS, type T3Route } from "./inbox-t3-local";
-import { t3SettingsStatus } from "./inbox-t3-settings";
 import { createInboxVoice } from "./inbox-voice";
 import { createInboxQwenWake, type InboxQwenWake } from "./inbox-qwen-wake";
-import { createInboxT3Wake, createT3ModOwner, type InboxT3Wake, type T3Connect } from "./inbox-t3-wake";
 import { createInboxAntigravityWake, type InboxAntigravityWake } from "./inbox-antigravity-wake";
 import { CloudAgentError, createInboxCloudAgents, hasCloudWake } from "./inbox-cloud-agents";
 import { PERSONAL_AGENTS_BANNER_BASE } from "@plannotator/core/inbox-personal-agents";
@@ -401,12 +394,12 @@ import {
 
 /**
  * The hosts whose own connection polls the bridge and wakes its session with the reply: the waking hosts but Codex,
- * which the Inbox wakes itself, and T3 Code, whose thread's Claude polls only where it runs the Claude Code mod.
+ * which the Inbox wakes itself.
  */
 const BRIDGE_WAKING_HOSTS: ReadonlySet<string> = new Set(INBOX_WAKING_HOSTS.filter((host) => !INBOX_MCP_WAKING_HOSTS.includes(host)));
 
-/** A host whose session's bridge may poll: T3 Code's too, for a thread whose Claude runs the Claude Code mod. */
-const pollingWakeHost = (host: string): boolean => BRIDGE_WAKING_HOSTS.has(host) || host === INBOX_T3_HOST;
+/** A host whose session's bridge may poll. */
+const pollingWakeHost = (host: string): boolean => BRIDGE_WAKING_HOSTS.has(host);
 
 /** Where a request came in: the window's loopback port, or the tailnet-only listener `tailscale serve` points at. */
 type RequestVia = "local" | "tailnet";
@@ -674,8 +667,6 @@ export interface InboxServerOptions {
   accounts?: { environment?: AgentEnvironment; timeoutMs?: number; hardLimitMs?: number; cacheMs?: number };
   /** The Qwen Code wake's clock and time limits (inbox-qwen-wake.ts): tests shorten them. */
   qwenWake?: { now?: () => number; sendTimeoutMs?: number; receiptTimeoutMs?: number; comebackMs?: number; socketParent?: string };
-  /** The T3 Code wake (inbox-t3-wake.ts): tests pass a scripted T3, a clock and a log. */
-  t3Wake?: { connect?: T3Connect; now?: () => number; log?: (line: string) => void; lookupTimeoutMs?: number; grantCheckMs?: number };
   cloudWake?: { now?: () => number; gapMs?: number; timeoutMs?: number; retryMs?: number; log?: (line: string) => void };
   /** The Antigravity wake (inbox-antigravity-wake.ts): tests shorten its time limits and log. */
   antigravityWake?: { now?: () => number; log?: (line: string) => void; sendTimeoutMs?: number; lookupTimeoutMs?: number; waitCheckMs?: number; appClients?: readonly string[] };
@@ -748,7 +739,6 @@ export interface InboxServer {
   liveSites: Pick<InboxLiveSites, "running" | "sweep">;
   /** The Qwen Code wake (inbox-qwen-wake.ts): tests run its sweep. */
   qwenWake: InboxQwenWake;
-  t3Wake: InboxT3Wake;
   /** The Antigravity wake (inbox-antigravity-wake.ts): tests run its sweep. */
   antigravityWake: InboxAntigravityWake;
   cloudWake: InboxCloudWaker;
@@ -1591,11 +1581,9 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
       (typeof host === "string" && typeof session === "string" && pollingWakeHost(host) && live.pollsNow(host, session)) ||
       (await codexWake.wakes(host, session, meta)) ||
       (await qwenWake.wakes(host, session, meta)) ||
-      (await t3Wake.wakes(host, session)) ||
       (await antigravityWake.wakes(host, session, meta)),
     bridgePolls: (host, session) => pollingWakeHost(host) && live.pollsNow(host, session),
     sessionName: (session) => live.labelOf(session) ?? live.titleOf(session),
-    t3WakeReaches: (session) => t3Wake.wakes(INBOX_T3_HOST, session),
     // The Board: the card tool is listed and served only while the person has it on.
     boardOn: () => boardOn(),
     // Thread steps: the steps tool and field are listed and served only while the person has them on.
@@ -2314,7 +2302,6 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
           update_command: claudePluginBehindInbox(install, version) ? CLAUDE_PLUGIN_UPDATE_COMMAND : null,
         };
       }),
-      t3: await t3SettingsStatus(agentEnvironment, t3Local, t3Wake),
     };
   };
 
@@ -4250,12 +4237,8 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     if (sendNow && steer?.busy === true && steer.send_now) autoSendFor(session, tags);
     // What waits for this session, and for the sessions its conversation continues that no longer poll
     // (`continues`, inbox-continuations.ts): each worded for the session it waits for.
-    // A T3 thread's: never what the T3 wake handed for a send in flight (one owner per reply, `t3ModDelivers`).
-    const t3Thread = bridgeHost(body) === INBOX_T3_HOST;
     const handedOut = () => {
-      const t3Handed = t3Thread ? new Set(store.handover.handedTo(session)) : null;
-      // Nor anything the T3 wake works on now or holds a `t3 thread send` claim for (on disk: across restarts too).
-      return live.pendingOf(session, { tags }).filter((item) => !withdrawnTidy(item.message) && !t3Handed?.has(item.message.id) && !(t3Thread && t3Wake.holds(item.as, item.message)));
+      return live.pendingOf(session, { tags }).filter((item) => !withdrawnTidy(item.message));
     };
     const commands = (items = handedOut()) => {
       const list = items.map((item) => replyCommand(item.message, sendNow, item.as));
@@ -4335,8 +4318,6 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
       : null;
     const intoTurn = markedAt ? live.deliveredIntoTurn(session, markedAt) : undefined;
     const reply = store.recordDelivery(body.id, { host, session: acting, ...(intoTurn !== undefined ? { intoTurn } : {}) });
-    // The Claude Code mod in a T3 thread's Claude put it in.
-    if (host === INBOX_T3_HOST) noteT3Route({ route: "mod", agent: "claude", thread: reply.thread_id, reply: reply.id });
     return json({ ok: true, delivery: reply.delivery });
   };
 
@@ -4410,11 +4391,6 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
           if (await codexWake.wakes(INBOX_CODEX_HOST, thread, meta)) {
             await live.seenWakeOnly(thread, INBOX_CODEX_HOST, args?.project_path);
           }
-        } else if (session && args?.agent_host === INBOX_T3_HOST && isT3ThreadId(session)) {
-          // A T3 Code thread (inbox-t3-wake.ts; the shim names it from T3CODE_THREAD_ID): it is there, and while
-          // a saved T3 grant reaches it, it is live for New message, compose and tags.
-          t3Wake.noteToolCall(session);
-          if (await t3Wake.wakes(INBOX_T3_HOST, session)) await live.seenWakeOnly(session, INBOX_T3_HOST, args?.project_path);
         } else if (session && args?.agent_host === INBOX_CODEX_HOST && isCodexThreadId(session)) {
           codexWake.noteToolCall(session, null);
         } else if (session && args?.agent_host === INBOX_QWEN_HOST && isQwenSessionId(session)) {
@@ -4461,9 +4437,9 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     autoSendAfterMs: options.autoSendAfterMs ?? INBOX_AUTO_SEND_AFTER_MS,
     // A Codex thread has no connection that polls: it is there until Codex says its thread is gone.
     // A Qwen Code session too, until its registry record goes (inbox-qwen-wake.ts).
-    wakeOnlyStatus: (session) => codexWake.status(session) ?? qwenWake.status(session) ?? t3Wake.status(session) ?? antigravityWake.status(session) ?? cloudWake.status(session),
+    wakeOnlyStatus: (session) => codexWake.status(session) ?? qwenWake.status(session) ?? antigravityWake.status(session) ?? cloudWake.status(session),
     pollsItself: (session) => cloudPollsItself(session),
-    uncertainItemsOf: (session) => [...codexWake.uncertainItems(session), ...qwenWake.uncertainItems(session), ...t3Wake.uncertainItems(session), ...antigravityWake.uncertainItems(session)],
+    uncertainItemsOf: (session) => [...codexWake.uncertainItems(session), ...qwenWake.uncertainItems(session), ...antigravityWake.uncertainItems(session)],
     // A session that is an agent with a face (its conversation's earlier id, its launch): its threads show that face too.
     firstSeen: agentFirstSeen,
     onPoll: (session, continues) =>
@@ -4496,11 +4472,6 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     [...store.launchedRoots(), ...store.scheduledRunLaunches()].some(
       (m) => m.launch?.agent === INBOX_CODEX_HOST && !m.launch.deleted_at && m.to?.host === INBOX_CODEX_HOST && m.to.session === session,
     );
-  // T3 Code on this machine: both T3 wakes send through its `t3` command first, with no sign-in (inbox-t3-local.ts).
-  const t3Local = createT3Local({ environment: agentEnvironment });
-  // Which way each reply to a T3 thread went, one debug-log line each (`t3_route`); the log is made below.
-  const t3Routes: { note: ((route: T3Route) => void) | null } = { note: null };
-  const noteT3Route = (route: T3Route) => t3Routes.note?.(route);
   const codexWake = createInboxCodexWake({
     store,
     environment: agentEnvironment,
@@ -4512,9 +4483,6 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     launched: (session) => launchedCodex(session),
     // A steps-only Tidy wake with steps off is withdrawn, never handed (a switch turned off in config.json by hand).
     skip: (item) => withdrawnTidy(item),
-    // A Codex thread T3 Code runs: its items go into the T3 thread with T3's own `t3` command (inbox-t3-local.ts).
-    t3: t3Local,
-    route: noteT3Route,
     ...(options.codexWake?.extraClis ? { extraClis: options.codexWake.extraClis } : {}),
     ...(options.codexWake?.now ? { now: options.codexWake.now } : {}),
     ...(options.codexWake?.queueTimeoutMs ? { queueTimeoutMs: options.codexWake.queueTimeoutMs } : {}),
@@ -4540,39 +4508,6 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     commandOf: (item, session) => replyCommand(item, false, session),
     skip: (item) => withdrawnTidy(item),
     ...options.antigravityWake,
-  });
-
-  // The T3 Code wake: the person's items for a T3 thread go in as a T3 turn, through T3's `t3` command on this
-  // machine, else T3's MCP API under the grant `plannotator t3 login` saved (inbox-t3-wake.ts).
-  // One owner per reply to a T3 Code thread: the mod while it polls as the thread, else the T3 wake
-  // (`createT3ModOwner`). The bridge poll, for its part, never hands the mod what the T3 wake handed for a send in flight.
-  const t3Resweeps = new Map<number, ReturnType<typeof setTimeout>>();
-  const t3ModDelivers = createT3ModOwner({
-    local: t3Local,
-    holdsPoll: (session) => live.holdsPollNow(INBOX_T3_HOST, session),
-    polledLately: (session) => live.pollsNow(INBOX_T3_HOST, session),
-    claimed: (item, session) => inboxClaimDirs(store.dir, store.deliveryIdOf(item, session), session).some((dir) => existsSync(dir)),
-    resweep: (ms) => {
-      if (t3Resweeps.has(ms)) return;
-      const timer = setTimeout(() => {
-        t3Resweeps.delete(ms);
-        void t3Wake.sweep();
-      }, ms);
-      (timer as { unref?: () => void }).unref?.();
-      t3Resweeps.set(ms, timer);
-    },
-    liveMs: INBOX_SESSION_LIVE_MS,
-    probeMs: INBOX_T3_PROBE_MS,
-  });
-  const t3Wake = createInboxT3Wake({
-    store,
-    dataDir,
-    commandOf: (item, session) => replyCommand(item, false, session),
-    // A steps-only Tidy wake with steps off is withdrawn, never handed (a switch turned off in config.json by hand).
-    skip: (item, session) => withdrawnTidy(item) || t3ModDelivers(item, session),
-    local: t3Local,
-    route: noteT3Route,
-    ...options.t3Wake,
   });
 
   const cloudAgents = createInboxCloudAgents({
@@ -4655,13 +4590,13 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     launchResumes: (threadId, session) => launch.resumes(threadId, session),
     hostOf: live.hostOf,
     // A Codex reply whose `codex queue` ran out of time may not have gone: its row says it is saved, not queued.
-    uncertain: (session, itemId) => codexWake.uncertain(session, itemId) || qwenWake.uncertain(session, itemId) || t3Wake.uncertain(session, itemId) || antigravityWake.uncertain(session, itemId),
+    uncertain: (session, itemId) => codexWake.uncertain(session, itemId) || qwenWake.uncertain(session, itemId) || antigravityWake.uncertain(session, itemId),
     // Claimed by its session's connection and never to be delivered there (a wake killed mid-delivery).
     stuck: live.stuck,
     autoSendAfterMs: live.autoSendAfterMs,
     waitOf: live.waitOf,
-    // A reply to a T3 thread or a cloud agent waits for it, against other agents' reads, until that wake knows it gone.
-    wakeGone: (session) => t3Wake.gone(session) || cloudWake.status(session) === "dead",
+    // A reply to a cloud agent waits for it, against other agents' reads, until that wake knows it gone.
+    wakeGone: (session) => cloudWake.status(session) === "dead",
   });
   // A session's turn starting or ending, its connection going away, or an asker grace running out moves a
   // row's delivery without writing a store line. The sessions' delivery signature is compared on a short
@@ -5169,7 +5104,6 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
 
   /** The optional debug log (inbox-debug-log.ts): null, the default, changes nothing and writes nothing. */
   const debugLog = (options.debug ?? resolveInboxDebug(loadConfig(), process.env)) ? createInboxDebugLog(join(dataDir, "inbox")) : null;
-  if (debugLog) t3Routes.note = (route) => debugLog.note("t3_route", { ...route });
 
   /**
    * The window: its page, with its scripts packed behind it (build/pack-inbox.ts, #2593) and answered under
@@ -7632,8 +7566,6 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     combine.close();
     codexWake.stop();
     qwenWake.stop();
-    t3Wake.stop();
-    t3Local.stop();
     antigravityWake.stop();
     cloudWake.stop();
     voice.stop();
@@ -7656,7 +7588,7 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     cfAccess?.stop();
   };
 
-  return { port, url: baseUrl, token, serverSession, portChanged, store, registry, tailscale, connectAgents, search: search.index, imageCapture, codexWake, liveSites: { running: liveSites.running, sweep: liveSites.sweep }, qwenWake, t3Wake, antigravityWake, cloudWake, shapeWatchers: () => shapes.watch.watching(), stop };
+  return { port, url: baseUrl, token, serverSession, portChanged, store, registry, tailscale, connectAgents, search: search.index, imageCapture, codexWake, liveSites: { running: liveSites.running, sweep: liveSites.sweep }, qwenWake, antigravityWake, cloudWake, shapeWatchers: () => shapes.watch.watching(), stop };
 }
 
 /** Print where the Inbox is, and open it when a person asked for it. */

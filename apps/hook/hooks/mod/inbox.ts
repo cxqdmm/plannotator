@@ -252,10 +252,7 @@ export function inboxSessionProjectEnvValue(sessionId: string, folder: string): 
 
 /**
  * Who the session is in the Inbox when it is not the Claude Code session
- * itself: a T3 Code thread files as `t3` and the thread's id, the identity
- * T3's own processes give it (`inboxHostSessionFromEnv` in
- * apps/hook/server/inbox-mcp-shim.ts), so the thread is one agent whichever
- * way it reaches the Inbox.
+ * itself.
  */
 export interface InboxAgentIdentity {
   host: string
@@ -263,16 +260,10 @@ export interface InboxAgentIdentity {
   name: string
 }
 
-/** A T3 Code thread as the Inbox knows it: `INBOX_T3_HOST` and `INBOX_T3_NAME` in packages/core/inbox-t3.ts. */
-export function inboxT3Agent(thread: string): InboxAgentIdentity {
-  return { host: 't3', session: thread, name: 'T3 Code' }
-}
-
 /**
  * PLANNOTATOR_SESSION_PROJECT's value for `agent`, or null when its session
- * id holds a `:` (a T3 thread made by an agent or a scheduled task), which
- * the variable's `<host>:<session>:<folder>` cannot carry: such a session's
- * shell commands file in their own folder, as before.
+ * id holds a `:`, which the variable's `<host>:<session>:<folder>` cannot
+ * carry: such a session's shell commands file in their own folder, as before.
  */
 export function inboxAgentProjectEnvValue(agent: InboxAgentIdentity, folder: string): string | null {
   return agent.session.includes(':') ? null : `${agent.host}:${agent.session}:${folder}`
@@ -1140,12 +1131,11 @@ export interface InboxLinkOptions {
   continues?: () => Promise<readonly string[]>
   /** Names this process in the lease and the claims. */
   instanceId: string
-  /** Who the session is in the Inbox (a T3 Code thread); absent: the Claude Code session `sessionId`. */
+  /** Who the session is in the Inbox; absent: the Claude Code session `sessionId`. */
   agent?: InboxAgentIdentity
   /**
-   * Whether this process is the session's own (a T3 Code thread: its
-   * `t3-code` tools or server, which reach it a few seconds after the start),
-   * asked every INBOX_OWNER_PROBE_EVERY_MS for INBOX_OWNER_WAIT_MS from the
+   * Whether this process is the session's own, asked every
+   * INBOX_OWNER_PROBE_EVERY_MS for INBOX_OWNER_WAIT_MS from the
    * first ask or the last touch, then every INBOX_OWNER_REASK_EVERY_MS. Until
    * it says yes the link takes no lease, polls nothing and delivers nothing;
    * then a live lease another process holds stands until the person acts

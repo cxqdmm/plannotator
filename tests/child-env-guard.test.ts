@@ -26,7 +26,6 @@ const PRODUCTION_TREES = [
   "packages/server",
   "packages/shared",
   "packages/ai",
-  "packages/t3-code",
   "apps/opencode-plugin",
 ];
 

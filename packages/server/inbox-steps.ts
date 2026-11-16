@@ -12,7 +12,7 @@
  *
  * Presence, never the list's age, says how fresh a list is:
  *  - a session whose connection polls (the Claude Code mod, Pi, OpenCode 2)
- *    or that the Inbox wakes itself (Codex, Qwen Code, T3): `working` while a
+ *    or that the Inbox wakes itself (Codex, Qwen Code): `working` while a
  *    turn runs, `idle` between turns (a connection that does not say:
  *    `working` while heard within INBOX_STEPS_WORKING_MS, then `idle`);
  *  - `ended` only on evidence (`endedOf`): the session was seen polling in

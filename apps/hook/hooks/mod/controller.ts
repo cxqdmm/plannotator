@@ -316,11 +316,11 @@ export interface SessionInfo {
    * at its first session start (inbox.ts); absent: no Inbox connection.
    */
   inboxTools?: readonly InboxToolInfo[]
-  /** Who the session is in the Inbox (a T3 Code thread); absent: this Claude Code session. */
+  /** Who the session is in the Inbox; absent: this Claude Code session. */
   inboxAs?: InboxAgentIdentity
   /** False: the Inbox tool without the reply wake (`InboxLinkOptions.wake`). */
   inboxWake?: boolean
-  /** Whether this process is the session's own (a T3 Code thread's Claude; `InboxLinkOptions.owner`). */
+  /** Whether this process is the session's own (`InboxLinkOptions.owner`). */
   inboxOwner?: () => Promise<InboxOwnerAnswer>
   /** The session's working folder, read when asked (the Inbox link's polls say where the session works). */
   cwd?: () => Promise<string>

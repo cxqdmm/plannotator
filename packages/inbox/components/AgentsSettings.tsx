@@ -16,7 +16,6 @@ import { HARNESSES, type ConnectContext } from '../harnesses';
 import { HostMark, Icon } from '../icons';
 import { ConnectPicker } from './ConnectPicker';
 import { LaunchSettingsFile } from './LaunchSettingsFile';
-import { T3AgentGroup } from './T3AgentGroup';
 import { CommandLine, CopyCommand, Fold, OpenCodeQuiet, OpenCodeWords, openCodeCommand, ReloadCopy, ReloadLead, type ReloadSpec } from './RestartNote';
 import type { InboxReloadRuntime } from '@plannotator/core/inbox-types';
 import { clockTime, dayWords, formatCount } from '../format';
@@ -249,7 +248,7 @@ function viaOf(row: InboxAgentRow): string {
   return 'connected yourself';
 }
 
-/** Words a group's head and its "Your replies" row share with the T3 Code group (T3AgentGroup.tsx). */
+/** Words a group's head and its "Your replies" row share. */
 export const agentWords = {
   connected: 'Connected',
   notConnected: 'Not connected',
@@ -805,8 +804,6 @@ export function AgentsSettings({
   const shown = model.agents.filter((row) => row.detected || row.tool);
   const detected = model.agents.filter((row) => row.detected);
   const undetected = model.agents.filter((row) => !row.detected && !row.tool);
-  // T3 Code runs Claude and Codex threads: its group follows theirs.
-  const t3After = (shown.find((row) => row.id === 'codex') ?? shown.find((row) => row.id === 'claude-code'))?.id;
 
   const change = async (agent: InboxAgentId, input: Change) => {
     if (busy.has(agent)) return;
@@ -875,7 +872,6 @@ export function AgentsSettings({
             {...(row.id === 'codex' && row.detected ? { extra: <CodexAccountRow /> } : {})}
             {...(model.sessions && (row.id === 'claude-code' || row.id === 'pi' || row.id === 'opencode') && model.sessions[row.id] ? { sessions: model.sessions[row.id] } : {})}
           />
-          {row.id === t3After && model.t3 && <T3AgentGroup t3={model.t3} />}
           </Fragment>
         ))}
         {detected.length === 0 && (

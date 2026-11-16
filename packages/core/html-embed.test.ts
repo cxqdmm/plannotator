@@ -1,6 +1,6 @@
 /**
  * The live HTML embed's boundary (approval "inbox-inline-html"), a sandboxed
- * frame as T3 Code draws one. What regresses if these fail:
+ * frame. What regresses if these fail:
  * - the frame gains `allow-same-origin` (or another sandbox token): the page
  *   would share the Inbox's origin and could read and write its API;
  * - the document's own policy stops sandboxing it, or lists `'self'` or

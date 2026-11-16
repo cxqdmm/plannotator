@@ -2,7 +2,7 @@
  * Codex as a `LaunchHost` (inbox-launch-host.ts): "New Codex session" in compose's To.
  *
  * Pi's pattern (inbox-launch-pi.ts): the Inbox owns the process. One `codex app-server` per launched thread, in its
- * folder, speaking JSON-RPC over stdio, as Ask AI, voice and T3 Code do. It runs with the person's own Codex: their
+ * folder, speaking JSON-RPC over stdio, as Ask AI and voice do. It runs with the person's own Codex: their
  * login env through the launch filter, so their `CODEX_HOME`, `config.toml`, login, model, sandbox and approval
  * policy (nothing of theirs goes on argv or on the thread: `thread/start` gets the folder only). **A launched Codex
  * thread runs only while the Inbox runs**: Stop, Delete and an Inbox exit end the process (Codex writes its rollout

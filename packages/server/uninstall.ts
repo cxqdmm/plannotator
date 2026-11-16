@@ -28,7 +28,6 @@ import {
   resolve,
 } from "node:path";
 import { getPlannotatorDataDir } from "@plannotator/shared/data-dir";
-import { T3_SETTINGS_BACKUP_SUFFIX } from "@plannotator/shared/t3-hook-command";
 import { isManagedHook, remainingHookReferences, type ManagedHookSpec } from "./uninstall-hooks";
 import { remainingInboxReferences } from "./uninstall-inbox-references";
 import {
@@ -36,7 +35,6 @@ import {
   type HostReferences, type Unreadable,
 } from "./uninstall-host-references";
 import { describeFsError } from "./agent-files";
-import { runningT3Workers, stopT3Workers } from "@plannotator/shared/t3-workers";
 import { inboxStatus, readInboxRegistry, stopInbox } from "@plannotator/shared/inbox/registry";
 import { takeDownInboxTailnet } from "./inbox-devices";
 import { hasTailnetDoorRecord, readTailnetDoorRecord } from "./inbox-tailnet-door";
@@ -437,20 +435,6 @@ export async function runPlannotatorUninstall(
     }
   }
 
-  // The opt-in T3 Code connection's workers run from the binary being removed
-  // and write into t3-code/: stop them (reviews stay open). Nothing to do for
-  // anyone who never connected T3.
-  if (request.dryRun) {
-    for (const worker of await runningT3Workers(state.dataDir)) {
-      state.planned.push(`Stop the T3 Code companion for thread ${worker.thread} (pid ${worker.pid})`);
-    }
-  } else {
-    for (const worker of await stopT3Workers(state.dataDir)) {
-      if (worker.state === "stopped") state.removed.push(`Stopped the T3 Code companion for thread ${worker.entry.thread} (pid ${worker.entry.pid})`);
-      if (worker.state === "still_running") state.warnings.push(`The T3 Code companion for thread ${worker.entry.thread} (pid ${worker.entry.pid}) did not stop; quit it before deleting ${join(state.dataDir, "t3-code")}.`);
-    }
-  }
-
   // Routines' start at login (inbox-scheduled-login.ts): with the binary gone it would fail at every login.
   const login = inboxLoginItem({ platform: environment.platform, home: environment.homeDir, argv: [], dataDir: state.dataDir, run: async ([command, ...args]) => ({ code: (await environment.runCommand(command!, args)).exitCode }) });
   if (login.path && existsSync(login.path)) {
@@ -808,7 +792,6 @@ function removeHostConfigEntries(
     [
       { event: "PermissionRequest", matcher: "ExitPlanMode", suffix: "" },
       { event: "PreToolUse", matcher: "EnterPlanMode", suffix: "improve-context" },
-      { event: "PreToolUse", matcher: "Bash", suffix: "t3-hook" },
     ],
     paths.binaryPaths,
     environment.platform,
@@ -818,13 +801,10 @@ function removeHostConfigEntries(
       owner: "Claude Code",
     },
     "managed Claude Code hooks",
-    `Make ${join(paths.claudeDir, "settings.json")} a readable, writable strict JSON object. Remove only Plannotator command hooks from hooks.PermissionRequest entries whose matcher is "ExitPlanMode", hooks.PreToolUse entries whose matcher is "EnterPlanMode", and Plannotator t3-hook commands in Bash entries, then save the file.`,
+    `Make ${join(paths.claudeDir, "settings.json")} a readable, writable strict JSON object. Remove only Plannotator command hooks from hooks.PermissionRequest entries whose matcher is "ExitPlanMode" and hooks.PreToolUse entries whose matcher is "EnterPlanMode", then save the file.`,
     request,
     state,
   );
-  // The backup `t3-hook install` (install.sh --with-t3) made before its first
-  // change to settings.json. The name is Plannotator's own; nothing else writes it.
-  removePath(join(paths.claudeDir, `settings.json${T3_SETTINGS_BACKUP_SUFFIX}`), request, state);
 
   for (const configDir of paths.configDirs) {
     for (const name of ["opencode.json", "opencode.jsonc"]) {

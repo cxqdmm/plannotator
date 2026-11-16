@@ -224,7 +224,7 @@ export function resolveInboxReminderRules(configText: string | null | undefined)
  * - `orca`: Orca's chat (#3325), which shows its own "Review proposed plan" card.
  *
  * Others: Claude Desktop's `claude-desktop`, an Agent SDK app's `sdk-ts` /
- * `sdk-py`, `claude -p`'s `sdk-cli`, T3 Code's `t3-code`.
+ * `sdk-py`, `claude -p`'s `sdk-cli`.
  */
 const PANEL_HOSTS: ReadonlyMap<string, { planReview: boolean }> = new Map([
   ['claude-vscode', { planReview: true }],
@@ -330,108 +330,47 @@ export function isPanelSession(env: PanelSessionEnv, sessionId: string): boolean
 }
 
 /**
- * The entrypoint T3 Code gives the Claude it runs for a thread
- * (`CLAUDE_CODE_ENTRYPOINT`, set in `mergeClaudeProcessEnvironment`, T3's
- * `ClaudeHome.ts`), beside `T3CODE_THREAD_ID`.
- */
-export const T3_ENTRYPOINT = 't3-code'
-
-/**
- * A T3 Code thread id: `isT3ThreadId` in packages/core/inbox-t3.ts, copied
- * (a hooks module may import only its own files; session-kind.test.ts keeps them equal).
- */
-const T3_THREAD_ID = /^[A-Za-z0-9][A-Za-z0-9._~%:!*'()-]{0,4095}$/
-
-export function isT3ThreadId(value: unknown): value is string {
-  return typeof value === 'string' && T3_THREAD_ID.test(value)
-}
-
-/** What `t3ThreadOf` reads, each variable as `$.env.get` answers it. */
-export type T3SessionEnv = PanelSessionEnv & {
-  /** `T3CODE_THREAD_ID`: the thread T3 runs this Claude for. */
-  thread: unknown
-}
-
-/**
- * The T3 Code thread this session runs for, or null. T3 (0.1.7 and later)
- * runs a thread's Claude through the Agent SDK with
- * `CLAUDE_CODE_ENTRYPOINT=t3-code` and `T3CODE_THREAD_ID`, and deletes
- * `CLAUDECODE` and `CLAUDE_CODE_CHILD_SESSION` from that environment. Both
- * are inherited by everything the session starts, so a `claude -p` run from
- * inside a thread is told apart as the panel's is: either Claude Code
- * variable, or a `t3:` tag naming another thread. A tag of another host
- * (`claude-code:<id>`) is what T3 itself inherited from the shell it was
- * started in, and never decides. T3's own short runs (a title) inherit the
- * same environment, so a thread read here is only a candidate: the Inbox
- * link waits for the thread's `t3-code` tools (`isT3ThreadOwnTools`) before
- * it polls or delivers for it.
- */
-export function t3ThreadOf(env: T3SessionEnv): string | null {
-  if (env.entrypoint !== T3_ENTRYPOINT || !isT3ThreadId(env.thread)) return null
-  if (setIn(env.claudecode) || setIn(env.childSession)) return null
-  if (typeof env.sessionTag === 'string' && env.sessionTag.startsWith('t3:') && env.sessionTag !== `t3:${env.thread}`) return null
-  return env.thread
-}
-
-/**
- * The prefix of the tools T3 Code's own MCP server (`t3-code`) gives a
- * thread's Claude: T3 adds that server through the Agent SDK options of a
- * thread's run only, so a title run, a capability probe or a `claude -p` with
- * the thread's environment never has it, and no environment variable carries it.
- */
-export const T3_THREAD_SERVER = 't3-code'
-export const T3_THREAD_TOOL_PREFIX = `mcp__${T3_THREAD_SERVER}__`
-
-/** Whether the session's tools (`$.tool.list()`'s names) show it is a T3 thread's own Claude. */
-export function isT3ThreadOwnTools(names: readonly unknown[]): boolean {
-  return names.some((name) => typeof name === 'string' && name.startsWith(T3_THREAD_TOOL_PREFIX))
-}
-
-/**
  * Where the session runs, as the mod sorts it at `session.start`:
  *
  * - `terminal`: a person at Claude Code's own prompt (`isInteractive`);
  * - `panel`: a panel host's chat: the VS Code extension, Orca
  *   (`isPanelSession`; where the host draws its own
  *   plan card, ExitPlanMode is left to it: `panelHostOwnsPlanMode`);
- * - `t3`: a T3 Code thread (`t3ThreadOf`);
  * - `headless`: any other session that is not interactive: `claude -p`,
  *   another Agent SDK app, Claude Desktop, an unknown or missing entrypoint.
  *
- * The first three take a later turn from a plugin while the process lives
- * (the panel and T3 show it as a turn of the thread), so the mod runs there
+ * The first two take a later turn from a plugin while the process lives
+ * (the panel shows it as a turn of the thread), so the mod runs there
  * as in the terminal. A `headless` session may be a one-shot run that exits
  * as its turn ends, and nothing at `session.start` says whether it is: there
  * a decision or a reply promised for later could be lost, so the flows that
  * deliver later keep the classic, blocking path and the Inbox tool sends
  * without the wake (`SESSION_KIND_FEATURES`).
  */
-export type SessionKind = 'terminal' | 'panel' | 't3' | 'headless'
+export type SessionKind = 'terminal' | 'panel' | 'headless'
 
-export function sessionKindOf(s: { isInteractive: boolean; panel: boolean; t3Thread: string | null }): SessionKind {
+export function sessionKindOf(s: { isInteractive: boolean; panel: boolean }): SessionKind {
   if (s.isInteractive) return 'terminal'
   if (s.panel) return 'panel'
-  if (s.t3Thread !== null) return 't3'
   return 'headless'
 }
 
 /**
  * What the mod does in each kind of session (the switches still apply on top):
  * `reviews`, the non-blocking reviews (the slash commands, the `plannotator`
- * tool, the Bash take-over, Ask this session); `planReview`, ExitPlanMode
- * (T3 Code owns Plan mode: its own plan card stays); `inboxTool`, the
- * `plannotator_inbox` tool; `wake`, the Inbox reply as a later turn.
+ * tool, the Bash take-over, Ask this session); `planReview`, ExitPlanMode;
+ * `inboxTool`, the `plannotator_inbox` tool; `wake`, the Inbox reply as a
+ * later turn.
  */
 export const SESSION_KIND_FEATURES: Readonly<Record<SessionKind, { reviews: boolean; planReview: boolean; inboxTool: boolean; wake: boolean }>> = {
   terminal: { reviews: true, planReview: true, inboxTool: true, wake: true },
   panel: { reviews: true, planReview: true, inboxTool: true, wake: true },
-  t3: { reviews: true, planReview: false, inboxTool: true, wake: true },
   headless: { reviews: false, planReview: false, inboxTool: true, wake: false },
 }
 
 /**
  * A prompt's `origin.kind` as the mod reads it. In a panel session (VS Code,
- * Orca) or a T3 Code thread the person's Enter reaches Claude Code as the SDK
+ * Orca) the person's Enter reaches Claude Code as the SDK
  * host's own turn (`sdk`: the host sends what the person typed), so there it
  * reads as `composer`, the person's Enter in the terminal: a prompt they type
  * takes over the turn answering an "Ask this session" question and pulls the

@@ -192,7 +192,6 @@ Then finish the step for your agent:
 |---|---|---|
 | **Claude Code** | `/plugin marketplace add backnotprop/plannotator`, then `/plugin install plannotator@plannotator`. Restart Claude Code. | [README](apps/hook/README.md) |
 | **OpenCode** | Add `"plugin": ["@plannotator/opencode@latest"]` to `opencode.json`. Restart OpenCode. | [README](apps/opencode-plugin/README.md) |
-| **T3 Code** | For Claude threads in T3: run `plannotator t3 --help` and follow its two steps (sign in to T3 once, add the `--t3` MCP entry). Your Inbox replies then arrive in the thread as new turns. | [README](packages/t3-code/README.md) |
 
 **Updating:** run the installer again for the binary and slash commands. It also updates an installed Claude Code plugin when the `claude` command is on your PATH (opt out with `--skip-claude-plugin`); otherwise run `claude plugin marketplace update plannotator`, then `claude plugin update plannotator@plannotator`, then restart Claude Code (refreshing the marketplace alone does not update the plugin).
 

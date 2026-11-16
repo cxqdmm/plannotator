@@ -1,15 +1,13 @@
 /**
  * The mod in sessions that are not interactive, through the real registered hooks on a fake `$` (the engine
  * harness in apps/hook/tests needs `claude plugin test`). The panel hosts (Claude Code's VS Code extension, #3111;
- * Orca, #3325) and T3 Code host Claude Code through the Agent SDK, so
- * `session.start` says `isInteractive: false` and `surface: null`; they run the CLI with `CLAUDE_CODE_ENTRYPOINT`
- * `claude-vscode`, `orca`, T3 with `t3-code` and `T3CODE_THREAD_ID`.
- * What can regress: a panel host or a T3 thread left without `plannotator_inbox` or the wake; a Plannotator plan
- * review opened beside Orca's own plan card; a T3 thread filed as a
- * Claude Code session instead of the thread; any other session (`claude -p`, an Agent SDK app, Claude Desktop, a
- * `claude -p` started from inside a panel or thread) left with no Inbox tool, or promised a wake its run may not
- * live to deliver; Plannotator's own Ask AI child or the switch turned off reaching the Inbox; and a wake the SDK
- * host refuses being lost or tried again in a loop.
+ * Orca, #3325) host Claude Code through the Agent SDK, so `session.start` says `isInteractive: false` and
+ * `surface: null`; they run the CLI with `CLAUDE_CODE_ENTRYPOINT` `claude-vscode` or `orca`.
+ * What can regress: a panel host left without `plannotator_inbox` or the wake; a Plannotator plan review opened
+ * beside Orca's own plan card; any other session (`claude -p`, an Agent SDK app, Claude Desktop, a `claude -p`
+ * started from inside a panel) left with no Inbox tool, or promised a wake its run may not live to deliver;
+ * Plannotator's own Ask AI child or the switch turned off reaching the Inbox; and a wake the SDK host refuses
+ * being lost or tried again in a loop.
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync } from 'node:fs'
@@ -45,16 +43,14 @@ const PANEL = { CLAUDE_CODE_ENTRYPOINT: 'claude-vscode' }
 const ORCA = { CLAUDE_CODE_ENTRYPOINT: 'orca' }
 /** Every panel host: a person reads its chat, a plugin's turn shows there. */
 const PANEL_HOSTS = [PANEL, ORCA]
-/** What T3 Code starts a thread's Claude with (`mergeClaudeProcessEnvironment` and the thread's env, in T3's source). */
-const T3 = { CLAUDE_CODE_ENTRYPOINT: 't3-code', T3CODE_THREAD_ID: 'a1b2c3d4-0000-4000-8000-000000000001' }
+
 /** How the engine raises `session.start` for an Agent SDK host, the VS Code extension's included. */
 const SDK_START = { isInteractive: false, surface: null, cwd: '/w' }
 /** How the engine raises `session.start` for a person at Claude Code's own prompt. */
 const TERMINAL_START = { isInteractive: true, surface: 'terminal', cwd: '/w' }
 const REPLY = { type: 'reply', id: 'msg_reply', thread_id: 'msg_1', reply_to: 'msg_1', subject: 'Ship it?', body: 'Yes, after the freeze.', url: `http://localhost:${PORT}/#thread=msg_1` }
 
-/** The tools T3's own MCP server gives a thread's Claude, a few seconds after it starts. */
-const T3_OWN_TOOLS = ['mcp__t3-code__get_thread', 'mcp__t3-code__send_message']
+
 
 /** What two processes on one machine share: the data dir and the Inbox. */
 function machine() {
@@ -309,7 +305,6 @@ describe('ExitPlanMode in a panel host', () => {
     // Sorted headless (an inherited tag, a nested run), still under Orca's card.
     ['Orca started from a Claude Code shell (another session\'s tag)', { ...ORCA, PLANNOTATOR_SESSION_TAG: 'claude-code:other' }, '0', OWN_MARK, {}, false],
     ['claude -p from Claude\'s Bash in an Orca session', { ...ORCA, CLAUDECODE: '1', CLAUDE_CODE_CHILD_SESSION: '1' }, '0', OWN_MARK, {}, false],
-    ['a T3 thread', T3, undefined, undefined, { listed: T3_OWN_TOOLS }, false],
     ['the VS Code panel', PANEL, undefined, undefined, {}, false],
     ['claude -p', { CLAUDE_CODE_ENTRYPOINT: 'sdk-cli' }, undefined, undefined, {}, false],
     ['no entrypoint', {}, undefined, undefined, {}, false],
@@ -384,7 +379,7 @@ describe("the person's prompt in the panel (origin sdk, the extension sends what
   })
 })
 
-/** What every Claude Code session that is not interactive and is neither the panel nor a T3 thread is. */
+/** What every Claude Code session that is not interactive and is neither the panel nor Orca is. */
 const HEADLESS: [string, Record<string, string>][] = [
   ['an Agent SDK app (sdk-ts)', { CLAUDE_CODE_ENTRYPOINT: 'sdk-ts' }],
   ['an Agent SDK app (sdk-py)', { CLAUDE_CODE_ENTRYPOINT: 'sdk-py' }],
@@ -395,17 +390,11 @@ const HEADLESS: [string, Record<string, string>][] = [
   ['a child of an Orca panel', { ...ORCA, CLAUDE_CODE_CHILD_SESSION: '1' }],
   ['a different Orca session inherits a tag', { ...ORCA, PLANNOTATOR_SESSION_TAG: 'claude-code:other' }],
   ['an entrypoint only near the panel one', { CLAUDE_CODE_ENTRYPOINT: 'claude-vscode-insiders' }],
-  ['a Claude T3 runs for no thread (t3-code, no T3CODE_THREAD_ID)', { CLAUDE_CODE_ENTRYPOINT: 't3-code' }],
-  // A `claude -p` started from inside a panel session or a T3 thread inherits its entrypoint (and the thread id).
+  // A `claude -p` started from inside a panel session inherits its entrypoint.
   ['claude -p from Claude\'s Bash in a panel session (CLAUDECODE, CLAUDE_CODE_CHILD_SESSION)', { ...PANEL, CLAUDECODE: '1', CLAUDE_CODE_CHILD_SESSION: '1' }],
   ['a nested run with CLAUDE_CODE_CHILD_SESSION only', { ...PANEL, CLAUDE_CODE_CHILD_SESSION: '1' }],
   ['a nested run with CLAUDECODE only', { ...PANEL, CLAUDECODE: '1' }],
   ['an agent job of a Plannotator CLI the panel\'s mod started (its session tag names that session)', { ...PANEL, PLANNOTATOR_SESSION_TAG: 'claude-code:the-panel-session' }],
-  ['claude -p from Claude\'s Bash in a T3 thread', { CLAUDE_CODE_ENTRYPOINT: 't3-code', T3CODE_THREAD_ID: 'a1b2c3d4-0000-4000-8000-000000000001', CLAUDECODE: '1', CLAUDE_CODE_CHILD_SESSION: '1' }],
-  ['an agent job of a CLI a T3 thread\'s mod started', { CLAUDE_CODE_ENTRYPOINT: 't3-code', T3CODE_THREAD_ID: 'a1b2c3d4-0000-4000-8000-000000000001', PLANNOTATOR_SESSION_TAG: 't3:another-thread' }],
-  // T3 before 0.1.7 sets no entrypoint and leaves CLAUDECODE from the shell it was started in.
-  ['a thread of T3 before 0.1.7 (no entrypoint)', { T3CODE_THREAD_ID: 'a1b2c3d4-0000-4000-8000-000000000001' }],
-  ['a thread of T3 before 0.1.7 started from a Claude Code shell', { T3CODE_THREAD_ID: 'a1b2c3d4-0000-4000-8000-000000000001', CLAUDECODE: '1', PLANNOTATOR_SESSION_TAG: 'claude-code:0f8fad5b-d9cb-469f-a165-000000000000' }],
 ]
 
 describe('every other session that is not interactive (headless): the Inbox tool, no wake, the classic reviews', () => {
@@ -442,10 +431,8 @@ describe('where the mod stands down', () => {
     // Plannotator's own agent must never get Plannotator's tools or reach the person's Inbox (recursion).
     ['Plannotator\'s Ask AI child in the panel (PLANNOTATOR_ASK_AI_CHILD=1)', { ...PANEL, PLANNOTATOR_ASK_AI_CHILD: '1' }],
     ['Plannotator\'s Ask AI child as claude -p', { CLAUDE_CODE_ENTRYPOINT: 'sdk-cli', PLANNOTATOR_ASK_AI_CHILD: '1' }],
-    ['Plannotator\'s Ask AI child in a T3 thread', { ...T3, PLANNOTATOR_ASK_AI_CHILD: '1' }],
     ['the panel with the mod turned off (PLANNOTATOR_CLAUDE_MOD=0)', { ...PANEL, PLANNOTATOR_CLAUDE_MOD: '0' }],
     ['claude -p with the mod turned off', { CLAUDE_CODE_ENTRYPOINT: 'sdk-cli', PLANNOTATOR_CLAUDE_MOD: '0' }],
-    ['a T3 thread with the mod turned off', { ...T3, PLANNOTATOR_CLAUDE_MOD: '0' }],
   ]
   for (const [name, env] of cases) {
     test(`${name}: no tool, nothing set, the Inbox never asked`, async () => {
@@ -468,282 +455,6 @@ describe('where the mod stands down', () => {
     await world.ticks(6)
     expect(world.tools).toEqual([])
     expect(polls(world)).toEqual([])
-  })
-})
-
-/** Every id form T3 gives a thread (packages/core/inbox-t3.ts). */
-const T3_THREADS = [
-  'a1b2c3d4-0000-4000-8000-000000000001',
-  'mcp:a1b2c3d4-0000-4000-8000-000000000001',
-  `mcp:launch:${'b'.repeat(64)}`,
-  'thread:subagent:0123456789abcdef',
-  'thread:provider:claudeAgent:native-thread:it%27s',
-]
-
-describe('a T3 Code thread (CLAUDE_CODE_ENTRYPOINT=t3-code beside T3CODE_THREAD_ID, not interactive)', () => {
-  for (const thread of T3_THREADS) {
-    test(`${thread}: both tools, the session tagged as the thread, the Inbox polled as host t3 and the thread, a reply in once as a turn`, async () => {
-      const { world } = await started(`t3-${thread.replace(/[^a-z0-9]+/gi, '-')}`, { CLAUDE_CODE_ENTRYPOINT: 't3-code', T3CODE_THREAD_ID: thread }, { listed: T3_OWN_TOOLS })
-      expect(world.tools).toEqual(['plannotator_inbox', 'plannotator'])
-      expect(world.env.get('PLANNOTATOR_SESSION_TAG')).toBe(`t3:${thread}`)
-
-      await world.ticks(6)
-      expect(polls(world).length).toBeGreaterThan(0)
-      expect(polls(world).every((f) => f.body.session === thread && f.body.host === 't3')).toBe(true)
-      expect(world.submits).toHaveLength(1)
-      expect(world.submits[0]).toContain(REPLY.body)
-      expect(world.delivered).toEqual([REPLY.id])
-      expect(world.fetches.filter((f) => f.path === INBOX_BRIDGE_EVENT_PATH).every((f) => f.body.session === thread && f.body.host === 't3')).toBe(true)
-
-      await world.ticks(10)
-      expect(world.submits).toHaveLength(1)
-    })
-  }
-
-  test('a send files as host t3, the thread id and T3 Code, and says the wake will bring the reply', async () => {
-    const { hook, world } = await started('t3-send', T3, { listed: T3_OWN_TOOLS })
-    const calls = await inboxCall(hook, world)
-    expect(calls.args).toMatchObject({ agent_session: T3.T3CODE_THREAD_ID, agent_host: 't3', agent_name: 'T3 Code' })
-    expect(calls.meta?.['ai.plannotator/inbox-wakes']).toBe(true)
-  })
-
-  test("ExitPlanMode passes on to T3's own Plan mode; Claude's Bash `plannotator review` is the mod's", async () => {
-    const { hook, world } = await started('t3-plan', T3, { listed: T3_OWN_TOOLS })
-    const below = (e: unknown) => ({ passed: e })
-    expect(await hook('tool.call')(world.$, { tool: 'ExitPlanMode', tool_use_id: 'toolu_1', plan: '# Plan\n' }, below)).toMatchObject({ passed: { tool: 'ExitPlanMode' } })
-  })
-
-  test("the person's Enter in T3 (origin sdk) pulls the Inbox lease to this process, as in the terminal", async () => {
-    const { hook, world } = await started('t3-person', T3, { listed: T3_OWN_TOOLS })
-    const lease = `${inboxSessionDirOf(DATA, T3.T3CODE_THREAD_ID)}/watcher.json`
-    world.files.set(lease, JSON.stringify({ owner: 'other-process', at: world.now, touchedAt: world.now + 500 }))
-    world.now += 1_000
-    await hook('prompt.submit')(world.$, { text: 'carry on', origin: { kind: 'sdk' } }, async () => ({ text: 'carry on' }))
-    await settle()
-    expect((JSON.parse(world.files.get(lease) ?? 'null') as { owner: string | null } | null)?.owner).not.toBe('other-process')
-  })
-
-  test("a module reload in the thread's own session (its tag already names the thread) runs the mod again", async () => {
-    const { world } = await started('t3-reload', { ...T3, PLANNOTATOR_SESSION_TAG: `t3:${T3.T3CODE_THREAD_ID}` }, { listed: T3_OWN_TOOLS })
-    expect(world.tools).toEqual(['plannotator_inbox', 'plannotator'])
-  })
-})
-
-describe("which process is a T3 thread: the one with T3's t3-code tools", () => {
-  const THREAD = T3.T3CODE_THREAD_ID
-  const LEASE = `${inboxSessionDirOf(DATA, THREAD)}/watcher.json`
-  const lease = (shared: { files: Map<string, string> }) => JSON.parse(shared.files.get(LEASE) ?? 'null') as { owner: string | null; at: number } | null
-  const OTHER_SESSION = '0f8fad5b-d9cb-469f-a165-000000000000'
-  /** Processes on one machine, one clock: each tick moves every one a second, in turn. */
-  async function together(n: number, ...worlds: ReturnType<typeof engine>[]) {
-    for (let i = 0; i < n; i++) {
-      const now = Math.max(...worlds.map((w) => w.now))
-      for (const world of worlds) {
-        world.now = now
-        await world.ticks(1)
-      }
-    }
-  }
-
-  test("T3 started from another Claude Code session's shell (its tag and project inherited): the thread, filed as host t3 and the thread", async () => {
-    const { hook, world } = await started(
-      't3-inherited-tag',
-      { ...T3, PLANNOTATOR_SESSION_TAG: `claude-code:${OTHER_SESSION}`, PLANNOTATOR_SESSION_PROJECT: `claude-code:${OTHER_SESSION}:/elsewhere` },
-      { listed: T3_OWN_TOOLS },
-    )
-    expect(world.tools).toEqual(['plannotator_inbox', 'plannotator'])
-    expect(world.env.get('PLANNOTATOR_SESSION_TAG')).toBe(`t3:${THREAD}`)
-    const calls = await inboxCall(hook, world)
-    expect(calls.args).toMatchObject({ agent_session: THREAD, agent_host: 't3', agent_name: 'T3 Code' })
-    expect(calls.meta?.['ai.plannotator/inbox-wakes']).toBe(true)
-    await world.ticks(6)
-    expect(polls(world).length).toBeGreaterThan(0)
-    expect(polls(world).every((f) => f.body.session === THREAD && f.body.host === 't3')).toBe(true)
-    expect(world.submits.filter((text) => text.includes(REPLY.body))).toHaveLength(1)
-  })
-
-  test("T3's own short run with the thread's environment (no t3-code tools) never takes the lease; the thread gets the reply once", async () => {
-    const shared = machine()
-    shared.replyWaiting = false
-    const thread = await started('t3-owner-thread', T3, { shared, sessionId: 'sess-thread', listed: T3_OWN_TOOLS })
-    await together(3, thread.world)
-    const holder = lease(shared)?.owner
-    expect(holder).toBeTruthy()
-    // Made after the thread, and the SDK host's prompt (a title request) is origin sdk: neither moves the lease.
-    const helper = await started('t3-owner-helper', T3, { shared, sessionId: 'sess-helper' })
-    helper.world.now = thread.world.now
-    await helper.hook('prompt.submit')(helper.world.$, { text: 'Write a title.', origin: { kind: 'sdk' } }, async () => ({ text: 'Write a title.' }))
-    await settle()
-    shared.replyWaiting = true
-    await together(12, thread.world, helper.world)
-    expect(lease(shared)?.owner).toBe(holder)
-    expect(polls(helper.world)).toEqual([])
-    expect(helper.world.submits).toEqual([])
-    expect(thread.world.submits.filter((text) => text.includes(REPLY.body))).toHaveLength(1)
-    expect(shared.delivered).toEqual([REPLY.id])
-    // Its send files as the thread, marked as the thread's (it cannot tell itself apart), and moves nothing.
-    const calls = await inboxCall(helper.hook, helper.world)
-    expect(calls.args).toMatchObject({ agent_session: THREAD, agent_host: 't3' })
-    expect(calls.meta?.['ai.plannotator/inbox-wakes']).toBe(true)
-    expect(lease(shared)?.owner).toBe(holder)
-    await together(6, thread.world, helper.world)
-    expect(polls(helper.world)).toEqual([])
-  })
-
-  test('the tools never appear (a T3 that adds no t3-code server): no lease, no poll, past the wait and after it; asked again slowly', async () => {
-    const { hook, world } = await started('t3-owner-never', T3)
-    await world.ticks(4)
-    world.now += INBOX_OWNER_WAIT_MS
-    await world.ticks(4)
-    expect(world.files.has(LEASE)).toBe(false)
-    expect(polls(world)).toEqual([])
-    expect(world.submits).toEqual([])
-    const asked = world.toolLists
-    await world.ticks(60)
-    // Settled on no: asked every 30 s, not every 2 s.
-    expect(world.toolLists - asked).toBeGreaterThanOrEqual(1)
-    expect(world.toolLists - asked).toBeLessThanOrEqual(3)
-    const calls = await inboxCall(hook, world)
-    expect(calls.meta?.['ai.plannotator/inbox-wakes']).toBe(true)
-    await world.ticks(6)
-    expect(polls(world)).toEqual([])
-    expect(world.files.has(LEASE)).toBe(false)
-  })
-
-  test("the thread's first send before its tools show: the send waits for them, goes marked, and the reply goes in once", async () => {
-    const { hook, world } = await started('t3-send-first', T3)
-    // The tools show while the send waits (its third ask).
-    let asks = 0
-    const list = world.$.tool.list
-    world.$.tool.list = async () => {
-      if (++asks === 3) world.listed = [...T3_OWN_TOOLS]
-      return list()
-    }
-    const calls = await inboxCall(hook, world)
-    expect(calls.args).toMatchObject({ agent_session: THREAD, agent_host: 't3', agent_name: 'T3 Code' })
-    expect(calls.meta?.['ai.plannotator/inbox-wakes']).toBe(true)
-    expect(lease(world)?.owner).toBeTruthy()
-    await world.ticks(6)
-    expect(world.submits.filter((text) => text.includes(REPLY.body))).toHaveLength(1)
-    await world.ticks(10)
-    expect(world.submits.filter((text) => text.includes(REPLY.body))).toHaveLength(1)
-  })
-
-  test("the thread's first send while its tools never show within the wait: still marked, and the reply goes in once they do", async () => {
-    const { hook, world } = await started('t3-send-early', T3)
-    const calls = await inboxCall(hook, world)
-    expect(calls.meta?.['ai.plannotator/inbox-wakes']).toBe(true)
-    expect(polls(world)).toEqual([])
-    world.listed = [...T3_OWN_TOOLS]
-    await world.ticks(8)
-    expect(world.submits.filter((text) => text.includes(REPLY.body))).toHaveLength(1)
-  })
-
-  test('confirmed late, after the 3-minute wait settled on no: the next touch asks again at once, and so does the slow ask', async () => {
-    for (const how of ['touch', 'slow ask'] as const) {
-      const { hook, world } = await started(`t3-late-${how.replace(' ', '-')}`, T3)
-      await world.ticks(2)
-      world.now += INBOX_OWNER_WAIT_MS
-      await world.ticks(3)
-      expect(polls(world)).toEqual([])
-      world.listed = [...T3_OWN_TOOLS]
-      if (how === 'touch') {
-        await hook('prompt.submit')(world.$, { text: 'carry on', origin: { kind: 'sdk' } }, async () => ({ text: 'carry on' }))
-        await settle()
-        await world.ticks(6)
-      } else {
-        await world.ticks(36)
-      }
-      expect([how, world.submits.filter((text) => text.includes(REPLY.body)).length]).toEqual([how, 1])
-    }
-  })
-
-  test('tools behind ToolSearch (the list leaves them out): the context names the t3-code server, and that is the thread', async () => {
-    const { world } = await started('t3-deferred', T3)
-    world.servers = ['t3-code']
-    await world.ticks(6)
-    expect(polls(world).length).toBeGreaterThan(0)
-    expect(world.submits.filter((text) => text.includes(REPLY.body))).toHaveLength(1)
-  })
-
-  test('a Claude Code without $.tool.list: the thread runs as before the check (the lease at once, polled, delivered once)', async () => {
-    const { world } = await started('t3-no-tool-list', T3, { toolList: 'missing' })
-    expect(lease(world)?.owner).toBeTruthy()
-    await world.ticks(6)
-    expect(polls(world).length).toBeGreaterThan(0)
-    expect(world.submits.filter((text) => text.includes(REPLY.body))).toHaveLength(1)
-  })
-
-  test('a $.tool.list that never answers holds neither the tick nor a send', async () => {
-    const { hook, world } = await started('t3-tool-list-hangs', T3, { toolList: 'hangs' })
-    await world.ticks(6)
-    expect(world.toolLists).toBeGreaterThan(1)
-    const calls = await inboxCall(hook, world)
-    expect(calls.meta?.['ai.plannotator/inbox-wakes']).toBe(true)
-    expect(polls(world)).toEqual([])
-  })
-
-  test('the thread still starting (its tools a few seconds late): it polls once they appear, and delivers once', async () => {
-    const { world } = await started('t3-owner-late', T3)
-    await world.ticks(4)
-    expect(polls(world)).toEqual([])
-    world.listed = [...T3_OWN_TOOLS]
-    await world.ticks(8)
-    expect(polls(world).length).toBeGreaterThan(0)
-    expect(world.submits.filter((text) => text.includes(REPLY.body))).toHaveLength(1)
-  })
-
-  test('T3 restarts the thread under the same Claude session id: the new process takes the lease once the old one is gone and delivers the waiting reply once', async () => {
-    const shared = machine()
-    shared.replyWaiting = false
-    const before = await started('t3-restart-before', T3, { shared, sessionId: 'sess-thread', listed: T3_OWN_TOOLS })
-    await together(3, before.world)
-    const first = lease(shared)?.owner
-    expect(first).toBeTruthy()
-    // Gone without a session.end (T3 stopped it): its lease goes stale.
-    before.world.kill()
-    shared.replyWaiting = true
-    const after = await started('t3-restart-after', T3, { shared, sessionId: 'sess-thread' })
-    after.world.now = before.world.now
-    await after.world.ticks(3)
-    after.world.listed = [...T3_OWN_TOOLS]
-    // A live lease stands: nothing is delivered until it is stale.
-    await after.world.ticks(5)
-    expect(after.world.submits).toEqual([])
-    await after.world.ticks(25)
-    expect(lease(shared)?.owner).not.toBe(first)
-    expect(after.world.submits.filter((text) => text.includes(REPLY.body))).toHaveLength(1)
-    expect(before.world.submits).toEqual([])
-    expect(shared.delivered).toEqual([REPLY.id])
-    await after.world.ticks(10)
-    expect(after.world.submits.filter((text) => text.includes(REPLY.body))).toHaveLength(1)
-  })
-
-  test('the thread ends its session (session.end): the next process takes the lease at once', async () => {
-    const shared = machine()
-    shared.replyWaiting = false
-    const before = await started('t3-end-before', T3, { shared, sessionId: 'sess-thread', listed: T3_OWN_TOOLS })
-    await together(3, before.world)
-    await before.hook('session.end')(before.world.$, { sessionId: 'sess-thread', reason: 'other' }, pass)
-    await settle()
-    before.world.kill()
-    expect(lease(shared)?.owner).toBeNull()
-    shared.replyWaiting = true
-    const after = await started('t3-end-after', T3, { shared, sessionId: 'sess-thread', listed: T3_OWN_TOOLS })
-    after.world.now = before.world.now
-    await after.world.ticks(6)
-    expect(after.world.submits.filter((text) => text.includes(REPLY.body))).toHaveLength(1)
-  })
-
-  test("two live processes with the thread's tools: one polls, one delivers", async () => {
-    const shared = machine()
-    const one = await started('t3-two-one', T3, { shared, sessionId: 'sess-thread', listed: T3_OWN_TOOLS })
-    const two = await started('t3-two-two', T3, { shared, sessionId: 'sess-thread', listed: T3_OWN_TOOLS })
-    await together(15, one.world, two.world)
-    const all = [...one.world.submits, ...two.world.submits].filter((text) => text.includes(REPLY.body))
-    expect(all).toHaveLength(1)
-    expect(shared.delivered).toEqual([REPLY.id])
-    expect([polls(one.world).length > 0, polls(two.world).length > 0].filter(Boolean)).toHaveLength(1)
   })
 })
 

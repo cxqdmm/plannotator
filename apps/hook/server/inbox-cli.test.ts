@@ -445,9 +445,9 @@ describe("plannotator inbox mcp inside an agent session", () => {
     // Pi's entry is runtime knowledge kept for existing sessions (the Pi
     // extension itself no longer ships with this fork).
     expect(INBOX_SESSION_HOST_NAMES.pi).toBe("Pi");
-    // Codex, Qwen Code, T3 Code and Antigravity have no plannotator_inbox tool: the Inbox wakes them itself (`codex queue`,
-    // Qwen's cross-session messaging, T3's MCP API, Antigravity's agentapi), and the shim sends as their session.
-    expect(Object.keys(INBOX_SESSION_HOST_NAMES).sort()).toEqual(["antigravity", "claude-code", "cline", "codex", "dsh", "hermes", "openclaw", "opencode", "pi", "qwen", "t3"]);
+    // Codex, Qwen Code and Antigravity have no plannotator_inbox tool: the Inbox wakes them itself (`codex queue`,
+    // Qwen's cross-session messaging, Antigravity's agentapi), and the shim sends as their session.
+    expect(Object.keys(INBOX_SESSION_HOST_NAMES).sort()).toEqual(["antigravity", "claude-code", "cline", "codex", "dsh", "hermes", "openclaw", "opencode", "pi", "qwen"]);
     expect(INBOX_SESSION_HOST_NAMES.codex).toBe("Codex");
     expect(INBOX_SESSION_HOST_NAMES.qwen).toBe("Qwen Code");
     // A Qwen session in the tag is a Qwen session id, never anything else.

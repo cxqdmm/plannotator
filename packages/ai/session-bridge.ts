@@ -40,7 +40,7 @@ import type {
  */
 export type SessionBridgeStatus = "ready" | "busy" | "blocked" | "gone";
 
-export type SessionBridgeHost = "pi" | "opencode" | "claude-code" | "t3";
+export type SessionBridgeHost = "pi" | "opencode" | "claude-code";
 
 export type SessionBridgeAskMode = "turn" | "transient";
 
@@ -92,9 +92,9 @@ export interface SessionBridge {
 	 */
 	interrupt?(): void | Promise<void>;
 	/**
-	 * `false` when the host never stops the session's work (T3 Code): the
-	 * client then offers neither "Interrupt and ask now" nor a Stop that
-	 * claims to stop the turn. Absent means it can, as before.
+	 * `false` when the host never stops the session's work: the client then
+	 * offers neither "Interrupt and ask now" nor a Stop that claims to stop
+	 * the turn. Absent means it can, as before.
 	 */
 	readonly interruptible?: boolean;
 	/**
@@ -141,7 +141,6 @@ const HOST_LABELS: Record<SessionBridgeHost, string> = {
 	pi: "Pi",
 	opencode: "OpenCode",
 	"claude-code": "Claude Code",
-	t3: "T3 Code",
 };
 
 export function sessionBridgeLabel(

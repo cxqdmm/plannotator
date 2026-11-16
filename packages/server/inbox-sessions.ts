@@ -550,7 +550,7 @@ export function createInboxLiveSessions(options: {
       tags: false,
     };
     entry.host = host;
-    // A session the Inbox woke itself (a T3 thread its MCP sends named) that now polls is that connection from here.
+    // A session the Inbox woke itself that now polls is that connection from here.
     delete entry.wakeOnly;
     setDeliveryFlags(entry, entry.busy, body[INBOX_SEND_NOW_POLL_FIELD] === true);
     setHeld(entry, body[INBOX_HELD_POLL_FIELD] === true);

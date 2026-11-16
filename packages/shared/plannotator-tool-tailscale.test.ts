@@ -14,7 +14,7 @@ import {
 
 // #2166: `tailscale` is an opt-in of the contract for a host that can publish
 // over the tailnet (the Claude Code mod). The failures guarded: a host that
-// did not opt in (Pi, OpenCode 2, T3) starts sending a different tool
+// did not opt in (Pi, OpenCode 2) starts sending a different tool
 // definition or accepting the field; or the opt-in maps to the wrong CLI words.
 
 describe('the plain contract is unchanged for every other host', () => {

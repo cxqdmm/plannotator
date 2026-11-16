@@ -362,7 +362,7 @@ describe("what the agent is told", () => {
 
   test("the hand-over goes only to a caller filed as Antigravity, even when its call carries an agy conversation's _meta", () => {
     const cli = { mcpReq: { _meta: meta(CLI_CONVERSATION, "antigravity-cli") } };
-    for (const host of ["claude-code", "codex", "pi", "opencode", "t3", "qwen", "cursor", "gemini", undefined]) {
+    for (const host of ["claude-code", "codex", "pi", "opencode", "qwen", "cursor", "gemini", undefined]) {
       expect(antigravityHandsOver(cli, false, { agent_host: host, agent_session: CLI_CONVERSATION })).toBe(false);
       expect(antigravityHandsOver({ mcpReq: {} }, false, { agent_host: host, agent_session: CLI_CONVERSATION })).toBe(false);
       expect(replyNextStepText(false, host, false, false)).toBe(INBOX_REPLY_READ_LATER_TEXT);

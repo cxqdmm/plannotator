@@ -68,7 +68,7 @@ export interface InboxAskTimes {
 }
 
 const WRITE_TRIES = 30;
-const BRIDGE_HOSTS: ReadonlySet<string> = new Set(["pi", "opencode", "claude-code", "t3"]);
+const BRIDGE_HOSTS: ReadonlySet<string> = new Set(["pi", "opencode", "claude-code"]);
 const HOST_PATH = new RegExp(`^${INBOX_ASK_BRIDGE_PREFIX}([^/]+)(${SESSION_BRIDGE_POLL_PATH}|${SESSION_BRIDGE_EVENT_PATH})$`);
 
 interface Slot {

@@ -26,10 +26,7 @@
  * reply into that thread (packages/server/inbox-codex-wake.ts). A Qwen Code
  * session is read at every call (`inboxCallHostSession`): Qwen's registry
  * record for the shim's parent process, since `/clear` and `/resume` change
- * the id the shim was started with. A T3 Code thread is its thread id
- * (`T3CODE_THREAD_ID`, which T3 sets for the Claude it runs through the Agent
- * SDK), sent as `agent_host: "t3"`, so the Inbox can put the person's reply
- * into that thread (packages/server/inbox-t3-wake.ts). An Antigravity
+ * the id the shim was started with. An Antigravity
  * conversation names itself on every tool call
  * (`_meta["antigravity.google/conversation_id"]`), sent as
  * `agent_host: "antigravity"` (packages/server/inbox-antigravity-wake.ts).
@@ -39,10 +36,7 @@
  *
  * Inside an agent Plannotator's Ask AI started (`PLANNOTATOR_ASK_AI_CHILD=1`,
  * `isAskAiChild`), the shim is an MCP server with no tools and never starts
- * or reaches the Inbox (`toolessReply`). So is an entry added with `--t3`
- * (`plannotator inbox mcp --t3`, the T3 Code setup's) anywhere but inside a
- * T3 Code thread (`inboxT3EntryIdle`): the person's interactive Claude Code
- * loads the same user-scope entry, and there the mod's tool is the Inbox.
+ * or reaches the Inbox (`toolessReply`).
  *
  * stdout carries JSON-RPC only; anything else goes to stderr.
  */
@@ -61,9 +55,6 @@ import {
   INBOX_QWEN_HOST,
   INBOX_QWEN_NAME,
   INBOX_QWEN_SESSION_ENV,
-  INBOX_T3_HOST,
-  INBOX_T3_NAME,
-  INBOX_T3_THREAD_ENV,
   INBOX_WAKING_HOSTS,
   codexThreadOfCall,
   inboxId,
@@ -71,7 +62,6 @@ import {
   isInboxSessionId,
   isQwenMcpClient,
   isQwenSessionId,
-  isT3ThreadId,
   qwenSessionOfCall,
 } from "@plannotator/core/inbox-types";
 import { inboxEnsureFailedWords, inboxStatus, type InboxRegistryEntry } from "@plannotator/shared/inbox/registry";
@@ -93,7 +83,7 @@ const AUTHOR_TOOLS = new Set(["send_message", "submit_guide", "card", "steps", "
  * `plannotator_inbox` tool sends (`INBOX_AGENT_NAME` in the Claude Code mod,
  * `PI_INBOX_AGENT_NAME`, `OPENCODE_INBOX_AGENT_NAME`), and Codex and Qwen
  * Code, which the Inbox wakes itself (`codex queue`, Qwen's cross-session
- * messaging), and T3 Code, whose thread the Inbox sends into through T3's MCP API.
+ * messaging).
  */
 export const INBOX_SESSION_HOST_NAMES: Readonly<Record<string, string>> = Object.fromEntries(INBOX_WAKING_HOSTS.map((host) => [host, INBOX_HOST_NAMES[host]!]));
 
@@ -108,33 +98,23 @@ export interface InboxHostSession {
  * The agent session this process belongs to, from the environment it
  * inherited, or null. `PLANNOTATOR_SESSION_TAG` (`<host>:<session id>`, set by
  * the Claude Code mod in every process its session starts) comes first; then
- * `T3CODE_THREAD_ID`, which T3 Code sets for the Claude it runs (a UUID, or
- * the id T3 derives for a launched, scheduled, delegated or provider thread:
- * `isT3ThreadId`); then
  * `PI_SESSION_ID`, which Pi sets on each bash tool call; then
  * `CODEX_THREAD_ID`, which Codex sets in the commands its shell runs; Qwen's;
  * last `DSH_SESSION_ID`, DeepSeek Harness's, only beside `DSH_SHELL=1` (its
  * MCP client strips every `DSH_*` variable, so this is a DSH model shell's
  * `plannotator inbox call`). Anything
  * malformed or naming another host is ignored, never guessed at (a Codex
- * session is a thread id, a UUID; a T3 one any id T3 gives a thread).
- *
- * In a T3 thread's own Claude and its MCP servers (`CLAUDE_CODE_ENTRYPOINT`
- * `t3-code` beside a thread id, no `CLAUDE_CODE_CHILD_SESSION`), a tag of
- * another host is the one T3 inherited from the shell it was started in, so
- * the thread wins over it. Claude's Bash commands carry
- * `CLAUDE_CODE_CHILD_SESSION`, and there the tag still comes first.
+ * session is a thread id, a UUID).
  */
 export function inboxHostSessionFromEnv(env: Record<string, string | undefined>): InboxHostSession | null {
   const tag = env.PLANNOTATOR_SESSION_TAG;
-  const t3Own = env.CLAUDE_CODE_ENTRYPOINT === "t3-code" && isT3ThreadId(env[INBOX_T3_THREAD_ENV]) && !env.CLAUDE_CODE_CHILD_SESSION;
-  if (typeof tag === "string" && !(t3Own && !tag.startsWith(`${INBOX_T3_HOST}:`))) {
+  if (typeof tag === "string") {
     const colon = tag.indexOf(":");
     const host = colon > 0 ? tag.slice(0, colon) : "";
     const session = tag.slice(colon + 1);
     if (
       Object.hasOwn(INBOX_SESSION_HOST_NAMES, host) &&
-      (host === INBOX_T3_HOST ? isT3ThreadId(session) : isInboxSessionId(session)) &&
+      isInboxSessionId(session) &&
       (host !== INBOX_CODEX_HOST || isCodexThreadId(session)) &&
       (host !== INBOX_QWEN_HOST || isQwenSessionId(session)) &&
       (host !== INBOX_ANTIGRAVITY_HOST || isAntigravityConversationId(session))
@@ -142,8 +122,6 @@ export function inboxHostSessionFromEnv(env: Record<string, string | undefined>)
       return { host, session, name: INBOX_SESSION_HOST_NAMES[host]! };
     }
   }
-  const t3 = env[INBOX_T3_THREAD_ENV];
-  if (isT3ThreadId(t3)) return { host: INBOX_T3_HOST, session: t3, name: INBOX_T3_NAME };
   const pi = env.PI_SESSION_ID;
   if (isInboxSessionId(pi)) return { host: "pi", session: pi, name: INBOX_SESSION_HOST_NAMES.pi! };
   const codex = env.CODEX_THREAD_ID;
@@ -319,11 +297,10 @@ export function inboxClaudeMcpSessionFromEnv(env: Record<string, string | undefi
  * The host session a tool call is filed as once the client said who it is:
  * Claude Code's own session (`inboxClaudeMcpSessionFromEnv`) when the client
  * is Claude Code, over a variable the shim inherited from whatever started
- * that Claude Code (another session's tag, Pi's, Qwen's). A T3 Code thread
- * stays the thread: T3 runs Claude through the Agent SDK.
+ * that Claude Code (another session's tag, Pi's, Qwen's).
  */
 export function inboxClaudeCallSession(hostSession: InboxHostSession | null, claude: InboxHostSession | null | undefined, clientName: string | null): InboxHostSession | null {
-  if (!claude || clientName !== INBOX_CLAUDE_MCP_CLIENT || hostSession?.host === INBOX_T3_HOST) return hostSession;
+  if (!claude || clientName !== INBOX_CLAUDE_MCP_CLIENT) return hostSession;
   return claude;
 }
 
@@ -348,12 +325,6 @@ export interface InboxMcpShimOptions {
    * or reaches the Inbox.
    */
   askAiChild?: boolean;
-  /**
-   * The entry was added with `--t3` and runs outside a T3 Code thread
-   * (`inboxT3EntryIdle`): it answers on its own with no tools, and never
-   * starts or reaches the Inbox.
-   */
-  t3EntryIdle?: boolean;
   /** Default: process stdin / stdout. */
   input?: ReadableStream<Uint8Array>;
   write?: (line: string) => void;
@@ -430,32 +401,19 @@ export function fillInboxToolArguments(
 
 /**
  * Whether a call that names `agentHost` (or none) is filed as the host
- * session: when it names no host or that same host. In a T3 Code thread the
- * agent is Claude, which may name itself `claude-code`: that is still the
- * thread (T3 sets T3CODE_THREAD_ID only for Claude). Any other host it names
- * is not this session, and a reply to it must not wake the thread.
+ * session: when it names no host or that same host. Any other host it names
+ * is not this session, and a reply to it must not wake the session.
  */
 function adoptsHostSession(hostSession: Partial<InboxHostSession>, agentHost: unknown): boolean {
-  if (agentHost === undefined || agentHost === hostSession.host) return true;
-  return hostSession.host === INBOX_T3_HOST && agentHost === "claude-code";
+  return agentHost === undefined || agentHost === hostSession.host;
 }
 
 /** What a request other than initialize, tools/list and ping gets from a shim with no tools. */
 export const INBOX_ASK_AI_CHILD_REFUSAL = "The Plannotator Inbox is off in an agent that Plannotator's Ask AI started.";
-export const INBOX_T3_ENTRY_REFUSAL = "This plannotator-inbox entry (plannotator inbox mcp --t3) lists its tools only inside a T3 Code thread.";
-
-/**
- * An entry added with `--t3` that runs outside a T3 Code thread: no
- * T3CODE_THREAD_ID holding a T3 thread id. It reads nothing else (no settings, no
- * Claude Code version), so an entry without the flag never changes.
- */
-export function inboxT3EntryIdle(t3Flag: boolean, env: Record<string, string | undefined>): boolean {
-  return t3Flag && !isT3ThreadId(env[INBOX_T3_THREAD_ENV]);
-}
 
 /**
  * The shim's own answer where it serves no tools (inside an agent Ask AI
- * started; a `--t3` entry outside a T3 Code thread): an MCP server with no
+ * started): an MCP server with no
  * tools. `initialize`, an empty `tools/list` and `ping` are answered; any
  * other request is refused with `refusal`, and notifications get nothing.
  * Clients built on gemini-cli (Qwen Code) still report a server with no
@@ -519,8 +477,8 @@ export async function runInboxMcpShim(options: InboxMcpShimOptions): Promise<voi
       write(rpcError(null, "Parse error", -32700));
       return;
     }
-    if (options.askAiChild || options.t3EntryIdle) {
-      const reply = toolessReply(message, options.askAiChild ? INBOX_ASK_AI_CHILD_REFUSAL : INBOX_T3_ENTRY_REFUSAL);
+    if (options.askAiChild) {
+      const reply = toolessReply(message, INBOX_ASK_AI_CHILD_REFUSAL);
       if (reply) write(reply);
       return;
     }

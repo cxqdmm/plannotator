@@ -1,8 +1,7 @@
 import { basename, isAbsolute } from "node:path";
 import { simpleShellCommandWords } from "@plannotator/shared/plannotator-tool";
-import { parseT3HookCommand } from "@plannotator/shared/t3-hook-command";
 
-type HookSuffix = "" | "improve-context" | "t3-hook";
+type HookSuffix = "" | "improve-context";
 export type ManagedHookSpec = { readonly event: string; readonly matcher?: string; readonly suffix: HookSuffix };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -60,10 +59,6 @@ export function isManagedHook(
 ): boolean {
   const hook = asRecord(value);
   if (!hook || hook.type !== "command" || typeof hook.command !== "string") return false;
-  if (suffix === "t3-hook") {
-    const parsed = parseT3HookCommand(hook.command);
-    return parsed !== undefined && isPlannotatorExecutable(parsed.executable, binaryPaths, platform, false);
-  }
   if (isBinaryPathCommand(hook.command, binaryPaths, suffix ? ` ${suffix}` : "", platform)) return true;
   const parsed = commandParts(hook.command);
   if (!parsed || !parsed.args || !isPlannotatorExecutable(parsed.executable, binaryPaths, platform, allowRelocatedBinary)) return false;
@@ -157,8 +152,6 @@ export function remainingHookReferences(
     // An install path written unquoted, spaces and all, as its first word.
     const trimmed = command.trim();
     if (binaryPaths.some((path) => sameCommand(trimmed.slice(0, path.length), path, platform) && /^(?:\s|$)/.test(trimmed.slice(path.length)))) return true;
-    const gated = parseT3HookCommand(command)?.executable;
-    if (gated && isPlannotatorExecutable(gated, binaryPaths, platform, allowRelocatedBinary)) return true;
     return commandSegments(command).some((segment) => {
       const executable = commandParts(withoutAssignments(segment))?.executable;
       return executable !== undefined && isPlannotatorExecutable(executable, binaryPaths, platform, allowRelocatedBinary);

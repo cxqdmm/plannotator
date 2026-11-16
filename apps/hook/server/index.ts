@@ -266,7 +266,6 @@ import { formatInboxHelp } from "./inbox-help";
 import { writeWholeToStdout } from "./write-whole-stdout";
 import { INBOX_CARD_ACTION_ON } from "@plannotator/core/inbox-types";
 import { getPlannotatorDataDir, getUnusedPlannotatorDataDir } from "@plannotator/shared/data-dir";
-import { isAgentSdkEntrypoint } from "@plannotator/shared/t3-hook-command";
 import {
   annotateStartupFailureExitCode,
   isStrictAnnotateInvocation,
@@ -315,16 +314,6 @@ const shapeHtmlGzip = () => (shapeHtmlGz ??= readFileSync(shapeHtmlGzPath as unk
 
 // Code review's diagram engine: embedded too, read on first need.
 import { loadEmbeddedDiagramEngine } from "./diagram-engine";
-
-// The optional T3 Code hook (`t3-hook` with no arguments) runs on EVERY Bash
-// call of a Claude session that loads it. Only an Agent SDK session can be a
-// T3 conversation; answer every other one first, before any startup work.
-// (The installed command's shell gate usually answers before this binary
-// starts at all; this covers a hook registered without it.)
-if (process.argv[2] === "t3-hook" && process.argv.length === 3 && !isAgentSdkEntrypoint(process.env.CLAUDE_CODE_ENTRYPOINT)) {
-  process.stdout.write("{}\n");
-  process.exit(0);
-}
 
 // Check for subcommand
 // "Ask this session" pull-bridge secret: take it out of process.env before
@@ -455,7 +444,7 @@ if (isReviewDrawCommand(rawArgs, () => {
 // `plannotator system …`: System's drawing of a project (system-command.ts;
 // unreleased, HIDDEN_SUBCOMMANDS), for the agents that draw it and the launchd
 // job that keeps it current. Before the strict-annotate parse: it takes its own
-// flags and its own --help. Loaded only when asked for, as t3 is.
+// flags and its own --help. Loaded only when asked for.
 {
   const args = rawArgs;
   if (args[0] === "system") {
@@ -562,28 +551,6 @@ if (rawArgs[0] === "routine") {
   const args = rawArgs;
   if (args[0] === "feedback") {
     process.exit(await runFeedbackCommand(args.slice(1), { env: process.env, version: getCliVersion() ?? "dev" }));
-  }
-}
-// T3 Code (opt-in, unreleased; HIDDEN_SUBCOMMANDS): `t3` is the connection's
-// CLI and worker, `t3-hook` the Claude Bash hook and its settings helper.
-// Loaded only when asked for, so no other subcommand evaluates any of it.
-{
-  // Before the strict-annotate parse: these take their own flags.
-  const args = rawArgs;
-  if (args[0] === "t3" || args[0] === "t3-hook") {
-    const script = process.argv[1];
-    const selfCommand = script && /\.(?:[cm]?[jt]s)$/.test(script) && existsSync(script) ? [process.execPath, script] : [process.execPath];
-    try {
-      if (args[0] === "t3-hook") {
-        const { runT3Hook } = await import("@plannotator/t3-code/hook");
-        await runT3Hook(args.slice(1), selfCommand);
-      } else {
-        const { runT3Command } = await import("@plannotator/t3-code/cli");
-        await runT3Command(args.slice(1), selfCommand);
-      }
-    }
-    catch (error) { console.error(error instanceof Error ? error.message : String(error)); process.exit(1); }
-    process.exit(0);
   }
 }
 let parsedStrictAnnotateOptions;

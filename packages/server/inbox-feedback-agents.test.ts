@@ -50,7 +50,7 @@ describe("inboxFeedbackAgents", () => {
   });
 
   test(`at most ${FEEDBACK_AGENTS_MAX} names, the most recently used kept`, () => {
-    const hosts = ["claude-code", "codex", "pi", "opencode", "cursor", "qwen", "dsh", "t3", "gemini", "amp", "kiro"];
+    const hosts = ["claude-code", "codex", "pi", "opencode", "cursor", "qwen", "dsh", "gemini", "amp", "kiro"];
     const names = inboxFeedbackAgents(hosts.map((host, i) => agent(host, `2026-11-${String(i + 1).padStart(2, "0")}T00:00:00.000Z`)));
     expect(names).toHaveLength(FEEDBACK_AGENTS_MAX);
     expect(names[0]).toBe(feedbackAgentNameOfHost("kiro"));

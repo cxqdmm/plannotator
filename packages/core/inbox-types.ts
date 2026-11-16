@@ -30,7 +30,6 @@ import type { InboxLaunchChoices } from "./inbox-launch-choice";
 import type { InboxRowSnooze } from "./inbox-snooze";
 import { INBOX_CODEX_QUEUE_MIN_VERSION } from "./inbox-codex";
 import { INBOX_QWEN_WAKE_MIN_VERSION } from "./inbox-qwen";
-import { INBOX_T3_HOST, isT3ThreadId, type InboxT3Status, type InboxT3WaitReason } from "./inbox-t3";
 
 // The attachment shapes and file rules (step 2) live in their own module and
 // reach the Inbox through this published entry, so core's export map is unchanged.
@@ -40,7 +39,6 @@ export * from "./inbox-delivery";
 export * from "./inbox-codex";
 export * from "./inbox-qwen";
 export * from "./inbox-muse";
-export * from "./inbox-t3";
 export * from "./inbox-antigravity";
 // The Board's cards (approval "inbox-board"), the same way.
 export * from "./inbox-cards";
@@ -443,6 +441,7 @@ export const INBOX_HOST_NAMES: Readonly<Record<string, string>> = {
   grok: "Grok Build",
   qwen: "Qwen Code",
   dsh: "DeepSeek Harness",
+  // Threads the T3 Code connection wrote (removed from this fork) keep their author's name.
   t3: "T3 Code",
   antigravity: "Antigravity",
   cline: "Cline",
@@ -467,17 +466,15 @@ export const INBOX_HOST_NAMES: Readonly<Record<string, string>> = {
  * and Qwen Code through MCP alone, where the Inbox sends the reply into the
  * running session over Qwen's cross-session messaging (Qwen Code
  * INBOX_QWEN_WAKE_MIN_VERSION or later, macOS and Linux;
- * packages/server/inbox-qwen-wake.ts), and a T3 Code thread through MCP
- * alone, where the Inbox sends the reply into the thread through T3's MCP API
- * (packages/server/inbox-t3-wake.ts), and an Antigravity conversation through
+ * packages/server/inbox-qwen-wake.ts), and an Antigravity conversation through
  * MCP alone, where the Inbox sends the reply in with Antigravity's own
  * `agentapi send-message` (packages/server/inbox-antigravity-wake.ts).
  * The one list: wording that names which agents a reply wakes reads it.
  */
-export const INBOX_WAKING_HOSTS = ["claude-code", "pi", "opencode", "dsh", "cline", "openclaw", "hermes", "codex", "qwen", "t3", "antigravity"] as const;
+export const INBOX_WAKING_HOSTS = ["claude-code", "pi", "opencode", "dsh", "cline", "openclaw", "hermes", "codex", "qwen", "antigravity"] as const;
 
-/** Of INBOX_WAKING_HOSTS, the ones an MCP connection alone wakes (no Plannotator plugin): Codex, Qwen Code, T3 Code and Antigravity. */
-export const INBOX_MCP_WAKING_HOSTS: readonly string[] = ["codex", "qwen", "t3", "antigravity"];
+/** Of INBOX_WAKING_HOSTS, the ones an MCP connection alone wakes (no Plannotator plugin): Codex, Qwen Code and Antigravity. */
+export const INBOX_MCP_WAKING_HOSTS: readonly string[] = ["codex", "qwen", "antigravity"];
 
 /** The first version of each agent MCP alone wakes that can be woken. */
 export const INBOX_MCP_WAKE_MIN_VERSIONS: Readonly<Record<string, string>> = { codex: INBOX_CODEX_QUEUE_MIN_VERSION, qwen: INBOX_QWEN_WAKE_MIN_VERSION };
@@ -637,12 +634,6 @@ export interface InboxMessage {
   taken_back_at?: string | null;
   read_by_agent?: { session: string | null; at: string } | null;
   cloud_wake?: InboxCloudWake | null;
-  /**
-   * On a person's reply or message for a T3 Code thread: why the T3 wake
-   * cannot put it in now (packages/server/inbox-t3-wake.ts). Absent while
-   * nothing known holds it, and dropped when it is delivered.
-   */
-  t3_wait?: InboxT3WaitReason | null;
   /**
    * On a person's reply or message not yet delivered: the person pressed
    * Send now in the Inbox, and when. The session's connection then delivers
@@ -2870,8 +2861,6 @@ export interface InboxAgentsModel {
    * row. Absent from an Inbox older than the field.
    */
   sessions?: Partial<Record<InboxToolHostId, InboxHostSessions>>;
-  /** T3 Code when it is on this computer, else null. Absent from an Inbox older than the field: no T3 Code group. */
-  t3?: InboxT3Status | null;
 }
 
 /** The hosts that connect through Plannotator's own plugin or extension. */
@@ -3309,14 +3298,14 @@ export const INBOX_REPLY_DRAFT_RECIPIENTS_MAX = INBOX_TAGS_MAX + 1;
 /** A session id as a tag (and a reply draft's recipient) names it. */
 export const INBOX_SESSION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
 
-/** Whether a reply draft's recipient (an id with no host) can name this session: an id of that shape, or a T3 Code thread's own id. */
+/** Whether a reply draft's recipient (an id with no host) can name this session: an id of that shape. */
 export function isInboxRecipientSessionId(value: unknown): value is string {
-  return (typeof value === "string" && INBOX_SESSION_ID_PATTERN.test(value)) || isT3ThreadId(value);
+  return typeof value === "string" && INBOX_SESSION_ID_PATTERN.test(value);
 }
 
-/** Whether a tag of this host can name this session: a T3 Code thread's own id under `t3` only, an id of that shape under any other. */
-export function isInboxTagSessionId(host: unknown, session: unknown): session is string {
-  return host === INBOX_T3_HOST ? isT3ThreadId(session) : typeof session === "string" && INBOX_SESSION_ID_PATTERN.test(session);
+/** Whether a tag can name this session: an id of that shape. */
+export function isInboxTagSessionId(session: unknown): session is string {
+  return typeof session === "string" && INBOX_SESSION_ID_PATTERN.test(session);
 }
 
 /**

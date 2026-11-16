@@ -16,7 +16,6 @@ import { inboxClaudeMcpSessionFromEnv, inboxHostSessionFromEnv, runInboxMcpShim 
 
 const SESSION = "3f2b8c1e-7a4d-4e9b-9c2a-5d6e7f8a9b0c";
 const OTHER_SESSION = "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d";
-const T3_THREAD = "0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d4e";
 
 /** What Claude Code puts in a stdio MCP server's environment (2.1.323), with no tag from the mod. */
 const CLAUDE_MCP_ENV = { CLAUDECODE: "1", CLAUDE_CODE_SESSION_ID: SESSION, CLAUDE_PROJECT_DIR: "/work/app" };
@@ -110,14 +109,12 @@ describe("plannotator inbox mcp under Claude Code (#3309)", () => {
     }
   });
 
-  test("an agent's own session or other host still wins, and a T3 Code thread stays the thread", async () => {
+  test("an agent's own session or other host still wins", async () => {
     const own = await shimSends(CLAUDE_MCP_ENV, "claude-code", [
       { body: "a", reply_to: "msg_01", agent_session: "my-own" },
       { body: "b", reply_to: "msg_01", agent_host: "cursor" },
     ]);
     expect(own[0]!.agent_session).toBe("my-own");
     expect(own[1]!.agent_session).toMatch(/^ses_/);
-    const t3 = await shimSends({ ...CLAUDE_MCP_ENV, T3CODE_THREAD_ID: T3_THREAD }, "claude-code", [{ body: "c", reply_to: "msg_01" }]);
-    expect(author(t3[0]!)).toEqual({ host: "t3", session: T3_THREAD, name: "T3 Code" });
   });
 });

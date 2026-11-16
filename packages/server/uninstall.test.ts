@@ -18,7 +18,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, parse } from "node:path";
-import { quoteHookWord, t3HookCommand } from "@plannotator/shared/t3-hook-command";
 import {
   formatPurgeWarning,
   runPlannotatorUninstall,
@@ -268,31 +267,6 @@ function snapshotTree(root: string): string[] {
   return snapshot;
 }
 
-/**
- * A stand-in for a T3 Code per-thread worker: registers itself the way the
- * real one does (`t3-code/<endpoint>/threads/<thread>/daemon.json`), answers
- * `/health` and exits on `/stop`.
- */
-async function startFakeT3Worker(dataDir: string) {
-  const directory = join(dataDir, "t3-code", "e".repeat(64), "threads", "t".repeat(64));
-  mkdirSync(directory, { recursive: true });
-  const script = `
-    const token = "x".repeat(40);
-    const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch(req) {
-      if (req.headers.get("authorization") !== "Bearer " + token) return new Response("no", { status: 403 });
-      const path = new URL(req.url).pathname;
-      if (path === "/health") return Response.json({ running: true, endpoint: "http://127.0.0.1:3773/mcp", thread: "thread-a", pid: process.pid });
-      if (path === "/stop") { setTimeout(() => process.exit(0), 20); return Response.json({ stopped: true }); }
-      return new Response("no", { status: 404 });
-    } });
-    await Bun.write(${JSON.stringify(join(directory, "daemon.json"))}, JSON.stringify({ endpoint: "http://127.0.0.1:3773/mcp", thread: "thread-a", pid: process.pid, port: server.port, token }));
-  `;
-  const child = Bun.spawn([process.execPath, "-e", script], { stdout: "ignore", stderr: "ignore" });
-  const deadline = Date.now() + 10_000;
-  while (!existsSync(join(directory, "daemon.json")) && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 20));
-  return child;
-}
-
 describe("a leftover usage-counts/ folder (the removed usage counts)", () => {
   function seed(dataDir: string): string {
     const dir = join(dataDir, "usage-counts");
@@ -334,30 +308,6 @@ describe("a leftover usage-counts/ folder (the removed usage counts)", () => {
   });
 });
 
-describe("the optional T3 Code connection", () => {
-  test("uninstall stops its running workers, and purge removes t3-code/", async () => {
-    const fixture = createFixture();
-    const child = await startFakeT3Worker(fixture.dataDir);
-    try {
-      const planned = await runPlannotatorUninstall({ purge: true, dryRun: true }, fixture.environment);
-      expect(planned.planned.some((line) => line.includes(`Stop the T3 Code companion for thread thread-a (pid ${child.pid})`))).toBe(true);
-      expect(child.exitCode).toBeNull();
-      const result = await runPlannotatorUninstall({ purge: true, dryRun: false }, fixture.environment);
-      expect(result.removed.some((line) => line.includes(`Stopped the T3 Code companion for thread thread-a (pid ${child.pid})`))).toBe(true);
-      expect(await child.exited).toBe(0);
-      expect(existsSync(join(fixture.dataDir, "t3-code"))).toBe(false);
-    } finally {
-      child.kill(); // inbox-guard: own child
-    }
-  });
-
-  test("without a T3 connection, uninstall reports nothing about it", async () => {
-    const fixture = createFixture();
-    const result = await runPlannotatorUninstall({ purge: false, dryRun: false }, fixture.environment);
-    expect([...result.removed, ...result.planned, ...result.warnings, ...result.errors].some((line) => line.includes("T3"))).toBe(false);
-  });
-});
-
 describe("routines' start at login", () => {
   test("a plain uninstall removes the macOS login item (the file only) and the Linux unit (disabling it)", async () => {
     for (const platform of ["darwin", "linux"] as const) {
@@ -383,39 +333,6 @@ describe("routines' start at login", () => {
 });
 
 describe("default uninstall", () => {
-  test("removes the optional T3 hook only for the installed binary, preserving other Bash hooks", async () => {
-    const fixture = createFixture();
-    const binary = join(fixture.homeDir, ".local", "bin", "plannotator");
-    writeText(binary);
-    const settings = join(fixture.homeDir, ".claude", "settings.json");
-    const customHooks = [
-      { type: "command", command: "my-custom-hook" },
-      { type: "command", command: t3HookCommand("/custom/plannotator", fixture.dataDir) },
-    ];
-    writeJson(settings, {
-      theme: "dark",
-      hooks: { PreToolUse: [{ matcher: "Bash", hooks: [
-        { type: "command", command: t3HookCommand(binary, fixture.dataDir), timeout: 10 },
-        // A hook from an earlier build, with the old SDK-only gate (before `t3-code`): removed too.
-        { type: "command", command: `case "$CLAUDE_CODE_ENTRYPOINT" in sdk*) PLANNOTATOR_DATA_DIR=${quoteHookWord(fixture.dataDir)} ${quoteHookWord(binary)} t3-hook;; esac`, timeout: 10 },
-        ...customHooks,
-      ] }] },
-    });
-    // The backup `t3-hook install` keeps of settings before its first change.
-    const backup = `${settings}.plannotator-t3.bak`;
-    writeText(backup);
-    const planned = await runPlannotatorUninstall({ purge: false, dryRun: true }, fixture.environment);
-    expect(planned.planned).toContain(backup);
-    expect(existsSync(backup)).toBe(true);
-    const result = await runPlannotatorUninstall({ purge: false, dryRun: false }, fixture.environment);
-    expect(result.ok).toBe(true);
-    expect(readJson(settings)).toEqual({
-      theme: "dark", hooks: { PreToolUse: [{ matcher: "Bash", hooks: customHooks }] },
-    });
-    expect(existsSync(backup)).toBe(false);
-    expect(result.removed).toContain(backup);
-  });
-
   test("removes recognized installer components and preserves local data", async () => {
     const fixture = createFixture();
     const { homeDir, dataDir } = fixture;
