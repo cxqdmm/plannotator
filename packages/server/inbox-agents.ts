@@ -712,9 +712,82 @@ export function openCodeGeneration(e: AgentEnvironment): "1" | "2" | undefined {
   return undefined;
 }
 
-/** Whether Plannotator's OpenCode plugin is listed in the global opencode config: `plugin` (OpenCode 1) or `plugins` (OpenCode 2, strings or `{ package }`). */
+/**
+ * A local plugin spec resolved against `baseDir`, the folder the file naming
+ * it lives in (the opencode config, or a loader file in `plugins/`): `~` to
+ * the home, `file:` stripped, relatives from `baseDir`. Null when the spec is
+ * an npm or Git package specifier, which OpenCode loads from a registry
+ * instead (`opencode plugin add` rejects everything else).
+ */
+function resolveLocalPluginSpec(spec: string, baseDir: string, homeDir: string): string | null {
+  let local: string;
+  if (spec.startsWith("file:")) local = spec.slice("file:".length);
+  else if (spec.startsWith("~/")) local = join(homeDir, spec.slice(2));
+  else if (spec.startsWith("/") || spec.startsWith("./") || spec.startsWith("../") || isAbsolute(spec)) local = spec;
+  else return null;
+  return resolve(baseDir, local);
+}
+
+/**
+ * Whether a local path leads into Plannotator's OpenCode plugin: the package
+ * folder itself, or an entry file one level inside it (`index.ts` for V1,
+ * `dist/server.js` for V2, the path of a `[path, options]` entry) — named by
+ * the package.json there (`name` is `@plannotator/opencode`), never by the
+ * path's shape, so a same-shaped path to another package is not ours.
+ */
+function localPluginPathIsOurs(path: string): boolean {
+  for (const pkgPath of [join(path, "package.json"), join(path, "..", "package.json")]) {
+    const read = readAgentFile(pkgPath);
+    if (read.kind !== "file") continue;
+    try {
+      const parsed = JSON.parse(stripJsonComments(read.text)) as { name?: unknown };
+      if (parsed.name === "@plannotator/opencode") return true;
+    } catch {
+      // Unreadable: this candidate says no.
+    }
+  }
+  return false;
+}
+
+/** Whether a plugin spec in the config is Plannotator's: the npm package, or
+ * a local path that resolves into it (a checkout of this repo wired in by
+ * hand — this fork's own daily setup, which no registry serves). */
+function openCodeSpecIsOurs(spec: string, configDir: string, homeDir: string): boolean {
+  if (/^@plannotator\/opencode(?:@|$)/.test(spec)) return true;
+  const local = resolveLocalPluginSpec(spec, configDir, homeDir);
+  return local !== null && localPluginPathIsOurs(local);
+}
+
+/**
+ * Whether one of the local plugin files OpenCode auto-loads from the config's
+ * `plugins/` folder (both generations read it) loads Plannotator's plugin: a
+ * loader file whose module paths lead into the package. Only module-shaped
+ * strings count (an absolute path, `file:`, or a relative import — the ways a
+ * loader can name the package), resolved as the loader's own imports resolve.
+ */
+function openCodePluginsDirHasOurs(configDir: string, homeDir: string): boolean {
+  let entries: string[];
+  try {
+    entries = readdirSync(join(configDir, "plugins"));
+  } catch {
+    return false;
+  }
+  for (const entry of entries) {
+    if (!/\.[cm]?[jt]s$/.test(entry)) continue;
+    const read = readAgentFile(join(configDir, "plugins", entry));
+    if (read.kind !== "file") continue;
+    for (const match of read.text.matchAll(/['"]([^'"\n]+)['"]/g)) {
+      const local = resolveLocalPluginSpec(match[1]!, join(configDir, "plugins"), homeDir);
+      if (local !== null && localPluginPathIsOurs(local)) return true;
+    }
+  }
+  return false;
+}
+
+/** Whether Plannotator's OpenCode plugin is installed: listed in the global opencode config — `plugin` (OpenCode 1) or `plugins` (OpenCode 2, strings or `{ package }`) — as the npm package or a local path into it, or auto-loaded by OpenCode from the config's `plugins/` folder. */
 export function openCodePluginInstalled(e: AgentEnvironment): boolean {
   const dir = openCodeConfigDir(e);
+  if (openCodePluginsDirHasOurs(dir, e.homeDir)) return true;
   const isOurs = (item: unknown) => {
     const spec =
       typeof item === "string"
@@ -724,7 +797,7 @@ export function openCodePluginInstalled(e: AgentEnvironment): boolean {
           : item && typeof item === "object" && typeof (item as { package?: unknown }).package === "string"
             ? (item as { package: string }).package
             : null;
-    return spec !== null && /^@plannotator\/opencode(?:@|$)/.test(spec);
+    return spec !== null && openCodeSpecIsOurs(spec, dir, e.homeDir);
   };
   for (const name of ["opencode.json", "opencode.jsonc", "config.json"]) {
     const read = readAgentFile(join(dir, name));

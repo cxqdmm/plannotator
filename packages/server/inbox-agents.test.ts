@@ -743,6 +743,54 @@ test("OpenCode 2's plugins in object form are found", async () => {
   expect(report.added).toEqual(["opencode"]);
 });
 
+/** A fake local checkout of the OpenCode plugin: the package.json this repo's
+ * apps/opencode-plugin has (`name` is how a local path is recognized, never
+ * the path's shape). */
+function writeLocalPluginPackage(dir: string, name = "@plannotator/opencode") {
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "package.json"), JSON.stringify({ name, version: "0.0.0-test" }));
+}
+
+test("a local checkout of the OpenCode plugin counts as installed (V1 entry path, V2 package, file: URL)", async () => {
+  const pluginDir = join(fake.home, "src", "plannotator", "apps", "opencode-plugin");
+  writeLocalPluginPackage(pluginDir);
+  const config = join(fake.home, ".config", "opencode", "opencode.json");
+  mkdirSync(dirname(config), { recursive: true });
+  // V1's `plugin` tuple: an entry file inside the package.
+  writeFileSync(config, JSON.stringify({ plugin: [[join(pluginDir, "index.ts"), { workflow: "plan-agent" }]] }));
+  expect((await connect()).added).toEqual(["opencode"]);
+  // V2's `plugins` object: the package folder itself.
+  writeFileSync(config, JSON.stringify({ plugins: [{ package: pluginDir }] }));
+  expect((await connect()).already).toEqual(["opencode"]);
+  // A file: URL to the same package.
+  writeFileSync(config, JSON.stringify({ plugins: [{ package: `file:${pluginDir}` }] }));
+  expect((await connect()).already).toEqual(["opencode"]);
+});
+
+test("a local path into another package is not Plannotator's, and a missing one is not either", async () => {
+  fake.install("opencode");
+  const otherDir = join(fake.home, "other-plugin");
+  writeLocalPluginPackage(otherDir, "someone-elses-plugin");
+  const config = join(fake.home, ".config", "opencode", "opencode.json");
+  mkdirSync(dirname(config), { recursive: true });
+  writeFileSync(config, JSON.stringify({ plugins: [{ package: join(otherDir, "index.ts") }] }));
+  expect((await connect()).manual).toEqual(["opencode"]);
+  // A path that leads nowhere (nothing is resolved there) is not ours.
+  writeFileSync(config, JSON.stringify({ plugins: [{ package: join(fake.home, "gone", "opencode-plugin") }] }));
+  const report = await connect();
+  expect(report.manual).toEqual(["opencode"]);
+  expect(report.added).toEqual([]);
+});
+
+test("a loader in OpenCode's global plugins folder that re-exports a local checkout counts", async () => {
+  const pluginDir = join(fake.home, "src", "plannotator", "apps", "opencode-plugin");
+  writeLocalPluginPackage(pluginDir);
+  const pluginsDir = join(fake.home, ".config", "opencode", "plugins");
+  mkdirSync(pluginsDir, { recursive: true });
+  writeFileSync(join(pluginsDir, "plannotator.ts"), `export { default } from "${join(pluginDir, "server.ts")}";\nexport * from "${join(pluginDir, "server.ts")}";\n`);
+  expect((await connect()).added).toEqual(["opencode"]);
+});
+
 describe("a JSON edit changes only the one entry", () => {
   const cursor = () => join(fake.home, ".cursor", "mcp.json");
   const put = (text: string) => {
