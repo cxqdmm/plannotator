@@ -14,8 +14,9 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { generateId } from '@plannotator/ui/utils/generateId';
+import { ChatMarkdown } from '@plannotator/ui/components/chat';
 import { Icon } from '../icons';
-import { inboxApi, type InboxStreamEntry } from '../api';
+import { inboxApi, type InboxStreamEntry, type InboxAskTurnWire } from '../api';
 import { InboxApiError } from '../apiError';
 
 /** How often an open pane asks what grew (localhost; the server's mtime guard answers unchanged for free). */
@@ -37,6 +38,10 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
   const [following, setFollowing] = useState(true);
   const [askWords, setAskWords] = useState('');
   const [askBusy, setAskBusy] = useState(false);
+  /** The turn the footer's last 插话 claimed: its real state, read back, so a question the session never took is seen. */
+  const [askTurn, setAskTurn] = useState<{ id: string; words: string } | null>(null);
+  const [askState, setAskState] = useState<'sent' | 'waiting' | 'gone' | null>(null);
+  const [canAsk, setCanAsk] = useState<boolean | null>(null);
   const list = useRef<HTMLDivElement | null>(null);
   // Refs the poll reads: the interval outlives renders, so it must not be rebuilt on every entry.
   const cursorRef = useRef(0);
@@ -79,12 +84,33 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
       }
     };
     void read({}, true);
+    // Whether this thread's owner takes Ask questions at all (the ask read says): the footer shows a live input
+    // only then, else the person's way in is the thread's own reply, which wakes the session.
+    void inboxApi.askRead(threadId).then((model) => {
+      if (alive) setCanAsk(model.can_ask === true);
+    }).catch(() => {});
     const timer = setInterval(() => void read({ after: cursorRef.current }, false), POLL_MS);
     return () => {
       alive = false;
       clearInterval(timer);
     };
   }, [threadId]);
+
+  // The last 插话's real state, read back once the session had time to take it: a question nothing picked up
+  // (an idle session, an old plugin) must be seen, not sit silent in the Ask conversation.
+  useEffect(() => {
+    if (!askTurn || askState !== 'sent') return;
+    const timer = setTimeout(() => {
+      void inboxApi.askRead(threadId).then((model) => {
+        const turn = (model.conversation?.turns ?? []).find((entry: InboxAskTurnWire) => entry.id === askTurn.id);
+        if (!turn) return;
+        if (turn.failure === 'gone' || turn.failure === 'failed') setAskState('gone');
+        else if (turn.answer) setAskState(null);
+        else setAskState('waiting');
+      }).catch(() => {});
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [askTurn, askState, threadId]);
 
   const earlier = async () => {
     const first = entries[0]?.i ?? 0;
@@ -104,7 +130,10 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
     setAskBusy(true);
     setAskWords('');
     try {
-      await inboxApi.askSend(threadId, generateId('ask'), question);
+      const turnId = generateId('ask');
+      await inboxApi.askSend(threadId, turnId, question);
+      setAskTurn({ id: turnId, words: question });
+      setAskState('sent');
       // The echo keys past any real line (a transcript never has a milliard): it rides at the bottom until the
       // session's own copy of the question arrives from the transcript with its true index.
       merge([{ i: 1_000_000_000 + askEcho.current++, kind: 'you', text: question }]);
@@ -159,18 +188,24 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
         </button>
       )}
 
-      <form
-        className="ib-sstr-ask"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void ask();
-        }}
-      >
-        <input value={askWords} onChange={(event) => setAskWords(event.target.value)} placeholder="插一句话，排在它手头工作后面…" aria-label="插话" disabled={askBusy} />
-        <button type="submit" disabled={askBusy || !askWords.trim()}>
-          发送
-        </button>
-      </form>
+      {canAsk === false ? (
+        <p className="ib-sstr-askhint">这个会话此刻不接插话——直接在线程里回复它，它会被唤醒。</p>
+      ) : (
+        <form
+          className="ib-sstr-ask"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void ask();
+          }}
+        >
+          <input value={askWords} onChange={(event) => setAskWords(event.target.value)} placeholder="插一句话，排在它手头工作后面…" aria-label="插话" disabled={askBusy} />
+          <button type="submit" disabled={askBusy || !askWords.trim()}>
+            发送
+          </button>
+        </form>
+      )}
+      {askState === 'waiting' && <p className="ib-sstr-asknote">已递出，会话还没来领取——它在空闲时不会插话；急的话直接在线程里回复它。</p>}
+      {askState === 'gone' && <p className="ib-sstr-asknote">这句话会话没有接住（可能空闲或插件版本旧）——它还留在 Ask 对话里，改用线程回复即可。</p>}
     </div>
   );
 }
@@ -214,7 +249,10 @@ function StreamRow({ entry, open, onToggle }: { entry: InboxStreamEntry; open: b
   return (
     <div className="ib-sstr-text">
       <div className="ib-sstr-mark">Claude</div>
-      <div className="ib-sstr-words" dir="auto">{entry.text}</div>
+      {/* Claude's words are markdown (bold, code, lists) — the window's own sanitized renderer, not plain text. */}
+      <div className="ib-sstr-words" dir="auto">
+        <ChatMarkdown text={entry.text ?? ''} role="assistant" messageId={`stream-${entry.i}`} />
+      </div>
     </div>
   );
 }

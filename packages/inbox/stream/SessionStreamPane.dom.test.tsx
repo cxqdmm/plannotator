@@ -24,6 +24,7 @@ let savedFetch: typeof fetch;
 
 beforeEach(() => {
   answers = {
+    'GET /api/inbox/threads/thr_1/ask': { status: 200, body: { can_ask: true, conversation: { turns: [] } } },
     'GET /api/inbox/threads/thr_1/stream': {
       status: 200,
       body: model([
@@ -119,10 +120,17 @@ describe(hasDom ? 'SessionStreamPane' : describe.skip, () => {
     await act(async () => {
       host.querySelector<HTMLButtonElement>('.ib-sstr-ask button')!.click();
     });
-    const posted = asked.find((call) => call.path.endsWith('/ask'));
+    const posted = asked.find((call) => call.method === 'POST' && call.path.endsWith('/ask'));
     expect(posted?.body.question).toBe('先别动 SKILL.md');
     expect(typeof posted?.body.turn_id).toBe('string');
     expect(host.textContent).toContain('先别动 SKILL.md');
+  });
+
+  test('a session that takes no questions right now shows the hint instead of a dead input', async () => {
+    answers['GET /api/inbox/threads/thr_1/ask'] = { status: 200, body: { can_ask: false, conversation: { turns: [] } } };
+    await draw();
+    expect(host.querySelector('.ib-sstr-ask input')).toBeNull();
+    expect(host.textContent).toContain('直接在线程里回复它');
   });
 
   test('a session with no transcript yet says so in the person’s words', async () => {

@@ -12449,7 +12449,9 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-sstr-you .ib-sstr-mark::before { background: var(--success); }
 .ib-sstr-you .ib-sstr-mark, .ib-sstr-you .ib-sstr-bubble { margin-left: auto; }
 .ib-sstr-bubble { background: var(--ib-fill, color-mix(in oklch, var(--foreground) 7%, transparent)); border: 1px solid var(--ib-hair, var(--border)); border-radius: 10px; padding: 7px 11px; max-width: 86%; width: fit-content; font-size: var(--ib-fs-13, 13px); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
-.ib-sstr-words { font-size: var(--ib-fs-13, 13px); line-height: 1.68; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ib-sstr-words { font-size: var(--ib-fs-13, 13px); line-height: 1.68; overflow-wrap: anywhere; }
+.ib-sstr-words :is(p, ul, ol, pre) { margin: 0 0 6px; }
+.ib-sstr-words > :last-child, .ib-sstr-words > *:last-child :last-child { margin-bottom: 0; }
 /* A thought: quiet, its words behind one fold. */
 .ib-sstr-think { color: var(--muted-foreground); font-size: var(--ib-fs-12, 12px); }
 .ib-sstr-think summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 5px; }
@@ -12483,3 +12485,7 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-phstream[aria-pressed="true"] { color: var(--primary); }/* The thread header's 对话流 entry: the host's own mark on the header's icon button, lit while the pane is open
    (off on a phone: the pane needs the pane's width). */
 .ib-phstream[aria-pressed="true"] { color: var(--primary); }
+/* The footer's state lines: the 插话's real fate, read back (a question nothing picked up is seen), and the
+   hint when the session takes no questions at all right now. */
+.ib-sstr-askhint, .ib-sstr-asknote { margin: 0 12px 11px; color: var(--muted-foreground); font-size: var(--ib-fs-11, 11px); line-height: 1.5; }
+.ib-sstr-asknote { color: color-mix(in oklch, var(--warning) 75%, var(--muted-foreground)); }
