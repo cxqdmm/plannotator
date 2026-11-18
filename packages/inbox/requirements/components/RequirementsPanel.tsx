@@ -97,6 +97,16 @@ function RequirementCard({
       data-dragging={dragging ? '' : undefined}
       data-open={open ? '' : undefined}
       draggable={draggable ? true : undefined}
+      role="button"
+      tabIndex={0}
+      aria-label={`${requirement.title}（回车打开详情）`}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
       onDragStart={(event) => {
         event.dataTransfer.setData('text/plain', requirement.id);
         event.dataTransfer.effectAllowed = 'move';
@@ -109,16 +119,19 @@ function RequirementCard({
         className="ib-req-corner"
         title={archived ? '恢复到看板' : '归档'}
         aria-label={archived ? '恢复到看板' : '归档'}
-        onClick={onArchiveToggle}
+        onClick={(event) => {
+          event.stopPropagation();
+          onArchiveToggle();
+        }}
       >
         <Icon name={archived ? 'back' : 'archive'} size={14} />
       </button>
       <span className="ib-bc-top">
-        <button type="button" className="ib-bc-main" data-card-open="" title={requirement.title} onClick={onOpen}>
+        <span className="ib-bc-main" data-card-open="" title={requirement.title}>
           <span className="ib-bc-t" dir="auto">
             {requirement.title}
           </span>
-        </button>
+        </span>
       </span>
       {(requirement.suggestions.length > 0 || requirement.deliverables.length > 0 || requirement.threads.length > 0) && (
         <span className="ib-bc-bot">
@@ -158,7 +171,6 @@ function RequirementDetail({
   onOpenThread: (threadId: string) => void;
 }) {
   const [detail, setDetail] = useState<{ requirement: Requirement; events: RequirementEvent[] } | null>(null);
-  const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [threadDraft, setThreadDraft] = useState('');
   const [deliverKind, setDeliverKind] = useState<string>(KIND_OPTIONS[0]!.id);
@@ -243,7 +255,6 @@ function RequirementDetail({
       if (controller.signal.aborted) return;
       setDetail(answer);
       if (answer) {
-        setTitle(answer.requirement.title);
         setNotes(answer.requirement.notes);
       }
     });
@@ -267,12 +278,6 @@ function RequirementDetail({
   }, [id]);
 
   const requirement = detail?.requirement ?? null;
-
-  const saveTitle = () => {
-    const next = title.trim();
-    if (requirement && next && next !== requirement.title) onPatch(id, { title: next });
-    else if (requirement) setTitle(requirement.title);
-  };
 
   const saveNotes = () => {
     if (requirement && notes !== requirement.notes) onPatch(id, { notes });
@@ -303,6 +308,7 @@ function RequirementDetail({
   return (
     <aside className="ib-req-detail" aria-label="需求详情" data-requirement-detail={id}>
       <div className="ib-crdp-top">
+        <SidebarTrigger />
         <button type="button" className="ib-bback" data-requirements-back="" onClick={onClose}>
           <Icon name="chevL" size={16} />
           <span className="ib-bback-l">工坊</span>
@@ -334,17 +340,9 @@ function RequirementDetail({
         </div>
       ) : (
         <div className="ib-crdp-body">
-          <input
-            ref={(node) => {
-              if (node) queueMicrotask(() => node.focus());
-            }}
-            className="ib-req-title"
-            aria-label="需求标题"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            onBlur={saveTitle}
-            onKeyDown={(event) => event.key === 'Enter' && saveTitle()}
-          />
+          {/* The title is the page's heading, read only (the person's call: no edit-in-place here). A rename, if
+              one is ever wanted, is a deliberate act elsewhere; the page opens onto the work, not onto a caret. */}
+          <h2 className="ib-req-title" dir="auto">{requirement.title}</h2>
 
           {requirement.threads.length === 0 && requirement.deliverables.length === 0 && (
             <section className="ib-req-next" aria-label="下一步">
@@ -658,51 +656,55 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
 
   return (
     <section className="ib-bpage" aria-labelledby="ib-req-title" data-requirements-page="" data-requirements-view={archived ? 'archived' : 'board'}>
-      <div className="ib-bhead">
-        <SidebarTrigger />
-        {archived ? (
-          <>
-            <button type="button" className="ib-bback" data-requirements-back="" onClick={() => onView(false)}>
-              <Icon name="chevL" size={16} />
-              需求
-            </button>
-            <h1 id="ib-req-title" tabIndex={-1}>
-              已归档
-            </h1>
-          </>
-        ) : (
-          <>
-            <h1 id="ib-req-title" tabIndex={-1}>
-              需求
-            </h1>
-            <span className="ib-bsp" />
-            <nav className="ib-blinks" aria-label="已归档的需求">
-              <a
-                href="#requirements&archived"
-                data-requirements-link="archived"
-                onClick={(event) => {
-                  event.preventDefault();
-                  onView(true);
+      {/* The board's own head (工坊, 已归档, 新建) is the board's: a requirement's page takes the whole panel, so
+          the head rides only with the board. */}
+      {!openId && (
+        <div className="ib-bhead">
+          <SidebarTrigger />
+          {archived ? (
+            <>
+              <button type="button" className="ib-bback" data-requirements-back="" onClick={() => onView(false)}>
+                <Icon name="chevL" size={16} />
+                工坊
+              </button>
+              <h1 id="ib-req-title" tabIndex={-1}>
+                已归档
+              </h1>
+            </>
+          ) : (
+            <>
+              <h1 id="ib-req-title" tabIndex={-1}>
+                工坊
+              </h1>
+              <span className="ib-bsp" />
+              <nav className="ib-blinks" aria-label="已归档的需求">
+                <a
+                  href="#requirements&archived"
+                  data-requirements-link="archived"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onView(true);
+                  }}
+                >
+                  已归档 {archivedCount}
+                </a>
+              </nav>
+              <button
+                type="button"
+                className="ib-btn ib-sm ib-bnew"
+                data-requirements-new=""
+                onClick={() => {
+                  setComposing(true);
+                  clearError();
                 }}
               >
-                已归档 {archivedCount}
-              </a>
-            </nav>
-            <button
-              type="button"
-              className="ib-btn ib-sm ib-bnew"
-              data-requirements-new=""
-              onClick={() => {
-                setComposing(true);
-                clearError();
-              }}
-            >
-              <Icon name="plus" size={15} />
-              新建需求
-            </button>
-          </>
-        )}
-      </div>
+                <Icon name="plus" size={15} />
+                新建需求
+              </button>
+            </>
+          )}
+        </div>
+      )}
       {error && (
         <div className="ib-error ib-bfail" role="alert">
           {error}

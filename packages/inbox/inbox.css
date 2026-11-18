@@ -12386,8 +12386,6 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
 /* The detail pane's own bits (Wave 2a): the pane itself is CardPanel's ib-crdp above. */
 .ib-req-detail { flex-basis: min(520px, 42%); }
 .ib-req-title { width: 100%; min-width: 0; margin: 0; padding: 2px 6px; border: 0; border-radius: 6px; background: transparent; color: var(--foreground); font: inherit; font-size: var(--ib-fs-20, 20px); font-weight: 650; letter-spacing: -0.01em; line-height: 1.3; overflow-wrap: anywhere; outline: none; }
-.ib-req-title:hover { background: var(--ib-hover); }
-.ib-req-title:focus-visible { outline: 2px solid var(--ring); }
 .ib-req-h { margin: 0 0 6px; font-size: var(--ib-fs-13, 13px); font-weight: 600; color: var(--muted-foreground); text-transform: none; }
 .ib-req-empty { margin: 0 0 8px; color: var(--muted-foreground); font-size: var(--ib-fs-13, 13px); line-height: 1.45; }
 .ib-req-sug { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 8px; background: var(--ib-lane-bg); }
@@ -12519,3 +12517,11 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-bpage[data-requirements-page] .ib-bcard:hover { transform: translateY(-2px); box-shadow: var(--ib-bcard-edge), 0 0 0 1px color-mix(in oklch, var(--foreground) 14%, transparent), 0 6px 18px -8px color-mix(in oklch, var(--ib-shadow-ink, var(--background)) 55%, transparent), 0 0 0 1px color-mix(in oklch, var(--primary) 22%, transparent); }
 .ib-bpage[data-requirements-page] .ib-bcard:active { transform: translateY(-0.5px); transition-duration: 90ms; }
 @media (prefers-reduced-motion: reduce) { .ib-bpage[data-requirements-page] .ib-bcard:hover { transform: none; } }
+/* The workshop's cards, after the person's eye: no border ring (the lane's ground tells the card's place), a
+   flat card on hover's small lift, the shadow a breath — big shadows read as cheap. */
+.ib-bpage[data-requirements-page] .ib-bcard { --ib-bcard-edge: 0 1px 2px oklch(0 0 0 / 0.04); will-change: auto; }
+.ib-bpage[data-requirements-page] .ib-bcard:hover { transform: translateY(-1.5px); box-shadow: 0 0 0 1px color-mix(in oklch, var(--foreground) 10%, transparent), 0 3px 10px -6px color-mix(in oklch, var(--ib-shadow-ink, var(--background)) 45%, transparent); }
+:root:not(.light) .ib-bpage[data-requirements-page] .ib-bcard { --ib-bcard-edge: none; }
+:root:not(.light) .ib-bpage[data-requirements-page] .ib-bcard:hover { box-shadow: 0 0 0 1px color-mix(in oklch, var(--foreground) 12%, transparent), 0 3px 10px -6px oklch(0 0 0 / 0.35); }
+/* The detail's title is a static heading (read only). */
+.ib-req-title { margin: 0; padding: 0; border: 0; background: transparent; color: var(--foreground); font: inherit; font-size: var(--ib-fs-22, 22px); font-weight: 650; letter-spacing: -0.015em; line-height: 1.3; overflow-wrap: anywhere; }
