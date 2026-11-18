@@ -199,6 +199,9 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
         <button type="button" className={`ib-sstr-follow${following ? ' on' : ''}`} onClick={() => { setFollowing(!following); if (!following) requestAnimationFrame(pinned); }} aria-pressed={following}>
           跟随最新
         </button>
+        <button type="button" className="ib-sstr-x" aria-label="关闭对话流" onClick={onClose}>
+          <Icon name="x" size={16} />
+        </button>
       </div>
 
       <div className="ib-sstr-list" ref={list} onScroll={onScroll}>
@@ -221,7 +224,7 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
       )}
 
       {canAsk === false ? (
-        <p className="ib-sstr-askhint">这个会话现在不在这里接话——要唤醒它开工，在线程里回复它。</p>
+        <p className="ib-sstr-askhint">它这轮干完，歇着呢（没有活跃连接）——在线程里回复它，它会醒来接着干。左边的流随时能看。</p>
       ) : (
         <form
           className="ib-sstr-ask"

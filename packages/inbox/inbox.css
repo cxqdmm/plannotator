@@ -12422,7 +12422,7 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 /* ── 会话「对话流」 (packages/inbox/stream/SessionStreamPane.tsx): the thread's own Claude Code session
    as a pane over the thread. Tokens only: every palette (light, dark, named) carries it unchanged. ── */
 /* The pane: over the thread's right side, the thread's own ground a touch apart. */
-.ib-sstr { position: absolute; inset: 0; margin-left: auto; width: min(440px, 100%); display: flex; flex-direction: column; background: var(--card); border-left: 1px solid var(--ib-line, var(--border)); z-index: 4; animation: ib-sstr-in 0.32s cubic-bezier(0.32, 0.72, 0.24, 1); }
+.ib-sstr { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--card); z-index: 4; animation: ib-sstr-in 0.28s cubic-bezier(0.32, 0.72, 0.24, 1); }
 @keyframes ib-sstr-in { from { transform: translateX(36px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ib-sstr { animation-duration: 1ms; } }
 .ib-sstr-top { display: flex; align-items: center; gap: 9px; padding: 10px 12px; border-bottom: 1px solid var(--ib-line, var(--border)); }
@@ -12433,7 +12433,8 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-sstr-follow { background: none; border: 1px solid var(--ib-hair, var(--border)); border-radius: 6px; cursor: pointer; color: var(--muted-foreground); font: inherit; font-size: var(--ib-fs-11, 11px); padding: 3px 8px; white-space: nowrap; }
 .ib-sstr-follow.on { color: var(--primary); border-color: color-mix(in oklch, var(--primary) 45%, transparent); }
 /* The stream: entries oldest-first, the newest kept in view while following. */
-.ib-sstr-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px 14px 8px; display: flex; flex-direction: column; gap: 11px; scrollbar-width: thin; scrollbar-color: var(--ib-hair, var(--border)) transparent; }
+.ib-sstr-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 22px 10px; display: flex; flex-direction: column; gap: 11px; scrollbar-width: thin; scrollbar-color: var(--ib-hair, var(--border)) transparent; }
+.ib-sstr-list > * { width: 100%; max-width: 940px; margin-inline: auto; }
 .ib-sstr-earlier { align-self: center; background: none; border: 1px solid var(--ib-hair, var(--border)); border-radius: 999px; color: var(--muted-foreground); font: inherit; font-size: var(--ib-fs-11, 11px); padding: 4px 14px; cursor: pointer; }
 .ib-sstr-earlier:hover { background: var(--ib-hover, color-mix(in oklch, var(--muted) 45%, transparent)); color: var(--foreground); }
 .ib-sstr-empty, .ib-sstr-error { margin: 0; color: var(--muted-foreground); font-size: var(--ib-fs-12, 12px); line-height: 1.6; }
@@ -12528,3 +12529,10 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 /* The detail page is the panel's whole content area: .ib-bmain's breathing room (right and bottom, for lanes)
    is the board's, not the page's. */
 .ib-req-main { padding: 0; gap: 0; }
+/* The full-page stream's own close, right of the top bar. */
+.ib-sstr-x { flex: none; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 7px; background: transparent; color: var(--muted-foreground); cursor: pointer; }
+.ib-sstr-x:hover { color: var(--foreground); background: var(--ib-hover, color-mix(in oklch, var(--muted) 45%, transparent)); }
+.ib-sstr-top { padding: 10px 14px 10px 10px; }
+.ib-sstr-ask { margin: 0 22px 11px; max-width: 940px; width: calc(100% - 44px); align-self: center; }
+.ib-sstr-askhint { margin: 6px 22px 11px; max-width: 940px; align-self: center; }
+.ib-sstr-asknote { margin: 6px 22px 11px; max-width: 940px; align-self: center; }
