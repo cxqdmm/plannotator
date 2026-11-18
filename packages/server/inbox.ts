@@ -4485,6 +4485,13 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
       const child = Bun.spawn([...selfCommand, "annotate", file, "--gate", "--json"], { stdout: "pipe", stderr: "ignore", stdin: "ignore" });
       return Promise.all([new Response(child.stdout).text(), child.exited]).then(([stdout, code]) => ({ stdout, code }));
     },
+    // An agent delivers from its working folder: its relative paths resolve against the project root of the
+    // requirement's first linked thread.
+    projectRootOf: (requirementId) => {
+      const record = requirements.store.list(false).requirements.find((entry) => entry.id === requirementId);
+      const threadId = record?.threads[0];
+      return threadId ? store.thread(threadId)?.project.root ?? null : null;
+    },
   });
 
   // The Codex wake: the person's items for a Codex thread go in as a new turn through `codex queue`,

@@ -179,7 +179,7 @@ function RequirementDetail({
   // 对话流 opens right here in the detail, work beside the requirement it is for.
   const [threadMeta, setThreadMeta] = useState<Record<string, { stream: boolean; subject: string | null }>>({});
   // A deliverable's preview (fetched on first open) and the one whose annotate page is out.
-  const [previews, setPreviews] = useState<Record<string, 'loading' | { text?: string; image?: string; binary?: boolean; annotatable?: boolean } | { error: string }>>({});
+  const [previews, setPreviews] = useState<Record<string, 'loading' | { text?: string; image?: string; binary?: boolean; session?: string; html?: boolean; annotatable?: boolean } | { error: string }>>({});
   const [previewOpen, setPreviewOpen] = useState<string | null>(null);
   const [annotating, setAnnotating] = useState<string | null>(null);
   const [streamOpen, setStreamOpen] = useState<string | null>(null);
@@ -437,9 +437,13 @@ function RequirementDetail({
                         <div className="ib-req-dlv-body">
                           {content === 'loading' && <p className="ib-req-empty">读取中…</p>}
                           {content && content !== 'loading' && 'error' in content && <p className="ib-req-empty">{content.error}</p>}
+                          {content && content !== 'loading' && !('error' in content) && content.session && <p className="ib-req-empty">这是一次 Plannotator 批注会话（{content.session}），不是文件。</p>}
                           {content && content !== 'loading' && !('error' in content) && content.image && <img className="ib-req-dlv-img" src={content.image} alt={deliverable.title ?? '产物预览'} />}
                           {content && content !== 'loading' && !('error' in content) && content.binary && <p className="ib-req-empty">这个产物不是可在这里预览的文档。</p>}
-                          {content && content !== 'loading' && !('error' in content) && content.text !== undefined && (
+                          {content && content !== 'loading' && !('error' in content) && content.text !== undefined && content.html && (
+                            <iframe className="ib-req-dlv-html" sandbox="allow-scripts" srcDoc={content.text} title={deliverable.title ?? '产物预览'} />
+                          )}
+                          {content && content !== 'loading' && !('error' in content) && content.text !== undefined && !content.html && (
                             <div className="ib-req-dlv-doc" dir="auto">
                               <ChatMarkdown text={content.text} role="assistant" messageId={`dlv-${deliverable.id}`} />
                             </div>

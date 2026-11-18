@@ -149,7 +149,7 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
   } as Requirement;
 }
 
-export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }> }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
+export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
   const dir = join(options.dataDir, "requirements");
   const requirementsPath = join(dir, "requirements.json");
   const eventsPath = join(dir, "requirement-events.json");
@@ -444,20 +444,34 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
   const deliverableContent = async (id: string, deliverableId: string): Promise<Response> => {
     const found = deliverableAt(id, deliverableId);
     if ("error" in found) return found.error;
+    // A Plannotator session id is not a file: say so in the person's words, never as a read failure.
+    if (/^pn-/.test(found.deliverable.ref)) return json({ session: found.deliverable.ref });
     const lower = found.deliverable.ref.toLowerCase();
+    // An agent delivers from its working folder, so its paths can be relative: they resolve against the project
+    // root of the requirement's session (projectRootOf, wired by inbox.ts), the absolute ref first.
+    const candidates = /^https?:/.test(found.deliverable.ref) || found.deliverable.ref.startsWith("/")
+      ? [found.deliverable.ref]
+      : [options.projectRootOf?.(id), undefined].filter((root): root is string => typeof root === "string" && root.trim().length > 0).map((root) => join(root, found.deliverable.ref));
     try {
-      const bytes = Bun.file(found.deliverable.ref);
+      let bytes = Bun.file(candidates[0] ?? found.deliverable.ref);
+      if (candidates.length > 1) {
+        // The first candidate that is there wins; a lone candidate's failure is the answer itself.
+        for (const candidate of candidates) {
+          bytes = Bun.file(candidate);
+          if (await bytes.exists()) break;
+        }
+      }
       if (IMAGE_SUFFIXES.some((suffix) => lower.endsWith(suffix))) {
         const buffer = new Uint8Array(await bytes.arrayBuffer()).slice(0, 2 * 1024 * 1024);
         return json({ image: `data:${bytes.type || "image/png"};base64,${Buffer.from(buffer).toString("base64")}` });
       }
-      if (TEXT_SUFFIXES.some((suffix) => lower.endsWith(suffix)) || /^https?:/.test(found.deliverable.ref) === false && !/\.[A-Za-z0-9]{1,8}$/.test(lower)) {
+      if (TEXT_SUFFIXES.some((suffix) => lower.endsWith(suffix)) || lower.endsWith(".html") || lower.endsWith(".htm") || !/\.[A-Za-z0-9]{1,8}$/.test(lower)) {
         const text = (await bytes.text()).slice(0, 200 * 1024);
-        return json({ text, annotatable: ANNOTATABLE_SUFFIXES.some((suffix) => lower.endsWith(suffix)) });
+        return json({ text, html: lower.endsWith(".html") || lower.endsWith(".htm"), annotatable: ANNOTATABLE_SUFFIXES.some((suffix) => lower.endsWith(suffix)) });
       }
       return json({ binary: true, annotatable: ANNOTATABLE_SUFFIXES.some((suffix) => lower.endsWith(suffix)) });
     } catch {
-      return json({ error: "This deliverable's file is not readable here.", code: "unreadable" }, 404);
+      return json({ error: "这个产物的文件在这台机器上读不到。", code: "unreadable" }, 404);
     }
   };
   const annotateDeliverable = (id: string, deliverableId: string): { ok: true } | { ok: false; status: number; error: string; code: string } => {
