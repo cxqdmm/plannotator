@@ -1,22 +1,27 @@
 /**
  * 会话「对话流」: the thread's Claude Code session, working, as the pane over
- * the thread. The session's own transcript — its words, its tool calls one
- * line each (click: input and result), its thoughts quiet — tail-read on open
- * and polled while open, newest at the bottom. Scrolling up steps off the
- * follow (回到最新 comes back); 加载更早 pages the beginning in. The footer's
- * 插话 is Ask AI's question in the same box (it queues behind the session's
- * work), so watching and steering are one pane.
+ * the thread — the session's terminal in the window. The session's own
+ * transcript — its words, its tool calls one line each (click: input and
+ * result), its thoughts quiet — tail-read on open and polled while open,
+ * newest at the bottom. Scrolling up steps off the follow (回到最新 comes
+ * back); 加载更早 pages the beginning in. The footer is the conversation
+ * itself, not a side channel: what the person types goes out as the thread's
+ * reply (onReply — the thread's own send pipeline, which wakes the session
+ * and starts its turn), so the pane is where the work is both watched and
+ * driven.
  *
  * Entries key on their transcript line (`i`): a tool call whose result line
  * has not arrived yet draws as running and completes in place on a later poll
- * — the same entry, updated, never a second row. Styled only with the
- * window's tokens (packages/ui themes), so every palette carries it.
+ * — the same entry, updated, never a second row. A sent reply echoes at the
+ * bottom at once (the session picks it up a beat later); when the transcript
+ * shows the same words as the session's own copy, the echo steps aside.
+ * Styled only with the window's tokens (packages/ui themes), so every palette
+ * carries it.
  */
 import { useEffect, useRef, useState } from 'react';
-import { generateId } from '@plannotator/ui/utils/generateId';
 import { ChatMarkdown } from '@plannotator/ui/components/chat';
 import { Icon } from '../icons';
-import { inboxApi, type InboxStreamEntry, type InboxAskTurnWire } from '../api';
+import { inboxApi, type InboxStreamEntry } from '../api';
 import { InboxApiError } from '../apiError';
 
 /** How often an open pane asks what grew (localhost; the server's mtime guard answers unchanged for free). */
@@ -29,19 +34,15 @@ function wordsOf(cause: unknown): string {
   return cause instanceof Error ? cause.message : String(cause);
 }
 
-export function SessionStreamPane({ threadId, onClose }: { threadId: string; onClose: () => void }) {
+export function SessionStreamPane({ threadId, onClose, onReply }: { threadId: string; onClose: () => void; onReply: (words: string) => void }) {
   const [entries, setEntries] = useState<InboxStreamEntry[]>([]);
   const [more, setMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [empty, setEmpty] = useState(false);
   const [openTools, setOpenTools] = useState<ReadonlySet<number>>(new Set());
   const [following, setFollowing] = useState(true);
-  const [askWords, setAskWords] = useState('');
-  const [askBusy, setAskBusy] = useState(false);
-  /** The turn the footer's last 插话 claimed: its real state, read back, so a question the session never took is seen. */
-  const [askTurn, setAskTurn] = useState<{ id: string; words: string } | null>(null);
-  const [askState, setAskState] = useState<'sent' | 'waiting' | 'gone' | null>(null);
-  const [canAsk, setCanAsk] = useState<boolean | null>(null);
+  const [replyWords, setReplyWords] = useState('');
+  const [replyBusy, setReplyBusy] = useState(false);
   const list = useRef<HTMLDivElement | null>(null);
   // Refs the poll reads: the interval outlives renders, so it must not be rebuilt on every entry.
   const cursorRef = useRef(0);
@@ -49,12 +50,16 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
   followingRef.current = following;
   const askEcho = useRef(0);
 
-  /** Upsert by line index, oldest first: a tool's result updates its call in place. */
+  /** Upsert by line index, oldest first: a tool's result updates its call in place. A transcript line that says
+   *  what a sent reply's echo says retires the echo (the session has the words now; the real line stays). */
   const merge = (incoming: readonly InboxStreamEntry[]) => {
     if (incoming.length === 0) return;
     setEntries((held) => {
       const byIndex = new Map(held.map((entry) => [entry.i, entry]));
       for (const entry of incoming) byIndex.set(entry.i, { ...byIndex.get(entry.i), ...entry });
+      const landed = incoming.filter((entry) => entry.kind === 'you' && (entry.text ?? '').trim());
+      const echoed = landed.length > 0 ? held.filter((echo) => echo.i >= 1_000_000_000 && landed.some((real) => (real.text ?? '').trim() === echo.text)) : [];
+      for (const echo of echoed) byIndex.delete(echo.i);
       return [...byIndex.values()].sort((a, b) => a.i - b.i);
     });
   };
@@ -84,11 +89,6 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
       }
     };
     void read({}, true);
-    // Whether this thread's owner takes Ask questions at all (the ask read says): the footer shows a live input
-    // only then, else the person's way in is the thread's own reply, which wakes the session.
-    void inboxApi.askRead(threadId).then((model) => {
-      if (alive) setCanAsk(model.can_ask === true);
-    }).catch(() => {});
     const timer = setInterval(() => void read({ after: cursorRef.current }, false), POLL_MS);
     return () => {
       alive = false;
@@ -96,21 +96,22 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
     };
   }, [threadId]);
 
-  // The last 插话's real state, read back once the session had time to take it: a question nothing picked up
-  // (an idle session, an old plugin) must be seen, not sit silent in the Ask conversation.
-  useEffect(() => {
-    if (!askTurn || askState !== 'sent') return;
-    const timer = setTimeout(() => {
-      void inboxApi.askRead(threadId).then((model) => {
-        const turn = (model.conversation?.turns ?? []).find((entry: InboxAskTurnWire) => entry.id === askTurn.id);
-        if (!turn) return;
-        if (turn.failure === 'gone' || turn.failure === 'failed') setAskState('gone');
-        else if (turn.answer) setAskState(null);
-        else setAskState('waiting');
-      }).catch(() => {});
-    }, 6000);
-    return () => clearTimeout(timer);
-  }, [askTurn, askState, threadId]);
+  // The footer's send: the words go out as the thread's reply (the thread's own pipeline — it wakes the session
+  // and starts the turn), and echo at once; the transcript's own copy of them retires the echo.
+  const reply = async () => {
+    const words = replyWords.trim();
+    if (!words || replyBusy) return;
+    setReplyBusy(true);
+    setReplyWords('');
+    try {
+      onReply(words);
+      merge([{ i: 1_000_000_000 + askEcho.current++, kind: 'you', text: words }]);
+      setFollowing(true);
+      requestAnimationFrame(pinned);
+    } finally {
+      setReplyBusy(false);
+    }
+  };
 
   const earlier = async () => {
     const first = entries[0]?.i ?? 0;
@@ -121,29 +122,6 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
       setMore(model.more);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
-    }
-  };
-
-  const ask = async () => {
-    const question = askWords.trim();
-    if (!question || askBusy) return;
-    setAskBusy(true);
-    setAskWords('');
-    try {
-      const turnId = generateId('ask');
-      await inboxApi.askSend(threadId, turnId, question);
-      setAskTurn({ id: turnId, words: question });
-      setAskState('sent');
-      // The echo keys past any real line (a transcript never has a milliard): it rides at the bottom until the
-      // session's own copy of the question arrives from the transcript with its true index.
-      merge([{ i: 1_000_000_000 + askEcho.current++, kind: 'you', text: question }]);
-      setFollowing(true);
-      requestAnimationFrame(pinned);
-    } catch (cause) {
-      setAskWords(question);
-      setError(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      setAskBusy(false);
     }
   };
 
@@ -188,24 +166,19 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
         </button>
       )}
 
-      {canAsk === false ? (
-        <p className="ib-sstr-askhint">这个会话此刻不接插话——直接在线程里回复它，它会被唤醒。</p>
-      ) : (
-        <form
-          className="ib-sstr-ask"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void ask();
-          }}
-        >
-          <input value={askWords} onChange={(event) => setAskWords(event.target.value)} placeholder="插一句话，排在它手头工作后面…" aria-label="插话" disabled={askBusy} />
-          <button type="submit" disabled={askBusy || !askWords.trim()}>
-            发送
-          </button>
-        </form>
-      )}
-      {askState === 'waiting' && <p className="ib-sstr-asknote">已递出，会话还没来领取——它在空闲时不会插话；急的话直接在线程里回复它。</p>}
-      {askState === 'gone' && <p className="ib-sstr-asknote">这句话会话没有接住（可能空闲或插件版本旧）——它还留在 Ask 对话里，改用线程回复即可。</p>}
+      <form
+        className="ib-sstr-ask"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void reply();
+        }}
+      >
+        <input value={replyWords} onChange={(event) => setReplyWords(event.target.value)} placeholder="回复会唤醒会话并开一轮工作…" aria-label="回复会话" disabled={replyBusy} />
+        <button type="submit" disabled={replyBusy || !replyWords.trim()}>
+          发送
+        </button>
+      </form>
+      <p className="ib-sstr-askhint">这里的回复就是线程的回复：会话立刻被唤醒，工作在上面滚动。</p>
     </div>
   );
 }

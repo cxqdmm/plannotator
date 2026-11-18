@@ -12487,5 +12487,6 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-phstream[aria-pressed="true"] { color: var(--primary); }
 /* The footer's state lines: the 插话's real fate, read back (a question nothing picked up is seen), and the
    hint when the session takes no questions at all right now. */
-.ib-sstr-askhint, .ib-sstr-asknote { margin: 0 12px 11px; color: var(--muted-foreground); font-size: var(--ib-fs-11, 11px); line-height: 1.5; }
-.ib-sstr-asknote { color: color-mix(in oklch, var(--warning) 75%, var(--muted-foreground)); }
+.ib-sstr-askhint { margin: 6px 12px 11px; color: var(--muted-foreground); font-size: var(--ib-fs-11, 11px); line-height: 1.5; }
+/* The footer sits tight under the input: the pane's bottom is one unit. */
+.ib-sstr-ask { margin: 0 12px; }
