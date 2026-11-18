@@ -75,3 +75,9 @@ export function adoptSuggestion(id: string, suggestionId: string): Promise<Write
 export function dismissSuggestion(id: string, suggestionId: string): Promise<WriteOutcome<{ ok: boolean }>> {
   return write('DELETE', `/api/requirements/${encodeURIComponent(id)}/suggestions/${encodeURIComponent(suggestionId)}`, {});
 }
+
+/** 「发起设计文档评审」: opens a gated annotate session on the requirement's design doc; the outcome writes
+ * itself back (a deliverable, a say line, and on approval a suggestion), and the event stream refreshes the pane. */
+export function startDesignReview(id: string): Promise<WriteOutcome<{ ok: boolean; doc: string }>> {
+  return write('POST', `/api/requirements/${encodeURIComponent(id)}/design-review`, {});
+}

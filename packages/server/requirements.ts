@@ -22,9 +22,11 @@ import { ulid } from "@plannotator/core/inbox-types";
 import { loadConfig } from "@plannotator/shared/config";
 import {
   DELIVERABLE_KINDS,
+  REQUIREMENT_STAGES,
   isDeliverableKind,
   isRequirementPriority,
   isRequirementStage,
+  requirementStageLabel,
   type Deliverable,
   type DeliverableKind,
   type Requirement,
@@ -147,7 +149,7 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
   } as Requirement;
 }
 
-export function createBunRequirementRoutes(options: { dataDir: string }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
+export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }> }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
   const dir = join(options.dataDir, "requirements");
   const requirementsPath = join(dir, "requirements.json");
   const eventsPath = join(dir, "requirement-events.json");
@@ -364,6 +366,64 @@ export function createBunRequirementRoutes(options: { dataDir: string }): { rout
     error instanceof RequirementStoreError ? json({ error: error.message, code: error.code, ...(error.field ? { field: error.field } : {}) }, error.code === "not_found" ? 404 : error.code === "not_saved" ? 500 : 400) : json({ error: "Unexpected failure.", code: "unexpected" }, 500);
 
   /**
+   * 「发起设计文档评审」(the design-review bridge): the requirement's design doc — seeded from it on first
+   * use, the person's edits kept after that — opened in a gated annotate session; the answer returns at once,
+   * and the child's exit writes the outcome back (a deliverable, a say, and on approval a suggestion for the
+   * next stage — D1: only the person moves). One review of a requirement at a time.
+   */
+  const reviewsInFlight = new Set<string>();
+  const designDocOf = (id: string): string => join(options.dataDir, "requirements", "design-docs", `${id}.md`);
+  const seedDesignDoc = (record: Requirement): string => {
+    const file = designDocOf(record.id);
+    if (!existsSync(file)) {
+      const stage = REQUIREMENT_STAGES.find((entry) => entry.id === record.stage);
+      mkdirSync(join(options.dataDir, "requirements", "design-docs"), { recursive: true });
+      writeFileSync(
+        file,
+        `# ${record.title}\n\n> 需求阶段：${requirementStageLabel(record.stage)}${stage?.wants ? `（本阶段期望产出：${stage.wants}）` : ""}\n\n## 背景\n\n${record.notes.trim() || "（待补充）"}\n\n## 目标\n\n- \n\n## 方案\n\n- \n\n## 开放问题\n\n- \n`,
+        { mode: 0o600 },
+      );
+    }
+    return file;
+  };
+  const startDesignReview = (id: string): { ok: true; doc: string } | { ok: false; status: number; error: string; code: string } => {
+    if (!options.spawnAnnotate) return { ok: false, status: 501, error: "This Inbox cannot start a review (no annotate runtime).", code: "no_runtime" };
+    if (reviewsInFlight.has(id)) return { ok: false, status: 409, error: "A design review of this requirement is already open.", code: "review_in_flight" };
+    let record: Requirement;
+    try {
+      record = at(id);
+    } catch {
+      return { ok: false, status: 404, error: "No such requirement.", code: "not_found" };
+    }
+    const doc = seedDesignDoc(record);
+    reviewsInFlight.add(id);
+    void options
+      .spawnAnnotate(doc)
+      .then(({ stdout }) => {
+        let outcome: { decision?: unknown; annotationCount?: unknown } = {};
+        try {
+          outcome = JSON.parse(stdout.trim().split("\n").at(-1) ?? "{}") as { decision?: unknown };
+        } catch {
+          outcome = {};
+        }
+        const decision = outcome.decision === "approved" ? "approved" : outcome.decision === "dismissed" ? "dismissed" : outcome.decision === "annotated" ? "annotated" : "unknown";
+        try {
+          const words = decision === "approved" ? "设计文档已批准" : decision === "annotated" ? `设计文档评审完成，带回批注${typeof outcome.annotationCount === "number" ? ` ${outcome.annotationCount} 条` : ""}` : decision === "dismissed" ? "设计文档评审被关闭，未给结论" : "设计文档评审结束（无结果）";
+          store.deliver(id, { kind: "design-doc", ref: doc, title: `设计文档评审（${words}）`, by: null });
+          store.say(id, words, "设计评审");
+          if (decision === "approved") store.suggest(id, { stage: "design-review", why: "设计文档已批准，可进入设计评审收尾", by: "设计评审" });
+        } catch {
+          // The requirement changed under the review (deleted, say): nothing to write back to.
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        reviewsInFlight.delete(id);
+      });
+    return { ok: true, doc };
+  };
+
+  /**
    * The routes. Returns null when the path is not this module's (the caller
    * answers the unknown-route 404, as it does for Shape).
    */
@@ -397,6 +457,11 @@ export function createBunRequirementRoutes(options: { dataDir: string }): { rout
           return json({ ok: true });
         }
         return json({ error: "Use GET, POST, PATCH or DELETE.", code: "method" }, 405);
+      }
+      const designReviewMatch = deeper === "design-review" && req.method === "POST";
+      if (designReviewMatch) {
+        const started = startDesignReview(id);
+        return started.ok ? json(started) : json({ error: started.error, code: started.code }, started.status);
       }
       const deliverableMatch = /^deliverables(?:\/([^/]+))?$/.exec(deeper);
       if (deliverableMatch) {

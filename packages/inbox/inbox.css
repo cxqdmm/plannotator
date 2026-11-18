@@ -12418,3 +12418,5 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-req-line { align-items: center; gap: 10px; color: var(--muted-foreground); }
 .ib-req-mark { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
 .ib-req-stage { font-size: var(--ib-fs-13, 13px); }
+/* The detail pane's 「发起设计文档评审」 button. */
+.ib-req-launch { width: 100%; justify-content: center; }

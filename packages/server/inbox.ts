@@ -4477,7 +4477,14 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
   });
 
   // The Requirements module (「需求」, requirements.ts): storage, routes and the change watch, mounted like Shape's.
-  const requirements = createBunRequirementRoutes({ dataDir });
+  // spawnAnnotate backs 「发起设计文档评审」: this binary's own annotate, gated, its JSON captured on exit.
+  const requirements = createBunRequirementRoutes({
+    dataDir,
+    spawnAnnotate: (file) => {
+      const child = Bun.spawn([...selfCommand, "annotate", file, "--gate", "--json"], { stdout: "pipe", stderr: "ignore", stdin: "ignore" });
+      return Promise.all([new Response(child.stdout).text(), child.exited]).then(([stdout, code]) => ({ stdout, code }));
+    },
+  });
 
   // The Codex wake: the person's items for a Codex thread go in as a new turn through `codex queue`,
   // once each (inbox-codex-wake.ts). Worded like any bridge command.

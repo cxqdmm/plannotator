@@ -15,7 +15,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
-import { adoptSuggestion, deliverRequirement, dismissSuggestion, readRequirement, removeDeliverable } from '../api';
+import { adoptSuggestion, deliverRequirement, dismissSuggestion, readRequirement, removeDeliverable, startDesignReview } from '../api';
 import { useRequirements } from '../useRequirements';
 import {
   DELIVERABLE_KINDS,
@@ -154,6 +154,7 @@ function RequirementDetail({
   const [deliverRef, setDeliverRef] = useState('');
   const [deliverTitle, setDeliverTitle] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [reviewStarting, setReviewStarting] = useState(false);
   const reload = useRef<AbortController | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -209,6 +210,16 @@ function RequirementDetail({
       setDeliverRef('');
       setDeliverTitle('');
       read();
+    }
+  };
+
+  /** 「发起设计文档评审」: the server opens the gated annotate session; the pane refreshes when it lands. */
+  const startReview = async () => {
+    setReviewStarting(true);
+    const outcome = await startDesignReview(id);
+    if (!outcome.ok) {
+      setError(outcome.error);
+      setReviewStarting(false);
     }
   };
 
@@ -271,6 +282,14 @@ function RequirementDetail({
               ))}
             </section>
           )}
+
+          <section aria-label="设计评审">
+            <button type="button" className="ib-btn ib-req-launch" data-requirements-review="" disabled={reviewStarting} onClick={() => void startReview()}>
+              <Icon name="pen" size={14} />
+              {reviewStarting ? '评审已打开，完成后自动挂回…' : '发起设计文档评审'}
+            </button>
+            <p className="ib-req-empty">打开 Plannotator 的批注页评审当前设计文档；批准后自动建议进入下一阶段。文档首次从需求生成，之后保留你的修改。</p>
+          </section>
 
           <section aria-label="产物">
             <h3 className="ib-req-h">产物</h3>

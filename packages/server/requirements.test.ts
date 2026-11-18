@@ -153,6 +153,64 @@ describe("the requirements routes", () => {
     expect(events.filter((event) => event.kind === "field" ).length).toBeGreaterThanOrEqual(1);
   });
 
+  test("「发起设计文档评审」seeds the doc once, answers at once, and the outcome writes itself back (approved suggests, dismissed does not)", async () => {
+    // The fake annotate: one pending promise per spawn, settled by hand, so the in-flight window is real.
+    const spawned: string[] = [];
+    let current: { promise: Promise<{ stdout: string; code: number }>; settle: (value: { stdout: string; code: number }) => void };
+    const arm = () => {
+      let settle!: (value: { stdout: string; code: number }) => void;
+      const promise = new Promise<{ stdout: string; code: number }>((resolve) => {
+        settle = resolve;
+      });
+      current = { promise, settle };
+    };
+    arm();
+    const bridged = createBunRequirementRoutes({
+      dataDir,
+      spawnAnnotate: (file) => {
+        spawned.push(file);
+        return current.promise;
+      },
+    });
+    const callBridged = async (method: string, path: string, body?: unknown) => {
+      const response = await bridged.route(new Request(`http://x${path}`, { method, body: body === undefined ? undefined : JSON.stringify(body) }), new URL(`http://x${path}`));
+      return { status: response!.status, data: (await response!.json()) as Record<string, unknown> };
+    };
+    const made = ((await callBridged("POST", "/api/requirements", { title: "登录页改版" })).data.requirement as { id: string }).id;
+    const started = await callBridged("POST", `/api/requirements/${made}/design-review`);
+    expect(started.status).toBe(200);
+    expect(started.data.ok).toBe(true);
+    const doc = started.data.doc as string;
+    expect(spawned).toHaveLength(1);
+    // The doc was seeded from the requirement and exists on disk.
+    expect(existsSync(doc)).toBe(true);
+    expect(readFileSync(doc, "utf8")).toContain("# 登录页改版");
+    // While the review runs, a second start is refused.
+    expect((await callBridged("POST", `/api/requirements/${made}/design-review`)).status).toBe(409);
+    // The approved outcome writes itself back: a deliverable, a say line, and one suggestion.
+    current.settle({ stdout: '{"decision":"approved","annotationCount":0,"target":"x"}', code: 0 });
+    await current.promise;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const detail = (await callBridged("GET", `/api/requirements/${made}`)).data;
+    const record = detail.requirement as { deliverables: { kind: string; ref: string; title: string }[]; suggestions: { stage: string }[] };
+    expect(record.deliverables[0]).toMatchObject({ kind: "design-doc", ref: doc });
+    expect(record.deliverables[0]!.title).toContain("已批准");
+    expect(record.suggestions.map((suggestion) => suggestion.stage)).toEqual(["design-review"]);
+    expect((detail.events as { kind: string }[]).map((event) => event.kind)).toContain("say");
+    // A dismissed review attaches and says, but never suggests; the person's doc is seeded once and reused.
+    arm();
+    expect((await callBridged("POST", `/api/requirements/${made}/design-review`)).status).toBe(200);
+    current.settle({ stdout: '{"decision":"dismissed"}', code: 0 });
+    await current.promise;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const after = (await callBridged("GET", `/api/requirements/${made}`)).data.requirement as { deliverables: unknown[]; suggestions: { stage: string }[] };
+    // Dismissed adds no suggestion of its own; round 1's (design-review) still waits for the person.
+    expect(after.suggestions.map((suggestion) => suggestion.stage)).toEqual(["design-review"]);
+    expect(after.deliverables).toHaveLength(2);
+    expect(spawned).toHaveLength(2);
+    expect(spawned[0]).toBe(spawned[1]);
+  });
+
   test("a delete removes the record and writes history; an unknown id is 404; an unknown subpath is not this module's", async () => {
     const made = await createOne();
     expect((await call("DELETE", `/api/requirements/${made.id}`)).status).toBe(200);

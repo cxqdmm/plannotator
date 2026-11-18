@@ -186,6 +186,23 @@ describe(hasDom ? 'RequirementsPanel' : describe.skip, () => {
     expect(asked.filter((call) => call.path.endsWith('/adopt')).length).toBe(1);
   });
 
+  test('「发起设计文档评审」posts the bridge route and holds its in-flight wording', async () => {
+    const withDoc = requirement('req_e', '导出报表', 'design');
+    answers['GET /api/requirements'] = { status: 200, body: board([withDoc], 0) };
+    answers['GET /api/requirements/req_e'] = { status: 200, body: { requirement: withDoc, events: [] } };
+    answers['POST /api/requirements/req_e/design-review'] = { status: 200, body: { ok: true, doc: '/tmp/doc.md' } };
+    await draw({ openId: 'req_e' });
+    const button = host.querySelector<HTMLButtonElement>('[data-requirements-review]')!;
+    expect(button.textContent).toContain('发起设计文档评审');
+    await act(async () => {
+      button.click();
+    });
+    const post = asked.find((call) => call.path.endsWith('/design-review'));
+    expect(post?.method).toBe('POST');
+    expect(button.disabled).toBe(true);
+    expect(button.textContent).toContain('评审已打开');
+  });
+
   test('归档 takes a card off the board over PATCH; 恢复 brings it back on the archived page', async () => {
     await draw();
     // The server the refresh will read: req_b already archived.
