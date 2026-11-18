@@ -34,7 +34,8 @@
 import { accessSync, constants as fsConstants, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { spawn as spawnChild } from "node:child_process";
-import { basename, isAbsolute, join, resolve, sep, win32 } from "node:path";
+import { basename, dirname, isAbsolute, join, resolve, sep, win32 } from "node:path";
+import { fileURLToPath } from "node:url";
 import { cutText } from "@plannotator/core/inbox-questions";
 import { killWindowsProcessTree, planAgentJobSpawn } from "@plannotator/ai/providers/command-path";
 import { envPathOf, foldEnvPath } from "./env-path";
@@ -712,39 +713,56 @@ export function openCodeGeneration(e: AgentEnvironment): "1" | "2" | undefined {
   return undefined;
 }
 
+/** A spec OpenCode resolves as a local plugin rather than an npm or Git package: `file:`/`file://` URLs, `/abs`, `./rel`, `../rel`, `~/…`, or a Windows drive path. */
+const OPENCODE_PLUGIN_PATH = /^(?:file:|\/|\.{1,2}(?:\/|\\)|~(?:\/|\\|$)|[A-Za-z]:[\\/])/;
+
 /**
  * A local plugin spec resolved against `baseDir`, the folder the file naming
  * it lives in (the opencode config, or a loader file in `plugins/`): `~` to
- * the home, `file:` stripped, relatives from `baseDir`. Null when the spec is
- * an npm or Git package specifier, which OpenCode loads from a registry
- * instead (`opencode plugin add` rejects everything else).
+ * the home, `file://` through the URL parser (a `file:///C:/…` drive path
+ * lands right), relatives from `baseDir`. Null when the spec is an npm or
+ * Git package specifier, which OpenCode loads from a registry instead
+ * (`opencode plugin add` rejects everything else).
  */
 function resolveLocalPluginSpec(spec: string, baseDir: string, homeDir: string): string | null {
+  if (!OPENCODE_PLUGIN_PATH.test(spec)) return null;
   let local: string;
-  if (spec.startsWith("file:")) local = spec.slice("file:".length);
-  else if (spec.startsWith("~/")) local = join(homeDir, spec.slice(2));
-  else if (spec.startsWith("/") || spec.startsWith("./") || spec.startsWith("../") || isAbsolute(spec)) local = spec;
-  else return null;
+  if (spec.startsWith("file:")) {
+    try {
+      local = fileURLToPath(spec);
+    } catch {
+      // A bare file: prefix (not a full URL): the path after it.
+      local = spec.slice("file:".length);
+    }
+  } else if (spec.startsWith("~")) local = join(homeDir, spec.slice(2));
+  else local = isAbsolute(spec) || /^[A-Za-z]:[\\/]/.test(spec) ? spec : resolve(baseDir, spec);
   return resolve(baseDir, local);
 }
 
 /**
  * Whether a local path leads into Plannotator's OpenCode plugin: the package
- * folder itself, or an entry file one level inside it (`index.ts` for V1,
+ * folder itself, or an entry file inside it (`index.ts` for V1,
  * `dist/server.js` for V2, the path of a `[path, options]` entry) — named by
- * the package.json there (`name` is `@plannotator/opencode`), never by the
- * path's shape, so a same-shaped path to another package is not ours.
+ * the NEAREST package.json at or above the path (`name` is
+ * `@plannotator/opencode`; a checkout inside a monorepo answers with its own,
+ * not the monorepo root's), never by the path's shape, so a same-shaped path
+ * to another package is not ours.
  */
 function localPluginPathIsOurs(path: string): boolean {
-  for (const pkgPath of [join(path, "package.json"), join(path, "..", "package.json")]) {
-    const read = readAgentFile(pkgPath);
-    if (read.kind !== "file") continue;
-    try {
-      const parsed = JSON.parse(stripJsonComments(read.text)) as { name?: unknown };
-      if (parsed.name === "@plannotator/opencode") return true;
-    } catch {
-      // Unreadable: this candidate says no.
+  let dir = path;
+  for (let up = 0; up < 8; up++) {
+    const read = readAgentFile(join(dir, "package.json"));
+    if (read.kind === "file") {
+      try {
+        return (JSON.parse(stripJsonComments(read.text)) as { name?: unknown }).name === "@plannotator/opencode";
+      } catch {
+        // The nearest package.json is unreadable: not ours by this path.
+        return false;
+      }
     }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
   }
   return false;
 }
