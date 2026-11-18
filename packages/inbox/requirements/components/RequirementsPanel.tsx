@@ -1,27 +1,20 @@
 /**
- * The Requirements panel (「需求」, Wave 1): the grouped list, the inline
- * composer, rename, stage moves and delete. Owns its data (useRequirements)
- * so App.tsx only mounts it — the module stays a plug-in. Wave 2 adds the
- * detail pane and deliverables; Wave 3 the board, drag and keyboard.
+ * The Requirements panel (「需求」): a Board-style kanban — the seven lifecycle
+ * stages as lanes, cards dragged between them — drawn with the Board's own
+ * classes (ib-bpage/ib-blanes/ib-lane/ib-bcard, packages/inbox/inbox.css), so
+ * it is the Inbox's look, rounded corners and all, in light and dark. Owns
+ * its data (useRequirements) so App.tsx only mounts it: the module stays a
+ * plug-in. Wave 2 adds the detail pane and deliverables; Wave 3 filters and
+ * keyboard.
  *
- * Words are Simplified Chinese in place, this fork's rule. Semantic theme
- * classes only (bg-card, text-muted-foreground, …): the panel follows the
- * Inbox's light and dark themes with no styling of its own.
+ * Words are Simplified Chinese in place, this fork's rule.
  */
 import { useState } from 'react';
 import { Icon } from '../../icons';
+import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
 import { useRequirements } from '../useRequirements';
 import { REQUIREMENT_PRIORITIES, REQUIREMENT_STAGES, type Requirement, type RequirementPriority, type RequirementStage } from '@plannotator/core/requirements-types';
-
-/** The priority dot's colour, from the theme's palette. */
-const PRIORITY_CLASS: Record<RequirementPriority, string> = {
-  urgent: 'bg-red-500',
-  high: 'bg-orange-500',
-  medium: 'bg-yellow-500',
-  low: 'bg-blue-400',
-  none: 'bg-transparent border border-border',
-};
 
 function priorityAfter(current: RequirementPriority): RequirementPriority {
   const order = REQUIREMENT_PRIORITIES.map((entry) => entry.id);
@@ -32,80 +25,103 @@ function priorityLabel(priority: RequirementPriority): string {
   return REQUIREMENT_PRIORITIES.find((entry) => entry.id === priority)?.label ?? priority;
 }
 
-/** One requirement's row: priority (click to cycle), title (click to rename), stage move, delete. */
-function RequirementRow({ requirement, onPatch, onRemove }: { requirement: Requirement; onPatch: RequirementsPatch; onRemove: (id: string) => void }) {
+/** One requirement as a lane card: the title (click to rename), the priority dot (click to cycle), delete. */
+function RequirementCard({
+  requirement,
+  dragging,
+  onDragStart,
+  onDragEnd,
+  onPatch,
+  onRemove,
+}: {
+  requirement: Requirement;
+  dragging: boolean;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onPatch: (id: string, patch: { title?: string; stage?: RequirementStage; priority?: RequirementPriority }) => void;
+  onRemove: (id: string) => void;
+}) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(requirement.title);
 
   const saveTitle = () => {
     setEditing(false);
     const next = title.trim();
-    if (next && next !== requirement.title) void onPatch(requirement.id, { title: next });
+    if (next && next !== requirement.title) onPatch(requirement.id, { title: next });
     else setTitle(requirement.title);
   };
 
   return (
-    <div className="group/req flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent" data-requirement-id={requirement.id}>
-      <button
-        type="button"
-        className={`size-2.5 shrink-0 rounded-full ${PRIORITY_CLASS[requirement.priority]}`}
-        title={`优先级：${priorityLabel(requirement.priority)}（点击切换）`}
-        aria-label={`优先级：${priorityLabel(requirement.priority)}（点击切换）`}
-        onClick={() => void onPatch(requirement.id, { priority: priorityAfter(requirement.priority) })}
-      />
-      {editing ? (
-        <input
-          autoFocus
-          className="min-w-0 flex-1 rounded-sm bg-background px-1 py-0.5 text-sm outline-none ring-1 ring-primary"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          onBlur={saveTitle}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') saveTitle();
-            if (event.key === 'Escape') {
-              setTitle(requirement.title);
-              setEditing(false);
-            }
-          }}
-          aria-label="需求标题"
-        />
-      ) : (
-        <button type="button" className="min-w-0 flex-1 truncate text-left text-sm" title={requirement.title} onClick={() => setEditing(true)}>
-          {requirement.title}
-        </button>
-      )}
-      <select
-        className="h-6 rounded-sm border-border bg-transparent px-1 text-xs text-muted-foreground opacity-0 transition-opacity group-hover/req:opacity-100 focus:opacity-100"
-        value={requirement.stage}
-        aria-label="阶段"
-        onChange={(event) => void onPatch(requirement.id, { stage: event.target.value as RequirementStage })}
-      >
-        {REQUIREMENT_STAGES.map((stage) => (
-          <option key={stage.id} value={stage.id}>
-            {stage.label}
-          </option>
-        ))}
-      </select>
-      <button
-        type="button"
-        className="text-muted-foreground opacity-0 transition-opacity group-hover/req:opacity-100 hover:text-foreground"
-        title="删除需求"
-        aria-label="删除需求"
-        onClick={() => onRemove(requirement.id)}
-      >
-        <Icon name="trash" />
-      </button>
-    </div>
+    <li
+      className="ib-bcard"
+      data-card-id={requirement.id}
+      data-requirement-id={requirement.id}
+      data-stage={requirement.stage}
+      data-dragging={dragging ? '' : undefined}
+      draggable={editing ? undefined : true}
+      onDragStart={(event) => {
+        event.dataTransfer.setData('text/plain', requirement.id);
+        event.dataTransfer.effectAllowed = 'move';
+        onDragStart();
+      }}
+      onDragEnd={onDragEnd}
+    >
+      <span className="ib-bc-top">
+        {editing ? (
+          <input
+            // Not React's autoFocus: happy-dom's input value setter breaks on an element it has focused
+            // (RequirementsPanel.dom.test.tsx); the microtask focus does the same job in a browser.
+            ref={(node) => queueMicrotask(() => node?.focus())}
+            className="ib-req-rename"
+            aria-label="需求标题"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            onBlur={saveTitle}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') saveTitle();
+              if (event.key === 'Escape') {
+                setTitle(requirement.title);
+                setEditing(false);
+              }
+            }}
+          />
+        ) : (
+          <button type="button" className="ib-bc-main" title={requirement.title} onClick={() => setEditing(true)}>
+            <span className="ib-bc-t" dir="auto">
+              {requirement.title}
+            </span>
+          </button>
+        )}
+      </span>
+      <span className="ib-bc-bot">
+        <span className="ib-bc-line">
+          <button
+            type="button"
+            className="ib-req-pri"
+            data-priority={requirement.priority}
+            title={`优先级：${priorityLabel(requirement.priority)}（点击切换）`}
+            aria-label={`优先级：${priorityLabel(requirement.priority)}（点击切换）`}
+            onClick={() => onPatch(requirement.id, { priority: priorityAfter(requirement.priority) })}
+          />
+          <span className="ib-req-act">
+            <button type="button" className="ib-req-x" aria-label="删除需求" title="删除需求" onClick={() => onRemove(requirement.id)}>
+              <Icon name="trash" size={13} />
+            </button>
+          </span>
+        </span>
+      </span>
+    </li>
   );
 }
 
-type RequirementsPatch = (id: string, patch: { title?: string; notes?: string; stage?: RequirementStage; priority?: RequirementPriority }) => Promise<boolean>;
-
-/** The panel: header with 新建, the composer, and the seven stage groups. */
+/** The panel: a Board page whose lanes are the seven stages. */
 export function RequirementsPanel({ on }: { on: boolean }) {
   const { requirements, create, patch, remove, error, clearError } = useRequirements(on, subscribeRequirementFrames);
   const [composing, setComposing] = useState(false);
   const [draft, setDraft] = useState('');
+  /** The card being dragged (the Board's own mechanism: state, not the dataTransfer's contents). */
+  const [dragging, setDragging] = useState<Requirement | null>(null);
+  const [over, setOver] = useState<RequirementStage | null>(null);
 
   const submit = () => {
     const title = draft.trim();
@@ -117,80 +133,119 @@ export function RequirementsPanel({ on }: { on: boolean }) {
     void create({ title });
   };
 
-  const grouped = new Map<RequirementStage, Requirement[]>(REQUIREMENT_STAGES.map((stage) => [stage.id, [] as Requirement[]]));
-  for (const requirement of requirements ?? []) grouped.get(requirement.stage)?.push(requirement);
+  const lanes = new Map<RequirementStage, Requirement[]>(REQUIREMENT_STAGES.map((stage) => [stage.id, [] as Requirement[]]));
+  for (const requirement of requirements ?? []) lanes.get(requirement.stage)?.push(requirement);
 
   return (
-    <div className="flex h-full min-w-0 flex-col bg-card" data-requirements-panel="">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-        <h1 className="text-base font-semibold">需求</h1>
-        <span className="text-xs text-muted-foreground">{requirements === null ? '' : requirements.length > 0 ? requirements.length : ''}</span>
-        <div className="flex-1" />
+    <section className="ib-bpage" aria-labelledby="ib-req-title" data-requirements-page="">
+      <div className="ib-bhead">
+        <SidebarTrigger />
+        <h1 id="ib-req-title" tabIndex={-1}>
+          需求
+        </h1>
+        <span className="ib-bsp" />
+        {requirements !== null && requirements.length > 0 && (
+          <span className="ib-blinks" aria-label={`共 ${requirements.length} 条需求`}>
+            {requirements.length} 条
+          </span>
+        )}
         <button
           type="button"
-          className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-sm text-primary-foreground hover:opacity-90"
+          className="ib-btn ib-sm ib-bnew"
+          data-requirements-new=""
           onClick={() => {
             setComposing(true);
             clearError();
           }}
         >
-          <Icon name="plus" />
-          新建
+          <Icon name="plus" size={15} />
+          新建需求
         </button>
       </div>
-
-      {composing && (
-        <div className="border-b border-border px-4 py-2">
-          <input
-            // Not React's autoFocus: happy-dom's input value setter breaks on an element it has focused
-            // (RequirementsPanel.dom.test.tsx), and the HTML attribute alone does the same job in a browser.
-            autoFocus={undefined}
-            ref={(node) => queueMicrotask(() => node?.focus())}
-            className="w-full rounded-md bg-background px-2 py-1.5 text-sm outline-none ring-1 ring-border focus:ring-primary"
-            aria-label="需求标题"
-            placeholder="需求标题，回车创建（进入待跟进）"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onBlur={submit}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') submit();
-              if (event.key === 'Escape') {
-                setDraft('');
-                setComposing(false);
-              }
-            }}
-          />
+      {error && (
+        <div className="ib-error ib-bfail" role="alert">
+          {error}
         </div>
       )}
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
-        {requirements === null ? (
-          <p className="px-2 py-8 text-center text-sm text-muted-foreground" aria-busy="true">
-            读取需求中…
-          </p>
-        ) : (
-          REQUIREMENT_STAGES.map((stage) => {
-            const rows = grouped.get(stage.id) ?? [];
-            return (
-              <section key={stage.id} className="mb-3" data-stage={stage.id}>
-                <header className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
-                  <span className={rows.length === 0 ? '' : 'font-medium text-foreground'}>{stage.label}</span>
-                  <span>{rows.length}</span>
-                </header>
-                {rows.map((requirement) => (
-                  <RequirementRow key={requirement.id} requirement={requirement} onPatch={patch} onRemove={(id) => void remove(id)} />
+      <div className="ib-blanes" data-dragging={dragging ? '' : undefined}>
+        {REQUIREMENT_STAGES.map((stage) => {
+          const cards = lanes.get(stage.id) ?? [];
+          const target = dragging !== null && dragging.stage !== stage.id;
+          const dragOver = (event: React.DragEvent) => {
+            if (!target) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            if (over !== stage.id) setOver(stage.id);
+          };
+          return (
+            <section
+              key={stage.id}
+              className="ib-lane"
+              aria-labelledby={`ib-req-lane-${stage.id}`}
+              data-lane={stage.id}
+              data-drop={target ? '' : undefined}
+              data-over={target && over === stage.id ? '' : undefined}
+              onDragOver={dragOver}
+              onDragEnter={dragOver}
+              onDragLeave={(event) => {
+                if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) setOver((current) => (current === stage.id ? null : current));
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                const card = dragging;
+                setDragging(null);
+                setOver(null);
+                if (card && card.stage !== stage.id) void patch(card.id, { stage: stage.id });
+              }}
+            >
+              <h2 className="ib-lane-h" id={`ib-req-lane-${stage.id}`} tabIndex={-1}>
+                <span className="ib-lane-dot" data-col={stage.id} aria-hidden="true" />
+                <span className="ib-lane-l">{stage.label}</span>
+                <span className="ib-lane-n">{cards.length}</span>
+              </h2>
+              <ul className="ib-lane-cards" aria-labelledby={`ib-req-lane-${stage.id}`}>
+                {stage.id === 'triage' && composing && (
+                  <li className="ib-bcard" data-composer="">
+                    <span className="ib-bc-top">
+                      <input
+                        ref={(node) => queueMicrotask(() => node?.focus())}
+                        className="ib-req-rename"
+                        aria-label="需求标题"
+                        placeholder="需求标题，回车创建"
+                        value={draft}
+                        onChange={(event) => setDraft(event.target.value)}
+                        onBlur={submit}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') submit();
+                          if (event.key === 'Escape') {
+                            setDraft('');
+                            setComposing(false);
+                          }
+                        }}
+                      />
+                    </span>
+                  </li>
+                )}
+                {cards.map((requirement) => (
+                  <RequirementCard
+                    key={requirement.id}
+                    requirement={requirement}
+                    dragging={dragging?.id === requirement.id}
+                    onDragStart={() => setDragging(requirement)}
+                    onDragEnd={() => {
+                      setDragging(null);
+                      setOver(null);
+                    }}
+                    onPatch={(id, patchIn) => void patch(id, patchIn)}
+                    onRemove={(id) => void remove(id)}
+                  />
                 ))}
-              </section>
-            );
-          })
-        )}
+              </ul>
+              {cards.length === 0 && !(stage.id === 'triage' && composing) && <p className="ib-lane-empty">{stage.wants ? `还没有需求；此阶段产出${stage.wants}。` : '还没有需求。'}</p>}
+            </section>
+          );
+        })}
       </div>
-
-      {error && (
-        <p className="border-t border-border px-4 py-2 text-xs text-red-500" role="alert">
-          {error}
-        </p>
-      )}
-    </div>
+    </section>
   );
 }

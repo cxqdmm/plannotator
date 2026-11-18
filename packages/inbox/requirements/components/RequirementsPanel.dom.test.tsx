@@ -1,9 +1,10 @@
 /**
- * The Requirements panel as the window draws it: the seven stage groups in
- * order, the composer's create flow, a stage move's PATCH, and an optimistic
- * write that fails rolling the row back with its error line. The panel's api
- * is stubbed at fetch (its real module graph loads; only the network is
- * fake), so nothing here reads a real data dir.
+ * The Requirements panel as the window draws it: a Board-style kanban — the
+ * seven stage lanes in order, the composer's create flow, a drag between
+ * lanes PATCHing the stage, and an optimistic write that fails rolling the
+ * card back with its error line. The panel's api is stubbed at fetch (its
+ * real module graph loads; only the network is fake), so nothing here reads
+ * a real data dir.
  *
  * DOM-gated: runs under DOM_TESTS=1 (happy-dom), from tests/dom-test-list.txt.
  */
@@ -14,6 +15,8 @@ import type { Requirement } from '@plannotator/core/requirements-types';
 
 const hasDom = typeof document !== 'undefined';
 const { RequirementsPanel } = (hasDom ? await import('./RequirementsPanel') : {}) as typeof import('./RequirementsPanel');
+// The panel's header carries the sidebar toggle, which lives in the shell's provider (App always has one up the tree).
+const { SidebarProvider } = (hasDom ? await import('../../shell/sidebar') : {}) as typeof import('../../shell/sidebar');
 
 const requirement = (id: string, title: string, stage: Requirement['stage'], priority: Requirement['priority'] = 'none'): Requirement => ({
   id,
@@ -64,7 +67,11 @@ describe(hasDom ? 'RequirementsPanel' : describe.skip, () => {
   const draw = async () => {
     root = createRoot(host);
     await act(async () => {
-      root!.render(<RequirementsPanel on />);
+      root!.render(
+        <SidebarProvider>
+          <RequirementsPanel on />
+        </SidebarProvider>,
+      );
     });
   };
 
@@ -77,31 +84,39 @@ describe(hasDom ? 'RequirementsPanel' : describe.skip, () => {
     });
   };
 
-  /** Pick a select's option the way a real pick reaches React's onChange. */
-  const pick = async (select: HTMLSelectElement, value: string) => {
-    await act(async () => {
-      const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!;
-      setter.call(select, value);
-      select.dispatchEvent(new Event('change', { bubbles: true }));
+  /** A drag from one card to one lane, the way the Board's tests drive HTML5 DnD. */
+  const drag = (card: Element, lane: Element) => {
+    const transfer = { setData() {}, effectAllowed: 'move', dropEffect: 'move' };
+    act(() => {
+      card.dispatchEvent(Object.assign(new Event('dragstart', { bubbles: true }), { dataTransfer: transfer }));
+    });
+    act(() => {
+      lane.dispatchEvent(Object.assign(new Event('dragover', { bubbles: true, cancelable: true }), { dataTransfer: transfer }));
+    });
+    act(() => {
+      lane.dispatchEvent(Object.assign(new Event('drop', { bubbles: true, cancelable: true }), { dataTransfer: transfer }));
     });
   };
 
-  test('draws the seven stage groups in order with their rows; the list read is the module\'s own route', async () => {
+  const lane = (stage: string) => host.querySelector(`.ib-lane[data-lane="${stage}"]`)!;
+  const laneCards = (stage: string) => [...lane(stage).querySelectorAll('.ib-bcard[data-requirement-id]')].map((card) => card.getAttribute('data-requirement-id'));
+
+  test('draws the seven stage lanes in order with their cards, on the Board\'s own page classes', async () => {
     await draw();
-    const stages = [...host.querySelectorAll<HTMLElement>('[data-requirements-panel] section[data-stage]')].map((section) => section.dataset.stage);
-    expect(stages).toEqual(['triage', 'design', 'design-review', 'dev', 'qa', 'code-review', 'done']);
-    expect(host.querySelector('section[data-stage="design"]')!.textContent).toContain('登录页改版');
-    expect(host.querySelector('section[data-stage="triage"]')!.textContent).toContain('导出报表');
+    expect([...host.querySelectorAll('.ib-lane[data-lane]')].map((element) => element.getAttribute('data-lane'))).toEqual(['triage', 'design', 'design-review', 'dev', 'qa', 'code-review', 'done']);
+    expect(host.querySelector('.ib-bpage[data-requirements-page]')).not.toBeNull();
+    expect(laneCards('design')).toEqual(['req_a']);
+    expect(laneCards('triage')).toEqual(['req_b']);
     expect(asked.filter((call) => call.method === 'GET').map((call) => call.path)).toEqual(['/api/requirements']);
   });
 
-  test('新建 composes; Enter creates over POST and the row lands in 待跟进', async () => {
+  test('新建需求 composes in the 待跟进 lane; Enter creates over POST and the card lands there', async () => {
     await draw();
     answers.POST = { status: 201, body: { requirement: requirement('req_new', '新需求', 'triage') } };
     act(() => {
-      (host.querySelector<HTMLButtonElement>('[data-requirements-panel] button')!).click();
+      host.querySelector<HTMLButtonElement>('[data-requirements-new]')!.click();
     });
-    const field = host.querySelector<HTMLInputElement>('input[aria-label="需求标题"]')!;
+    const field = lane('triage').querySelector<HTMLInputElement>('input[aria-label="需求标题"]')!;
     await type(field, '新需求');
     await act(async () => {
       field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
@@ -109,24 +124,25 @@ describe(hasDom ? 'RequirementsPanel' : describe.skip, () => {
     const post = asked.find((call) => call.method === 'POST');
     expect(post?.path).toBe('/api/requirements');
     expect(post?.body.title).toBe('新需求');
-    expect(host.querySelector('section[data-stage="triage"]')!.textContent).toContain('新需求');
+    expect(laneCards('triage')).toContain('req_new');
   });
 
-  test('a stage move PATCHes; a failed write rolls the row back and says why', async () => {
+  test('dragging a card to another lane PATCHes the stage; a failed write rolls the card back and says why', async () => {
     await draw();
-    const row = host.querySelector<HTMLElement>('[data-requirement-id="req_b"]')!;
-    await pick(row.querySelector<HTMLSelectElement>('select[aria-label="阶段"]')!, 'qa');
+    drag(lane('triage').querySelector('.ib-bcard[data-requirement-id="req_b"]')!, lane('qa'));
+    await act(async () => {});
     const patch = asked.find((call) => call.method === 'PATCH');
     expect(patch?.path).toBe('/api/requirements/req_b');
     expect(patch?.body.stage).toBe('qa');
-    // Moved optimistically… (all seven groups always render; the row is what moves)
-    expect(host.querySelector('section[data-stage="qa"]')!.textContent).toContain('导出报表');
-    // …and the server refuses: the row goes back to where the last GOOD write left it (qa), never to dev,
-    // and the error line shows.
+    // Moved optimistically…
+    expect(laneCards('qa')).toEqual(['req_b']);
+    // …and a later drag the server refuses: the card goes back to where the last GOOD write left it,
+    // never to the refused lane, and the error line shows.
     answers.PATCH = { status: 500, body: { error: 'The data folder could not be written; nothing changed.' } };
-    await pick(host.querySelector<HTMLElement>('[data-requirement-id="req_b"]')!.querySelector<HTMLSelectElement>('select[aria-label="阶段"]')!, 'dev');
-    expect(host.querySelector('section[data-stage="dev"]')!.textContent).not.toContain('导出报表');
-    expect(host.querySelector('section[data-stage="qa"]')!.textContent).toContain('导出报表');
+    drag(lane('qa').querySelector('.ib-bcard[data-requirement-id="req_b"]')!, lane('dev'));
+    await act(async () => {});
+    expect(laneCards('dev')).toEqual([]);
+    expect(laneCards('qa')).toEqual(['req_b']);
     expect(host.querySelector('[role="alert"]')!.textContent).toContain('The data folder could not be written');
   });
 });
