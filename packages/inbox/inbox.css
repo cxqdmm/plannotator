@@ -12574,29 +12574,23 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-req-dlv-row { display: flex; align-items: center; gap: 8px; padding: 10px 14px 0; }
 .ib-req-dlv-body { border-top: 0; padding: 10px 14px 12px; }
 .ib-req-dlv-body > .ib-req-empty { margin: 0; }
-/* History as a line of time: a rail, a dot per event, the time in tabular numerals, the words quiet. */
-.ib-req-hist { list-style: none; margin: 2px 0 0; padding: 0 0 0 2px; position: relative; }
-.ib-req-hist::before { content: ''; position: absolute; left: 79px; top: 8px; bottom: 8px; width: 1px; background: color-mix(in oklch, var(--border) 45%, transparent); }
-.ib-req-hist-row { position: relative; display: flex; align-items: baseline; gap: 14px; padding: 5px 0; font-size: var(--ib-fs-12, 12px); line-height: 1.55; }
-.ib-req-hist-time { flex: none; width: 64px; text-align: right; color: var(--muted-foreground); font-variant-numeric: tabular-nums; font-size: var(--ib-fs-11, 11px); }
-.ib-req-hist-row::after { content: ''; position: absolute; left: 75.5px; top: 50%; transform: translate(-0.5px, -50%); width: 7px; height: 7px; border-radius: 50%; background: var(--card); box-shadow: 0 0 0 1.5px color-mix(in oklch, var(--border) 80%, transparent); }
-.ib-req-hist-row:first-child::after { background: var(--primary); box-shadow: 0 0 0 1.5px color-mix(in oklch, var(--primary) 55%, transparent); }
-.ib-req-hist-word { flex: none; color: var(--foreground); font-weight: 500; }
-.ib-req-hist-note { flex: 1; min-width: 0; color: var(--muted-foreground); overflow-wrap: anywhere; }
+/* History as a line of time: the rail is drawn BY EACH ROW inside its own 20px track (a full-height 1px
+   segment, the first and last rows fading their outer half), and the dot sits on the same track — alignment
+   by construction; nothing is positioned by hand. */
+.ib-req-hist { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; }
+.ib-req-hist-row { display: grid; grid-template-columns: 44px 20px minmax(0, 1fr); align-items: center; padding: 3px 0; font-size: var(--ib-fs-12, 12px); line-height: 1.55; }
+.ib-req-hist-time { grid-column: 1; text-align: right; padding-right: 2px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; font-size: var(--ib-fs-11, 11px); }
+.ib-req-hist-row::before { content: ''; grid-column: 2; grid-row: 1; justify-self: center; align-self: stretch; width: 1px; background: color-mix(in oklch, var(--border) 55%, transparent); }
+.ib-req-hist-row:first-child::before { background: linear-gradient(to bottom, transparent calc(50% - 0.5px), color-mix(in oklch, var(--border) 55%, transparent) calc(50% - 0.5px)); }
+.ib-req-hist-row:last-child::before { background: linear-gradient(to top, transparent calc(50% - 0.5px), color-mix(in oklch, var(--border) 55%, transparent) calc(50% - 0.5px)); }
+.ib-req-hist-row:only-child::before { background: none; }
+.ib-req-hist-row::after { content: ''; grid-column: 2; grid-row: 1; justify-self: center; align-self: center; width: 7px; height: 7px; border-radius: 50%; background: var(--card); box-shadow: 0 0 0 1.5px color-mix(in oklch, var(--border) 90%, transparent); z-index: 1; }
+.ib-req-hist-row:first-child::after { background: var(--primary); box-shadow: 0 0 0 1.5px color-mix(in oklch, var(--primary) 45%, transparent); }
+.ib-req-hist-word { grid-column: 3; font-weight: 500; color: var(--foreground); }
+.ib-req-hist-note { grid-column: 3; color: var(--muted-foreground); overflow-wrap: anywhere; }
 /* The two columns: the work grows on the left; the history rides beside it, staying put while the left scrolls. */
 .ib-req-work { min-width: 0; }
 .ib-req-side { position: sticky; top: 0; min-width: 0; padding-top: 26px; }
 .ib-req-error-row { grid-column: 1 / -1; }
 @media (max-width: 980px) { .ib-req-detail .ib-crdp-body { grid-template-columns: minmax(0, 1fr); } .ib-req-side { position: static; padding-top: 0; } }
-/* History, redone aligned: a three-track grid — time, rail, words — so the rail and its dots line up by
-   construction, not by hand-placed pixels. Quiet, tight, nothing lit. */
-.ib-req-hist { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; }
-.ib-req-hist-row { display: grid; grid-template-columns: 48px 18px minmax(0, 1fr); align-items: baseline; padding: 4px 0; font-size: var(--ib-fs-12, 12px); line-height: 1.55; }
-.ib-req-hist-time { grid-column: 1; text-align: right; color: var(--muted-foreground); font-variant-numeric: tabular-nums; font-size: var(--ib-fs-11, 11px); }
-.ib-req-hist-row::before { content: ''; grid-column: 2; justify-self: center; align-self: center; width: 5px; height: 5px; border-radius: 50%; background: color-mix(in oklch, var(--border) 90%, var(--foreground)); }
-.ib-req-hist-row:first-child::before { background: var(--primary); }
-/* The rail: one vertical hairline through the dots' column, drawn on the list itself. */
-.ib-req-hist { position: relative; }
-.ib-req-hist::before { content: ''; position: absolute; left: 48px; right: auto; top: 10px; bottom: 10px; width: 18px; background: linear-gradient(to right, transparent calc(50% - 0.5px), color-mix(in oklch, var(--border) 45%, transparent) calc(50% - 0.5px), color-mix(in oklch, var(--border) 45%, transparent) calc(50% + 0.5px), transparent calc(50% + 0.5px)); }
-.ib-req-hist-word { grid-column: 3; font-weight: 500; color: var(--foreground); }
-.ib-req-hist-note { grid-column: 3; color: var(--muted-foreground); overflow-wrap: anywhere; }
+

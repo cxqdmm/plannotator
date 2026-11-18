@@ -320,6 +320,76 @@ function RequirementDetail({
         </div>
       ) : (
         <div className="ib-crdp-body">
+          <section aria-label="会话">
+            <h3 className="ib-req-h">会话</h3>
+            {requirement.threads.length === 0 ? (
+              <p className="ib-req-empty">还没有会话在这里工作。</p>
+            ) : (
+              <ul className="ib-req-threads">
+                {requirement.threads.map((threadId) => {
+                  const meta = threadMeta[threadId];
+                  return (
+                    <li key={threadId} className="ib-req-thread-card">
+                      <button type="button" className="ib-req-thread-row" onClick={() => onOpenThread(threadId)}>
+                        <HostMark host="claude-code" />
+                        <span className="ib-req-thread-subject" dir="auto">{meta?.subject ?? '会话'}</span>
+                        <span className="ib-req-thread-open">打开 <Icon name="chevR" size={12} /></span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+
+          <section aria-label="产物">
+            <h3 className="ib-req-h">产物</h3>
+            {requirement.deliverables.length === 0 ? (
+              <p className="ib-req-empty">还没有产物。会话交付的文档、评审和链接会出现在这里。</p>
+            ) : (
+              <ul className="ib-req-list">
+                {requirement.deliverables.map((deliverable: Deliverable) => {
+                  const content = previews[deliverable.id];
+                  const annotatable = /\.(md|markdown|txt|html?)$/i.test(deliverable.ref);
+                  return (
+                    <li key={deliverable.id} className="ib-req-dlv">
+                      <div className="ib-req-dlv-row">
+                        <span className="ib-req-dlv-kind">{DELIVERABLE_KIND_LABELS[deliverable.kind]}</span>
+                        <span className="ib-req-dlv-name" dir="auto">{deliverable.title ?? deliverable.ref.split('/').pop() ?? deliverable.ref}</span>
+                        <span className="ib-req-dlv-meta">{deliverable.by ? `${deliverable.by} · ` : ''}{timeOf(deliverable.created_at)}</span>
+                      </div>
+                      {/* A deliverable previews itself — no opening to do, nothing folded away. */}
+                      <div className="ib-req-dlv-body">
+                        {content === undefined && <p className="ib-req-empty">读取中…</p>}
+                        {content === 'loading' && <p className="ib-req-empty">读取中…</p>}
+                        {content && content !== 'loading' && 'error' in content && <p className="ib-req-empty">{content.error}</p>}
+                        {content && content !== 'loading' && !('error' in content) && content.session && <p className="ib-req-empty">这是一次 Plannotator 批注会话（{content.session}），不是文件。</p>}
+                        {content && content !== 'loading' && !('error' in content) && content.image && <img className="ib-req-dlv-img" src={content.image} alt={deliverable.title ?? '产物预览'} />}
+                        {content && content !== 'loading' && !('error' in content) && content.binary && <p className="ib-req-empty">这个产物不是可在这里预览的文档。</p>}
+                        {content && content !== 'loading' && !('error' in content) && content.text !== undefined && content.html && (
+                          <iframe className="ib-req-dlv-html" sandbox="allow-scripts" srcDoc={content.text} title={deliverable.title ?? '产物预览'} />
+                        )}
+                        {content && content !== 'loading' && !('error' in content) && content.text !== undefined && !content.html && (
+                          <div className="ib-req-dlv-doc" dir="auto">
+                            <ChatMarkdown text={content.text} role="assistant" messageId={`dlv-${deliverable.id}`} />
+                          </div>
+                        )}
+                        {annotatable && (
+                          <div className="ib-req-dlv-act">
+                            <button type="button" className="ib-btn ib-sm" disabled={annotating === deliverable.id} onClick={() => { setAnnotating(deliverable.id); void annotateDeliverable(id, deliverable.id).then((outcome) => { setAnnotating(null); if (!outcome.ok) setError(outcome.error); }).catch(() => setAnnotating(null)); }}>
+                              <Icon name="pen" size={13} />
+                              {annotating === deliverable.id ? '批注页已打开，完成后写回历史…' : '批注'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+
           {/* Two columns, left-weighted: the work (title, deliverables, sessions) on the left, the requirement's
               history riding beside it — the page is a workbench, not a centered essay. */}
           <div className="ib-req-work">
@@ -413,75 +483,6 @@ function RequirementDetail({
             </section>
           )}
 
-          <section aria-label="产物">
-            <h3 className="ib-req-h">产物</h3>
-            {requirement.deliverables.length === 0 ? (
-              <p className="ib-req-empty">还没有产物。会话交付的文档、评审和链接会出现在这里。</p>
-            ) : (
-              <ul className="ib-req-list">
-                {requirement.deliverables.map((deliverable: Deliverable) => {
-                  const content = previews[deliverable.id];
-                  const annotatable = /\.(md|markdown|txt|html?)$/i.test(deliverable.ref);
-                  return (
-                    <li key={deliverable.id} className="ib-req-dlv">
-                      <div className="ib-req-dlv-row">
-                        <span className="ib-req-dlv-kind">{DELIVERABLE_KIND_LABELS[deliverable.kind]}</span>
-                        <span className="ib-req-dlv-name" dir="auto">{deliverable.title ?? deliverable.ref.split('/').pop() ?? deliverable.ref}</span>
-                        <span className="ib-req-dlv-meta">{deliverable.by ? `${deliverable.by} · ` : ''}{timeOf(deliverable.created_at)}</span>
-                      </div>
-                      {/* A deliverable previews itself — no opening to do, nothing folded away. */}
-                      <div className="ib-req-dlv-body">
-                        {content === undefined && <p className="ib-req-empty">读取中…</p>}
-                        {content === 'loading' && <p className="ib-req-empty">读取中…</p>}
-                        {content && content !== 'loading' && 'error' in content && <p className="ib-req-empty">{content.error}</p>}
-                        {content && content !== 'loading' && !('error' in content) && content.session && <p className="ib-req-empty">这是一次 Plannotator 批注会话（{content.session}），不是文件。</p>}
-                        {content && content !== 'loading' && !('error' in content) && content.image && <img className="ib-req-dlv-img" src={content.image} alt={deliverable.title ?? '产物预览'} />}
-                        {content && content !== 'loading' && !('error' in content) && content.binary && <p className="ib-req-empty">这个产物不是可在这里预览的文档。</p>}
-                        {content && content !== 'loading' && !('error' in content) && content.text !== undefined && content.html && (
-                          <iframe className="ib-req-dlv-html" sandbox="allow-scripts" srcDoc={content.text} title={deliverable.title ?? '产物预览'} />
-                        )}
-                        {content && content !== 'loading' && !('error' in content) && content.text !== undefined && !content.html && (
-                          <div className="ib-req-dlv-doc" dir="auto">
-                            <ChatMarkdown text={content.text} role="assistant" messageId={`dlv-${deliverable.id}`} />
-                          </div>
-                        )}
-                        {annotatable && (
-                          <div className="ib-req-dlv-act">
-                            <button type="button" className="ib-btn ib-sm" disabled={annotating === deliverable.id} onClick={() => { setAnnotating(deliverable.id); void annotateDeliverable(id, deliverable.id).then((outcome) => { setAnnotating(null); if (!outcome.ok) setError(outcome.error); }).catch(() => setAnnotating(null)); }}>
-                              <Icon name="pen" size={13} />
-                              {annotating === deliverable.id ? '批注页已打开，完成后写回历史…' : '批注'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-
-          <section aria-label="会话">
-            <h3 className="ib-req-h">会话</h3>
-            {requirement.threads.length === 0 ? (
-              <p className="ib-req-empty">还没有会话在这里工作。</p>
-            ) : (
-              <ul className="ib-req-threads">
-                {requirement.threads.map((threadId) => {
-                  const meta = threadMeta[threadId];
-                  return (
-                    <li key={threadId} className="ib-req-thread-card">
-                      <button type="button" className="ib-req-thread-row" onClick={() => onOpenThread(threadId)}>
-                        <HostMark host="claude-code" />
-                        <span className="ib-req-thread-subject" dir="auto">{meta?.subject ?? '会话'}</span>
-                        <span className="ib-req-thread-open">打开 <Icon name="chevR" size={12} /></span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
 
 
           </div>
