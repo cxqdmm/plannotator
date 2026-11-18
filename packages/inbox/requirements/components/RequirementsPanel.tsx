@@ -515,7 +515,8 @@ function RequirementDetail({
 /** The panel: a Board page whose lanes are the seven stages; `archived` shows the 已归档 page instead. */
 export function RequirementsPanel({ on, archived = false, openId = null, onView, onOpen, onOpenThread }: { on: boolean; archived?: boolean; openId?: string | null; onView: (archived: boolean) => void; onOpen: (id: string | null) => void; onOpenThread: (threadId: string) => void }) {
   const { requirements, archived: archivedList, archivedCount, create, patch, error, clearError } = useRequirements(on, subscribeRequirementFrames);
-  const [composing, setComposing] = useState(false);
+  // 新建需求 is a dialog: one question (the title), Enter makes it, Esc walks away — then the card sits in 待跟进.
+  const newDialog = useRef<HTMLDialogElement | null>(null);
   const [draft, setDraft] = useState('');
   /** The card being dragged (the Board's own mechanism: state, not the dataTransfer's contents). */
   const [dragging, setDragging] = useState<Requirement | null>(null);
@@ -524,10 +525,11 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
   const submit = () => {
     const title = draft.trim();
     if (!title) {
-      setComposing(false);
+      newDialog.current?.close();
       return;
     }
     setDraft('');
+    newDialog.current?.close();
     void create({ title });
   };
 
@@ -573,28 +575,6 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
               <span className="ib-lane-n">{cards.length}</span>
             </h2>
             <ul className="ib-lane-cards" aria-labelledby={`ib-req-lane-${stage.id}`}>
-              {!archived && stage.id === 'triage' && composing && (
-                <li className="ib-bcard" data-composer="">
-                  <span className="ib-bc-top">
-                    <input
-                      ref={(node) => queueMicrotask(() => node?.focus())}
-                      className="ib-req-rename"
-                      aria-label="需求标题"
-                      placeholder="需求标题，回车创建"
-                      value={draft}
-                      onChange={(event) => setDraft(event.target.value)}
-                      onBlur={submit}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') submit();
-                        if (event.key === 'Escape') {
-                          setDraft('');
-                          setComposing(false);
-                        }
-                      }}
-                    />
-                  </span>
-                </li>
-              )}
               {cards.map((requirement) => (
                 <RequirementCard
                   key={requirement.id}
@@ -612,7 +592,7 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
                 />
               ))}
             </ul>
-            {cards.length === 0 && !(!archived && stage.id === 'triage' && composing) && <p className="ib-lane-empty">{archived ? '没有已归档的需求。' : stage.wants ? `还没有需求；此阶段产出${stage.wants}。` : '还没有需求。'}</p>}
+            {cards.length === 0 && <p className="ib-lane-empty">{archived ? '没有已归档的需求。' : stage.wants ? `还没有需求；此阶段产出${stage.wants}。` : '还没有需求。'}</p>}
           </section>
         );
       })}
@@ -659,7 +639,8 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
                 className="ib-btn ib-sm ib-bnew"
                 data-requirements-new=""
                 onClick={() => {
-                  setComposing(true);
+                  setDraft('');
+                  newDialog.current?.showModal();
                   clearError();
                 }}
               >
@@ -688,6 +669,41 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
       ) : (
         board
       )}
+      <dialog
+        ref={newDialog}
+        className="ib-req-new"
+        aria-labelledby="ib-req-new-title"
+        onClose={() => setDraft('')}
+      >
+        <form
+          method="dialog"
+          onSubmit={(event) => {
+            event.preventDefault();
+            submit();
+          }}
+        >
+          <h2 id="ib-req-new-title">新建需求</h2>
+          <input
+            ref={(node) => {
+              if (node && newDialog.current?.open) queueMicrotask(() => node.focus());
+            }}
+            className="ib-req-new-input"
+            aria-label="需求标题"
+            placeholder="一句话说清要做什么"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+          />
+          <p className="ib-req-new-hint">回车创建；Esc 放弃。新需求先落在「待跟进」。</p>
+          <div className="ib-req-new-act">
+            <button type="button" className="ib-btn ib-sm" onClick={() => newDialog.current?.close()}>
+              取消
+            </button>
+            <button type="submit" className="ib-btn ib-sm ib-req-new-ok" data-requirements-create="" disabled={!draft.trim()}>
+              创建
+            </button>
+          </div>
+        </form>
+      </dialog>
     </section>
   );
 }
