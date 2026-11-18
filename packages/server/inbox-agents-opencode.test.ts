@@ -113,6 +113,9 @@ describe("openCodePluginInstalled", () => {
     mkdirSync(pluginsDir, { recursive: true });
     writeFileSync(join(pluginsDir, "plannotator.ts"), `export { default } from "${join(dir, "server.ts")}";\nexport * from "${join(dir, "server.ts")}";\n`);
     expect(openCodePluginInstalled(env)).toBe(true);
+    // A loader may also re-export the npm package (a dependency of the config dir).
+    writeFileSync(join(pluginsDir, "plannotator.ts"), `export * from "@plannotator/opencode";\n`);
+    expect(openCodePluginInstalled(env)).toBe(true);
     const other = checkout(join(fake.root, "checkouts"), "oh-my-openagent", "oh-my-openagent");
     writeFileSync(join(pluginsDir, "plannotator.ts"), `export { default } from "${join(other, "index.ts")}";\n`);
     expect(openCodePluginInstalled(env)).toBe(false);

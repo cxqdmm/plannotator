@@ -778,10 +778,12 @@ function openCodeSpecIsOurs(spec: string, configDir: string, homeDir: string): b
 
 /**
  * Whether one of the local plugin files OpenCode auto-loads from the config's
- * `plugins/` folder (both generations read it) loads Plannotator's plugin: a
- * loader file whose module paths lead into the package. Only module-shaped
- * strings count (an absolute path, `file:`, or a relative import — the ways a
- * loader can name the package), resolved as the loader's own imports resolve.
+ * `plugins/` folder (both generations read it — FILES only; a package folder
+ * placed there is not loaded, measured on OpenCode 2.3) loads Plannotator's
+ * plugin: a loader file whose module paths lead into the package, or whose
+ * text names the npm package (re-exported from a dependency of the config
+ * dir). Only module-shaped strings count, resolved as the loader's own
+ * imports resolve.
  */
 function openCodePluginsDirHasOurs(configDir: string, homeDir: string): boolean {
   let entries: string[];
@@ -795,8 +797,9 @@ function openCodePluginsDirHasOurs(configDir: string, homeDir: string): boolean 
     const read = readAgentFile(join(configDir, "plugins", entry));
     if (read.kind !== "file") continue;
     for (const match of read.text.matchAll(/['"]([^'"\n]+)['"]/g)) {
-      const local = resolveLocalPluginSpec(match[1]!, join(configDir, "plugins"), homeDir);
-      if (local !== null && localPluginPathIsOurs(local)) return true;
+      const spec = match[1]!;
+      const local = resolveLocalPluginSpec(spec, join(configDir, "plugins"), homeDir);
+      if ((local !== null && localPluginPathIsOurs(local)) || /^@plannotator\/opencode(?:@|$)/.test(spec)) return true;
     }
   }
   return false;
