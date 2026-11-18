@@ -320,8 +320,9 @@ function RequirementDetail({
         </div>
       ) : (
         <div className="ib-crdp-body">
-          {/* The title is the page's heading, read only (the person's call: no edit-in-place here). A rename, if
-              one is ever wanted, is a deliberate act elsewhere; the page opens onto the work, not onto a caret. */}
+          {/* Two columns, left-weighted: the work (title, deliverables, sessions) on the left, the requirement's
+              history riding beside it — the page is a workbench, not a centered essay. */}
+          <div className="ib-req-work">
           <h2 className="ib-req-title" dir="auto">{requirement.title}</h2>
 
           {requirement.threads.length === 0 && requirement.deliverables.length === 0 && (
@@ -483,6 +484,8 @@ function RequirementDetail({
           </section>
 
 
+          </div>
+          <aside className="ib-req-side">
           <section aria-label="历史">
             <h3 className="ib-req-h">历史</h3>
             <ol className="ib-req-hist">
@@ -496,8 +499,9 @@ function RequirementDetail({
             </ol>
           </section>
 
+          </aside>
           {error && (
-            <p className="ib-error" role="alert">
+            <p className="ib-error ib-req-error-row" role="alert">
               {error}
             </p>
           )}
