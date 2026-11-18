@@ -4807,19 +4807,21 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                 review={pullReview}
               />
             )}
-            {/* 会话「对话流」 (packages/inbox/stream/): the thread's own Claude Code session working, as a pane over
-                the thread. Offered only when the read says a transcript is there (`stream`, windowThreadRead). */}
+            {/* 会话「对话流」 (packages/inbox/stream/): the thread's own agent session working, as a pane over the
+                thread. Offered only when the read says a transcript is there (`stream`, windowThreadRead), and drawn
+                with the host's own mark — Claude Code's today (the only transcript the stream reads), the session's
+                own host when another one lands — so the icon names whose work the pane shows. */}
             {!artifactsOn && thread.stream === true && (
               <button
                 type="button"
                 className="ib-iconbtn ib-phstream"
                 aria-label="对话流"
                 aria-pressed={streamOpen}
-                title="这个会话自己的对话流：它读什么、跑什么、改什么"
+                title="对话流：这个会话自己在读什么、跑什么、改什么"
                 data-stream-button=""
                 onClick={() => setStreamOpen((open) => !open)}
               >
-                <Icon name="contents" size={15} />
+                <HostMark host="claude-code" />
               </button>
             )}
             {artifactsButton && (

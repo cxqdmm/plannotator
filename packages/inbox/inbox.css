@@ -12480,4 +12480,6 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-sstr-ask button { flex: none; background: var(--primary); color: var(--primary-foreground); border: none; border-radius: 7px; font: inherit; font-size: var(--ib-fs-12, 12px); font-weight: 500; padding: 5px 13px; cursor: pointer; }
 .ib-sstr-ask button:disabled { opacity: 0.5; cursor: default; }
 /* The thread header's entry (off on a phone: the pane needs the pane's width). */
+.ib-phstream[aria-pressed="true"] { color: var(--primary); }/* The thread header's 对话流 entry: the host's own mark on the header's icon button, lit while the pane is open
+   (off on a phone: the pane needs the pane's width). */
 .ib-phstream[aria-pressed="true"] { color: var(--primary); }
