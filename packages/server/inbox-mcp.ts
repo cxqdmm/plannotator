@@ -42,6 +42,8 @@ import { lastContactOf, noteSessionRead, staleThreadOf, staleThreadText } from "
 import { INBOX_BODY_CUT_BYTES, INBOX_EARLIER_PERSON_BYTES, INBOX_THREAD_WINDOW, clip, shortTime, sizeText, windowedThread, windowedThreadText } from "./inbox-mcp-read";
 import { registerInboxSearchTool } from "./inbox-mcp-search";
 import { registerInboxCardTool } from "./inbox-mcp-cards";
+import { registerInboxRequirementTool } from "./inbox-mcp-requirements";
+import type { RequirementStore } from "./requirements";
 export { INBOX_BOARD_OFF_TEXT } from "./inbox-mcp-cards";
 import { checkStepsInput, INBOX_STEPS_OFF_TEXT, registerInboxStepsTool, rowSteps, STEPS_FIELD, stepsAgent, stepsProgressText, threadStepsText } from "./inbox-mcp-steps";
 export { INBOX_STEPS_OFF_TEXT } from "./inbox-mcp-steps";
@@ -58,7 +60,7 @@ import type { ProjectHostOf } from "./inbox-thread-pulls";
 import { applyAgentPriority, priorityLine, PRIORITY_FIELD } from "./inbox-mcp-priority";
 import { changePullsAsAgent, checkProjectPullRefs, checkPullRefs, pullsActor, pullsChangeText, PULLS_FIELD, registerInboxThreadPullsTool, threadPullsText, type InboxPullsMcpLive } from "./inbox-mcp-pulls";
 
-export const INBOX_MCP_TOOLS = ["send_message", "read_thread", "search", "resolve_message", "snooze_thread", "thread_pulls", "get_guide_brief", "submit_guide", "card", "steps", "routine"] as const;
+export const INBOX_MCP_TOOLS = ["send_message", "read_thread", "search", "resolve_message", "snooze_thread", "thread_pulls", "get_guide_brief", "submit_guide", "card", "requirement", "steps", "routine"] as const;
 
 /**
  * The tools this Inbox serves with the Board on (and steps off): every one,
@@ -322,6 +324,12 @@ export interface InboxMcpContext extends InboxSnoozeMcpContext, InboxScheduledMc
    * Absent: on, as before the switch.
    */
   boardOn?: () => boolean;
+  /**
+   * The Requirements module's store (「需求」, packages/server/requirements.ts), present only while the module
+   * is on (config.json `inboxRequirements`, read on every request — the default). Absent: no `requirement` in
+   * tools/list and nothing is read or written.
+   */
+  requirements?: RequirementStore;
   /**
    * Whether thread steps are on (config.json `inboxSteps`, read on every
    * request; approval "inbox-thread-steps"). Off: no `steps` in tools/list,
@@ -1473,6 +1481,9 @@ export function createInboxMcpServer(context: InboxMcpContext): McpServer {
   // The Board's cards (approval "inbox-board"): packages/server/inbox-mcp-cards.ts. Held back in the code with
   // INBOX_CARD_ACTION_ON, and served only while the person has the Board on (the server is made per request).
   if (INBOX_CARD_ACTION_ON && (context.boardOn?.() ?? true)) registerInboxCardTool(server, context);
+  // The Requirements module (「需求」): packages/server/inbox-mcp-requirements.ts. Served only while the module
+  // is on (the store is on the context only then).
+  if (context.requirements) registerInboxRequirementTool(server, context);
   // Thread steps (approval "inbox-thread-steps"): packages/server/inbox-mcp-steps.ts. Served only while the person has them on.
   if (context.stepsOn?.()) registerInboxStepsTool(server, context);
   // Routines: packages/server/inbox-mcp-scheduled.ts. Served only while the person has them on.

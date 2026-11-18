@@ -37,6 +37,23 @@ export function isRequirementStage(value: unknown): value is RequirementStage {
 
 export type RequirementPriority = 'urgent' | 'high' | 'medium' | 'low' | 'none';
 
+/** The deliverable kinds: what each stage's product is a reference TO. */
+export const DELIVERABLE_KINDS = ['design-doc', 'review', 'code-review', 'test-report', 'link', 'file'] as const;
+
+export function isDeliverableKind(value: unknown): value is DeliverableKind {
+  return typeof value === 'string' && (DELIVERABLE_KINDS as readonly string[]).includes(value);
+}
+
+/** What a deliverable is, for its line in the detail pane (browser UI: Chinese, this fork's rule). */
+export const DELIVERABLE_KIND_LABELS: Readonly<Record<DeliverableKind, string>> = {
+  'design-doc': '设计文档',
+  review: '评审结论',
+  'code-review': '代码评审',
+  'test-report': '测试报告',
+  link: '链接',
+  file: '文件',
+};
+
 export const REQUIREMENT_PRIORITIES: readonly { id: RequirementPriority; label: string }[] = [
   { id: 'urgent', label: '紧急' },
   { id: 'high', label: '高' },
@@ -49,6 +66,9 @@ export function isRequirementPriority(value: unknown): value is RequirementPrior
   return typeof value === 'string' && REQUIREMENT_PRIORITIES.some((entry) => entry.id === value);
 }
 
+/** A deliverable's kind: what it is a reference TO (the annotate/review machinery owns the thing itself). */
+export type DeliverableKind = (typeof DELIVERABLE_KINDS)[number];
+
 /**
  * A stage's product, ATTACHED to the requirement (a reference, never a copy):
  * a design doc is an annotate session, a review conclusion a Plannotator
@@ -57,11 +77,25 @@ export function isRequirementPriority(value: unknown): value is RequirementPrior
 export interface Deliverable {
   /** 'dlv_' + ULID. */
   id: string;
-  kind: 'design-doc' | 'review' | 'code-review' | 'test-report' | 'link' | 'file';
+  kind: DeliverableKind;
   /** What it points at: a session id, a file path or a URL, by `kind`. */
   ref: string;
   title?: string;
+  /** Who attached it (an agent's name, or null for the person). */
+  by?: string | null;
   created_at: string;
+}
+
+/** An agent's (or an event bridge's) proposal to move the stage: the person adopts or dismisses it (D1: only the person moves). */
+export interface RequirementSuggestion {
+  /** 'sug_' + ULID. */
+  id: string;
+  stage: RequirementStage;
+  /** One line of why. */
+  why: string;
+  /** Who proposed it (an agent's name, or an event bridge's name). */
+  by: string;
+  at: string;
 }
 
 /** One requirement. Created by the person by hand; the id is 'req_' + ULID, the msg_/lch_ family. */
@@ -73,6 +107,10 @@ export interface Requirement {
   stage: RequirementStage;
   priority: RequirementPriority;
   deliverables: Deliverable[];
+  /** The threads this requirement's work happens in (D3: many). 'msg_' ids. */
+  threads: string[];
+  /** Proposals waiting for the person (adopt moves the stage and drops it; dismiss just drops it). */
+  suggestions: RequirementSuggestion[];
   /** Set when archived (归档): the card leaves the board until restored. Null while active. */
   archived_at?: string | null;
   created_at: string;
@@ -84,9 +122,11 @@ export interface RequirementEvent {
   id: string;
   req: string;
   at: string;
-  kind: 'created' | 'stage' | 'field' | 'deleted';
+  kind: 'created' | 'stage' | 'field' | 'deleted' | 'say' | 'deliverable' | 'suggestion';
   /** The changed field's name (`field`), or the stage it moved from/to (`stage`). */
   field?: string;
   from?: string;
   to?: string;
+  /** `say`: the note; `deliverable`: its title or ref; `suggestion`: its why. */
+  note?: string;
 }

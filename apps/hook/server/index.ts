@@ -248,6 +248,7 @@ import { completeAnnotateCommand } from "./annotate-command";
 import { ensureInboxRunning, inboxRemoteOpenHint, runInboxCommand, selfCommand as inboxSelfCommand } from "./inbox-command";
 import { runPlansCommand } from "./plans-command";
 import { runCardCommand } from "./card-command";
+import { runRequirementCommand } from "./requirement-command";
 import { runShapeCommand, runShapeSwitch, SHAPE_OFF_TEXT, shapeCommandFolder } from "./shape-command";
 // @ts-expect-error a text import of the optional helper file
 import SHAPE_KIT from "@plannotator/core/shape-kit.mjs" with { type: "text" };
@@ -346,6 +347,21 @@ const rawArgs = process.argv.slice(2);
         cwd: process.env.PLANNOTATOR_CWD || process.cwd(),
         env: process.env,
         ensureRunning: () => ensureInboxRunning(cardDataDir),
+      }),
+    );
+  }
+}
+// The 需求 panel from a shell (requirement-command.ts): a thin client over the Inbox's `requirement` tool,
+// starting a stopped Inbox like the shim.
+{
+  const args = rawArgs;
+  if (args[0] === "requirement") {
+    const requirementDataDir = getPlannotatorDataDir();
+    process.exit(
+      await runRequirementCommand(args.slice(1), {
+        cwd: process.env.PLANNOTATOR_CWD || process.cwd(),
+        env: process.env,
+        ensureRunning: () => ensureInboxRunning(requirementDataDir),
       }),
     );
   }

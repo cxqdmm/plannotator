@@ -1587,6 +1587,11 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     sessionName: (session) => live.labelOf(session) ?? live.titleOf(session),
     // The Board: the card tool is listed and served only while the person has it on.
     boardOn: () => boardOn(),
+    // The Requirements module's store (「需求」), only while the module is on — a getter, so a config flip
+    // takes effect on the next request's tools/list (the MCP server is made per request).
+    get requirements() {
+      return requirementsSwitchOn() ? requirements.store : undefined;
+    },
     // Thread steps: the steps tool and field are listed and served only while the person has them on.
     stepsOn: () => stepsOn(),
     // Routines: the routine tool is listed and served only while the person has them on.

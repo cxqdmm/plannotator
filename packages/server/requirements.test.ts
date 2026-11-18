@@ -102,6 +102,57 @@ describe("the requirements routes", () => {
     expect((await call("PATCH", `/api/requirements/${made.id}`, { archived: "yes" })).status).toBe(400);
   });
 
+  test("deliverables attach and remove over the routes, with history; a bad kind or empty ref is refused", async () => {
+    const made = await createOne();
+    const attached = await call("POST", `/api/requirements/${made.id}/deliverables`, { kind: "design-doc", ref: "sess_123", title: "登录页方案", by: "Claude Code" });
+    expect(attached.status).toBe(201);
+    expect(attached.data.deliverable).toMatchObject({ kind: "design-doc", ref: "sess_123", title: "登录页方案", by: "Claude Code" });
+    const detail = await call("GET", `/api/requirements/${made.id}`);
+    expect((detail.data.requirement as { deliverables: { id: string }[] }).deliverables).toHaveLength(1);
+    expect((detail.data.events as { kind: string }[]).map((event) => event.kind)).toContain("deliverable");
+    const id = (detail.data.requirement as { deliverables: { id: string }[] }).deliverables[0]!.id;
+    expect((await call("DELETE", `/api/requirements/${made.id}/deliverables/${id}`)).status).toBe(200);
+    // A GET under deliverables/:id is not this module's subpath: the route answers null (the caller 404s).
+    expect(await routes().route(new Request(`http://x/api/requirements/${made.id}/deliverables/${id}`), new URL(`http://x/api/requirements/${made.id}/deliverables/${id}`))).toBeNull();
+    expect(((await call("GET", `/api/requirements/${made.id}`)).data.requirement as { deliverables: unknown[] }).deliverables).toEqual([]);
+    for (const body of [{ kind: "napkin", ref: "x" }, { kind: "link", ref: "  " }]) {
+      expect((await call("POST", `/api/requirements/${made.id}/deliverables`, body)).status).toBe(400);
+    }
+  });
+
+  test("suggest → adopt moves the stage and settles it; dismiss only drops it; only the person-facing routes do either", async () => {
+    const made = await createOne();
+    const suggested = await call("POST", `/api/requirements/${made.id}/suggestions`, { stage: "design", why: "方案已挂", by: "Claude Code" });
+    expect(suggested.status).toBe(201);
+    expect(suggested.data.suggestion).toMatchObject({ stage: "design", why: "方案已挂", by: "Claude Code" });
+    // A second suggestion for the same stage replaces the first (one open proposal per stage).
+    const again = await call("POST", `/api/requirements/${made.id}/suggestions`, { stage: "design", why: "更新理由", by: "Pi" });
+    expect(((await call("GET", `/api/requirements/${made.id}`)).data.requirement as { suggestions: unknown[] }).suggestions).toHaveLength(1);
+    expect(again.data.suggestion).toMatchObject({ why: "更新理由" });
+    const sid = (again.data.suggestion as { id: string }).id;
+    expect((await call("POST", `/api/requirements/${made.id}/suggestions/${sid}/adopt`)).status).toBe(200);
+    const detail = await call("GET", `/api/requirements/${made.id}`);
+    expect((detail.data.requirement as { stage: string; suggestions: unknown[] }).stage).toBe("design");
+    expect((detail.data.requirement as { suggestions: unknown[] }).suggestions).toEqual([]);
+    // Dismiss: dropped, stage untouched.
+    const third = await call("POST", `/api/requirements/${made.id}/suggestions`, { stage: "done", why: "完成", by: "event bridge" });
+    const tid = (third.data.suggestion as { id: string }).id;
+    expect((await call("DELETE", `/api/requirements/${made.id}/suggestions/${tid}`)).status).toBe(200);
+    const after = await call("GET", `/api/requirements/${made.id}`);
+    expect((after.data.requirement as { stage: string }).stage).toBe("design");
+    expect((after.data.requirement as { suggestions: unknown[] }).suggestions).toEqual([]);
+    expect((after.data.events as { kind: string }[]).map((event) => event.kind)).toContain("suggestion");
+  });
+
+  test("threads link over PATCH and say lands in history without touching the record", async () => {
+    const made = await createOne();
+    expect((await call("PATCH", `/api/requirements/${made.id}`, { threads: ["msg_a"] })).status).toBe(200);
+    expect(((await call("GET", `/api/requirements/${made.id}`)).data.requirement as { threads: string[] }).threads).toEqual(["msg_a"]);
+    expect((await call("PATCH", `/api/requirements/${made.id}`, { threads: "msg_a" })).status).toBe(400);
+    const events = ((await call("GET", `/api/requirements/${made.id}`)).data.events as { kind: string; note?: string }[]);
+    expect(events.filter((event) => event.kind === "field" ).length).toBeGreaterThanOrEqual(1);
+  });
+
   test("a delete removes the record and writes history; an unknown id is 404; an unknown subpath is not this module's", async () => {
     const made = await createOne();
     expect((await call("DELETE", `/api/requirements/${made.id}`)).status).toBe(200);

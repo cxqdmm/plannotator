@@ -26,6 +26,8 @@ const requirement = (id: string, title: string, stage: Requirement['stage'], arc
   stage,
   priority: 'none',
   deliverables: [],
+  threads: [],
+  suggestions: [],
   archived_at: archived ? '2026-11-18T01:00:00.000Z' : null,
   created_at: '2026-11-18T00:00:00.000Z',
   updated_at: '2026-11-18T00:00:00.000Z',
@@ -71,12 +73,12 @@ describe(hasDom ? 'RequirementsPanel' : describe.skip, () => {
     root = null;
   });
 
-  const draw = async (props: { archived?: boolean } = {}) => {
+  const draw = async (props: { archived?: boolean; openId?: string | null } = {}) => {
     root = createRoot(host);
     await act(async () => {
       root!.render(
         <SidebarProvider>
-          <RequirementsPanel on archived={props.archived} onView={() => {}} />
+          <RequirementsPanel on archived={props.archived} openId={props.openId ?? null} onView={() => {}} onOpen={() => {}} onOpenThread={() => {}} />
         </SidebarProvider>,
       );
     });
@@ -156,6 +158,32 @@ describe(hasDom ? 'RequirementsPanel' : describe.skip, () => {
     expect(laneCards('dev')).toEqual([]);
     expect(laneCards('qa')).toEqual(['req_b']);
     expect(host.querySelector('[role="alert"]')!.textContent).toContain('The data folder could not be written');
+  });
+
+  test('opening a card shows the detail pane: its deliverables and threads, and adopting a suggestion moves the stage', async () => {
+    const withDetail = requirement('req_d', '导出报表', 'design');
+    withDetail.deliverables = [{ id: 'dlv_1', kind: 'design-doc', ref: 'sess_9', title: '方案', by: 'Claude Code', created_at: '2026-11-18T00:00:00.000Z' }];
+    withDetail.threads = ['msg_t1'];
+    withDetail.suggestions = [{ id: 'sug_1', stage: 'design-review', why: '方案已挂', by: 'Claude Code', at: '2026-11-18T00:00:00.000Z' }];
+    answers['GET /api/requirements'] = { status: 200, body: board([requirement('req_a', '登录页改版', 'design'), withDetail], 0) };
+    answers['GET /api/requirements/req_d'] = {
+      status: 200,
+      body: { requirement: withDetail, events: [{ id: 'evt_1', req: 'req_d', at: '2026-11-18T00:00:00.000Z', kind: 'suggestion', to: 'design-review', note: 'Claude Code: 方案已挂' }] },
+    };
+    await draw({ openId: 'req_d' });
+    const detail = host.querySelector('[data-requirement-detail="req_d"]');
+    expect(detail).not.toBeNull();
+    expect(detail!.textContent).toContain('设计文档');
+    expect(detail!.textContent).toContain('msg_t1');
+    expect(detail!.textContent).toContain('建议 → 设计评审');
+    // Adopt: the suggestion's adopt route, then the re-read (the stub still carries the suggestion; the
+    // person-facing answer here is only that the call went out with the right id).
+    answers['POST /api/requirements/req_d/suggestions/sug_1/adopt'] = { status: 200, body: { requirement: { ...withDetail, stage: 'design-review', suggestions: [] } } };
+    act(() => {
+      (detail!.querySelector<HTMLButtonElement>('.ib-req-sug-act button')!).click();
+    });
+    await act(async () => {});
+    expect(asked.filter((call) => call.path.endsWith('/adopt')).length).toBe(1);
   });
 
   test('归档 takes a card off the board over PATCH; 恢复 brings it back on the archived page', async () => {

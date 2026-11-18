@@ -51,11 +51,27 @@ export function createRequirement(input: { title: string; priority?: Requirement
   return write('POST', '/api/requirements', input);
 }
 
-export function patchRequirement(id: string, patch: { title?: string; notes?: string; stage?: RequirementStage; priority?: RequirementPriority; archived?: boolean }): Promise<WriteOutcome<{ requirement: Requirement }>> {
+export function patchRequirement(id: string, patch: { title?: string; notes?: string; stage?: RequirementStage; priority?: RequirementPriority; archived?: boolean; threads?: string[] }): Promise<WriteOutcome<{ requirement: Requirement }>> {
   return write('PATCH', `/api/requirements/${encodeURIComponent(id)}`, patch);
 }
 
 /** One requirement with its history (Wave 2's detail pane reads this). */
 export async function readRequirement(id: string, signal?: AbortSignal): Promise<{ requirement: Requirement; events: RequirementEvent[] } | null> {
   return get<{ requirement: Requirement; events: RequirementEvent[] }>(`/api/requirements/${encodeURIComponent(id)}`, signal);
+}
+
+export function deliverRequirement(id: string, input: { kind: string; ref: string; title?: string }): Promise<WriteOutcome<{ deliverable: unknown }>> {
+  return write('POST', `/api/requirements/${encodeURIComponent(id)}/deliverables`, input);
+}
+
+export function removeDeliverable(id: string, deliverableId: string): Promise<WriteOutcome<{ ok: boolean }>> {
+  return write('DELETE', `/api/requirements/${encodeURIComponent(id)}/deliverables/${encodeURIComponent(deliverableId)}`, {});
+}
+
+export function adoptSuggestion(id: string, suggestionId: string): Promise<WriteOutcome<{ requirement: Requirement }>> {
+  return write('POST', `/api/requirements/${encodeURIComponent(id)}/suggestions/${encodeURIComponent(suggestionId)}/adopt`, {});
+}
+
+export function dismissSuggestion(id: string, suggestionId: string): Promise<WriteOutcome<{ ok: boolean }>> {
+  return write('DELETE', `/api/requirements/${encodeURIComponent(id)}/suggestions/${encodeURIComponent(suggestionId)}`, {});
 }

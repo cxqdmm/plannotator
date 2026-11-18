@@ -188,6 +188,15 @@ export const TOOL_GUIDE: Record<InboxMcpToolName, InboxToolGuide> = {
       "- A card the person put in backlog is theirs to move: you cannot move it out (`card_backlog_person_only`), and only the person restores a card they dropped (`card_dropped_by_person`); you can still `say` and `link` on such a card. Leave its work alone until they send it to you. A card or thread of another project is refused (`card_other_project`): pass that project's `project_path`.",
     ],
   },
+  requirement: {
+    args: ["op", "requirement", "thread_id", "kind", "ref", "title", "note", "stage", "why"],
+    lines: [
+      "Work the person's requirements (the 需求 board in the Inbox): a requirement is a piece of work with a lifecycle (待跟进 triage, 需求设计 design, 设计评审 design review, 需求开发 dev, 功能测试 qa, 代码评审 code review, 已完成 done) whose stages only the person moves — you read, tie work to it, attach deliverables and propose the next stage.",
+      "- `op`: `mine` (the requirements tied to a thread you are in: `thread_id`; without one, every active requirement, one line each), `get` (`requirement`: its stage, threads, deliverables, pending suggestions, notes), `link` (tie this thread's work to it: `thread_id`), `deliver` (attach what you just finished: `kind` — `design-doc` (an annotate session), `review` (a plan-review conclusion), `code-review`, `test-report`, `link`, `file` — and `ref`: a session id, `owner/repo#123`, a URL or a path; `title`, a few words, optional), `say` (`note`: one line of progress, shown in its history), `suggest` (`stage` and `why`: propose the next stage — the person adopts it on the board; you never move a stage yourself).",
+      "- A requirement is the axis the existing work hangs on: a plan review you ran is its 设计评审 deliverable, a code review its 代码评审 one. Attach the thing you just finished with `deliver` at the moment you finish it; suggest the stage that finish implies.",
+      "- While the person's 需求 panel is off the Inbox does not list `requirement`, and a call answers `requirements_off` and writes nothing.",
+    ],
+  },
   // Thread steps (approval "inbox-thread-steps"): shown only while the person has them on (formatInboxHelp's `steps`).
   steps: {
     args: ["thread_id", "steps"],

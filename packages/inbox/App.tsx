@@ -5581,12 +5581,15 @@ function Inbox() {
     );
   } else if (route.page === 'requirements') {
     // The Requirements panel (「需求」, packages/inbox/requirements): the sidebar's 需求 row, its 已归档 page at
-    // `#requirements&archived`. Owns its data, so nothing else is wired here.
+    // `#requirements&archived`, and the requirement whose detail pane is open at `&req=req_…`. Owns its data.
     main = (
       <RequirementsPanel
         on={requirementsOn}
         archived={route.reqArchived === true}
-        onView={(to) => writeRoute({ page: 'requirements', project: null, thread: null, reqArchived: to, req: null })}
+        openId={route.req ?? null}
+        onView={(to) => writeRoute({ page: 'requirements', project: null, thread: null, reqArchived: to, req: route.req ?? null })}
+        onOpen={(id) => writeRoute({ page: 'requirements', project: null, thread: null, reqArchived: route.reqArchived, req: id })}
+        onOpenThread={(threadId) => writeRoute({ page: 'inbox', project: null, thread: threadId })}
       />
     );
   } else if (route.page === 'scheduled') {

@@ -12383,3 +12383,38 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
 .ib-bpage[data-requirements-page] .ib-bcard[data-dragging] { opacity: 0.55; transform: scale(1.02); }
 /* A lane the drag hovers breathes its highlight in (the Board's inset ring, with the panel's own ease). */
 .ib-bpage[data-requirements-page] .ib-lane { transition: background-color 120ms ease-out, box-shadow 180ms cubic-bezier(0.2, 0.7, 0.3, 1); }
+/* The detail pane's own bits (Wave 2a): the pane itself is CardPanel's ib-crdp above. */
+.ib-req-detail { flex-basis: min(520px, 42%); }
+.ib-req-title { width: 100%; min-width: 0; margin: 0; padding: 2px 6px; border: 0; border-radius: 6px; background: transparent; color: var(--foreground); font: inherit; font-size: var(--ib-fs-20, 20px); font-weight: 650; letter-spacing: -0.01em; line-height: 1.3; overflow-wrap: anywhere; outline: none; }
+.ib-req-title:hover { background: var(--ib-hover); }
+.ib-req-title:focus-visible { outline: 2px solid var(--ring); }
+.ib-req-h { margin: 0 0 6px; font-size: var(--ib-fs-13, 13px); font-weight: 600; color: var(--muted-foreground); text-transform: none; }
+.ib-req-empty { margin: 0 0 8px; color: var(--muted-foreground); font-size: var(--ib-fs-13, 13px); line-height: 1.45; }
+.ib-req-sug { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 8px; background: var(--ib-lane-bg); }
+.ib-req-sug-row { display: flex; align-items: center; gap: 8px; }
+.ib-req-sug-why { flex: 1; min-width: 0; font-size: var(--ib-fs-13, 13px); line-height: 1.45; }
+.ib-req-sug-by { color: var(--muted-foreground); }
+.ib-req-sug-act { display: inline-flex; align-items: center; gap: 2px; flex: none; }
+.ib-req-list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.ib-req-dlv { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 6px 4px 0; border-radius: 6px; font-size: var(--ib-fs-13, 13px); }
+.ib-req-dlv:hover { background: var(--ib-hover); }
+.ib-req-dlv-kind { flex: none; padding: 1px 7px; border-radius: 5px; background: var(--ib-lane-bg); color: var(--muted-foreground); font-size: var(--ib-fs-12, 12px); white-space: nowrap; }
+.ib-req-dlv-ref { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--foreground); text-decoration: none; }
+a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
+.ib-req-dlv-meta { flex: none; color: var(--muted-foreground); font-size: var(--ib-fs-12, 12px); }
+.ib-req-add { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ib-req-add input, .ib-req-add select { min-width: 0; height: 30px; padding: 0 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--background); color: var(--foreground); font: inherit; font-size: var(--ib-fs-13, 13px); }
+.ib-req-add input { flex: 1; }
+.ib-req-add input:focus-visible, .ib-req-add select:focus-visible { outline: 2px solid var(--ring); outline-offset: -1px; }
+.ib-req-threads { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.ib-req-threads li { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.ib-req-thread { display: inline-flex; align-items: center; gap: 6px; flex: 1; min-width: 0; height: 28px; padding: 0 8px; border: 0; border-radius: 6px; background: none; color: var(--foreground); font: inherit; font-size: var(--ib-fs-12-5, 12.5px); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ib-req-thread:hover { background: var(--ib-hover); color: var(--primary); }
+.ib-req-notes { width: 100%; box-sizing: border-box; margin: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font: inherit; font-size: var(--ib-fs-13, 13px); line-height: 1.5; resize: vertical; }
+.ib-req-notes:focus-visible { outline: 2px solid var(--ring); outline-offset: -1px; }
+.ib-req-history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; color: var(--muted-foreground); font-size: var(--ib-fs-12, 12px); line-height: 1.4; }
+.ib-req-hist-time { font-variant-numeric: tabular-nums; }
+/* A card's bottom marks: suggestion, deliverable and thread counts, quiet and small. */
+.ib-req-line { align-items: center; gap: 10px; color: var(--muted-foreground); }
+.ib-req-mark { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.ib-req-stage { font-size: var(--ib-fs-13, 13px); }

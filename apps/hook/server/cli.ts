@@ -283,6 +283,26 @@ export const CARD_COMMAND_USAGE = [
   "Run 'plannotator inbox --help' for the full guide (its card section, shown while the Board is on).",
 ].join("\n");
 
+/**
+ * `plannotator requirement …` (requirement-command.ts): the 需求 panel's call
+ * from a shell, a thin client over the Inbox's `requirement` MCP tool.
+ */
+export const REQUIREMENT_COMMAND_USAGE = [
+  "Usage:",
+  "  plannotator requirement mine [<thread_id>]                        (the requirements tied to a thread; without one, every active requirement)",
+  "  plannotator requirement get <req_id>",
+  "  plannotator requirement link <req_id> <thread_id>",
+  "  plannotator requirement deliver <req_id> <kind> <ref> [--title <words>]",
+  "  plannotator requirement say <req_id> <note>",
+  "  plannotator requirement suggest <req_id> <stage> <why>            (the person adopts it on the 需求 board; you never move a stage)",
+  "",
+  "Every command takes [--json].",
+  `Kinds: ${["design-doc", "review", "code-review", "test-report", "link", "file"].join(", ")} — what the deliverable points at (an annotate session id, owner/repo#123, a URL or a path).`,
+  `Stages: ${["triage", "design", "design-review", "dev", "qa", "code-review", "done"].join(", ")}.`,
+  "",
+  "Works only while the person's 需求 panel is on (config.json inboxRequirements); off, it exits 1 with requirements_off.",
+].join("\n");
+
 /** `plannotator plans …` (plans-command.ts): Plans' switch and list. Unreleased (HIDDEN_SUBCOMMANDS): the usage line only. */
 export const PLANS_COMMAND_USAGE = ["Usage:", "  plannotator plans [off | list]"].join("\n");
 
@@ -897,6 +917,8 @@ export const SUBCOMMAND_HELP: Record<string, string> = {
   ].join("\n"),
   // The Board's cards.
   card: CARD_COMMAND_USAGE,
+  // The 需求 panel.
+  requirement: REQUIREMENT_COMMAND_USAGE,
   shape: SHAPE_COMMAND_USAGE,
   plans: PLANS_COMMAND_USAGE,
   feedback: FEEDBACK_COMMAND_USAGE,
