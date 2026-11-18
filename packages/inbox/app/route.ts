@@ -13,7 +13,7 @@ import { shapeReviewAtOf, type ReviewAt } from '../shape/review';
 import { viewScopeOf, type PullViewScope } from '../pulls/viewScope';
 
 export interface Route {
-  page: 'inbox' | 'settings' | 'whats-new' | 'drafts' | 'tour' | 'board' | 'reviews' | 'shapes' | 'prs' | 'artifacts' | 'scheduled';
+  page: 'inbox' | 'settings' | 'whats-new' | 'drafts' | 'tour' | 'board' | 'reviews' | 'shapes' | 'prs' | 'artifacts' | 'scheduled' | 'requirements';
   /** Routines (`#routines`): the one open beside the list (`#routine=sch_…`, `#routine=new` for a new one). */
   scheduled?: string | null;
   /**
@@ -57,6 +57,8 @@ export interface Route {
    * the grid for a board with no thread (`#shapes&shape=shp_…`). The grid alone is `#shapes`.
    */
   shape?: string | null;
+  /** The Requirements panel (`#requirements`): the requirement whose detail is open beside the list (Wave 2). */
+  req?: string | null;
   /** The Board's list (`#board`, `#board=done`, `#board=cancelled`; `#board=shipped` before the rename opens Done, `#board=icebox` from before v2 Cancelled). */
   board?: BoardView;
   /** The opened Board card (`#board&card=crd_…`), or on a thread the card it was opened from (its "‹ Board" way back). */
@@ -148,6 +150,9 @@ export function routeOf(fullHash: string): Route {
   if (params.has('artifacts') && !params.get('thread')) return { page: 'artifacts', project: null, thread: null, pinned: params.get('artifacts') === 'pinned' };
   if (params.has('routine') || params.has('routines')) return { page: 'scheduled', project: null, thread: null, scheduled: params.get('routine') || null };
   if (params.has('shapes')) return { page: 'shapes', project: null, thread: null, shape: params.get('shape') };
+  // The Requirements panel (「需求」, the sidebar's 需求 row): `#requirements`, with the requirement whose detail is
+  // open beside the list (`&req=req_…`, Wave 2).
+  if (params.has('requirements')) return { page: 'requirements', project: null, thread: null, req: params.get('req') };
   if (params.has('prs')) {
     const stack = params.get('stack') || null;
     const layer = stack ? params.get('layer') || null : null;

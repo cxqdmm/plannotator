@@ -357,6 +357,7 @@ import { inboxAppIconResponse } from "./inbox-app-icons";
 import { handleInboxTourRequest } from "./inbox-tour";
 import { framedWindowHeaders, NO_FRAME_ANCESTORS, resolveInboxFrameAncestors } from "./inbox-framing";
 import { createBunShapeRoutes } from "./shape-routes";
+import { createBunRequirementRoutes, requirementEventFrame, requirementsSwitchOn } from "./requirements";
 import { shapeCodeRoot } from "@plannotator/shared/shape/store";
 import { shapeEventFrame } from "@plannotator/shared/shape/routes";
 import { shapeAgentName, unlocked as unlockedShape } from "@plannotator/shared/shape/routes";
@@ -3718,6 +3719,8 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     /** Code review (config.json `inboxCodeReview`) and Shape (`inboxShape`): off unless the person turned them on. Held until the next big release: absent while off. */
     ...heldSwitch("code_review", codeReviewOn()),
     ...heldSwitch("shape", shapeOn()),
+    /** The Requirements panel (「需求」, config.json `inboxRequirements`): on unless the person turns it off — this fork's own module. */
+    requirements: { on: requirementsSwitchOn() },
     /** Capabilities on the seam (inbox-capability.ts): Plans' `plans: { on: true }`, present only while on. */
     ...capabilitiesWire(capabilities),
     /** System (config.json `inboxSystem`): its switch, present only while Code review is on (Settings shows the row only then). */
@@ -3928,6 +3931,10 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
           }
         };
         syncShapes();
+        // The Requirements panel's records changed: `event: requirements`, windows only. While the module is off
+        // its routes 404, so nothing can change and no frame is ever sent; a hand-edit of config.json takes effect
+        // on the stream's next (re)connect, which resubscribes here.
+        const stopRequirements = windowId ? requirements.watch.subscribe((ids) => send(requirementEventFrame(ids))) : null;
         const onCapabilities = (changed?: "code_review" | "shape" | "float_drafts" | "mark_read_warning" | "scheduled_threads") => {
           syncShapes();
           const floats = floatDraftsOn();
@@ -3985,6 +3992,7 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
           tailscaleListeners.delete(onTailscale);
           stopShapes?.();
           stopShapes = null;
+          stopRequirements?.();
           deliveryListeners.delete(sendDeliveries);
           stopMachines();
           leave();
@@ -4462,6 +4470,9 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
       return { state: !connection ? "gone" : connection.busy ? "busy" : "live", agent: shapeAgentName(shape.session) };
     },
   });
+
+  // The Requirements module (「需求」, requirements.ts): storage, routes and the change watch, mounted like Shape's.
+  const requirements = createBunRequirementRoutes({ dataDir });
 
   // The Codex wake: the person's items for a Codex thread go in as a new turn through `codex queue`,
   // once each (inbox-codex-wake.ts). Worded like any bridge command.
@@ -6292,7 +6303,7 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
         if (body.voice !== undefined) voice.save(body.voice);
         if (promptsChange) saveInboxPromptsChange(promptsChange);
         const showArchivedNow = showArchivedOn === undefined ? showArchived.state() : saveShowArchived(showArchivedOn);
-        return json({ show_archived: { on: showArchivedNow.on, rev: showArchivedNow.rev }, inbox_tool: inboxTool, notifications, sound, tailscale: tailnet, updates: updateState, theme, text_size: textSize, favicon, ...reactions, ...rows, ...sidebar, diff_style: diffOptions.diff_style, diff_options: diffOptions, experimental, tour, board, steps, bro, float_drafts: floatDrafts, mark_read_warning: markReadWarning, ...heldSwitch("code_review", codeReview.on, body.code_review !== undefined), ...heldSwitch("shape", shape.on, body.shape !== undefined), ...systemAnswer, ...scheduledAnswer, ...chapterDiagrams, voice: voice.settings(via), prompts: promptsState(), cookie_host: cookieHost ?? cookieHostWire() });
+        return json({ show_archived: { on: showArchivedNow.on, rev: showArchivedNow.rev }, inbox_tool: inboxTool, notifications, sound, tailscale: tailnet, updates: updateState, theme, text_size: textSize, favicon, ...reactions, ...rows, ...sidebar, diff_style: diffOptions.diff_style, diff_options: diffOptions, experimental, tour, board, steps, bro, float_drafts: floatDrafts, mark_read_warning: markReadWarning, ...heldSwitch("code_review", codeReview.on, body.code_review !== undefined), ...heldSwitch("shape", shape.on, body.shape !== undefined), requirements: { on: requirementsSwitchOn() }, ...systemAnswer, ...scheduledAnswer, ...chapterDiagrams, voice: voice.settings(via), prompts: promptsState(), cookie_host: cookieHost ?? cookieHostWire() });
       }
       // Routines (inbox-scheduled-routes.ts): the window's list, editor, Run now and Stop.
       if (path === "/api/inbox/scheduled" || path.startsWith("/api/inbox/scheduled/")) {
@@ -6448,6 +6459,21 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
           if (checkServerSession(body, serverSession) === "mismatch") return json(serverSessionMismatchBody(INBOX_SERVER_SESSION_MISMATCH_ERROR), 409);
         }
         const answered = await shapes.route(req, url);
+        if (answered) return answered;
+        return json({ error: "Not found", code: "not_found" }, 404);
+      }
+
+      // The Requirements module (packages/server/requirements.ts): off, every path is the unknown-route 404, as if
+      // absent. Writes (the panel's own window) carry the page's session like Shape's POSTs do.
+      if (path === "/api/requirements" || path.startsWith("/api/requirements/")) {
+        if (!requirementsSwitchOn()) return json({ error: "Not found", code: "not_found" }, 404);
+        const crossSite = crossSiteCardRead(req);
+        if (crossSite) return crossSite;
+        if (req.method === "POST" || req.method === "PATCH" || req.method === "DELETE") {
+          const body = await req.clone().json().catch(() => null);
+          if (checkServerSession(body, serverSession) === "mismatch") return json(serverSessionMismatchBody(INBOX_SERVER_SESSION_MISMATCH_ERROR), 409);
+        }
+        const answered = await requirements.route(req, url);
         if (answered) return answered;
         return json({ error: "Not found", code: "not_found" }, 404);
       }

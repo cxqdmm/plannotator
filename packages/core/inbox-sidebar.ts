@@ -38,6 +38,7 @@ export const INBOX_SIDEBAR_ITEMS = [
   { id: 'logo', label: 'Logo', place: 'brand', hideable: true },
   { id: 'search', label: 'Search', place: 'stack', stack: 'top', hideable: true },
   { id: 'new-message', label: 'New message', place: 'stack', stack: 'top', hideable: true },
+  { id: 'requirements', label: '需求', place: 'stack', stack: 'top', hideable: true },
   { id: 'inbox', label: 'Inbox', place: 'stack', stack: 'top', hideable: false },
   { id: 'board', label: 'Board', place: 'stack', stack: 'top', hideable: true },
   { id: 'scheduled', label: 'Routines', place: 'stack', stack: 'top', hideable: true },
@@ -199,7 +200,7 @@ export const INBOX_SIDEBAR_PRESETS: Readonly<Record<InboxSidebarPreset, { label:
   'all-top': { label: 'All at top', layout: { top: [...INBOX_SIDEBAR_DEFAULT.top, ...INBOX_SIDEBAR_DEFAULT.bottom], bottom: [], hidden: [] } },
   minimal: {
     label: 'Minimal',
-    layout: { top: [...INBOX_SIDEBAR_DEFAULT.top], bottom: [...INBOX_SIDEBAR_DEFAULT.bottom], hidden: ['new-message', 'copy-prompt', 'feedback', 'usage', 'shortcuts'] },
+    layout: { top: [...INBOX_SIDEBAR_DEFAULT.top], bottom: [...INBOX_SIDEBAR_DEFAULT.bottom], hidden: ['new-message', 'requirements', 'copy-prompt', 'feedback', 'usage', 'shortcuts'] },
   },
 };
 export const INBOX_SIDEBAR_PRESET_ORDER: readonly InboxSidebarPreset[] = ['default', 'all-top', 'minimal'];

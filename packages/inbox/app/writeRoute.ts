@@ -19,6 +19,7 @@ export function hashOf(route: Route): string {
   else if (route.page === 'artifacts') hash = route.pinned ? 'artifacts=pinned' : 'artifacts';
   else if (route.page === 'scheduled') hash = route.scheduled ? `routine=${encodeURIComponent(route.scheduled)}` : 'routines';
   else if (route.page === 'shapes') hash = route.shape ? `shapes&shape=${encodeURIComponent(route.shape)}` : 'shapes';
+  else if (route.page === 'requirements') hash = route.req ? `requirements&req=${encodeURIComponent(route.req)}` : 'requirements';
   else if (route.page === 'board')
     hash =
       (route.board && route.board !== 'lanes' ? `board=${route.board}` : 'board') +

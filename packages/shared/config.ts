@@ -617,6 +617,12 @@ export interface PlannotatorConfig {
    */
   inboxShape?: boolean;
   /**
+   * The Requirements panel (「需求」, packages/server/requirements.ts): the sidebar's 需求 row, the
+   * `/api/requirements` routes and its `event: requirements` frames. ON unless the person turns it
+   * off (`false`) — this fork's own module (the design doc's §3.1), unlike Shape's opt-in.
+   */
+  inboxRequirements?: boolean;
+  /**
    * Plans in the Inbox (packages/shared/plans/switch.ts): the plan library of every plan plan review handled. Off
    * unless the person turns it on (`plannotator plans`, or `POST /api/inbox/settings` `{ plans: { on } }` from the
    * window); `plannotator plans off` turns it off and keeps the library. Off: no `/api/plans` route, no import and

@@ -44,7 +44,7 @@ import { Pebble } from '@plannotator/ui/components/shape/Pebble';
 import { ScheduledNav } from '../scheduled/ScheduledNav';
 
 export interface SidebarProps {
-  page: 'inbox' | 'settings' | 'whats-new' | 'drafts' | 'board' | 'reviews' | 'shapes' | 'prs' | 'artifacts' | 'scheduled';
+  page: 'inbox' | 'settings' | 'whats-new' | 'drafts' | 'board' | 'reviews' | 'shapes' | 'prs' | 'artifacts' | 'scheduled' | 'requirements';
   /**
    * Artifacts (approval "inbox-artifact-stars"): the row in the top group (before Reviews; Customize can hide it), drawn with `onArtifacts`, that opens
    * the Artifacts wall on All. No count.
@@ -56,6 +56,8 @@ export interface SidebarProps {
    * Board's header ("N in flight · N on you").
    */
   onBoard?: () => void;
+  /** The Requirements panel (「需求」): the row above Inbox, shown only while the module is on. */
+  onRequirements?: () => void;
   /** Routines: the row under Board, only while Settings → Capabilities → Routines is on. */
   onScheduled?: () => void;
   /**
@@ -433,6 +435,7 @@ export function Sidebar(props: SidebarProps) {
     );
   const drawn = drawnSidebarItems({
     board: Boolean(props.onBoard),
+    requirements: Boolean(props.onRequirements),
     scheduled: Boolean(props.onScheduled),
     reviews: Boolean(props.onPulls),
     shape: Boolean(props.onShape),
@@ -545,6 +548,21 @@ export function Sidebar(props: SidebarProps) {
         刷新列表
       </span>
           </>
+        );
+      case 'requirements':
+        // The Requirements panel (「需求」, packages/inbox/requirements): the row above Inbox, drawn with
+        // `onRequirements` (absent while the module is off — the layout keeps its place for when it returns).
+        return (
+        <button
+          type="button"
+          className={`ib-nav${props.page === 'requirements' ? ' ib-on' : ''}`}
+          onClick={pick(() => props.onRequirements?.())}
+          aria-current={props.page === 'requirements' ? 'page' : undefined}
+          data-requirements-nav=""
+        >
+          <Icon name="todo" />
+          需求
+        </button>
         );
       case 'board':
         return (

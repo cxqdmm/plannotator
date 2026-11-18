@@ -595,6 +595,8 @@ export interface SettingsModel {
   code_review?: { on: boolean };
   /** Shape (Settings → Capabilities): the boards agents draw. Absent from an older Inbox. */
   shape?: { on: boolean };
+  /** The Requirements panel (「需求」): on unless the person turned it off. Absent from an older Inbox (off then). */
+  requirements?: { on: boolean };
   /**
    * System (config.json `inboxSystem`, approval "system-inbox"): its switch, present only while Code review is on (the
    * Settings row shows only then). Whether System shows is `systemShown()` (system/gate.ts).
