@@ -175,7 +175,9 @@ describe(hasDom ? 'RequirementsPanel' : describe.skip, () => {
     const detail = host.querySelector('[data-requirement-detail="req_d"]');
     expect(detail).not.toBeNull();
     expect(detail!.textContent).toContain('设计文档');
-    expect(detail!.textContent).toContain('msg_t1');
+    // The session is a card in the list's language: its subject, never its id.
+    expect(detail!.textContent).not.toContain('msg_t1');
+    expect(detail!.querySelector('.ib-req-thread-row')).not.toBeNull();
     expect(detail!.textContent).toContain('建议 → 设计评审');
     // Adopt: the suggestion's adopt route, then the re-read (the stub still carries the suggestion; the
     // person-facing answer here is only that the call went out with the right id).
@@ -187,22 +189,6 @@ describe(hasDom ? 'RequirementsPanel' : describe.skip, () => {
     expect(asked.filter((call) => call.path.endsWith('/adopt')).length).toBe(1);
   });
 
-  test('「发起设计文档评审」posts the bridge route and holds its in-flight wording', async () => {
-    const withDoc = requirement('req_e', '导出报表', 'design');
-    answers['GET /api/requirements'] = { status: 200, body: board([withDoc], 0) };
-    answers['GET /api/requirements/req_e'] = { status: 200, body: { requirement: withDoc, events: [] } };
-    answers['POST /api/requirements/req_e/design-review'] = { status: 200, body: { ok: true, doc: '/tmp/doc.md' } };
-    await draw({ openId: 'req_e' });
-    const button = host.querySelector<HTMLButtonElement>('[data-requirements-review]')!;
-    expect(button.textContent).toContain('发起设计文档评审');
-    await act(async () => {
-      button.click();
-    });
-    const post = asked.find((call) => call.path.endsWith('/design-review'));
-    expect(post?.method).toBe('POST');
-    expect(button.disabled).toBe(true);
-    expect(button.textContent).toContain('评审已打开');
-  });
 
   test('开始做 launches a session on the requirement, links the thread, and lands the person in it', async () => {
     const fresh = requirement('req_s', '优化admin-frontend技能', 'triage');

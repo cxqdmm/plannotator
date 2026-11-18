@@ -12536,3 +12536,34 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-sstr-ask { margin: 0 22px 11px; max-width: 940px; width: calc(100% - 44px); align-self: center; }
 .ib-sstr-askhint { margin: 6px 22px 11px; max-width: 940px; align-self: center; }
 .ib-sstr-asknote { margin: 6px 22px 11px; max-width: 940px; align-self: center; }
+/* ── The detail page's own surfaces: deliverable cards that open their document, session cards in the list's
+   language. Quiet, quick, nothing that has to be read twice. ── */
+.ib-req-h { font-size: var(--ib-fs-12, 12px); font-weight: 600; letter-spacing: 0.06em; color: var(--muted-foreground); text-transform: none; margin: 18px 0 8px; }
+.ib-req-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+/* A deliverable: one row (kind, name, who and when); its body opens under it with the document itself. */
+.ib-req-dlv { border-radius: 10px; border: 1px solid var(--ib-hair, var(--border)); background: color-mix(in oklch, var(--background) 35%, var(--card)); overflow: hidden; transition: border-color 150ms ease-out; }
+.ib-req-dlv:hover { border-color: color-mix(in oklch, var(--foreground) 18%, transparent); }
+.ib-req-dlv-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 12px; background: none; border: 0; cursor: pointer; font: inherit; text-align: left; color: var(--foreground); }
+.ib-req-dlv-row .ib-ic { flex: none; width: 11px; height: 11px; color: var(--muted-foreground); transition: transform 160ms cubic-bezier(0.2, 0.7, 0.3, 1); }
+.ib-req-dlv-kind { flex: none; font-size: var(--ib-fs-11, 11px); color: var(--primary); background: color-mix(in oklch, var(--primary) 10%, transparent); border-radius: 5px; padding: 1.5px 7px; }
+.ib-req-dlv-name { flex: 1; min-width: 0; font-size: var(--ib-fs-13, 13px); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ib-req-dlv-meta { flex: none; font-size: var(--ib-fs-11, 11px); color: var(--muted-foreground); }
+.ib-req-dlv-body { position: relative; border-top: 1px solid var(--ib-hair, var(--border)); padding: 12px 14px; animation: ib-req-dlv-open 0.22s cubic-bezier(0.32, 0.72, 0.24, 1); }
+@keyframes ib-req-dlv-open { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ib-req-dlv-body { animation-duration: 1ms; } }
+.ib-req-dlv-doc { max-height: 420px; overflow-y: auto; font-size: var(--ib-fs-13, 13px); line-height: 1.7; padding: 2px 4px; scrollbar-width: thin; }
+.ib-req-dlv-doc :is(h1, h2, h3) { font-size: 1.05em; margin: 10px 0 6px; }
+.ib-req-dlv-img { display: block; max-width: 100%; max-height: 420px; border-radius: 8px; }
+.ib-req-dlv-act { display: flex; justify-content: flex-end; margin-top: 10px; }
+.ib-req-dlv-x { position: absolute; top: 8px; right: 8px; }
+/* A session card: the list row's own shape (a mark, a subject, an open affordance), no ids anywhere. */
+.ib-req-threads { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ib-req-thread-card { position: relative; }
+.ib-req-thread-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--ib-hair, var(--border)); background: color-mix(in oklch, var(--background) 35%, var(--card)); cursor: pointer; font: inherit; color: var(--foreground); transition: border-color 150ms ease-out, transform 180ms cubic-bezier(0.2, 0.7, 0.3, 1); }
+.ib-req-thread-row:hover { border-color: color-mix(in oklch, var(--primary) 35%, transparent); transform: translateY(-1px); }
+.ib-req-thread-row .ib-mk { flex: none; }
+.ib-req-thread-subject { flex: 1; min-width: 0; font-size: var(--ib-fs-13, 13px); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ib-req-thread-open { flex: none; display: inline-flex; align-items: center; gap: 3px; font-size: var(--ib-fs-11, 11px); color: var(--muted-foreground); }
+.ib-req-thread-row:hover .ib-req-thread-open { color: var(--primary); }
+.ib-req-thread-card .ib-req-x { position: absolute; top: 50%; transform: translateY(-50%); right: 10px; opacity: 0; transition: opacity 120ms ease-out; }
+.ib-req-thread-card:hover .ib-req-x { opacity: 1; }

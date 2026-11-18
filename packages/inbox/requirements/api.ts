@@ -81,3 +81,13 @@ export function dismissSuggestion(id: string, suggestionId: string): Promise<Wri
 export function startDesignReview(id: string): Promise<WriteOutcome<{ ok: boolean; doc: string }>> {
   return write('POST', `/api/requirements/${encodeURIComponent(id)}/design-review`, {});
 }
+
+/** A deliverable's preview: text (markdown/plain) or an image, the person's own window only. */
+export function deliverableContent(id: string, deliverableId: string): Promise<{ text?: string; image?: string; binary?: boolean; annotatable?: boolean } | { error: string }> {
+  return fetch(`/api/requirements/${encodeURIComponent(id)}/deliverables/${encodeURIComponent(deliverableId)}/content`, { headers: { Accept: 'application/json' }, cache: 'no-store' }).then((response) => response.json());
+}
+
+/** 批注: the deliverable's document opens in a plain annotate session; what comes back lands in the history. */
+export function annotateDeliverable(id: string, deliverableId: string): Promise<WriteOutcome<{ ok: boolean }>> {
+  return write('POST', `/api/requirements/${encodeURIComponent(id)}/deliverables/${encodeURIComponent(deliverableId)}/annotate`, {});
+}

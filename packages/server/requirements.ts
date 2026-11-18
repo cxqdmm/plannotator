@@ -17,7 +17,7 @@
  * The whole set is held in memory (personal scale, the design doc's §9.3).
  */
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, basename } from "node:path";
 import { ulid } from "@plannotator/core/inbox-types";
 import { loadConfig } from "@plannotator/shared/config";
 import {
@@ -424,6 +424,77 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
   };
 
   /**
+   * A deliverable's own preview and its annotation (「产物」 in the detail): the content route reads the ref the
+   * deliverable points at — the person's own window only (the browser's own `Sec-Fetch-Site`), text capped, images
+   * as data, anything else named, never guessed at. The annotate route opens the ref in a plain annotate session
+   * (the same spawn the design review rides); what comes back lands in the requirement's history as one line.
+   */
+  const TEXT_SUFFIXES = [".md", ".markdown", ".txt", ".csv", ".json", ".log", ".yaml", ".yml", ".toml"] as const;
+  const IMAGE_SUFFIXES = [".png", ".jpg", ".jpeg", ".gif", ".webp"] as const;
+  const ANNOTATABLE_SUFFIXES = [".md", ".markdown", ".txt", ".html", ".htm"] as const;
+  const deliverableAt = (id: string, deliverableId: string): { record: Requirement; deliverable: Deliverable } | { error: Response } => {    try {
+      const record = at(id);
+      const deliverable = record.deliverables.find((entry) => entry.id === deliverableId);
+      if (!deliverable) return { error: json({ error: "No such deliverable.", code: "not_found" }, 404) };
+      return { record, deliverable };
+    } catch {
+      return { error: json({ error: "No such requirement.", code: "not_found" }, 404) };
+    }
+  };
+  const deliverableContent = async (id: string, deliverableId: string): Promise<Response> => {
+    const found = deliverableAt(id, deliverableId);
+    if ("error" in found) return found.error;
+    const lower = found.deliverable.ref.toLowerCase();
+    try {
+      const bytes = Bun.file(found.deliverable.ref);
+      if (IMAGE_SUFFIXES.some((suffix) => lower.endsWith(suffix))) {
+        const buffer = new Uint8Array(await bytes.arrayBuffer()).slice(0, 2 * 1024 * 1024);
+        return json({ image: `data:${bytes.type || "image/png"};base64,${Buffer.from(buffer).toString("base64")}` });
+      }
+      if (TEXT_SUFFIXES.some((suffix) => lower.endsWith(suffix)) || /^https?:/.test(found.deliverable.ref) === false && !/\.[A-Za-z0-9]{1,8}$/.test(lower)) {
+        const text = (await bytes.text()).slice(0, 200 * 1024);
+        return json({ text, annotatable: ANNOTATABLE_SUFFIXES.some((suffix) => lower.endsWith(suffix)) });
+      }
+      return json({ binary: true, annotatable: ANNOTATABLE_SUFFIXES.some((suffix) => lower.endsWith(suffix)) });
+    } catch {
+      return json({ error: "This deliverable's file is not readable here.", code: "unreadable" }, 404);
+    }
+  };
+  const annotateDeliverable = (id: string, deliverableId: string): { ok: true } | { ok: false; status: number; error: string; code: string } => {
+    if (!options.spawnAnnotate) return { ok: false, status: 501, error: "This Inbox cannot annotate here (no annotate runtime).", code: "no_runtime" };
+    if (reviewsInFlight.has(`${id}:${deliverableId}`)) return { ok: false, status: 409, error: "This deliverable is already open for annotation.", code: "annotate_in_flight" };
+    const found = deliverableAt(id, deliverableId);
+    if ("error" in found) return { ok: false, status: 404, error: "No such deliverable.", code: "not_found" };
+    if (!ANNOTATABLE_SUFFIXES.some((suffix) => found.deliverable.ref.toLowerCase().endsWith(suffix))) {
+      return { ok: false, status: 415, error: "Only documents (markdown, text, HTML) open for annotation.", code: "not_annotatable" };
+    }
+    const key = `${id}:${deliverableId}`;
+    reviewsInFlight.add(key);
+    void options
+      .spawnAnnotate(found.deliverable.ref)
+      .then(({ stdout }) => {
+        let outcome: { decision?: unknown; annotationCount?: unknown } = {};
+        try {
+          outcome = JSON.parse(stdout.trim().split("\n").at(-1) ?? "{}") as { decision?: unknown };
+        } catch {
+          outcome = {};
+        }
+        const count = typeof outcome.annotationCount === "number" ? `，带回批注 ${outcome.annotationCount} 条` : "";
+        const words = outcome.decision === "dismissed" ? `「${found.deliverable.title ?? basename(found.deliverable.ref)}」的批注被关闭，未给结论` : `「${found.deliverable.title ?? basename(found.deliverable.ref)}」批注完成${count}`;
+        try {
+          store.say(id, words, "批注");
+        } catch {
+          // The requirement went away while its document was open: nothing to write back to.
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        reviewsInFlight.delete(key);
+      });
+    return { ok: true };
+  };
+
+  /**
    * The routes. Returns null when the path is not this module's (the caller
    * answers the unknown-route 404, as it does for Shape).
    */
@@ -473,6 +544,17 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
           store.undeliver(id, decodeURIComponent(deliverableMatch[1]));
           return json({ ok: true });
         }
+      }
+      // A deliverable's preview (the person's own window only: the browser's own Sec-Fetch-Site) and its annotation.
+      const contentMatch = /^deliverables\/([^/]+)\/content$/.exec(deeper);
+      if (contentMatch && req.method === "GET") {
+        if (req.headers.get("sec-fetch-site")?.trim().toLowerCase() !== "same-origin") return json({ error: "The preview answers only the Inbox window.", code: "window_only" }, 403);
+        return await deliverableContent(id, decodeURIComponent(contentMatch[1]!));
+      }
+      const annotateMatch = /^deliverables\/([^/]+)\/annotate$/.exec(deeper);
+      if (annotateMatch && req.method === "POST") {
+        const started = annotateDeliverable(id, decodeURIComponent(annotateMatch[1]!));
+        return started.ok ? json(started) : json({ error: started.error, code: started.code }, started.status);
       }
       const suggestionMatch = /^suggestions(?:\/([^/]+)(?:\/adopt)?)?$/.exec(deeper);
       if (suggestionMatch) {

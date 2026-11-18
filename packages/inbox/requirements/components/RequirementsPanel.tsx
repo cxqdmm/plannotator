@@ -15,15 +15,15 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
-import { adoptSuggestion, deliverRequirement, dismissSuggestion, readRequirement, removeDeliverable, startDesignReview } from '../api';
+import { adoptSuggestion, annotateDeliverable, deliverableContent, dismissSuggestion, readRequirement, removeDeliverable } from '../api';
 import { inboxApi } from '../../api';
 import { SessionStreamPane } from '../../stream/SessionStreamPane';
 import { HostMark } from '../../icons';
+import { ChatMarkdown } from '@plannotator/ui/components/chat';
 import type { InboxLaunchAgent } from '@plannotator/core/inbox-types';
 import { CopyCommand } from '../../components/RestartNote';
 import { useRequirements } from '../useRequirements';
 import {
-  DELIVERABLE_KINDS,
   DELIVERABLE_KIND_LABELS,
   REQUIREMENT_STAGES,
   requirementStageLabel,
@@ -44,12 +44,10 @@ const STAGE_ICON: Record<RequirementStage, Parameters<typeof Icon>[0]['name']> =
   done: 'check',
 };
 
-const KIND_OPTIONS = DELIVERABLE_KINDS.map((kind) => ({ id: kind, label: DELIVERABLE_KIND_LABELS[kind] }));
-
 /** The first of a requirement's threads whose session has a transcript here (null: none), for the 对话流 entry. */
-function streamThreadOf(streams: Record<string, boolean>, requirement: Requirement | null): string | null {
+function streamThreadOf(meta: Record<string, { stream: boolean; subject: string | null }>, requirement: Requirement | null): string | null {
   if (!requirement) return null;
-  return requirement.threads.find((threadId) => streams[threadId] === true) ?? null;
+  return requirement.threads.find((threadId) => meta[threadId]?.stream === true) ?? null;
 }
 
 const EVENT_WORDS: Readonly<Record<RequirementEvent['kind'], string>> = {
@@ -171,13 +169,7 @@ function RequirementDetail({
   onOpenThread: (threadId: string) => void;
 }) {
   const [detail, setDetail] = useState<{ requirement: Requirement; events: RequirementEvent[] } | null>(null);
-  const [notes, setNotes] = useState('');
-  const [threadDraft, setThreadDraft] = useState('');
-  const [deliverKind, setDeliverKind] = useState<string>(KIND_OPTIONS[0]!.id);
-  const [deliverRef, setDeliverRef] = useState('');
-  const [deliverTitle, setDeliverTitle] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [reviewStarting, setReviewStarting] = useState(false);
   // 「开始做」: the form a fresh requirement opens on — the agents and projects the person can start (compose's
   // own launch read), the words the session starts with, and the going-out itself.
   const [start, setStart] = useState<{ agents: { agent: string; name: string }[]; projects: { id: string; name: string; root: string }[]; agent: string; project: string; words: string } | null>(null);
@@ -185,7 +177,11 @@ function RequirementDetail({
   const [starting, setStarting] = useState(false);
   // The requirement's linked threads that own a readable transcript (the thread read's `stream`): their sessions'
   // 对话流 opens right here in the detail, work beside the requirement it is for.
-  const [streams, setStreams] = useState<Record<string, boolean>>({});
+  const [threadMeta, setThreadMeta] = useState<Record<string, { stream: boolean; subject: string | null }>>({});
+  // A deliverable's preview (fetched on first open) and the one whose annotate page is out.
+  const [previews, setPreviews] = useState<Record<string, 'loading' | { text?: string; image?: string; binary?: boolean; annotatable?: boolean } | { error: string }>>({});
+  const [previewOpen, setPreviewOpen] = useState<string | null>(null);
+  const [annotating, setAnnotating] = useState<string | null>(null);
   const [streamOpen, setStreamOpen] = useState<string | null>(null);
   const streamsRead = useRef<ReadonlySet<string>>(new Set());
   const reload = useRef<AbortController | null>(null);
@@ -199,7 +195,7 @@ function RequirementDetail({
       read.add(threadId);
       streamsRead.current = read;
       void inboxApi.thread(threadId).then((answer) => {
-        setStreams((held) => ({ ...held, [threadId]: (answer.thread as { stream?: true }).stream === true }));
+        setThreadMeta((held) => ({ ...held, [threadId]: { stream: (answer.thread as { stream?: true }).stream === true, subject: answer.thread.subject ?? null } }));
       }).catch(() => {
         const undo = new Set(streamsRead.current);
         undo.delete(threadId);
@@ -255,7 +251,6 @@ function RequirementDetail({
       if (controller.signal.aborted) return;
       setDetail(answer);
       if (answer) {
-        setNotes(answer.requirement.notes);
       }
     });
   };
@@ -279,32 +274,6 @@ function RequirementDetail({
 
   const requirement = detail?.requirement ?? null;
 
-  const saveNotes = () => {
-    if (requirement && notes !== requirement.notes) onPatch(id, { notes });
-  };
-
-  const attach = async () => {
-    const ref = deliverRef.trim();
-    if (!ref) return;
-    const outcome = await deliverRequirement(id, { kind: deliverKind, ref, ...(deliverTitle.trim() ? { title: deliverTitle.trim() } : {}) });
-    if (!outcome.ok) setError(outcome.error);
-    else {
-      setDeliverRef('');
-      setDeliverTitle('');
-      read();
-    }
-  };
-
-  /** 「发起设计文档评审」: the server opens the gated annotate session; the pane refreshes when it lands. */
-  const startReview = async () => {
-    setReviewStarting(true);
-    const outcome = await startDesignReview(id);
-    if (!outcome.ok) {
-      setError(outcome.error);
-      setReviewStarting(false);
-    }
-  };
-
   return (
     <aside className="ib-req-detail" aria-label="需求详情" data-requirement-detail={id}>
       <div className="ib-crdp-top">
@@ -316,7 +285,7 @@ function RequirementDetail({
         <span className="ib-req-stage ib-crdp-colsent">{requirement ? requirementStageLabel(requirement.stage) : ''}</span>
         <span className="ib-sp" />
         {/* The requirement's live session, right here: the first linked thread with a transcript opens the 对话流. */}
-        {streamThreadOf(streams, requirement) && (
+        {streamThreadOf(threadMeta, requirement) && (
           <button
             type="button"
             className="ib-iconbtn ib-req-streambtn"
@@ -324,7 +293,7 @@ function RequirementDetail({
             aria-pressed={streamOpen !== null}
             title="对话流：这个会话自己在读什么、跑什么、改什么"
             data-requirements-stream=""
-            onClick={() => setStreamOpen((open) => (open === null ? streamThreadOf(streams, requirement) : null))}
+            onClick={() => setStreamOpen((open) => (open === null ? streamThreadOf(threadMeta, requirement) : null))}
           >
             <HostMark host="claude-code" />
           </button>
@@ -432,97 +401,100 @@ function RequirementDetail({
             </section>
           )}
 
-          <section aria-label="设计评审">
-            <button type="button" className="ib-btn ib-req-launch" data-requirements-review="" disabled={reviewStarting} onClick={() => void startReview()}>
-              <Icon name="pen" size={14} />
-              {reviewStarting ? '评审已打开，完成后自动挂回…' : '发起设计文档评审'}
-            </button>
-            <p className="ib-req-empty">打开 Plannotator 的批注页评审当前设计文档；批准后自动建议进入下一阶段。文档首次从需求生成，之后保留你的修改。</p>
-          </section>
-
           <section aria-label="产物">
             <h3 className="ib-req-h">产物</h3>
             {requirement.deliverables.length === 0 ? (
-              <p className="ib-req-empty">还没有产物。阶段期望的产出（设计文档、评审结论…）由你或 agent 挂接。</p>
+              <p className="ib-req-empty">还没有产物。会话交付的文档、评审和链接会出现在这里。</p>
             ) : (
               <ul className="ib-req-list">
-                {requirement.deliverables.map((deliverable: Deliverable) => (
-                  <li key={deliverable.id} className="ib-req-dlv">
-                    <span className="ib-req-dlv-kind">{DELIVERABLE_KIND_LABELS[deliverable.kind]}</span>
-                    <a className="ib-req-dlv-ref" href={/^https?:/.test(deliverable.ref) ? deliverable.ref : undefined} title={deliverable.ref} target="_blank" rel="noreferrer">
-                      {deliverable.title ?? deliverable.ref}
-                    </a>
-                    <span className="ib-req-dlv-meta">
-                      {deliverable.by ? deliverable.by : ''} {timeOf(deliverable.created_at)}
-                    </span>
-                    <button type="button" className="ib-req-x" aria-label="移除产物" title="移除" onClick={() => void removeDeliverable(id, deliverable.id).then((outcome) => (outcome.ok ? read() : setError(outcome.error)))}>
-                      <Icon name="x" size={13} />
-                    </button>
-                  </li>
-                ))}
+                {requirement.deliverables.map((deliverable: Deliverable) => {
+                  const open = previewOpen === deliverable.id;
+                  const content = previews[deliverable.id];
+                  const annotatable = /\.(md|markdown|txt|html?)$/i.test(deliverable.ref);
+                  return (
+                    <li key={deliverable.id} className={`ib-req-dlv${open ? ' open' : ''}`}>
+                      <button
+                        type="button"
+                        className="ib-req-dlv-row"
+                        aria-expanded={open}
+                        onClick={() => {
+                          if (open) return setPreviewOpen(null);
+                          setPreviewOpen(deliverable.id);
+                          if (!previews[deliverable.id]) {
+                            setPreviews((held) => ({ ...held, [deliverable.id]: 'loading' }));
+                            void deliverableContent(id, deliverable.id).then((answer) => {
+                              setPreviews((held) => ({ ...held, [deliverable.id]: answer as never }));
+                            });
+                          }
+                        }}
+                      >
+                        <Icon name={open ? 'chevD' : 'chevR'} size={11} />
+                        <span className="ib-req-dlv-kind">{DELIVERABLE_KIND_LABELS[deliverable.kind]}</span>
+                        <span className="ib-req-dlv-name" dir="auto">{deliverable.title ?? deliverable.ref.split('/').pop() ?? deliverable.ref}</span>
+                        <span className="ib-req-dlv-meta">{deliverable.by ? `${deliverable.by} · ` : ''}{timeOf(deliverable.created_at)}</span>
+                      </button>
+                      {open && (
+                        <div className="ib-req-dlv-body">
+                          {content === 'loading' && <p className="ib-req-empty">读取中…</p>}
+                          {content && content !== 'loading' && 'error' in content && <p className="ib-req-empty">{content.error}</p>}
+                          {content && content !== 'loading' && !('error' in content) && content.image && <img className="ib-req-dlv-img" src={content.image} alt={deliverable.title ?? '产物预览'} />}
+                          {content && content !== 'loading' && !('error' in content) && content.binary && <p className="ib-req-empty">这个产物不是可在这里预览的文档。</p>}
+                          {content && content !== 'loading' && !('error' in content) && content.text !== undefined && (
+                            <div className="ib-req-dlv-doc" dir="auto">
+                              <ChatMarkdown text={content.text} role="assistant" messageId={`dlv-${deliverable.id}`} />
+                            </div>
+                          )}
+                          {annotatable && (
+                            <div className="ib-req-dlv-act">
+                              <button type="button" className="ib-btn ib-sm" disabled={annotating === deliverable.id} onClick={() => { setAnnotating(deliverable.id); void annotateDeliverable(id, deliverable.id).then((outcome) => { setAnnotating(null); if (!outcome.ok) setError(outcome.error); }).catch(() => setAnnotating(null)); }}>
+                                <Icon name="pen" size={13} />
+                                {annotating === deliverable.id ? '批注页已打开，完成后写回历史…' : '批注'}
+                              </button>
+                            </div>
+                          )}
+                          <button type="button" className="ib-req-x ib-req-dlv-x" aria-label="移除产物" title="移除" onClick={() => void removeDeliverable(id, deliverable.id).then((outcome) => (outcome.ok ? read() : setError(outcome.error)))}>
+                            <Icon name="x" size={13} />
+                          </button>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )}
-            <div className="ib-req-add">
-              <select aria-label="产物类型" value={deliverKind} onChange={(event) => setDeliverKind(event.target.value)}>
-                {KIND_OPTIONS.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <input aria-label="产物指向" placeholder="会话 id / owner/repo#123 / URL / 路径" value={deliverRef} onChange={(event) => setDeliverRef(event.target.value)} />
-              <input aria-label="产物名称" placeholder="名称（可选）" value={deliverTitle} onChange={(event) => setDeliverTitle(event.target.value)} />
-              <button type="button" className="ib-btn ib-sm" onClick={() => void attach()}>
-                挂接
-              </button>
-            </div>
           </section>
 
-          <section aria-label="关联线程">
-            <h3 className="ib-req-h">关联线程</h3>
+          <section aria-label="会话">
+            <h3 className="ib-req-h">会话</h3>
             {requirement.threads.length === 0 ? (
-              <p className="ib-req-empty">还没有关联线程。把讨论、开发的会话线程连进来，agent 就能通过 requirement 工具看到它。</p>
+              <p className="ib-req-empty">还没有会话在这里工作。</p>
             ) : (
               <ul className="ib-req-threads">
-                {requirement.threads.map((threadId) => (
-                  <li key={threadId}>
-                    <button type="button" className="ib-req-thread" title={threadId} onClick={() => onOpenThread(threadId)}>
-                      <Icon name="comment" size={13} /> {threadId}
-                    </button>
-                    <button
-                      type="button"
-                      className="ib-req-x"
-                      aria-label="取消关联"
-                      title="取消关联"
-                      onClick={() => onPatch(id, { threads: requirement.threads.filter((entry) => entry !== threadId) })}
-                    >
-                      <Icon name="x" size={13} />
-                    </button>
-                  </li>
-                ))}
+                {requirement.threads.map((threadId) => {
+                  const meta = threadMeta[threadId];
+                  return (
+                    <li key={threadId} className="ib-req-thread-card">
+                      <button type="button" className="ib-req-thread-row" onClick={() => onOpenThread(threadId)}>
+                        <HostMark host="claude-code" />
+                        <span className="ib-req-thread-subject" dir="auto">{meta?.subject ?? '会话'}</span>
+                        <span className="ib-req-thread-open">打开 <Icon name="chevR" size={12} /></span>
+                      </button>
+                      <button
+                        type="button"
+                        className="ib-req-x"
+                        aria-label="移除会话"
+                        title="移除"
+                        onClick={() => onPatch(id, { threads: requirement.threads.filter((entry) => entry !== threadId) })}
+                      >
+                        <Icon name="x" size={13} />
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
-            <div className="ib-req-add">
-              <input
-                aria-label="线程 id"
-                placeholder="msg_… 线程 id"
-                value={threadDraft}
-                onChange={(event) => setThreadDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  const value = threadDraft.trim();
-                  if (event.key === 'Enter' && value) {
-                    onPatch(id, { threads: [...requirement.threads, value] });
-                    setThreadDraft('');
-                  }
-                }}
-              />
-            </div>
           </section>
 
-          <section aria-label="备注">
-            <h3 className="ib-req-h">备注</h3>
-            <textarea className="ib-req-notes" aria-label="需求备注" rows={4} value={notes} onChange={(event) => setNotes(event.target.value)} onBlur={saveNotes} placeholder="背景、验收标准…" />
-          </section>
 
           <section aria-label="历史">
             <h3 className="ib-req-h">历史</h3>
