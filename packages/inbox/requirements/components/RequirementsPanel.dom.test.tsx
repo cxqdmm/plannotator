@@ -203,6 +203,24 @@ describe(hasDom ? 'RequirementsPanel' : describe.skip, () => {
     expect(button.textContent).toContain('评审已打开');
   });
 
+  test('a fresh requirement shows 下一步 — the sentence that hands it to an agent; work begun takes it away', async () => {
+    const fresh = requirement('req_f', '优化admin-frontend技能', 'triage');
+    answers['GET /api/requirements'] = { status: 200, body: board([fresh], 0) };
+    answers['GET /api/requirements/req_f'] = { status: 200, body: { requirement: fresh, events: [] } };
+    await draw({ openId: 'req_f' });
+    const handoff = host.querySelector('[data-requirements-handoff]');
+    expect(handoff?.textContent).toContain('用 plannotator requirement 工具开始做「优化admin-frontend技能」');
+    expect(host.querySelector('[aria-label="下一步"] button[aria-label^="复制"]')).not.toBeNull();
+    // Once a deliverable or thread exists the panel is a work record, not a blank: the hint steps aside.
+    const started = { ...fresh, deliverables: [{ id: 'dlv_1', kind: 'design-doc' as const, ref: '/tmp/d.md', created_at: '2026-11-18T00:00:00.000Z' }] };
+    answers['GET /api/requirements/req_f'] = { status: 200, body: { requirement: started, events: [] } };
+    await act(async () => {
+      host.querySelector<HTMLButtonElement>('[data-requirements-back]')!.click();
+    });
+    await draw({ openId: 'req_f' });
+    expect(host.querySelector('[data-requirements-handoff]')).toBeNull();
+  });
+
   test('归档 takes a card off the board over PATCH; 恢复 brings it back on the archived page', async () => {
     await draw();
     // The server the refresh will read: req_b already archived.

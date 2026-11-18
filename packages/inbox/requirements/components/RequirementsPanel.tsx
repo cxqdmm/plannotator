@@ -16,6 +16,7 @@ import { Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
 import { adoptSuggestion, deliverRequirement, dismissSuggestion, readRequirement, removeDeliverable, startDesignReview } from '../api';
+import { CopyCommand } from '../../components/RestartNote';
 import { useRequirements } from '../useRequirements';
 import {
   DELIVERABLE_KINDS,
@@ -252,6 +253,17 @@ function RequirementDetail({
             onBlur={saveTitle}
             onKeyDown={(event) => event.key === 'Enter' && saveTitle()}
           />
+
+          {requirement.threads.length === 0 && requirement.deliverables.length === 0 && (
+            <section className="ib-req-next" aria-label="下一步">
+              <h3 className="ib-req-h">下一步</h3>
+              <p className="ib-req-empty">在相关项目的 Claude Code 会话里粘贴这句，把这条需求交给它开始做；它的线程会自动连进来，产出与阶段建议也回到这里。</p>
+              <div className="ib-rw-cmd">
+                <code data-requirements-handoff="">{`用 plannotator requirement 工具开始做「${requirement.title}」，先出设计方案。`}</code>
+                <CopyCommand text={`用 plannotator requirement 工具开始做「${requirement.title}」，先出设计方案。`} label="复制交给 agent 的话" announcement="已复制。粘贴到一个 Claude Code 会话即可。" />
+              </div>
+            </section>
+          )}
 
           {requirement.suggestions.length > 0 && (
             <section className="ib-req-sug" aria-label="阶段建议">
