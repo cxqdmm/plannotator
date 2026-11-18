@@ -284,7 +284,7 @@ export const CARD_COMMAND_USAGE = [
 ].join("\n");
 
 /**
- * `plannotator requirement …` (requirement-command.ts): the 需求 panel's call
+ * `plannotator requirement …` (requirement-command.ts): the workshop panel's call
  * from a shell, a thin client over the Inbox's `requirement` MCP tool.
  */
 export const REQUIREMENT_COMMAND_USAGE = [
@@ -300,7 +300,7 @@ export const REQUIREMENT_COMMAND_USAGE = [
   `Kinds: ${["design-doc", "review", "code-review", "test-report", "link", "file"].join(", ")} — what the deliverable points at (an annotate session id, owner/repo#123, a URL or a path).`,
   `Stages: ${["triage", "design", "design-review", "dev", "qa", "code-review", "done"].join(", ")}.`,
   "",
-  "Works only while the person's 需求 panel is on (config.json inboxRequirements); off, it exits 1 with requirements_off.",
+  "Works only while the person's workshop panel is on (config.json inboxRequirements); off, it exits 1 with requirements_off.",
 ].join("\n");
 
 /** `plannotator plans …` (plans-command.ts): Plans' switch and list. Unreleased (HIDDEN_SUBCOMMANDS): the usage line only. */

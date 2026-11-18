@@ -17,6 +17,8 @@ import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
 import { adoptSuggestion, deliverRequirement, dismissSuggestion, readRequirement, removeDeliverable, startDesignReview } from '../api';
 import { inboxApi } from '../../api';
+import { SessionStreamPane } from '../../stream/SessionStreamPane';
+import { HostMark } from '../../icons';
 import type { InboxLaunchAgent } from '@plannotator/core/inbox-types';
 import { CopyCommand } from '../../components/RestartNote';
 import { useRequirements } from '../useRequirements';
@@ -43,6 +45,12 @@ const STAGE_ICON: Record<RequirementStage, Parameters<typeof Icon>[0]['name']> =
 };
 
 const KIND_OPTIONS = DELIVERABLE_KINDS.map((kind) => ({ id: kind, label: DELIVERABLE_KIND_LABELS[kind] }));
+
+/** The first of a requirement's threads whose session has a transcript here (null: none), for the 对话流 entry. */
+function streamThreadOf(streams: Record<string, boolean>, requirement: Requirement | null): string | null {
+  if (!requirement) return null;
+  return requirement.threads.find((threadId) => streams[threadId] === true) ?? null;
+}
 
 const EVENT_WORDS: Readonly<Record<RequirementEvent['kind'], string>> = {
   created: '创建',
@@ -163,8 +171,30 @@ function RequirementDetail({
   const [start, setStart] = useState<{ agents: { agent: string; name: string }[]; projects: { id: string; name: string; root: string }[]; agent: string; project: string; words: string } | null>(null);
   const [startLoading, setStartLoading] = useState(false);
   const [starting, setStarting] = useState(false);
+  // The requirement's linked threads that own a readable transcript (the thread read's `stream`): their sessions'
+  // 对话流 opens right here in the detail, work beside the requirement it is for.
+  const [streams, setStreams] = useState<Record<string, boolean>>({});
+  const [streamOpen, setStreamOpen] = useState<string | null>(null);
+  const streamsRead = useRef<ReadonlySet<string>>(new Set());
   const reload = useRef<AbortController | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Which of the requirement's threads have a transcript here, read once per thread while the pane is open. */
+  useEffect(() => {
+    for (const threadId of detail?.requirement.threads ?? []) {
+      if (streamsRead.current.has(threadId)) continue;
+      const read = new Set(streamsRead.current);
+      read.add(threadId);
+      streamsRead.current = read;
+      void inboxApi.thread(threadId).then((answer) => {
+        setStreams((held) => ({ ...held, [threadId]: (answer.thread as { stream?: true }).stream === true }));
+      }).catch(() => {
+        const undo = new Set(streamsRead.current);
+        undo.delete(threadId);
+        streamsRead.current = undo;
+      });
+    }
+  }, [detail]);
 
   /** 开始做: read what this machine can start (the compose launch block), then the form. */
   const beginStart = () => {
@@ -271,17 +301,33 @@ function RequirementDetail({
   };
 
   return (
-    <aside className="ib-crdp ib-req-detail" aria-label="需求详情" data-requirement-detail={id}>
+    <aside className="ib-req-detail" aria-label="需求详情" data-requirement-detail={id}>
       <div className="ib-crdp-top">
         <button type="button" className="ib-bback" data-requirements-back="" onClick={onClose}>
           <Icon name="chevL" size={16} />
-          <span className="ib-bback-l">需求</span>
+          <span className="ib-bback-l">工坊</span>
         </button>
         <span className="ib-req-stage ib-crdp-colsent">{requirement ? requirementStageLabel(requirement.stage) : ''}</span>
-        <button type="button" className="ib-crdp-x" aria-label="关闭详情" onClick={onClose}>
+        <span className="ib-sp" />
+        {/* The requirement's live session, right here: the first linked thread with a transcript opens the 对话流. */}
+        {streamThreadOf(streams, requirement) && (
+          <button
+            type="button"
+            className="ib-iconbtn ib-req-streambtn"
+            aria-label="对话流"
+            aria-pressed={streamOpen !== null}
+            title="对话流：这个会话自己在读什么、跑什么、改什么"
+            data-requirements-stream=""
+            onClick={() => setStreamOpen((open) => (open === null ? streamThreadOf(streams, requirement) : null))}
+          >
+            <HostMark host="claude-code" />
+          </button>
+        )}
+        <button type="button" className="ib-crdp-x" aria-label="关闭详情，回到工坊" onClick={onClose}>
           <Icon name="x" size={16} />
         </button>
       </div>
+      {streamOpen !== null && <SessionStreamPane threadId={streamOpen} onClose={() => setStreamOpen(null)} />}
       {requirement === null ? (
         <div className="ib-crdp-body">
           <p aria-busy="true">读取需求中…</p>
@@ -663,8 +709,7 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
         </div>
       )}
       {openId ? (
-        <div className="ib-bmain">
-          {board}
+        <div className="ib-bmain ib-req-main">
           <RequirementDetail
             key={openId}
             id={openId}

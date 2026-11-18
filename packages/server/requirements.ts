@@ -51,7 +51,7 @@ export function requirementsSwitchOn(): boolean {
 
 /** What the `requirement` MCP tool answers when the module is off: nothing is written. */
 export const REQUIREMENTS_OFF_TEXT =
-  "requirements_off: The person's 需求 panel is off, so requirements are not kept and nothing was written. They turn it back on in config.json (inboxRequirements); agents get the requirement action in their next session.";
+  "requirements_off: The person's workshop panel is off, so requirements are not kept and nothing was written. They turn it back on in config.json (inboxRequirements); agents get the requirement action in their next session.";
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...NO_STORE } });

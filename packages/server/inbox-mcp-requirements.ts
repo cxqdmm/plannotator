@@ -1,5 +1,5 @@
 /**
- * The 需求 panel's `requirement` tool: the one-line calls an agent working a
+ * The workshop (需求) panel's `requirement` tool: the one-line calls an agent working a
  * requirement uses to keep it current — see what it is (get/mine), tie the
  * work to it (link thread), attach what it just finished (deliver), leave a
  * word (say) and propose the next stage (suggest; only the person moves —
@@ -24,7 +24,7 @@ export type InboxRequirementOp = (typeof INBOX_REQUIREMENT_OPS)[number];
 
 /** For raw MCP clients; the agent tool words its action line itself (INBOX_AGENT_ACTION_LEADS.requirement). */
 export const REQUIREMENT_DESCRIPTION =
-  'Work the person\'s requirements (the 需求 board). op: mine (the requirements of a thread you are in: thread_id; without one, every active requirement), get (one requirement: requirement), link (tie this thread\'s work to it: thread_id), deliver (attach what you just finished: kind one of design-doc, review, code-review, test-report, link, file, and ref — a session id, PR, URL or path), say (one line of progress, shown in its history), suggest (propose the next stage with why — the person adopts it; you never move a stage yourself).';
+  'Work the person\'s requirements (the workshop board). op: mine (the requirements of a thread you are in: thread_id; without one, every active requirement), get (one requirement: requirement), link (tie this thread\'s work to it: thread_id), deliver (attach what you just finished: kind one of design-doc, review, code-review, test-report, link, file, and ref — a session id, PR, URL or path), say (one line of progress, shown in its history), suggest (propose the next stage with why — the person adopts it; you never move a stage yourself).';
 
 const STAGE_IDS = REQUIREMENT_STAGES.map((stage) => stage.id) as unknown as readonly [RequirementStage, ...RequirementStage[]];
 
@@ -57,7 +57,7 @@ function authorOf(input: { agent_name?: string }): string | null {
 
 async function runRequirementCall(context: { requirements?: RequirementStore }, input: Record<string, unknown>): Promise<{ text: string }> {
   const store = context.requirements;
-  if (!store) return { text: "requirements_off: The person's 需求 panel is off, so nothing was read or written." };
+  if (!store) return { text: "requirements_off: The person's workshop panel is off, so nothing was read or written." };
   const op = input.op as InboxRequirementOp;
   const requirementId = typeof input.requirement === "string" ? input.requirement : null;
 
@@ -94,7 +94,7 @@ async function runRequirementCall(context: { requirements?: RequirementStore }, 
   }
   if (op === "suggest") {
     const suggestion = store.suggest(requirementId, { stage: input.stage as RequirementStage, why: input.why as string, by: (authorOf(input) as string | null) ?? "an agent" });
-    return { text: `Suggested ${requirementStageLabel(suggestion.stage)}; the person adopts it on the 需求 board.` };
+    return { text: `Suggested ${requirementStageLabel(suggestion.stage)}; the person adopts it on the workshop board.` };
   }
   return { text: `op: one of ${INBOX_REQUIREMENT_OPS.join(", ")}.` };
 }

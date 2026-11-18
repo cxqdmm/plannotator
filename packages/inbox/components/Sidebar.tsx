@@ -561,7 +561,7 @@ export function Sidebar(props: SidebarProps) {
           data-requirements-nav=""
         >
           <Icon name="todo" />
-          需求
+          工坊
         </button>
         );
       case 'board':

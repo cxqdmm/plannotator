@@ -1,5 +1,5 @@
 /**
- * `plannotator requirement …`: the 需求 panel's call from a shell, for an
+ * `plannotator requirement …`: the workshop panel's call from a shell, for an
  * agent or a script that logs from the shell. A thin client over the Inbox's
  * `requirement` MCP tool (packages/server/inbox-mcp-requirements.ts), built
  * on the card command's shape (card-command.ts): one `tools/call` to the
