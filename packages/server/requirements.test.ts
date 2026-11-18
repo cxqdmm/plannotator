@@ -211,6 +211,39 @@ describe("the requirements routes", () => {
     expect(spawned[0]).toBe(spawned[1]);
   });
 
+  test("需求上下文: links, pasted text (which becomes a file) and uploads all land as references; the card carries them; removal takes the file", async () => {
+    const made = ((await call("POST", "/api/requirements", { title: "登录页改版" })).data.requirement as { id: string }).id;
+    // A link.
+    const link = (await call("POST", `/api/requirements/${made}/contexts`, { kind: "link", name: "PRD", ref: "https://example.com/prd" })).data.context as { id: string; kind: string; ref: string };
+    expect(link.kind).toBe("link");
+    // A refused non-URL.
+    expect((await call("POST", `/api/requirements/${made}/contexts`, { kind: "link", name: "x", ref: "ftp://nope" })).status).toBe(400);
+    // Pasted text becomes a file in the requirement's context folder.
+    const text = (await call("POST", `/api/requirements/${made}/contexts`, { kind: "text", name: "背景说明", text: "支持微信登录，扫码优先。" })).data.context as { id: string; kind: string; ref: string };
+    expect(text.kind).toBe("file");
+    expect(existsSync(text.ref)).toBe(true);
+    expect(readFileSync(text.ref, "utf8")).toContain("扫码优先");
+    // An upload (base64) lands as a file; an image is marked.
+    const upload = (await call("POST", `/api/requirements/${made}/contexts`, { kind: "upload", name: "登录页截图.png", data: Buffer.from("png").toString("base64") })).data.context as { id: string; image?: true };
+    expect(existsSync(upload.ref!)).toBe(true);
+    if (upload.image === undefined) throw new Error("image context not marked");
+    // The detail's card: the title, the references (never the contents), and the id the session links with.
+    const detail = (await call("GET", `/api/requirements/${made}`)).data as { card: string; requirement: { contexts: unknown[] } };
+    expect(detail.card).toContain("# 需求卡：登录页改版");
+    expect(detail.card).toContain(`\`${made}\``);
+    expect(detail.card).toContain("- 链接：https://example.com/prd —— PRD");
+    expect(detail.card).toContain(`- 文件：${text.ref} —— 背景说明`);
+    expect(detail.card).not.toContain("扫码优先");
+    expect(detail.requirement.contexts).toHaveLength(3);
+    // Removing a file context removes its file with it.
+    const removed = text.ref;
+    expect((await call("DELETE", `/api/requirements/${made}/contexts/${text.id}`)).status).toBe(200);
+    expect(existsSync(removed)).toBe(false);
+    expect(((await call("GET", `/api/requirements/${made}`)).data.requirement as { contexts: unknown[] }).contexts).toHaveLength(2);
+    // The context preview reads the file, the person's window only.
+    expect((await call("GET", `/api/requirements/${made}/contexts/${upload.id}/content`)).status).toBe(403);
+  });
+
   test("a delete removes the record and writes history; an unknown id is 404; an unknown subpath is not this module's", async () => {
     const made = await createOne();
     expect((await call("DELETE", `/api/requirements/${made.id}`)).status).toBe(200);

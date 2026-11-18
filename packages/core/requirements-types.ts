@@ -111,10 +111,28 @@ export interface Requirement {
   threads: string[];
   /** Proposals waiting for the person (adopt moves the stage and drops it; dismiss just drops it). */
   suggestions: RequirementSuggestion[];
+  /** The requirement's background material (需求上下文): references the requirement card carries — a link, or a
+   *  file in the requirement's context folder (pasted text and uploads both land there as files). */
+  contexts: RequirementContext[];
   /** Set when archived (归档): the card leaves the board until restored. Null while active. */
   archived_at?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** One piece of a requirement's background: a link, or a file under `<dataDir>/requirements/contexts/<req>/`. */
+export interface RequirementContext {
+  /** 'ctx_' + ULID. */
+  id: string;
+  kind: 'link' | 'file';
+  /** The person's name for it (「PRD」「登录接口」「竞品首页」). */
+  name: string;
+  /** kind=link: the URL. kind=file: the absolute path (inside the requirement's context folder). */
+  ref: string;
+  /** An image file (the card's reader can look at it directly). */
+  image?: true;
+  by: string | null;
+  created_at: string;
 }
 
 /** One line of a requirement's history (`requirement-events.json`). */
@@ -122,7 +140,7 @@ export interface RequirementEvent {
   id: string;
   req: string;
   at: string;
-  kind: 'created' | 'stage' | 'field' | 'deleted' | 'say' | 'deliverable' | 'suggestion';
+  kind: 'created' | 'stage' | 'field' | 'deleted' | 'say' | 'deliverable' | 'suggestion' | 'context';
   /** The changed field's name (`field`), or the stage it moved from/to (`stage`). */
   field?: string;
   from?: string;

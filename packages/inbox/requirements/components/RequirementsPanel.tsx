@@ -15,12 +15,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
-import { adoptSuggestion, annotateDeliverable, deliverableContent, dismissSuggestion, readRequirement } from '../api';
+import { addContext, adoptSuggestion, annotateDeliverable, contextContent, deliverableContent, dismissSuggestion, readRequirement, removeContext } from '../api';
 import { inboxApi } from '../../api';
 import { SessionStreamPane } from '../../stream/SessionStreamPane';
 import { HostMark } from '../../icons';
 import { ChatMarkdown } from '@plannotator/ui/components/chat';
 import type { InboxLaunchAgent } from '@plannotator/core/inbox-types';
+import type { RequirementContext } from '@plannotator/core/requirements-types';
 import { CopyCommand } from '../../components/RestartNote';
 import { useRequirements } from '../useRequirements';
 import {
@@ -58,6 +59,7 @@ const EVENT_WORDS: Readonly<Record<RequirementEvent['kind'], string>> = {
   say: '进展',
   deliverable: '产物',
   suggestion: '建议',
+  context: '上下文',
 };
 
 const timeOf = (iso: string): string => {
@@ -181,6 +183,38 @@ function RequirementDetail({
   // A deliverable's preview (fetched on first open) and the one whose annotate page is out.
   const [previews, setPreviews] = useState<Record<string, 'loading' | { text?: string; image?: string; binary?: boolean; session?: string; html?: boolean; annotatable?: boolean } | { error: string }>>({});
   const [annotating, setAnnotating] = useState<string | null>(null);
+  // 需求上下文: the add dialog (link / pasted text / uploaded file), each context's preview, and the requirement
+  // card the session starts on (the server's own template, single source).
+  const [contextKind, setContextKind] = useState<'link' | 'text' | 'upload'>('link');
+  const [contextName, setContextName] = useState('');
+  const [contextRef, setContextRef] = useState('');
+  const [contextText, setContextText] = useState('');
+  const [contextFile, setContextFile] = useState<File | null>(null);
+  const [contextBusy, setContextBusy] = useState(false);
+  const [contextPreviews, setContextPreviews] = useState<Record<string, 'loading' | { text?: string; image?: string; link?: string; html?: boolean } | { error: string }>>({});
+  const [card, setCard] = useState<string | null>(null);
+  const contextDialog = useRef<HTMLDialogElement | null>(null);
+
+  /** 添加上下文: link straight in; text becomes a file in the requirement's library; a file uploads (base64 in
+   *  the JSON body, so the window's session check holds). All three land as one reference on the card. */
+  const addTheContext = async () => {
+    if (contextBusy) return;
+    setContextBusy(true);
+    try {
+      let outcome: { ok: boolean; error?: string };
+      if (contextKind === 'link') outcome = await addContext(id, { kind: 'link', name: contextName.trim(), ref: contextRef.trim() });
+      else if (contextKind === 'text') outcome = await addContext(id, { kind: 'text', name: contextName.trim(), text: contextText });
+      else if (contextFile) outcome = await addContext(id, { kind: 'upload', name: contextName.trim(), data: await fileAsBase64(contextFile) });
+      else outcome = { ok: false, error: '先选一个文件。' };
+      if (!outcome.ok) {
+        setError(outcome.error ?? '添加失败。');
+        return;
+      }
+      contextDialog.current?.close();
+    } finally {
+      setContextBusy(false);
+    }
+  };
   const [streamOpen, setStreamOpen] = useState<string | null>(null);
   const streamsRead = useRef<ReadonlySet<string>>(new Set());
   const reload = useRef<AbortController | null>(null);
@@ -227,7 +261,7 @@ function RequirementDetail({
         return;
       }
       const claude = agents.find((entry) => entry.agent === 'claude-code') ?? agents[0]!;
-      setStart({ agents, projects, agent: claude.agent, project: projects[0]!.id, words: `用 plannotator requirement 工具开始做「${detail?.requirement.title ?? ''}」，先出设计方案，产出用 deliver 挂回这条需求。` });
+      setStart({ agents, projects, agent: claude.agent, project: projects[0]!.id, words: card ?? `用 plannotator requirement 工具开始做「${detail?.requirement.title ?? ''}」。` });
     }).catch((cause) => {
       setError(cause instanceof Error ? cause.message : String(cause));
     }).finally(() => setStartLoading(false));
@@ -261,6 +295,7 @@ function RequirementDetail({
     void readRequirement(id, controller.signal).then((answer) => {
       if (controller.signal.aborted) return;
       setDetail(answer);
+      setCard(answer?.card ?? null);
       if (answer) {
       }
     });
@@ -314,6 +349,53 @@ function RequirementDetail({
         </button>
       </div>
       {streamOpen !== null && <SessionStreamPane threadId={streamOpen} onClose={() => setStreamOpen(null)} />}
+      <dialog
+        className="ib-req-new"
+        aria-labelledby="ib-req-ctx-title"
+        ref={contextDialog}
+      >
+        <form
+          method="dialog"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void addTheContext();
+          }}
+        >
+          <h2 id="ib-req-ctx-title">添加上下文</h2>
+          <div className="ib-req-ctx-kinds" role="tablist">
+            {(['link', 'text', 'upload'] as const).map((kind) => (
+              <button key={kind} type="button" className={`ib-req-ctx-kind${contextKind === kind ? ' on' : ''}`} role="tab" aria-selected={contextKind === kind} onClick={() => setContextKind(kind)}>
+                {kind === 'link' ? '链接' : kind === 'text' ? '文本' : '文件'}
+              </button>
+            ))}
+          </div>
+          <input
+            className="ib-req-new-input"
+            aria-label="名称"
+            placeholder={contextKind === 'link' ? '名称，如「PRD」' : contextKind === 'text' ? '名称，如「背景说明」' : '名称，如「登录接口文档」'}
+            value={contextName}
+            onChange={(event) => setContextName(event.target.value)}
+          />
+          {contextKind === 'link' && (
+            <input className="ib-req-new-input" aria-label="URL" placeholder="https://…" value={contextRef} onChange={(event) => setContextRef(event.target.value)} />
+          )}
+          {contextKind === 'text' && (
+            <textarea className="ib-req-new-input ib-req-ctx-text" aria-label="内容" rows={7} placeholder="贴进来——保存时自动落成文件" value={contextText} onChange={(event) => setContextText(event.target.value)} />
+          )}
+          {contextKind === 'upload' && (
+            <input className="ib-req-ctx-file" aria-label="文件" type="file" onChange={(event) => setContextFile(event.target.files?.[0] ?? null)} />
+          )}
+          <p className="ib-req-new-hint">{contextKind === 'link' ? '会话开工时会拿到这个链接。' : contextKind === 'text' ? '文本保存为需求库里的文件，会话按路径读取。' : '文件拷贝进需求库；图片会话可以直接看。'}</p>
+          <div className="ib-req-new-act">
+            <button type="button" className="ib-btn ib-sm" onClick={() => contextDialog.current?.close()}>
+              取消
+            </button>
+            <button type="submit" className="ib-btn ib-sm ib-req-new-ok" data-requirements-context-create="" disabled={contextBusy || !contextName.trim() || (contextKind === 'link' && !contextRef.trim()) || (contextKind === 'text' && !contextText.trim()) || (contextKind === 'upload' && !contextFile)}>
+              添加
+            </button>
+          </div>
+        </form>
+      </dialog>
       {requirement === null ? (
         <div className="ib-crdp-body">
           <p aria-busy="true">读取需求中…</p>
@@ -342,6 +424,56 @@ function RequirementDetail({
             )}
           </section>
 
+
+          <section aria-label="上下文">
+            <h3 className="ib-req-h">上下文</h3>
+            {requirement.contexts.length === 0 && (
+              <p className="ib-req-empty">还没有背景材料。PRD、接口文档、竞品链接、截图——挂上来，开工的会话自己会读。</p>
+            )}
+            {requirement.contexts.length > 0 && (
+              <ul className="ib-req-list">
+                {requirement.contexts.map((context: RequirementContext) => {
+                  const preview = contextPreviews[context.id];
+                  return (
+                    <li key={context.id} className="ib-req-dlv ib-req-ctx">
+                      <div className="ib-req-dlv-row">
+                        <Icon name={context.kind === 'link' ? 'clip' : context.image ? 'photo' : 'pen'} size={13} />
+                        {context.kind === 'link' ? (
+                          <a className="ib-req-dlv-name ib-req-ctx-link" href={context.ref} target="_blank" rel="noreferrer" dir="auto">{context.name}</a>
+                        ) : (
+                          <button type="button" className="ib-req-dlv-name ib-req-ctx-open" dir="auto" onClick={() => {
+                            if (preview !== undefined && preview !== 'loading') return setContextPreviews((held) => { const next = { ...held }; delete next[context.id]; return next; });
+                            setContextPreviews((held) => ({ ...held, [context.id]: 'loading' }));
+                            void contextContent(id, context.id).then((answer) => setContextPreviews((held) => ({ ...held, [context.id]: answer as never })));
+                          }}>{context.name}</button>
+                        )}
+                        <span className="ib-req-dlv-meta">{context.kind === 'link' ? new URL(context.ref).hostname : context.by ?? '你'}</span>
+                        <button type="button" className="ib-req-x" aria-label="移除上下文" title="移除" onClick={() => void removeContext(id, context.id).then((outcome) => (outcome.ok ? read() : setError(outcome.error)))}>
+                          <Icon name="x" size={13} />
+                        </button>
+                      </div>
+                      {preview !== undefined && preview !== 'loading' && !('error' in preview) && preview.text !== undefined && (
+                        <div className="ib-req-dlv-body">
+                          {preview.html ? <iframe className="ib-req-dlv-html" sandbox="allow-scripts" srcDoc={preview.text} title={context.name} /> : (
+                            <div className="ib-req-dlv-doc" dir="auto">
+                              <ChatMarkdown text={preview.text} role="assistant" messageId={`ctx-${context.id}`} />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {preview !== undefined && preview !== 'loading' && !('error' in preview) && preview.image && (
+                        <div className="ib-req-dlv-body"><img className="ib-req-dlv-img" src={preview.image} alt={context.name} /></div>
+                      )}
+                      {preview === 'loading' && <div className="ib-req-dlv-body"><p className="ib-req-empty">读取中…</p></div>}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <button type="button" className="ib-btn ib-sm ib-req-ctx-add" data-requirements-context-add="" onClick={() => { setContextKind('link'); setContextName(''); setContextRef(''); setContextText(''); setContextFile(null); contextDialog.current?.showModal(); }}>
+              <Icon name="plus" size={13} /> 添加上下文
+            </button>
+          </section>
           <section aria-label="产物">
             <h3 className="ib-req-h">产物</h3>
             {requirement.deliverables.length === 0 ? (
@@ -669,6 +801,7 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
       ) : (
         board
       )}
+
       <dialog
         ref={newDialog}
         className="ib-req-new"
@@ -706,4 +839,14 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
       </dialog>
     </section>
   );
+}
+
+/** A file as base64 for the JSON upload (the window's POSTs carry their session in the body). */
+async function fileAsBase64(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunk = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunk) binary += String.fromCharCode(...bytes.subarray(index, index + chunk));
+  return btoa(binary);
 }

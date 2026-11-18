@@ -16,7 +16,7 @@
  * then rename), this process the single writer — the inbox/*.json pattern.
  * The whole set is held in memory (personal scale, the design doc's §9.3).
  */
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join, basename } from "node:path";
 import { ulid } from "@plannotator/core/inbox-types";
 import { loadConfig } from "@plannotator/shared/config";
@@ -29,6 +29,7 @@ import {
   requirementStageLabel,
   type Deliverable,
   type DeliverableKind,
+  type RequirementContext,
   type Requirement,
   type RequirementEvent,
   type RequirementPriority,
@@ -83,6 +84,8 @@ export interface RequirementStore {
   deliver(id: string, input: { kind: DeliverableKind; ref: string; title?: string; by?: string | null }): Deliverable;
   undeliver(id: string, deliverableId: string): void;
   say(id: string, note: string, by?: string | null): void;
+  addContext(id: string, input: { kind: "link" | "file"; name: string; ref: string; image?: boolean; by?: string | null }): RequirementContext;
+  removeContext(id: string, contextId: string): void;
   suggest(id: string, input: { stage: RequirementStage; why: string; by: string }): RequirementSuggestion;
   /** The person ignores a suggestion: it is dropped, nothing else moves. */
   dismiss(id: string, suggestionId: string): void;
@@ -142,6 +145,7 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
     deliverables: Array.isArray(record.deliverables) ? record.deliverables : [],
     threads: Array.isArray(record.threads) ? record.threads.filter((id): id is string => typeof id === "string") : [],
     suggestions: Array.isArray(record.suggestions) ? record.suggestions : [],
+    contexts: Array.isArray(record.contexts) ? record.contexts.filter((entry): entry is RequirementContext => typeof entry === "object" && entry !== null && typeof (entry as RequirementContext).id === "string") : [],
     archived_at: record.archived_at ?? null,
     created_at: typeof record.created_at === "string" ? record.created_at : new Date().toISOString(),
     updated_at: typeof record.updated_at === "string" ? record.updated_at : new Date().toISOString(),
@@ -224,6 +228,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         deliverables: [],
         threads: [],
         suggestions: [],
+        contexts: [],
         archived_at: null,
         created_at: now,
         updated_at: now,
@@ -318,6 +323,40 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       if (note.length > WHY_MAX) throw new RequirementStoreError("validation_error", `note: at most ${WHY_MAX} characters.`, "note");
       recordEvent(id, "say", { note: `${by ? `${by}: ` : ""}${note.trim()}` });
     },
+    /** 需求上下文: the requirement's background material. `file` is the absolute path of a file already written
+     *  into the requirement's context folder (the routes below do the writing); the store only records. */
+    addContext(id: string, input: { kind: "link" | "file"; name: string; ref: string; image?: boolean; by?: string | null }) {
+      const record = at(id);
+      if (input.kind !== "link" && input.kind !== "file") throw new RequirementStoreError("validation_error", "kind: link or file.", "kind");
+      if (typeof input.name !== "string" || !input.name.trim()) throw new RequirementStoreError("validation_error", "name: what this material is.", "name");
+      if (input.name.length > TITLE_MAX) throw new RequirementStoreError("validation_error", `name: at most ${TITLE_MAX} characters.`, "name");
+      if (typeof input.ref !== "string" || !input.ref.trim()) throw new RequirementStoreError("validation_error", input.kind === "link" ? "ref: the URL." : "ref: the file's path.", "ref");
+      if (input.ref.length > REF_MAX) throw new RequirementStoreError("validation_error", `ref: at most ${REF_MAX} characters.`, "ref");
+      if (input.kind === "link" && !/^https?:\/\//i.test(input.ref.trim())) throw new RequirementStoreError("validation_error", "ref: an http(s) URL.", "ref");
+      const context: RequirementContext = {
+        id: `ctx_${ulid()}`,
+        kind: input.kind,
+        name: input.name.trim(),
+        ref: input.ref.trim(),
+        ...(input.image ? { image: true } : {}),
+        by: input.by ?? null,
+        created_at: new Date().toISOString(),
+      };
+      record.contexts.unshift(context);
+      recordEvent(id, "context", { to: context.kind, note: context.name });
+      touch(record);
+      save([id]);
+      return context;
+    },
+    removeContext(id: string, contextId: string) {
+      const record = at(id);
+      const at_index = record.contexts.findIndex((entry) => entry.id === contextId);
+      if (at_index === -1) throw new RequirementStoreError("not_found", "No such context.");
+      const [removed] = record.contexts.splice(at_index, 1);
+      recordEvent(id, "context", { from: removed!.kind, note: `removed: ${removed!.name}` });
+      touch(record);
+      save([id]);
+    },
     suggest(id: string, input: { stage: RequirementStage; why: string; by: string }) {
       const record = at(id);
       if (!isRequirementStage(input.stage)) throw new RequirementStoreError("validation_error", "stage: one of the seven lifecycle stages.", "stage");
@@ -373,6 +412,39 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
    */
   const reviewsInFlight = new Set<string>();
   const designDocOf = (id: string): string => join(options.dataDir, "requirements", "design-docs", `${id}.md`);
+
+  /**
+   * 需求上下文: the requirement's own folder of background material. Pasted text is written here as a file
+   * (D1: everything becomes a reference), uploads are copied in (D2: the path outlives any working folder).
+   */
+  const contextDirOf = (id: string): string => join(options.dataDir, "requirements", "contexts", id);
+  /** A name safe as a filename, still the person's words. */
+  const contextFileName = (name: string): string => `${name.trim().replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").slice(0, 60) || "上下文"}.md`;
+  const IMAGE_CONTEXT_SUFFIXES = [".png", ".jpg", ".jpeg", ".gif", ".webp"] as const;
+
+  /**
+   * The 需求卡 (requirement card): the message a session starts on — the requirement's own words plus its
+   * context as REFERENCES (links stay links, files stay paths; the agent reads them itself), never contents.
+   */
+  const requirementCardOf = (record: Requirement): string => {
+    const priority = record.priority === "none" ? "" : `　**优先级**：${record.priority}`;
+    const lines = [
+      `# 需求卡：${record.title}`,
+      "",
+      `**需求 ID**：\`${record.id}\`　**阶段**：${requirementStageLabel(record.stage)}${priority}`,
+      "",
+    ];
+    if (record.notes.trim()) lines.push("## 背景", "", record.notes.trim(), "");
+    if (record.contexts.length > 0) {
+      lines.push("## 相关上下文", "", "> 以下都是引用：链接直接访问，文件按路径读取（图片可直接看）。动手前先读一遍。", "");
+      for (const context of record.contexts) {
+        lines.push(context.kind === "link" ? `- 链接：${context.ref} —— ${context.name}` : `- 文件：${context.ref} —— ${context.name}`);
+      }
+      lines.push("");
+    }
+    lines.push("## 开始吧", "", `1. 用 plannotator requirement 工具把本会话 link 到 \`${record.id}\`；`, "2. 读完上下文再动手；有不清楚的先用 Ask 提问，不要猜；", "3. 阶段性产出用 deliver 挂回本需求；该进下一阶段时 suggest，由人采纳。");
+    return lines.join("\n");
+  };
   const seedDesignDoc = (record: Requirement): string => {
     const file = designDocOf(record.id);
     if (!existsSync(file)) {
@@ -530,7 +602,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       if (deeper === undefined || deeper === "") {
         if (req.method === "GET") {
           const found = store.get(id);
-          return found ? json(found) : json({ error: "Not found", code: "not_found" }, 404);
+          return found ? json({ ...found, card: requirementCardOf(found.requirement) }) : json({ error: "Not found", code: "not_found" }, 404);
         }
         if (req.method === "PATCH") {
           const input = await body(req);
@@ -569,6 +641,68 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       if (annotateMatch && req.method === "POST") {
         const started = annotateDeliverable(id, decodeURIComponent(annotateMatch[1]!));
         return started.ok ? json(started) : json({ error: started.error, code: started.code }, started.status);
+      }
+      // 需求上下文 (contexts): the person adds a link, pasted text (which becomes a file in the requirement's
+      // context folder), or an uploaded file (base64 in the JSON body, so the window's session check holds).
+      const contextMatch = /^contexts(?:\/([^/]+)(\/content)?)?$/.exec(deeper);
+      if (contextMatch) {
+        if (req.method === "POST" && contextMatch[1] === undefined) {
+          const input = await body(req);
+          if (input.kind === "link") {
+            return json({ context: store.addContext(id, { kind: "link", name: input.name as string, ref: input.ref as string }) }, 201);
+          }
+          if (input.kind === "text") {
+            if (typeof input.text !== "string" || !input.text.trim()) return json({ error: "text: the words to keep.", code: "validation_error", field: "text" }, 400);
+            if (input.text.length > 512 * 1024) return json({ error: "text: at most 512 KB.", code: "validation_error", field: "text" }, 400);
+            const record = store.get(id);
+            if (!record) return json({ error: "Not found", code: "not_found" }, 404);
+            mkdirSync(contextDirOf(id), { recursive: true, mode: 0o700 });
+            const file = join(contextDirOf(id), contextFileName(typeof input.name === "string" ? input.name : "上下文"));
+            writeFileSync(file, input.text, { mode: 0o600 });
+            return json({ context: store.addContext(id, { kind: "file", name: typeof input.name === "string" && input.name.trim() ? input.name : "上下文", ref: file }) }, 201);
+          }
+          if (input.kind === "upload") {
+            if (typeof input.data !== "string" || !input.data) return json({ error: "data: the file, base64.", code: "validation_error", field: "data" }, 400);
+            if (input.data.length > 12 * 1024 * 1024) return json({ error: "data: at most 9 MB or so of file.", code: "validation_error", field: "data" }, 400);
+            const name = typeof input.name === "string" && input.name.trim() ? input.name.trim() : "文件";
+            const record = store.get(id);
+            if (!record) return json({ error: "Not found", code: "not_found" }, 404);
+            mkdirSync(contextDirOf(id), { recursive: true, mode: 0o700 });
+            const suffix = (/\.[A-Za-z0-9]{1,8}$/.exec(name)?.[0] ?? "").toLowerCase();
+            const file = join(contextDirOf(id), `${ulid()}${suffix}`);
+            writeFileSync(file, Buffer.from(input.data, "base64"), { mode: 0o600 });
+            const image = IMAGE_CONTEXT_SUFFIXES.some((entry) => suffix === entry);
+            return json({ context: store.addContext(id, { kind: "file", name, ref: file, ...(image ? { image: true } : {}) }) }, 201);
+          }
+          return json({ error: "kind: link, text or upload.", code: "validation_error", field: "kind" }, 400);
+        }
+        if (req.method === "DELETE" && contextMatch[1] !== undefined && !contextMatch[2]) {
+          const contextId = decodeURIComponent(contextMatch[1]!);
+          const found = store.get(id);
+          const removed = found?.requirement.contexts.find((entry) => entry.id === contextId);
+          store.removeContext(id, contextId);
+          // The library owns its files: taking the context off takes its file with it.
+          if (removed?.kind === "file" && removed.ref.startsWith(contextDirOf(id))) rmSync(removed.ref, { force: true });
+          return json({ ok: true });
+        }
+        if (req.method === "GET" && contextMatch[2] === "/content") {
+          if (req.headers.get("sec-fetch-site")?.trim().toLowerCase() !== "same-origin") return json({ error: "The preview answers only the Inbox window.", code: "window_only" }, 403);
+          const found = store.get(id);
+          const context = found?.requirement.contexts.find((entry) => entry.id === decodeURIComponent(contextMatch[1]!));
+          if (!context) return json({ error: "Not found", code: "not_found" }, 404);
+          if (context.kind === "link") return json({ link: context.ref });
+          try {
+            const bytes = Bun.file(context.ref);
+            if (context.image) {
+              const buffer = new Uint8Array(await bytes.arrayBuffer()).slice(0, 2 * 1024 * 1024);
+              return json({ image: `data:${bytes.type || "image/png"};base64,${Buffer.from(buffer).toString("base64")}` });
+            }
+            const text = (await bytes.text()).slice(0, 200 * 1024);
+            return json({ text, html: /\.html?$/i.test(context.ref) });
+          } catch {
+            return json({ error: "这个上下文的文件在这台机器上读不到。", code: "unreadable" }, 404);
+          }
+        }
       }
       const suggestionMatch = /^suggestions(?:\/([^/]+)(?:\/adopt)?)?$/.exec(deeper);
       if (suggestionMatch) {

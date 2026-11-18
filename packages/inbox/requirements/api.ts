@@ -56,7 +56,7 @@ export function patchRequirement(id: string, patch: { title?: string; notes?: st
 }
 
 /** One requirement with its history (Wave 2's detail pane reads this). */
-export async function readRequirement(id: string, signal?: AbortSignal): Promise<{ requirement: Requirement; events: RequirementEvent[] } | null> {
+export async function readRequirement(id: string, signal?: AbortSignal): Promise<{ requirement: Requirement; events: RequirementEvent[]; card?: string } | null> {
   return get<{ requirement: Requirement; events: RequirementEvent[] }>(`/api/requirements/${encodeURIComponent(id)}`, signal);
 }
 
@@ -90,4 +90,18 @@ export function deliverableContent(id: string, deliverableId: string): Promise<{
 /** 批注: the deliverable's document opens in a plain annotate session; what comes back lands in the history. */
 export function annotateDeliverable(id: string, deliverableId: string): Promise<WriteOutcome<{ ok: boolean }>> {
   return write('POST', `/api/requirements/${encodeURIComponent(id)}/deliverables/${encodeURIComponent(deliverableId)}/annotate`, {});
+}
+
+/** 需求上下文: a link, pasted text (which becomes a file), or an uploaded file (base64). */
+export function addContext(id: string, input: { kind: 'link'; name: string; ref: string } | { kind: 'text'; name: string; text: string } | { kind: 'upload'; name: string; data: string }): Promise<WriteOutcome<{ context: unknown }>> {
+  return write('POST', `/api/requirements/${encodeURIComponent(id)}/contexts`, input as unknown as Record<string, unknown>);
+}
+
+export function removeContext(id: string, contextId: string): Promise<WriteOutcome<{ ok: boolean }>> {
+  return write('DELETE', `/api/requirements/${encodeURIComponent(id)}/contexts/${encodeURIComponent(contextId)}`, {});
+}
+
+/** A context's own preview (the person's window only): text, an image, or a link's URL. */
+export function contextContent(id: string, contextId: string): Promise<{ text?: string; image?: string; link?: string; html?: boolean } | { error: string }> {
+  return fetch(`/api/requirements/${encodeURIComponent(id)}/contexts/${encodeURIComponent(contextId)}/content`, { headers: { Accept: 'application/json' }, cache: 'no-store' }).then((response) => response.json());
 }
