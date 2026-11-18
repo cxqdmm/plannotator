@@ -5580,9 +5580,15 @@ function Inbox() {
       />
     );
   } else if (route.page === 'requirements') {
-    // The Requirements panel (「需求」, packages/inbox/requirements): the sidebar's 需求 row. Owns its data, so
-    // nothing else is wired here.
-    main = <RequirementsPanel on={requirementsOn} />;
+    // The Requirements panel (「需求」, packages/inbox/requirements): the sidebar's 需求 row, its 已归档 page at
+    // `#requirements&archived`. Owns its data, so nothing else is wired here.
+    main = (
+      <RequirementsPanel
+        on={requirementsOn}
+        archived={route.reqArchived === true}
+        onView={(to) => writeRoute({ page: 'requirements', project: null, thread: null, reqArchived: to, req: null })}
+      />
+    );
   } else if (route.page === 'scheduled') {
     main = <ScheduledRoute route={route} settings={settings} rows={windowRows} phone={phone} stacked={stack.thread} onToast={showToast} />;
   } else if (route.page === 'artifacts') {

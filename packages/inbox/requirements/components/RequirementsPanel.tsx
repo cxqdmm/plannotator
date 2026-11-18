@@ -2,10 +2,12 @@
  * The Requirements panel (「需求」): a Board-style kanban — the seven lifecycle
  * stages as lanes, cards dragged between them — drawn with the Board's own
  * classes (ib-bpage/ib-blanes/ib-lane/ib-bcard, packages/inbox/inbox.css), so
- * it is the Inbox's look, rounded corners and all, in light and dark. Owns
- * its data (useRequirements) so App.tsx only mounts it: the module stays a
- * plug-in. Wave 2 adds the detail pane and deliverables; Wave 3 filters and
- * keyboard.
+ * it is the Inbox's look, rounded corners and all, in light and dark. Stage
+ * headers carry the system's own SVG marks; there is no delete: a card is
+ * 归档 (archived) from its hover corner, and the header's 已归档 link opens the
+ * archived page, where a card restores. Owns its data (useRequirements) so
+ * App.tsx only mounts it: the module stays a plug-in. Wave 2 adds the detail
+ * pane and deliverables.
  *
  * Words are Simplified Chinese in place, this fork's rule.
  */
@@ -14,32 +16,34 @@ import { Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
 import { useRequirements } from '../useRequirements';
-import { REQUIREMENT_PRIORITIES, REQUIREMENT_STAGES, type Requirement, type RequirementPriority, type RequirementStage } from '@plannotator/core/requirements-types';
+import { REQUIREMENT_STAGES, type Requirement, type RequirementStage } from '@plannotator/core/requirements-types';
 
-function priorityAfter(current: RequirementPriority): RequirementPriority {
-  const order = REQUIREMENT_PRIORITIES.map((entry) => entry.id);
-  return order[(order.indexOf(current) + 1) % order.length]!;
-}
+/** Each stage's mark: the system's own SVG icons, the colour every other one draws in. */
+const STAGE_ICON: Record<RequirementStage, Parameters<typeof Icon>[0]['name']> = {
+  triage: 'inbox',
+  design: 'pen',
+  'design-review': 'eye',
+  dev: 'code',
+  qa: 'todo',
+  'code-review': 'reviews',
+  done: 'check',
+};
 
-function priorityLabel(priority: RequirementPriority): string {
-  return REQUIREMENT_PRIORITIES.find((entry) => entry.id === priority)?.label ?? priority;
-}
-
-/** One requirement as a lane card: the title (click to rename), the priority dot (click to cycle), delete. */
+/** One requirement as a lane card: the title (click to rename), 归档/恢复 from the hover corner. */
 function RequirementCard({
   requirement,
   dragging,
+  draggable,
   onDragStart,
   onDragEnd,
   onPatch,
-  onRemove,
 }: {
   requirement: Requirement;
   dragging: boolean;
+  draggable: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
-  onPatch: (id: string, patch: { title?: string; stage?: RequirementStage; priority?: RequirementPriority }) => void;
-  onRemove: (id: string) => void;
+  onPatch: (id: string, patch: { title?: string; stage?: RequirementStage; archived?: boolean }) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(requirement.title);
@@ -51,6 +55,8 @@ function RequirementCard({
     else setTitle(requirement.title);
   };
 
+  const archived = requirement.archived_at != null;
+
   return (
     <li
       className="ib-bcard"
@@ -58,7 +64,7 @@ function RequirementCard({
       data-requirement-id={requirement.id}
       data-stage={requirement.stage}
       data-dragging={dragging ? '' : undefined}
-      draggable={editing ? undefined : true}
+      draggable={draggable && !editing ? true : undefined}
       onDragStart={(event) => {
         event.dataTransfer.setData('text/plain', requirement.id);
         event.dataTransfer.effectAllowed = 'move';
@@ -66,6 +72,15 @@ function RequirementCard({
       }}
       onDragEnd={onDragEnd}
     >
+      <button
+        type="button"
+        className="ib-req-corner"
+        title={archived ? '恢复到看板' : '归档'}
+        aria-label={archived ? '恢复到看板' : '归档'}
+        onClick={() => onPatch(requirement.id, { archived: !archived })}
+      >
+        <Icon name={archived ? 'back' : 'archive'} size={14} />
+      </button>
       <span className="ib-bc-top">
         {editing ? (
           <input
@@ -93,30 +108,13 @@ function RequirementCard({
           </button>
         )}
       </span>
-      <span className="ib-bc-bot">
-        <span className="ib-bc-line">
-          <button
-            type="button"
-            className="ib-req-pri"
-            data-priority={requirement.priority}
-            title={`优先级：${priorityLabel(requirement.priority)}（点击切换）`}
-            aria-label={`优先级：${priorityLabel(requirement.priority)}（点击切换）`}
-            onClick={() => onPatch(requirement.id, { priority: priorityAfter(requirement.priority) })}
-          />
-          <span className="ib-req-act">
-            <button type="button" className="ib-req-x" aria-label="删除需求" title="删除需求" onClick={() => onRemove(requirement.id)}>
-              <Icon name="trash" size={13} />
-            </button>
-          </span>
-        </span>
-      </span>
     </li>
   );
 }
 
-/** The panel: a Board page whose lanes are the seven stages. */
-export function RequirementsPanel({ on }: { on: boolean }) {
-  const { requirements, create, patch, remove, error, clearError } = useRequirements(on, subscribeRequirementFrames);
+/** The panel: a Board page whose lanes are the seven stages; `archived` shows the 已归档 page instead. */
+export function RequirementsPanel({ on, archived = false, onView }: { on: boolean; archived?: boolean; onView: (archived: boolean) => void }) {
+  const { requirements, archived: archivedList, archivedCount, create, patch, error, clearError } = useRequirements(on, subscribeRequirementFrames);
   const [composing, setComposing] = useState(false);
   const [draft, setDraft] = useState('');
   /** The card being dragged (the Board's own mechanism: state, not the dataTransfer's contents). */
@@ -133,34 +131,56 @@ export function RequirementsPanel({ on }: { on: boolean }) {
     void create({ title });
   };
 
+  const shown = archived ? (archivedList ?? []) : (requirements ?? []);
   const lanes = new Map<RequirementStage, Requirement[]>(REQUIREMENT_STAGES.map((stage) => [stage.id, [] as Requirement[]]));
-  for (const requirement of requirements ?? []) lanes.get(requirement.stage)?.push(requirement);
+  for (const requirement of shown) lanes.get(requirement.stage)?.push(requirement);
 
   return (
-    <section className="ib-bpage" aria-labelledby="ib-req-title" data-requirements-page="">
+    <section className="ib-bpage" aria-labelledby="ib-req-title" data-requirements-page="" data-requirements-view={archived ? 'archived' : 'board'}>
       <div className="ib-bhead">
         <SidebarTrigger />
-        <h1 id="ib-req-title" tabIndex={-1}>
-          需求
-        </h1>
-        <span className="ib-bsp" />
-        {requirements !== null && requirements.length > 0 && (
-          <span className="ib-blinks" aria-label={`共 ${requirements.length} 条需求`}>
-            {requirements.length} 条
-          </span>
+        {archived ? (
+          <>
+            <button type="button" className="ib-bback" data-requirements-back="" onClick={() => onView(false)}>
+              <Icon name="chevL" size={16} />
+              需求
+            </button>
+            <h1 id="ib-req-title" tabIndex={-1}>
+              已归档
+            </h1>
+          </>
+        ) : (
+          <>
+            <h1 id="ib-req-title" tabIndex={-1}>
+              需求
+            </h1>
+            <span className="ib-bsp" />
+            <nav className="ib-blinks" aria-label="已归档的需求">
+              <a
+                href="#requirements&archived"
+                data-requirements-link="archived"
+                onClick={(event) => {
+                  event.preventDefault();
+                  onView(true);
+                }}
+              >
+                已归档 {archivedCount}
+              </a>
+            </nav>
+            <button
+              type="button"
+              className="ib-btn ib-sm ib-bnew"
+              data-requirements-new=""
+              onClick={() => {
+                setComposing(true);
+                clearError();
+              }}
+            >
+              <Icon name="plus" size={15} />
+              新建需求
+            </button>
+          </>
         )}
-        <button
-          type="button"
-          className="ib-btn ib-sm ib-bnew"
-          data-requirements-new=""
-          onClick={() => {
-            setComposing(true);
-            clearError();
-          }}
-        >
-          <Icon name="plus" size={15} />
-          新建需求
-        </button>
       </div>
       {error && (
         <div className="ib-error ib-bfail" role="alert">
@@ -170,7 +190,7 @@ export function RequirementsPanel({ on }: { on: boolean }) {
       <div className="ib-blanes" data-dragging={dragging ? '' : undefined}>
         {REQUIREMENT_STAGES.map((stage) => {
           const cards = lanes.get(stage.id) ?? [];
-          const target = dragging !== null && dragging.stage !== stage.id;
+          const target = !archived && dragging !== null && dragging.stage !== stage.id;
           const dragOver = (event: React.DragEvent) => {
             if (!target) return;
             event.preventDefault();
@@ -199,12 +219,12 @@ export function RequirementsPanel({ on }: { on: boolean }) {
               }}
             >
               <h2 className="ib-lane-h" id={`ib-req-lane-${stage.id}`} tabIndex={-1}>
-                <span className="ib-lane-dot" data-col={stage.id} aria-hidden="true" />
+                <Icon name={STAGE_ICON[stage.id]} size={15} className="ib-req-lane-ico" />
                 <span className="ib-lane-l">{stage.label}</span>
                 <span className="ib-lane-n">{cards.length}</span>
               </h2>
               <ul className="ib-lane-cards" aria-labelledby={`ib-req-lane-${stage.id}`}>
-                {stage.id === 'triage' && composing && (
+                {!archived && stage.id === 'triage' && composing && (
                   <li className="ib-bcard" data-composer="">
                     <span className="ib-bc-top">
                       <input
@@ -231,17 +251,17 @@ export function RequirementsPanel({ on }: { on: boolean }) {
                     key={requirement.id}
                     requirement={requirement}
                     dragging={dragging?.id === requirement.id}
+                    draggable={!archived}
                     onDragStart={() => setDragging(requirement)}
                     onDragEnd={() => {
                       setDragging(null);
                       setOver(null);
                     }}
                     onPatch={(id, patchIn) => void patch(id, patchIn)}
-                    onRemove={(id) => void remove(id)}
                   />
                 ))}
               </ul>
-              {cards.length === 0 && !(stage.id === 'triage' && composing) && <p className="ib-lane-empty">{stage.wants ? `还没有需求；此阶段产出${stage.wants}。` : '还没有需求。'}</p>}
+              {cards.length === 0 && !(!archived && stage.id === 'triage' && composing) && <p className="ib-lane-empty">{archived ? '没有已归档的需求。' : stage.wants ? `还没有需求；此阶段产出${stage.wants}。` : '还没有需求。'}</p>}
             </section>
           );
         })}

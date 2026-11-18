@@ -12367,26 +12367,19 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
 }
 
 /* ── The Requirements panel (「需求」, packages/inbox/requirements): the Board's page, lanes and cards reused
-   as-is (ib-bpage/ib-blanes/ib-lane/ib-bcard above); only its own bits are here. The seven stage dots (the
-   Board's five sit with the lanes). */
-.ib-lane-dot[data-col="triage"] { background: none; box-shadow: inset 0 0 0 1.75px var(--muted-foreground); }
-.ib-lane-dot[data-col="design"] { background: none; box-shadow: inset 0 0 0 1.75px var(--primary); }
-.ib-lane-dot[data-col="design-review"] { background: var(--warning, oklch(0.75 0.15 85)); }
-.ib-lane-dot[data-col="dev"] { background: var(--primary); }
-.ib-lane-dot[data-col="qa"] { background: oklch(0.68 0.11 250); }
-.ib-lane-dot[data-col="code-review"] { background: none; box-shadow: inset 0 0 0 1.75px var(--warning, oklch(0.75 0.15 85)); }
-.ib-lane-dot[data-col="done"] { background: var(--success, oklch(0.6 0.15 150)); }
-/* The priority dot on a requirement card (click to cycle). */
-.ib-req-pri { flex: none; width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: var(--muted-foreground); cursor: pointer; }
-.ib-req-pri[data-priority="urgent"] { background: var(--destructive, oklch(0.6 0.19 25)); }
-.ib-req-pri[data-priority="high"] { background: var(--warning, oklch(0.75 0.15 85)); }
-.ib-req-pri[data-priority="medium"] { background: var(--primary); }
-.ib-req-pri[data-priority="low"] { background: oklch(0.68 0.11 250); }
-.ib-req-pri[data-priority="none"] { background: none; box-shadow: inset 0 0 0 1.75px var(--muted-foreground); }
+   as-is (ib-bpage/ib-blanes/ib-lane/ib-bcard above); only its own bits are here. Stage headers carry the system's
+   own SVG marks; cards 归档/恢复 from a hover corner; the motion is the panel's own, scoped to its page. */
+.ib-req-lane-ico { flex: none; color: var(--muted-foreground); }
+.ib-lane-h:hover .ib-req-lane-ico { color: var(--foreground); }
 /* The rename/composer input inside a card. */
 .ib-req-rename { width: 100%; min-width: 0; margin: 0; padding: 1px 4px; border: 0; border-radius: 4px; background: var(--background); color: var(--foreground); font: inherit; outline: 2px solid var(--ring); outline-offset: -1px; }
-/* The card's hover actions (delete), right of the bottom line. */
-.ib-req-act { margin-left: auto; display: none; }
-.ib-bcard:hover .ib-req-act, .ib-bcard:focus-within .ib-req-act { display: inline-flex; }
-.ib-req-x { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--muted-foreground); cursor: pointer; }
-.ib-req-x:hover { color: var(--foreground); background: var(--ib-hover); }
+/* The card's hover corner (归档/恢复), top-right, revealed by hover or focus. */
+.ib-req-corner { position: absolute; top: 5px; right: 5px; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; background: color-mix(in oklch, var(--card) 82%, transparent); color: var(--muted-foreground); opacity: 0; transform: translateY(-1px); transition: opacity 120ms ease-out, transform 140ms ease-out, color 120ms ease-out, background-color 120ms ease-out; cursor: pointer; }
+.ib-bcard:hover .ib-req-corner, .ib-bcard:focus-within .ib-req-corner, .ib-req-corner:focus-visible { opacity: 1; transform: none; }
+.ib-req-corner:hover { color: var(--foreground); background: var(--ib-hover, var(--card)); }
+/* The panel's own card motion: a lift on hover, a heavier hold while dragged, over the Board's shadow transitions. */
+.ib-bpage[data-requirements-page] .ib-bcard { transition: box-shadow 140ms ease-out, transform 160ms cubic-bezier(0.2, 0.7, 0.3, 1.15); }
+.ib-bpage[data-requirements-page] .ib-bcard:hover { transform: translateY(-1px); }
+.ib-bpage[data-requirements-page] .ib-bcard[data-dragging] { opacity: 0.55; transform: scale(1.02); }
+/* A lane the drag hovers breathes its highlight in (the Board's inset ring, with the panel's own ease). */
+.ib-bpage[data-requirements-page] .ib-lane { transition: background-color 120ms ease-out, box-shadow 180ms cubic-bezier(0.2, 0.7, 0.3, 1); }

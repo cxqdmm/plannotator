@@ -73,6 +73,8 @@ export interface Requirement {
   stage: RequirementStage;
   priority: RequirementPriority;
   deliverables: Deliverable[];
+  /** Set when archived (归档): the card leaves the board until restored. Null while active. */
+  archived_at?: string | null;
   created_at: string;
   updated_at: string;
 }

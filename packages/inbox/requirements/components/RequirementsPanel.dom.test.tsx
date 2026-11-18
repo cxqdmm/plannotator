@@ -1,10 +1,11 @@
 /**
  * The Requirements panel as the window draws it: a Board-style kanban — the
- * seven stage lanes in order, the composer's create flow, a drag between
- * lanes PATCHing the stage, and an optimistic write that fails rolling the
- * card back with its error line. The panel's api is stubbed at fetch (its
- * real module graph loads; only the network is fake), so nothing here reads
- * a real data dir.
+ * seven stage lanes in order with the system's SVG marks, the composer's
+ * create flow, a drag between lanes PATCHing the stage, 归档 taking a card off
+ * the board (and 恢复 bringing it back), and an optimistic write that fails
+ * rolling the card back with its error line. The panel's api is stubbed at
+ * fetch (its real module graph loads; only the network is fake), so nothing
+ * here reads a real data dir.
  *
  * DOM-gated: runs under DOM_TESTS=1 (happy-dom), from tests/dom-test-list.txt.
  */
@@ -18,31 +19,37 @@ const { RequirementsPanel } = (hasDom ? await import('./RequirementsPanel') : {}
 // The panel's header carries the sidebar toggle, which lives in the shell's provider (App always has one up the tree).
 const { SidebarProvider } = (hasDom ? await import('../../shell/sidebar') : {}) as typeof import('../../shell/sidebar');
 
-const requirement = (id: string, title: string, stage: Requirement['stage'], priority: Requirement['priority'] = 'none'): Requirement => ({
+const requirement = (id: string, title: string, stage: Requirement['stage'], archived = false): Requirement => ({
   id,
   title,
   notes: '',
   stage,
-  priority,
+  priority: 'none',
   deliverables: [],
+  archived_at: archived ? '2026-11-18T01:00:00.000Z' : null,
   created_at: '2026-11-18T00:00:00.000Z',
   updated_at: '2026-11-18T00:00:00.000Z',
 });
 
-/** The fake network: what each method answers, and what it was asked. */
+/** The fake network: what each `METHOD path` answers (the two list pages have their own keys), and what it was asked. */
 let answers: Record<string, { status: number; body: unknown }>;
 let asked: { method: string; path: string; body: Record<string, unknown> }[];
 let savedFetch: typeof fetch;
 
+const board = (requirements: Requirement[], archived: number) => ({ requirements, archived });
+
 beforeEach(() => {
-  answers = { GET: { status: 200, body: { requirements: [requirement('req_a', '登录页改版', 'design'), requirement('req_b', '导出报表', 'triage')] } } };
+  answers = {
+    'GET /api/requirements': { status: 200, body: board([requirement('req_a', '登录页改版', 'design'), requirement('req_b', '导出报表', 'triage')], 1) },
+    'GET /api/requirements?archived=1': { status: 200, body: board([requirement('req_g', '旧需求', 'done', true)], 1) },
+  };
   asked = [];
   savedFetch = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const method = (init?.method ?? 'GET').toUpperCase();
     const path = String(input);
     asked.push({ method, path, body: init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {} });
-    const answer = method === 'GET' ? answers.GET : (answers[method] ?? { status: 200, body: {} });
+    const answer = answers[`${method} ${path}`] ?? { status: 200, body: {} };
     return new Response(JSON.stringify(answer.body), { status: answer.status, headers: { 'Content-Type': 'application/json' } });
   }) as typeof fetch;
 });
@@ -64,12 +71,12 @@ describe(hasDom ? 'RequirementsPanel' : describe.skip, () => {
     root = null;
   });
 
-  const draw = async () => {
+  const draw = async (props: { archived?: boolean } = {}) => {
     root = createRoot(host);
     await act(async () => {
       root!.render(
         <SidebarProvider>
-          <RequirementsPanel on />
+          <RequirementsPanel on archived={props.archived} onView={() => {}} />
         </SidebarProvider>,
       );
     });
@@ -101,18 +108,23 @@ describe(hasDom ? 'RequirementsPanel' : describe.skip, () => {
   const lane = (stage: string) => host.querySelector(`.ib-lane[data-lane="${stage}"]`)!;
   const laneCards = (stage: string) => [...lane(stage).querySelectorAll('.ib-bcard[data-requirement-id]')].map((card) => card.getAttribute('data-requirement-id'));
 
-  test('draws the seven stage lanes in order with their cards, on the Board\'s own page classes', async () => {
+  test('draws the seven stage lanes in order, each headed by the system\'s SVG mark, with their cards', async () => {
     await draw();
     expect([...host.querySelectorAll('.ib-lane[data-lane]')].map((element) => element.getAttribute('data-lane'))).toEqual(['triage', 'design', 'design-review', 'dev', 'qa', 'code-review', 'done']);
     expect(host.querySelector('.ib-bpage[data-requirements-page]')).not.toBeNull();
+    expect(host.querySelectorAll('.ib-lane-h .ib-req-lane-ico svg, .ib-lane-h .ib-req-lane-ico > *').length).toBe(7);
     expect(laneCards('design')).toEqual(['req_a']);
     expect(laneCards('triage')).toEqual(['req_b']);
-    expect(asked.filter((call) => call.method === 'GET').map((call) => call.path)).toEqual(['/api/requirements']);
+    // No dots anywhere: the marks are icons, the cards carry no priority dot.
+    expect(host.querySelector('.ib-lane-dot')).toBeNull();
+    expect(host.querySelector('.ib-req-pri')).toBeNull();
+    // The header's 已归档 link says the count.
+    expect(host.querySelector('[data-requirements-link="archived"]')!.textContent).toContain('已归档 1');
   });
 
   test('新建需求 composes in the 待跟进 lane; Enter creates over POST and the card lands there', async () => {
     await draw();
-    answers.POST = { status: 201, body: { requirement: requirement('req_new', '新需求', 'triage') } };
+    answers['POST /api/requirements'] = { status: 201, body: { requirement: requirement('req_new', '新需求', 'triage') } };
     act(() => {
       host.querySelector<HTMLButtonElement>('[data-requirements-new]')!.click();
     });
@@ -138,11 +150,36 @@ describe(hasDom ? 'RequirementsPanel' : describe.skip, () => {
     expect(laneCards('qa')).toEqual(['req_b']);
     // …and a later drag the server refuses: the card goes back to where the last GOOD write left it,
     // never to the refused lane, and the error line shows.
-    answers.PATCH = { status: 500, body: { error: 'The data folder could not be written; nothing changed.' } };
+    answers['PATCH /api/requirements/req_b'] = { status: 500, body: { error: 'The data folder could not be written; nothing changed.' } };
     drag(lane('qa').querySelector('.ib-bcard[data-requirement-id="req_b"]')!, lane('dev'));
     await act(async () => {});
     expect(laneCards('dev')).toEqual([]);
     expect(laneCards('qa')).toEqual(['req_b']);
     expect(host.querySelector('[role="alert"]')!.textContent).toContain('The data folder could not be written');
+  });
+
+  test('归档 takes a card off the board over PATCH; 恢复 brings it back on the archived page', async () => {
+    await draw();
+    // The server the refresh will read: req_b already archived.
+    answers['GET /api/requirements'] = { status: 200, body: board([requirement('req_a', '登录页改版', 'design')], 2) };
+    answers['GET /api/requirements?archived=1'] = { status: 200, body: board([requirement('req_g', '旧需求', 'done', true), requirement('req_b', '导出报表', 'done', true)], 2) };
+    act(() => {
+      host.querySelector<HTMLElement>('.ib-bcard[data-requirement-id="req_b"] [aria-label="归档"]')!.click();
+    });
+    await act(async () => {});
+    const patch = asked.find((call) => call.method === 'PATCH');
+    expect(patch?.body).toEqual({ archived: true });
+    expect(laneCards('triage')).toEqual([]);
+    // The archived page shows it, with 恢复 on its corner.
+    await draw({ archived: true });
+    expect(laneCards('done')).toEqual(['req_g', 'req_b']);
+    answers['PATCH /api/requirements/req_b'] = { status: 200, body: { requirement: requirement('req_b', '导出报表', 'done') } };
+    answers['GET /api/requirements?archived=1'] = { status: 200, body: board([requirement('req_g', '旧需求', 'done', true)], 1) };
+    act(() => {
+      host.querySelector<HTMLElement>('.ib-bcard[data-requirement-id="req_b"] [aria-label="恢复到看板"]')!.click();
+    });
+    await act(async () => {});
+    expect(asked.filter((call) => call.method === 'PATCH').at(-1)!.body).toEqual({ archived: false });
+    expect(laneCards('done')).toEqual(['req_g']);
   });
 });

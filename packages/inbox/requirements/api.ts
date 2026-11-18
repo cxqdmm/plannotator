@@ -36,21 +36,23 @@ async function write<T>(method: 'POST' | 'PATCH' | 'DELETE', path: string, body:
   }
 }
 
-/** The whole set (the module's only list read); null when the routes are off or unreachable. */
-export async function readRequirements(signal?: AbortSignal): Promise<Requirement[] | null> {
-  return (await get<{ requirements: Requirement[] }>('/api/requirements', signal))?.requirements ?? null;
+/** One page of the set: the active board, or the archived one (`archived: 1`); `archived` is how many are archived. */
+export interface RequirementsPage {
+  requirements: Requirement[];
+  archived: number;
+}
+
+/** The board's page (the module's only list read); null when the routes are off or unreachable. */
+export async function readRequirements(signal?: AbortSignal, archived = false): Promise<RequirementsPage | null> {
+  return get<RequirementsPage>(archived ? '/api/requirements?archived=1' : '/api/requirements', signal);
 }
 
 export function createRequirement(input: { title: string; priority?: RequirementPriority; notes?: string }): Promise<WriteOutcome<{ requirement: Requirement }>> {
   return write('POST', '/api/requirements', input);
 }
 
-export function patchRequirement(id: string, patch: { title?: string; notes?: string; stage?: RequirementStage; priority?: RequirementPriority }): Promise<WriteOutcome<{ requirement: Requirement }>> {
+export function patchRequirement(id: string, patch: { title?: string; notes?: string; stage?: RequirementStage; priority?: RequirementPriority; archived?: boolean }): Promise<WriteOutcome<{ requirement: Requirement }>> {
   return write('PATCH', `/api/requirements/${encodeURIComponent(id)}`, patch);
-}
-
-export function deleteRequirement(id: string): Promise<WriteOutcome<{ ok: boolean }>> {
-  return write('DELETE', `/api/requirements/${encodeURIComponent(id)}`, {});
 }
 
 /** One requirement with its history (Wave 2's detail pane reads this). */

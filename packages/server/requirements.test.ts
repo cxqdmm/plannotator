@@ -79,6 +79,29 @@ describe("the requirements routes", () => {
     expect(events[2]).toMatchObject({ kind: "created" });
   });
 
+  test("归档 takes a card off the board and back; the list answers count the archived; the record carries a timestamp, never a boolean", async () => {
+    const made = await createOne();
+    expect((await call("GET", "/api/requirements")).data.archived).toBe(0);
+    expect((await call("PATCH", `/api/requirements/${made.id}`, { archived: true })).status).toBe(200);
+    const board = await call("GET", "/api/requirements");
+    expect(board.data.requirements).toEqual([]);
+    expect(board.data.archived).toBe(1);
+    const archivedPage = await call("GET", "/api/requirements?archived=1");
+    expect((archivedPage.data.requirements as { id: string }[]).map((r) => r.id)).toEqual([made.id]);
+    const record = (await call("GET", `/api/requirements/${made.id}`)).data.requirement as { archived_at: string | null } & Record<string, unknown>;
+    expect(record.archived_at).not.toBeNull();
+    expect(record.archived).toBeUndefined();
+    // Restore: back on the board, off the archived page.
+    expect((await call("PATCH", `/api/requirements/${made.id}`, { archived: false })).status).toBe(200);
+    const back = await call("GET", "/api/requirements");
+    expect(back.data.requirements).toHaveLength(1);
+    expect(back.data.archived).toBe(0);
+    // Both moves are history; a non-boolean is refused.
+    const events = ((await call("GET", `/api/requirements/${made.id}`)).data.events as { kind: string; field?: string }[]).filter((event) => event.field === "archived");
+    expect(events).toHaveLength(2);
+    expect((await call("PATCH", `/api/requirements/${made.id}`, { archived: "yes" })).status).toBe(400);
+  });
+
   test("a delete removes the record and writes history; an unknown id is 404; an unknown subpath is not this module's", async () => {
     const made = await createOne();
     expect((await call("DELETE", `/api/requirements/${made.id}`)).status).toBe(200);

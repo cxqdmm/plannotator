@@ -59,6 +59,8 @@ export interface Route {
   shape?: string | null;
   /** The Requirements panel (`#requirements`): the requirement whose detail is open beside the list (Wave 2). */
   req?: string | null;
+  /** The Requirements panel's archived page (`#requirements&archived`): the board's 已归档 link. */
+  reqArchived?: boolean;
   /** The Board's list (`#board`, `#board=done`, `#board=cancelled`; `#board=shipped` before the rename opens Done, `#board=icebox` from before v2 Cancelled). */
   board?: BoardView;
   /** The opened Board card (`#board&card=crd_…`), or on a thread the card it was opened from (its "‹ Board" way back). */
@@ -150,9 +152,9 @@ export function routeOf(fullHash: string): Route {
   if (params.has('artifacts') && !params.get('thread')) return { page: 'artifacts', project: null, thread: null, pinned: params.get('artifacts') === 'pinned' };
   if (params.has('routine') || params.has('routines')) return { page: 'scheduled', project: null, thread: null, scheduled: params.get('routine') || null };
   if (params.has('shapes')) return { page: 'shapes', project: null, thread: null, shape: params.get('shape') };
-  // The Requirements panel (「需求」, the sidebar's 需求 row): `#requirements`, with the requirement whose detail is
-  // open beside the list (`&req=req_…`, Wave 2).
-  if (params.has('requirements')) return { page: 'requirements', project: null, thread: null, req: params.get('req') };
+  // The Requirements panel (「需求」, the sidebar's 需求 row): `#requirements`, its archived page (`&archived`),
+  // and the requirement whose detail is open beside the list (`&req=req_…`, Wave 2).
+  if (params.has('requirements')) return { page: 'requirements', project: null, thread: null, req: params.get('req'), reqArchived: params.has('archived') };
   if (params.has('prs')) {
     const stack = params.get('stack') || null;
     const layer = stack ? params.get('layer') || null : null;

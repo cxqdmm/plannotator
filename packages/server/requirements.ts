@@ -53,7 +53,7 @@ interface RequirementEventsFile {
 }
 
 /** A field write that passed validation, ready to apply. */
-type RequirementPatch = { title?: string; notes?: string; stage?: Requirement["stage"]; priority?: RequirementPriority };
+type RequirementPatch = { title?: string; notes?: string; stage?: Requirement["stage"]; priority?: RequirementPriority; archived?: boolean };
 
 const TITLE_MAX = 200;
 const NOTES_MAX = 100_000;
@@ -160,6 +160,10 @@ export function createBunRequirementRoutes(options: { dataDir: string }) {
       if (!isRequirementPriority(body.priority)) return invalid("priority", "priority: one of urgent, high, medium, low, none.");
       patch.priority = body.priority;
     }
+    if (body.archived !== undefined) {
+      if (typeof body.archived !== "boolean") return invalid("archived", "archived: a boolean.");
+      patch.archived = body.archived;
+    }
     return patch;
   }
 
@@ -171,7 +175,10 @@ export function createBunRequirementRoutes(options: { dataDir: string }) {
     const path = url.pathname;
 
     if (path === "/api/requirements" && req.method === "GET") {
-      return json({ requirements: file.requirements });
+      const archived = url.searchParams.get("archived") === "1";
+      const requirements = archived ? file.requirements.filter((r) => r.archived_at != null) : file.requirements.filter((r) => r.archived_at == null);
+      // `archived`: how many are archived, so the board's 已归档 link can say it without a second read.
+      return json({ requirements, archived: file.requirements.filter((r) => r.archived_at != null).length });
     }
     if (path === "/api/requirements" && req.method === "POST") {
       const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
@@ -218,11 +225,18 @@ export function createBunRequirementRoutes(options: { dataDir: string }) {
       if (patch.stage !== undefined && patch.stage !== requirement.stage) {
         recordEvent(id, "stage", { from: requirement.stage, to: patch.stage });
       }
-      for (const [field, value] of Object.entries(patch)) {
+      // 归档 writes its timestamp, never an `archived` field on the record.
+      const { archived, ...fields } = patch;
+      if (archived !== undefined) {
+        const to = archived ? new Date().toISOString() : null;
+        if (requirement.archived_at !== to) recordEvent(id, "field", { field: "archived", from: String(requirement.archived_at ?? ""), to: String(to ?? "") });
+        requirement.archived_at = to;
+      }
+      for (const [field, value] of Object.entries(fields)) {
         if (field === "stage") continue; // The stage event above already names the move.
         if (requirement[field as keyof Requirement] !== value) recordEvent(id, "field", { field, from: String(requirement[field as keyof Requirement] ?? ""), to: String(value) });
       }
-      Object.assign(requirement, patch, { updated_at: new Date().toISOString() });
+      Object.assign(requirement, fields, { updated_at: new Date().toISOString() });
       if (!save([id])) return json({ error: "The data folder could not be written; nothing changed.", code: "not_saved" }, 500);
       return json({ requirement });
     }
