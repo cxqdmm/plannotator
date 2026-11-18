@@ -16,7 +16,8 @@ import { Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
 import { adoptSuggestion, deliverRequirement, dismissSuggestion, readRequirement, removeDeliverable, startDesignReview } from '../api';
-import { inboxApi, type InboxLaunchAgent } from '../../api';
+import { inboxApi } from '../../api';
+import type { InboxLaunchAgent } from '@plannotator/core/inbox-types';
 import { CopyCommand } from '../../components/RestartNote';
 import { useRequirements } from '../useRequirements';
 import {

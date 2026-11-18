@@ -2,7 +2,9 @@
  * The 对话流 pane as the window draws it: the tail on open (your words,
  * Claude's, a tool call one line), a tool's click opening its input and
  * result, 加载更早 paging the beginning, and the footer's send handing the
- * words to the thread's reply (onReply) with the person's echo in place. The
+ * words as an Ask AI question (the session's own channel — the thread is
+ * never touched) with the person's echo in place, and the ask conversation's
+ * turns riding the stream by time. The
  * pane's api is stubbed at fetch, as the Requirements panel's DOM tests do:
  * the real module graph loads, only the network is fake.
  *
@@ -62,10 +64,10 @@ describe(hasDom ? 'SessionStreamPane' : describe.skip, () => {
     host.remove();
   });
 
-  const draw = async (onReply: (words: string) => void = () => {}) => {
+  const draw = async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<SessionStreamPane threadId="thr_1" onClose={() => {}} onReply={onReply} />);
+      root.render(<SessionStreamPane threadId="thr_1" onClose={() => {}} />);
     });
   };
 
@@ -108,21 +110,35 @@ describe(hasDom ? 'SessionStreamPane' : describe.skip, () => {
     expect(earlier?.path).toContain('/stream?before=4');
   });
 
-  test('the footer hands the words to the thread’s reply and echoes them in place', async () => {
-    const replied: string[] = [];
-    await draw((words) => replied.push(words));
+  test('the footer sends an Ask AI question — the session’s own channel — and echoes it in place', async () => {
+    answers['POST /api/inbox/threads/thr_1/ask'] = { status: 200, body: { ok: true } };
+    await draw();
     const input = host.querySelector<HTMLInputElement>('.ib-sstr-ask input')!;
     await act(async () => {
       // React's controlled input needs the native setter, or its tracker sees no change (happy-dom quirk).
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '开始做登录页改版');
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '做的咋样了');
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
     await act(async () => {
       host.querySelector<HTMLButtonElement>('.ib-sstr-ask button')!.click();
     });
-    expect(replied).toEqual(['开始做登录页改版']);
-    expect(host.textContent).toContain('开始做登录页改版');
+    const posted = asked.find((call) => call.method === 'POST' && call.path.endsWith('/ask'));
+    expect(posted?.body.question).toBe('做的咋样了');
+    expect(typeof posted?.body.turn_id).toBe('string');
+    expect(host.textContent).toContain('做的咋样了');
     expect((host.querySelector('.ib-sstr-ask input') as HTMLInputElement).value).toBe('');
+  });
+
+  test('the ask conversation rides the stream by time: a turn’s question and answer both draw', async () => {
+    answers['GET /api/inbox/threads/thr_1/ask'] = {
+      status: 200,
+      body: { can_ask: true, conversation: { turns: [
+        { id: 'ask_1', at: '2026-11-18T10:35:00.000Z', session: 'ses_x', host: 'claude-code', question: '做的咋样了', answer: '方案过了，正在写 M1。', answered_at: '2026-11-18T10:35:20.000Z' },
+      ] } },
+    };
+    await draw();
+    expect(host.textContent).toContain('做的咋样了');
+    expect(host.textContent).toContain('方案过了，正在写 M1。');
   });
 
   test('a session with no transcript yet says so in the person’s words', async () => {

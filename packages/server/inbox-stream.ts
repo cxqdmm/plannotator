@@ -50,6 +50,8 @@ export interface StreamEntry {
   /** The transcript line the entry is (its key; a tool's result lands on the same one). */
   i: number;
   kind: "you" | "text" | "think" | "tool";
+  /** When the line was written (ms since the epoch), so the pane merges the transcript with the ask conversation by time. */
+  t?: number;
   /** you / text / think: the words. */
   text?: string;
   /** tool: the call's name, and its input in one line (the row) and in full (the expand). */
@@ -92,16 +94,18 @@ export function streamEntriesOf(lines: readonly string[], from: number, to: numb
     }
     // Sidechains (a subagent's own transcript entries) and bookkeeping lines are not the conversation.
     if (line.isSidechain === true || line.isMeta === true) continue;
+    const at = typeof line.timestamp === "string" ? Date.parse(line.timestamp) : undefined;
+    const when = Number.isFinite(at) ? { t: at } : {};
     const content = (line.message as { content?: unknown } | undefined)?.content;
     if (line.type === "user") {
       if (typeof content === "string") {
-        entries.push({ i: index, kind: "you", text: clip(content, CLAUDE_STREAM_TEXT_MAX) });
+        entries.push({ i: index, kind: "you", ...when, text: clip(content, CLAUDE_STREAM_TEXT_MAX) });
         continue;
       }
       if (!Array.isArray(content)) continue;
       for (const block of content) {
         const part = block as { type?: string; text?: unknown; content?: unknown; tool_use_id?: unknown; is_error?: boolean };
-        if (part.type === "text" && typeof part.text === "string" && part.text.trim()) entries.push({ i: index, kind: "you", text: clip(part.text, CLAUDE_STREAM_TEXT_MAX) });
+        if (part.type === "text" && typeof part.text === "string" && part.text.trim()) entries.push({ i: index, kind: "you", ...when, text: clip(part.text, CLAUDE_STREAM_TEXT_MAX) });
         if (part.type === "tool_result" && typeof part.tool_use_id === "string") {
           const tool = byUseId.get(part.tool_use_id);
           const words = typeof part.content === "string" ? part.content : Array.isArray(part.content) ? part.content.map((piece) => (typeof (piece as { text?: unknown }).text === "string" ? (piece as { text: string }).text : "")).join("\n") : "";
@@ -113,10 +117,10 @@ export function streamEntriesOf(lines: readonly string[], from: number, to: numb
     if (line.type === "assistant" && Array.isArray(content)) {
       for (const block of content) {
         const part = block as { type?: string; text?: unknown; thinking?: unknown; name?: unknown; id?: unknown; input?: unknown };
-        if (part.type === "text" && typeof part.text === "string" && part.text.trim()) entries.push({ i: index, kind: "text", text: clip(part.text, CLAUDE_STREAM_TEXT_MAX) });
-        if (part.type === "thinking" && typeof part.thinking === "string" && part.thinking.trim()) entries.push({ i: index, kind: "think", text: clip(part.thinking, CLAUDE_STREAM_TEXT_MAX) });
+        if (part.type === "text" && typeof part.text === "string" && part.text.trim()) entries.push({ i: index, kind: "text", ...when, text: clip(part.text, CLAUDE_STREAM_TEXT_MAX) });
+        if (part.type === "thinking" && typeof part.thinking === "string" && part.thinking.trim()) entries.push({ i: index, kind: "think", ...when, text: clip(part.thinking, CLAUDE_STREAM_TEXT_MAX) });
         if (part.type === "tool_use" && typeof part.name === "string") {
-          const entry: StreamEntry = { i: index, kind: "tool", tool: part.name, brief: toolBriefOf(part.name, part.input), input: clip(JSON.stringify(part.input ?? {}, null, 1), 800) };
+          const entry: StreamEntry = { i: index, kind: "tool", ...when, tool: part.name, brief: toolBriefOf(part.name, part.input), input: clip(JSON.stringify(part.input ?? {}, null, 1), 800) };
           entries.push(entry);
           if (typeof part.id === "string") byUseId.set(part.id, entry);
         }

@@ -4356,16 +4356,6 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replyWords, sending]);
 
-  /** The 对话流 pane's footer is the thread's own reply sent from the pane: the words land in the thread's
-   *  composer (a draft's stay above them) and go out through its send pipeline — question cards, routing, the
-   *  ended-session checks, everything — which wakes the session and starts its turn. */
-  const sendFromStream = (words: string) => {
-    if (sending) return;
-    const kept = boxRef.current.open ? boxRef.current.text : replyDraft.conflict ?? replyDraft.draft?.body ?? '';
-    changeReply(kept.trim() ? `${kept.trimEnd()}\n\n${words}` : words);
-    void send();
-  };
-
   // A board's Add to reply: its words after the draft's, its picture beside them. Its toast's Undo works once and takes
   // out exactly that press's words and file, in the box or, once Cancel or Esc closed it, in the saved draft; a Send,
   // Discard or another thread ends it.
@@ -4720,7 +4710,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
           </span>
         </div>
       )}
-      {streamOpen && <SessionStreamPane threadId={thread.thread_id} onClose={() => setStreamOpen(false)} onReply={sendFromStream} />}
+      {streamOpen && <SessionStreamPane threadId={thread.thread_id} onClose={() => setStreamOpen(false)} />}
       <div className="ib-phead" ref={headRef} data-artifacts-on={artifactsOn ? '' : undefined}>
         {/* A phone leads with the way back to the list; the ⋯ menu (with Archive) sits at the right, where the close was. */}
         {phone && artifactsOn ? (

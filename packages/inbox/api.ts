@@ -2249,6 +2249,8 @@ export const inboxApi = {
 export interface InboxStreamEntry {
   i: number;
   kind: 'you' | 'text' | 'think' | 'tool';
+  /** When the line was written (ms since the epoch), so the pane merges the transcript with the ask conversation by time. */
+  t?: number;
   text?: string;
   tool?: string;
   brief?: string;
