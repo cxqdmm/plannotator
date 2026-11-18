@@ -16,6 +16,7 @@ import { Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
 import { adoptSuggestion, deliverRequirement, dismissSuggestion, readRequirement, removeDeliverable, startDesignReview } from '../api';
+import { inboxApi, type InboxLaunchAgent } from '../../api';
 import { CopyCommand } from '../../components/RestartNote';
 import { useRequirements } from '../useRequirements';
 import {
@@ -156,8 +157,52 @@ function RequirementDetail({
   const [deliverTitle, setDeliverTitle] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [reviewStarting, setReviewStarting] = useState(false);
+  // 「开始做」: the form a fresh requirement opens on — the agents and projects the person can start (compose's
+  // own launch read), the words the session starts with, and the going-out itself.
+  const [start, setStart] = useState<{ agents: { agent: string; name: string }[]; projects: { id: string; name: string; root: string }[]; agent: string; project: string; words: string } | null>(null);
+  const [startLoading, setStartLoading] = useState(false);
+  const [starting, setStarting] = useState(false);
   const reload = useRef<AbortController | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** 开始做: read what this machine can start (the compose launch block), then the form. */
+  const beginStart = () => {
+    setStartLoading(true);
+    void inboxApi.composeSessions().then((model) => {
+      const agents = (model.launch?.agents ?? []).map(({ agent, name }) => ({ agent, name }));
+      const projects = (model.launch?.projects ?? []).filter((project) => project.exists);
+      if (agents.length === 0 || projects.length === 0) {
+        setStart(null);
+        setError(agents.length === 0 ? '这台机器现在起不了新会话（没有可用的 agent 运行时）。' : '没有可选的项目文件夹——先在收件箱的 To 里看一眼可用的项目。');
+        return;
+      }
+      const claude = agents.find((entry) => entry.agent === 'claude-code') ?? agents[0]!;
+      setStart({ agents, projects, agent: claude.agent, project: projects[0]!.id, words: `用 plannotator requirement 工具开始做「${detail?.requirement.title ?? ''}」，先出设计方案，产出用 deliver 挂回这条需求。` });
+    }).catch((cause) => {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    }).finally(() => setStartLoading(false));
+  };
+
+  /** The form's send: a new thread whose first message is the requirement's own words (startThread's launch
+   *  target starts the session), the thread linked at once (D2: auto-attach, the link never waits on the agent),
+   *  and the person lands in the thread — the 对话流 pane is where the work then runs. */
+  const submitStart = () => {
+    if (!start || starting) return;
+    setStarting(true);
+    void inboxApi.startThread({
+      to: { launch: { agent: start.agent as InboxLaunchAgent, project_id: start.project } },
+      body: start.words,
+      idempotency_key: crypto.randomUUID(),
+      thread_name: detail?.requirement.title ?? undefined,
+    }).then((answer) => {
+      const linked = [...(detail?.requirement.threads ?? []), answer.thread_id];
+      onPatch(id, { threads: linked });
+      onOpenThread(answer.thread_id);
+    }).catch((cause) => {
+      setError(cause instanceof Error ? cause.message : String(cause));
+      setStarting(false);
+    });
+  };
 
   const read = () => {
     reload.current?.abort();
@@ -257,11 +302,58 @@ function RequirementDetail({
           {requirement.threads.length === 0 && requirement.deliverables.length === 0 && (
             <section className="ib-req-next" aria-label="下一步">
               <h3 className="ib-req-h">下一步</h3>
-              <p className="ib-req-empty">在相关项目的 Claude Code 会话里粘贴这句，把这条需求交给它开始做；它的线程会自动连进来，产出与阶段建议也回到这里。</p>
-              <div className="ib-rw-cmd">
-                <code data-requirements-handoff="">{`用 plannotator requirement 工具开始做「${requirement.title}」，先出设计方案。`}</code>
-                <CopyCommand text={`用 plannotator requirement 工具开始做「${requirement.title}」，先出设计方案。`} label="复制交给 agent 的话" announcement="已复制。粘贴到一个 Claude Code 会话即可。" />
-              </div>
+              {start === null ? (
+                <>
+                  <p className="ib-req-empty">在 Inbox 里直接开工：起一个会话做这条需求，线程自动连进来，产出与建议回到这里。</p>
+                  <button type="button" className="ib-btn ib-req-launch" data-requirements-start="" disabled={startLoading} onClick={beginStart}>
+                    <Icon name="play" size={14} />
+                    {startLoading ? '读取可用环境…' : '开始做'}
+                  </button>
+                  {/* 已有跑着的终端会话：老路仍在——那句话交给它，它的线程同样连进来。 */}
+                  <details className="ib-req-handoff">
+                    <summary>已有终端里的会话？给它这句话</summary>
+                    <div className="ib-rw-cmd">
+                      <code data-requirements-handoff="">{`用 plannotator requirement 工具开始做「${requirement.title}」，先出设计方案。`}</code>
+                      <CopyCommand text={`用 plannotator requirement 工具开始做「${requirement.title}」，先出设计方案。`} label="复制交给 agent 的话" announcement="已复制。粘贴到一个 Claude Code 会话即可。" />
+                    </div>
+                  </details>
+                </>
+              ) : (
+                <div className="ib-req-start" data-requirements-start-form="">
+                  <label className="ib-req-start-row">
+                    项目
+                    <select value={start.project} onChange={(event) => setStart({ ...start, project: event.target.value })} aria-label="项目">
+                      {start.projects.map((project) => (
+                        <option key={project.id} value={project.id}>{project.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {start.agents.length > 1 && (
+                    <label className="ib-req-start-row">
+                      会话
+                      <select value={start.agent} onChange={(event) => setStart({ ...start, agent: event.target.value })} aria-label="会话类型">
+                        {start.agents.map((agent) => (
+                          <option key={agent.agent} value={agent.agent}>{agent.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <label className="ib-req-start-row">
+                    首条消息
+                    <textarea rows={3} value={start.words} onChange={(event) => setStart({ ...start, words: event.target.value })} aria-label="首条消息" />
+                  </label>
+                  <div className="ib-req-start-act">
+                    <button type="button" className="ib-btn" data-requirements-start-send="" disabled={starting || !start.words.trim()} onClick={() => void submitStart()}>
+                      <Icon name="play" size={14} />
+                      {starting ? '正在启动…' : '开始'}
+                    </button>
+                    <button type="button" className="ib-btn ib-sm" disabled={starting} onClick={() => setStart(null)}>
+                      取消
+                    </button>
+                  </div>
+                  <p className="ib-req-empty">会话在所选项目里启动，带上这条需求开工；你会直接落到它的线程里，右上角的星标就是它的对话流。</p>
+                </div>
+              )}
             </section>
           )}
 

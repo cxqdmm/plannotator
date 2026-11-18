@@ -12490,3 +12490,15 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-sstr-askhint { margin: 6px 12px 11px; color: var(--muted-foreground); font-size: var(--ib-fs-11, 11px); line-height: 1.5; }
 /* The footer sits tight under the input: the pane's bottom is one unit. */
 .ib-sstr-ask { margin: 0 12px; }
+/* 「开始做」: the fresh requirement's first move — the launch form (project, session kind, the words it
+   starts with), on the pane's own input look. */
+.ib-req-handoff { margin-top: 10px; color: var(--muted-foreground); font-size: var(--ib-fs-12, 12px); }
+.ib-req-handoff summary { cursor: pointer; }
+.ib-req-handoff .ib-rw-cmd { margin-top: 6px; }
+.ib-req-start { display: flex; flex-direction: column; gap: 8px; }
+.ib-req-start-row { display: flex; flex-direction: column; gap: 3px; font-size: var(--ib-fs-12, 12px); color: var(--muted-foreground); }
+.ib-req-start-row select, .ib-req-start-row textarea { font: inherit; font-size: var(--ib-fs-13, 13px); color: var(--foreground); background: var(--card); border: 1px solid var(--ib-hair, var(--border)); border-radius: 7px; padding: 5px 8px; }
+.ib-req-start-row textarea { resize: vertical; line-height: 1.55; }
+.ib-req-start-row select:focus, .ib-req-start-row textarea:focus { outline: none; border-color: color-mix(in oklch, var(--primary) 50%, transparent); }
+.ib-req-start-act { display: flex; align-items: center; gap: 8px; }
+.ib-req-start .ib-req-empty { margin: 0; }

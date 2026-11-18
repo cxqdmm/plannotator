@@ -73,12 +73,13 @@ describe(hasDom ? 'RequirementsPanel' : describe.skip, () => {
     root = null;
   });
 
-  const draw = async (props: { archived?: boolean; openId?: string | null } = {}) => {
+  const draw = async (props: { archived?: boolean; openId?: string | null; onOpenThread?: (threadId: string) => void } = {}) => {
+    if (root) act(() => root!.unmount());
     root = createRoot(host);
     await act(async () => {
       root!.render(
         <SidebarProvider>
-          <RequirementsPanel on archived={props.archived} openId={props.openId ?? null} onView={() => {}} onOpen={() => {}} onOpenThread={() => {}} />
+          <RequirementsPanel on archived={props.archived} openId={props.openId ?? null} onView={() => {}} onOpen={() => {}} onOpenThread={props.onOpenThread ?? (() => {})} />
         </SidebarProvider>,
       );
     });
@@ -203,22 +204,34 @@ describe(hasDom ? 'RequirementsPanel' : describe.skip, () => {
     expect(button.textContent).toContain('评审已打开');
   });
 
-  test('a fresh requirement shows 下一步 — the sentence that hands it to an agent; work begun takes it away', async () => {
-    const fresh = requirement('req_f', '优化admin-frontend技能', 'triage');
+  test('开始做 launches a session on the requirement, links the thread, and lands the person in it', async () => {
+    const fresh = requirement('req_s', '优化admin-frontend技能', 'triage');
     answers['GET /api/requirements'] = { status: 200, body: board([fresh], 0) };
-    answers['GET /api/requirements/req_f'] = { status: 200, body: { requirement: fresh, events: [] } };
-    await draw({ openId: 'req_f' });
-    const handoff = host.querySelector('[data-requirements-handoff]');
-    expect(handoff?.textContent).toContain('用 plannotator requirement 工具开始做「优化admin-frontend技能」');
-    expect(host.querySelector('[aria-label="下一步"] button[aria-label^="复制"]')).not.toBeNull();
-    // Once a deliverable or thread exists the panel is a work record, not a blank: the hint steps aside.
-    const started = { ...fresh, deliverables: [{ id: 'dlv_1', kind: 'design-doc' as const, ref: '/tmp/d.md', created_at: '2026-11-18T00:00:00.000Z' }] };
-    answers['GET /api/requirements/req_f'] = { status: 200, body: { requirement: started, events: [] } };
+    answers['GET /api/requirements/req_s'] = { status: 200, body: { requirement: fresh, events: [] } };
+    answers['GET /api/inbox/sessions'] = { status: 200, body: { serverSession: 'srv', home: '/home', projects: [], launch: { agents: [{ agent: 'claude-code', name: 'Claude Code' }], projects: [{ id: 'prj_1', name: 'plannotator', root: '/work/plannotator', exists: true }] } } };
+    answers['POST /api/inbox/messages'] = { status: 200, body: { thread_id: 'msg_new_1', message: { id: 'msg_new_1' }, replayed: false } };
+    answers['PATCH /api/requirements/req_s'] = { status: 200, body: { requirement: { ...fresh, threads: ['msg_new_1'] } } };
+    const opened: string[] = [];
+    await draw({ openId: 'req_s', onOpenThread: (threadId) => opened.push(threadId) });
+    // The old way stays folded under the new one: the sentence for a session already running in a terminal.
+    expect(host.querySelector('[data-requirements-handoff]')?.textContent).toContain('用 plannotator requirement 工具开始做「优化admin-frontend技能」');
+    // The button opens the launch form with the requirement's own words in it.
     await act(async () => {
-      host.querySelector<HTMLButtonElement>('[data-requirements-back]')!.click();
+      host.querySelector<HTMLButtonElement>('[data-requirements-start]')!.click();
     });
-    await draw({ openId: 'req_f' });
-    expect(host.querySelector('[data-requirements-handoff]')).toBeNull();
+    const form = host.querySelector('[data-requirements-start-form]')!;
+    expect(form.querySelector('select')?.textContent).toContain('plannotator');
+    expect(form.querySelector('textarea')?.value).toContain('开始做「优化admin-frontend技能」');
+    await act(async () => {
+      form.querySelector<HTMLButtonElement>('[data-requirements-start-send]')!.click();
+    });
+    // The launch went out with the requirement's words; the new thread linked at once and opened.
+    const posted = asked.find((call) => call.method === 'POST' && call.path.endsWith('/api/inbox/messages'));
+    expect((posted?.body.to as { launch?: { agent?: string } })?.launch?.agent).toBe('claude-code');
+    expect(posted?.body.body).toContain('优化admin-frontend技能');
+    const patched = asked.find((call) => call.method === 'PATCH' && call.path.endsWith('/api/requirements/req_s'));
+    expect(patched?.body.threads).toEqual(['msg_new_1']);
+    expect(opened).toEqual(['msg_new_1']);
   });
 
   test('归档 takes a card off the board over PATCH; 恢复 brings it back on the archived page', async () => {
