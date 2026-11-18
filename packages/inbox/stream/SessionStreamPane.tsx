@@ -52,17 +52,17 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
   const [busy, setBusy] = useState(false);
   /** Whether the thread's owner takes Ask questions (the ask read says); null until the first read lands. */
   const [canAsk, setCanAsk] = useState<boolean | null>(null);
-  /** The last sent question's turn, and its read-back state: a question nothing picked up must be seen. */
-  const [askTurn, setAskTurn] = useState<string | null>(null);
-  const [askState, setAskState] = useState<'sent' | 'waiting' | 'gone' | null>(null);
+  /** The last sent question's turn, and its read-back state: a question nothing picked up is retried as a reply. */
+  const [askTurn, setAskTurn] = useState<{ id: string; words: string } | null>(null);
+  const [askState, setAskState] = useState<'sent' | 'waiting' | null>(null);
   const list = useRef<HTMLDivElement | null>(null);
   // Refs the poll reads: the interval outlives renders, so it must not be rebuilt on every entry.
   const cursorRef = useRef(0);
   const followingRef = useRef(true);
   followingRef.current = following;
   const echo = useRef(ECHO_KEY);
-  const askTurnRef = useRef<string | null>(null);
-  const askStateRef = useRef<'sent' | 'waiting' | 'gone' | null>(null);
+  const askTurnRef = useRef<{ id: string; words: string } | null>(null);
+  const askStateRef = useRef<'sent' | 'waiting' | null>(null);
   askTurnRef.current = askTurn;
   askStateRef.current = askState;
 
@@ -120,12 +120,21 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
           if (turn.answer) asEntries.push({ i: ASK_KEY + index + 0.5, t: turn.answered_at ? Date.parse(turn.answered_at) : Date.parse(turn.at), kind: 'text', text: turn.answer });
         });
         merge(asEntries);
-        if (askTurnRef.current && askStateRef.current === 'sent') {
-          const turn = turns.find((entry) => entry.id === askTurnRef.current);
+        const sent = askTurnRef.current;
+        if (sent && askStateRef.current === 'sent') {
+          const turn = turns.find((entry) => entry.id === sent.id);
           if (turn) {
-            if (turn.failure === 'gone' || turn.failure === 'failed') setAskState('gone');
-            else if (turn.answer) setAskState(null);
-            else setAskState('waiting');
+            if (turn.failure === 'gone' || turn.failure === 'failed') {
+              // The independent channel lost it: the words still go out — as the thread's reply, which wakes the
+              // session. The person asked for no dead ends; a resting session's answer to "gone" is a wake-up.
+              const lost = askTurnRef.current;
+              setAskState(null);
+              setAskTurn(null);
+              if (lost) void sendAsReply(lost.words).catch(() => undefined);
+            } else if (turn.answer) {
+              setAskState(null);
+              setAskTurn(null);
+            } else setAskState('waiting');
           }
         }
       } catch {
@@ -144,18 +153,24 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
     };
   }, [threadId]);
 
-  // The footer's send: an Ask AI question — the session's own channel, never the thread's. The words echo at
-  // once; the ask conversation's own copy retires the echo, and its answer streams in as a Claude entry.
+  // The footer's send. The person never sees a state here: the words always go out. Under them, the transport
+  // picks itself — the session's live connection takes an Ask AI question (its own channel; it never lands in the
+  // thread), and a session between turns (no live connection to answer) is WOKEN: the words go as the thread's
+  // reply, which is the one channel that reaches a resting session and starts its next turn.
   const send = async () => {
     const question = words.trim();
     if (!question || busy) return;
     setBusy(true);
     setWords('');
     try {
-      const turnId = generateId('ask');
-      await inboxApi.askSend(threadId, turnId, question);
-      setAskTurn(turnId);
-      setAskState('sent');
+      if (canAsk !== false) {
+        const turnId = generateId('ask');
+        await inboxApi.askSend(threadId, turnId, question);
+        setAskTurn({ id: turnId, words: question });
+        setAskState('sent');
+      } else {
+        await sendAsReply(question);
+      }
       merge([{ i: ++echo.current, t: Date.now(), kind: 'you', text: question }]);
       setFollowing(true);
       requestAnimationFrame(pinned);
@@ -165,6 +180,16 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
     } finally {
       setBusy(false);
     }
+  };
+
+  /** The resting-session path: the thread's reply, addressed to its newest agent message. It wakes the session;
+   *  the words then show in the thread too — that is the reply's own record, not this pane's doing. */
+  const sendAsReply = async (question: string) => {
+    const read = await inboxApi.thread(threadId);
+    const messages = read.thread.messages ?? [];
+    const last = [...messages].reverse().find((message) => message.author?.kind === 'agent');
+    if (!last) throw new Error('这个线程里还没有会话消息可回复。');
+    await inboxApi.reply(last.id, { idempotency_key: crypto.randomUUID(), words: question, questions: [] });
   };
 
   const earlier = async () => {
@@ -223,24 +248,19 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
         </button>
       )}
 
-      {canAsk === false ? (
-        <p className="ib-sstr-askhint">它这轮干完，歇着呢（没有活跃连接）——在线程里回复它，它会醒来接着干。左边的流随时能看。</p>
-      ) : (
-        <form
-          className="ib-sstr-ask"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void send();
-          }}
-        >
-          <input value={words} onChange={(event) => setWords(event.target.value)} placeholder="问它、吩咐它——这是你们俩的对话，不进线程…" aria-label="对话" disabled={busy} />
-          <button type="submit" disabled={busy || !words.trim()}>
-            发送
-          </button>
-        </form>
-      )}
+      <form
+        className="ib-sstr-ask"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void send();
+        }}
+      >
+        <input value={words} onChange={(event) => setWords(event.target.value)} placeholder="问它、吩咐它…" aria-label="对话" disabled={busy} />
+        <button type="submit" disabled={busy || !words.trim()}>
+          发送
+        </button>
+      </form>
       {askState === 'waiting' && <p className="ib-sstr-asknote">已递出，它手头的活排在前面——做完这步就答你。</p>}
-      {askState === 'gone' && <p className="ib-sstr-asknote">这句它没有接住；要它开工的话，在线程里回复它。</p>}
     </div>
   );
 }
