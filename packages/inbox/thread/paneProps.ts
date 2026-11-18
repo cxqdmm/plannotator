@@ -22,7 +22,10 @@ export interface ThreadPaneProps {
   fullSidebar?: boolean;
   onFull?: (on: boolean) => void;
   notice?: ReactNode;
-  thread: InboxThread;
+  thread: InboxThread & {
+    /** 会话「对话流」 (windowThreadRead's additive): the owner is a Claude Code session with a transcript here. */
+    stream?: true;
+  };
   machine?: MachineView | null;
   onMachineUpdate?: (machineId: string) => void;
   onNewMessageWith?: (source: ReuseSource) => void;

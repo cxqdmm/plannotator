@@ -2,6 +2,7 @@ import { perfInteraction, perfKeystroke } from '../perfMarks';
 import { useThreadArmed } from '../threadArmed';
 import { postDecisions, threadHasQuestionCards } from '../decisionExport';
 import { ThreadPullsButton } from '../threadPulls/ThreadPulls';
+import { SessionStreamPane } from '../stream/SessionStreamPane';
 import { machineOf } from '../inboxUrl';
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { capturePlace, holdPlace, openerOf, opensFile, parsePlaceLayout, placeInView, placeLayoutKey, placeSelector, placeShown, restorePlace, type ThreadPlace } from '../threadPlace';
@@ -214,10 +215,9 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
    */
   const savedQuestions = useRef(new Map<string, InboxQuestion>());
   const savesLanded = useRef(0);
-  const keptRead = useRef<{ read: InboxThread; saves: number; thread: InboxThread } | null>(null);
+  const keptRead = useRef<{ read: InboxThread; saves: number; thread: InboxThread & { stream?: true } } | null>(null);
   if (keptRead.current?.read !== threadRead || keptRead.current.saves !== savesLanded.current) {
-    keptRead.current = { read: threadRead, saves: savesLanded.current, thread: keepSavedQuestions(threadRead, savedQuestions.current) };
-  }
+    keptRead.current = { read: threadRead, saves: savesLanded.current, thread: keepSavedQuestions(threadRead, savedQuestions.current) };  }
   const thread = keptRead.current.thread;
   // "Open in" (OpenIn.tsx): apps on this computer; a new tab only through the tailnet or on a phone.
   const openIn: OpenInSurface | undefined = phone || remote === true ? 'tab' : remote === null ? undefined : 'apps';
@@ -403,6 +403,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
   const restoringRef = useRef(false);
   /** The box as the focus effect last saw it, and the thread it was in: Reply takes focus only when that box closes. */
   const boxSeen = useRef({ open: false, thread: thread.thread_id });
+  // 会话「对话流」: the pane over the thread (packages/inbox/stream/SessionStreamPane.tsx).
+  const [streamOpen, setStreamOpen] = useState(false);
   /** The thread whose draft was put back already (once per visit). */
   const restoredFor = useRef<string | null>(null);
   // A paste is said in the thread's polite live region ("Attached pasted-image-….png").
@@ -4708,6 +4710,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
           </span>
         </div>
       )}
+      {streamOpen && <SessionStreamPane threadId={thread.thread_id} onClose={() => setStreamOpen(false)} />}
       <div className="ib-phead" ref={headRef} data-artifacts-on={artifactsOn ? '' : undefined}>
         {/* A phone leads with the way back to the list; the ⋯ menu (with Archive) sits at the right, where the close was. */}
         {phone && artifactsOn ? (
@@ -4803,6 +4806,21 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                 postOnAdd={postAfterAdd}
                 review={pullReview}
               />
+            )}
+            {/* 会话「对话流」 (packages/inbox/stream/): the thread's own Claude Code session working, as a pane over
+                the thread. Offered only when the read says a transcript is there (`stream`, windowThreadRead). */}
+            {!artifactsOn && thread.stream === true && (
+              <button
+                type="button"
+                className="ib-iconbtn ib-phstream"
+                aria-label="对话流"
+                aria-pressed={streamOpen}
+                title="这个会话自己的对话流：它读什么、跑什么、改什么"
+                data-stream-button=""
+                onClick={() => setStreamOpen((open) => !open)}
+              >
+                <Icon name="contents" size={15} />
+              </button>
             )}
             {artifactsButton && (
               <Tip content={withShortcut(artifactsOn ? '返回会话' : linksOnly ? '链接' : '产物：此会话中的每个文件、图片和引导式评审', { scope: inboxThreadShortcuts, action: 'artifacts' })}>

@@ -784,3 +784,4 @@ packages/inbox/requirements/components/RequirementsPanel.dom.test.tsx
 packages/ui/components/OpenInAppButton.line.test.tsx
 packages/ui/utils/openInLine.test.ts
 packages/editor/App.annotateView.test.tsx
+packages/inbox/stream/SessionStreamPane.dom.test.tsx

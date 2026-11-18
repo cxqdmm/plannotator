@@ -220,7 +220,7 @@ export function onlyQuestionsChanged(before: InboxThread, after: InboxThread): b
  * only grows, so a copy with a lower one is older. The same thread object
  * when nothing is kept, and each message untouched keeps its object.
  */
-export function keepSavedQuestions(thread: InboxThread, saved: ReadonlyMap<string, InboxQuestion>): InboxThread {
+export function keepSavedQuestions<T extends InboxThread>(thread: T, saved: ReadonlyMap<string, InboxQuestion>): T {
   if (saved.size === 0) return thread;
   let changed = false;
   const messages = thread.messages.map((message) => {

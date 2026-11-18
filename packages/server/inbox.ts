@@ -259,6 +259,7 @@ import { createInboxReplyDrafts } from "./inbox-reply-drafts";
 import { createInboxCommentDrafts } from "./inbox-comment-drafts";
 import { createInboxTakeBack } from "./inbox-take-back";
 import { createInboxAsk } from "./inbox-ask";
+import { claudeStreamFileOf, createInboxStreamRoute } from "./inbox-stream";
 import type { InboxAskTimes } from "./inbox-ask-live";
 import { createInboxPins } from "./inbox-pins";
 import { createInboxPriority } from "./inbox-priority";
@@ -4835,6 +4836,8 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
   const priority = createInboxPriority({ store, serverSession, readBody: (req) => readBody(req), json });
   // Tags on threads (packages/server/inbox-thread-tags.ts).
   const threadTags = createInboxThreadTags({ store, serverSession, readBody: (req) => readBody(req), json });
+  // 会话「对话流」 (packages/server/inbox-stream.ts): the thread's Claude Code transcript, read for the window.
+  const stream = createInboxStreamRoute({ store, environment: () => agentEnvironment, json });
   // Pinned artifacts and the Artifacts wall (packages/server/inbox-artifact-pins.ts).
   const artifactPins = createInboxArtifactPins({ store, serverSession, readBody: (req) => readBody(req), json });
   // Icon sets for agents' icons ("Sets": built in, or fetched into the data folder on one click; inbox-icon-sets.ts).
@@ -5204,12 +5207,15 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     // `run` (additive, launch only): the launched thread's run line; null while the agent rests.
     // `attach_command` (with `run`): the host's attach command, there while the agent rests too.
     const run = await launch.runOf(thread.thread_id, true);
+    // `stream` (additive): the thread's owner is a Claude Code session whose transcript this machine has, so the
+    // pane's 「对话流」 entry shows. A cheap stat, never a read (inbox-stream.ts).
+    const streamOwner = claudeStreamFileOf(thread.thread_id, store, agentEnvironment);
     const listed = store.listRow(thread.thread_id);
     // Its `tags` too, as the list's rows have them: an archived thread's header line reads them (approval "inbox-thread-tags").
     const tags = listed ? store.allThreadTags().get(thread.thread_id) : undefined;
     const row = listed && tags ? { ...listed, tags } : listed;
     // `row` (additive): the thread's list row, also for an archived thread, which the window's list leaves out.
-    return { serverSession, cursor, thread: withRepo, row: row ? withSnooze(launch.rowDecorator()(row)) : row, ...(run === undefined ? {} : { run, attach_command: launch.attachOf(thread.thread_id) }) };
+    return { serverSession, cursor, thread: { ...withRepo, ...("file" in streamOwner ? { stream: true as const } : {}) }, row: row ? withSnooze(launch.rowDecorator()(row)) : row, ...(run === undefined ? {} : { run, attach_command: launch.attachOf(thread.thread_id) }) };
   };
 
   const handle = async (req: Request, via: RequestVia): Promise<Response> => {
@@ -6520,6 +6526,9 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
       // Ask AI: on for everyone; only the owner's own window is answered.
       const asked = await ask.route(req, url, via);
       if (asked) return asked;
+      // 会话「对话流」 (inbox-stream.ts): the thread's Claude Code transcript, the owner's window only.
+      const streamed = await stream.route(req, url);
+      if (streamed) return streamed;
       // Pins (approval "inbox-pinned-threads"): pin, unpin and the order of the sidebar's pinned threads.
       const pinned = await pins.route(req, url);
       if (pinned) return pinned;

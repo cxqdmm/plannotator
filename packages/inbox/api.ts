@@ -2235,8 +2235,34 @@ export const inboxApi = {
     post<InboxAskPosted>(inboxUrl(`/threads/${threadId}/ask`), { turn_id: turnId, question, ...(showMe ?? {}), ...(source ? { source } : {}) }),
   askSeen: (threadId: string, seenAt: string) => post<unknown>(inboxUrl(`/threads/${threadId}/ask/seen`), { seen_at: seenAt }),
   askStop: (threadId: string, turnId: string) => post<{ stopped: boolean }>(inboxUrl(`/threads/${threadId}/ask/stop`), { turn_id: turnId }),
+  /** 会话「对话流」 (packages/server/inbox-stream.ts): the thread's Claude Code transcript tail, what grew past
+   *  `after`, or the page before `before` (加载更早). The pane polls `after` while it is open. */
+  streamRead: (threadId: string, page: { after?: number; before?: number } = {}) => {
+    const query = Object.entries(page).filter(([, value]) => value !== undefined).map(([key, value]) => `${key}=${value}`).join('&');
+    return get<InboxStreamModel>(inboxUrl(`/threads/${threadId}/stream`, query || undefined));
+  },
   deleteProject: (projectId: string) => post<{ store: InboxStorageModel }>(inboxUrl(`/projects/${encodeURIComponent(projectId)}/delete`), {}),
 };
+
+/** 会话「对话流」: one transcript line as the pane draws it, keyed by its line index (`i`; a tool's result lands
+ *  on the same one, so the window upserts). `packages/server/inbox-stream.ts` owns the shape. */
+export interface InboxStreamEntry {
+  i: number;
+  kind: 'you' | 'text' | 'think' | 'tool';
+  text?: string;
+  tool?: string;
+  brief?: string;
+  input?: string;
+  result?: string;
+}
+
+/** The stream read's answer (packages/server/inbox-stream.ts): a page of entries and the line count cursor. */
+export interface InboxStreamModel {
+  entries: InboxStreamEntry[];
+  cursor: number;
+  more: boolean;
+  session: { id: string; host: string; project?: string };
+}
 
 /** One question and what came of it (`packages/shared/inbox/ask.ts`). */
 export interface InboxAskTurnWire {
