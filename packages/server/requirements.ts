@@ -155,7 +155,10 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
   } as Requirement;
 }
 
-export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
+export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null; /** Whether a thread's row waits on the person (the Board's You-line idea), for the reads' computed flag. */ waitingOf?: (threadId: string) => boolean }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
+  /** waiting, computed on reads: any linked session's thread waits on the person. */
+  const withWaiting = (record: Requirement): Requirement =>
+    record.threads.some((threadId) => options.waitingOf?.(threadId) === true) ? { ...record, waiting: true } : record;
   const dir = join(options.dataDir, "requirements");
   const requirementsPath = join(dir, "requirements.json");
   const eventsPath = join(dir, "requirement-events.json");
@@ -609,7 +612,8 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
     const path = url.pathname;
     try {
       if (path === "/api/requirements" && req.method === "GET") {
-        return json(store.list(url.searchParams.get("archived") === "1"));
+        const page = store.list(url.searchParams.get("archived") === "1");
+        return json({ ...page, requirements: page.requirements.map(withWaiting) });
       }
       if (path === "/api/requirements" && req.method === "POST") {
         return json({ requirement: store.create(await body(req) as Parameters<RequirementStore["create"]>[0]) }, 201);
@@ -623,7 +627,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       if (deeper === undefined || deeper === "") {
         if (req.method === "GET") {
           const found = store.get(id);
-          return found ? json({ ...found, card: requirementCardOf(found.requirement) }) : json({ error: "Not found", code: "not_found" }, 404);
+          return found ? json({ ...found, requirement: withWaiting(found.requirement), card: requirementCardOf(found.requirement) }) : json({ error: "Not found", code: "not_found" }, 404);
         }
         if (req.method === "PATCH") {
           const input = await body(req);

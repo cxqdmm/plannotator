@@ -4492,6 +4492,12 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
       const threadId = record?.threads[0];
       return threadId ? store.thread(threadId)?.project.root ?? null : null;
     },
+    // A session's thread waits on the person (the Board's You-line idea): its list row sits in one of the
+    // person's sections (Stopped on you, Holding up work, Waiting on you).
+    waitingOf: (threadId) => {
+      const section = store.listRow(threadId)?.section;
+      return section === "stopped" || section === "holding" || section === "waiting";
+    },
   });
 
   // The Codex wake: the person's items for a Codex thread go in as a new turn through `codex queue`,

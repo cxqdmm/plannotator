@@ -45,7 +45,7 @@ const STAGE_ICON: Record<RequirementStage, Parameters<typeof Icon>[0]['name']> =
 };
 
 /** The first of a requirement's threads whose session has a transcript here (null: none), for the 对话流 entry. */
-function streamThreadOf(meta: Record<string, { stream: boolean; subject: string | null }>, requirement: Requirement | null): string | null {
+function streamThreadOf(meta: Record<string, { stream: boolean; subject: string | null; waiting: boolean }>, requirement: Requirement | null): string | null {
   if (!requirement) return null;
   return requirement.threads.find((threadId) => meta[threadId]?.stream === true) ?? null;
 }
@@ -179,6 +179,11 @@ function RequirementCard({
           开始设计
         </button>
       )}
+      {requirement.waiting === true && (
+        <span className="ib-req-waiting" title="这个需求的会话在等你处理">
+          <Icon name="comment" size={12} /> 等你
+        </span>
+      )}
       {(requirement.suggestions.length > 0 || requirement.deliverables.length > 0 || requirement.threads.length > 0) && (
         <span className="ib-bc-bot">
           <span className="ib-bc-line ib-req-line">
@@ -197,6 +202,7 @@ function RequirementCard({
                 <Icon name="comment" size={12} /> {requirement.threads.length}
               </span>
             )}
+            <span className="ib-req-age" title={`上次动静 ${timeOf(requirement.updated_at)}`}>{ageOf(requirement.updated_at)}</span>
           </span>
         </span>
       )}
@@ -229,7 +235,7 @@ function RequirementDetail({
   const [starting, setStarting] = useState(false);
   // The requirement's linked threads that own a readable transcript (the thread read's `stream`): their sessions'
   // 对话流 opens right here in the detail, work beside the requirement it is for.
-  const [threadMeta, setThreadMeta] = useState<Record<string, { stream: boolean; subject: string | null }>>({});
+  const [threadMeta, setThreadMeta] = useState<Record<string, { stream: boolean; subject: string | null; waiting: boolean }>>({});
   // A deliverable's preview (fetched on first open) and the one whose annotate page is out.
   const [previews, setPreviews] = useState<Record<string, 'loading' | { text?: string; image?: string; binary?: boolean; session?: string; html?: boolean; annotatable?: boolean } | { error: string }>>({});
   const [annotating, setAnnotating] = useState<string | null>(null);
@@ -320,7 +326,8 @@ function RequirementDetail({
       read.add(threadId);
       streamsRead.current = read;
       void inboxApi.thread(threadId).then((answer) => {
-        setThreadMeta((held) => ({ ...held, [threadId]: { stream: (answer.thread as { stream?: true }).stream === true, subject: answer.thread.subject ?? null } }));
+        const row = (answer as { row?: { section?: string } | null }).row;
+        setThreadMeta((held) => ({ ...held, [threadId]: { stream: (answer.thread as { stream?: true }).stream === true, subject: answer.thread.subject ?? null, waiting: row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting' } }));
       }).catch(() => {
         const undo = new Set(streamsRead.current);
         undo.delete(threadId);
@@ -498,7 +505,7 @@ function RequirementDetail({
               </ReqGroup>
               <ReqGroup label="会话" count={requirement.threads.length > 0 ? String(requirement.threads.length) : ''}>
                 {requirement.threads.map((threadId) => (
-                  <ReqRow key={threadId} selected={view.k === 'session' && view.id === threadId} icon="comment" title={threadMeta[threadId]?.subject ?? '会话'} preview="Claude Code" onClick={() => setView({k: 'session', id: threadId})} />
+                  <ReqRow key={threadId} selected={view.k === 'session' && view.id === threadId} icon="comment" title={threadMeta[threadId]?.subject ?? '会话'} preview={threadMeta[threadId]?.waiting ? '等你处理' : 'Claude Code'} onClick={() => setView({k: 'session', id: threadId})} />
                 ))}
               </ReqGroup>
               <ReqGroup label="历史" count={(detail?.events ?? []).length > 0 ? String((detail?.events ?? []).length) : ''}>
@@ -945,4 +952,17 @@ function ReqRow({ selected, icon, title, preview, onClick }: { selected: boolean
       </button>
     </div>
   );
+}
+
+/** The card's 动静年龄: how long since anyone last wrote (the Board's "2d ago"), in the person's words. */
+function ageOf(iso: string): string {
+  const ms = Date.now() - Date.parse(iso);
+  if (Number.isNaN(ms)) return '';
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return '刚刚';
+  if (minutes < 60) return `${minutes} 分钟`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} 小时`;
+  const days = Math.floor(hours / 24);
+  return days < 30 ? `${days} 天` : `${Math.floor(days / 30)} 个月`;
 }

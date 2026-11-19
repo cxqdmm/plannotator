@@ -118,6 +118,9 @@ export interface Requirement {
   /** The requirement's background material (需求上下文): references the requirement card carries — a link, or a
    *  file in the requirement's context folder (pasted text and uploads both land there as files). */
   contexts: RequirementContext[];
+  /** Computed on reads (never stored): one of this requirement's sessions waits on the person (the thread's
+   *  list section is Stopped/Holding/Waiting — the Board's 「You: …」 idea). */
+  waiting?: true;
   /** Set when archived (归档): the card leaves the board until restored. Null while active. */
   archived_at?: string | null;
   created_at: string;
