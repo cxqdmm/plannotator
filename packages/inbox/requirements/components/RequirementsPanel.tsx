@@ -20,6 +20,8 @@ import { inboxApi } from '../../api';
 import { SessionStreamPane } from '../../stream/SessionStreamPane';
 import { EmbeddedThread } from '../EmbeddedThread';
 import { putThread } from '../../data/queries/thread';
+import { useListModel } from '../../data/queries/list';
+import { rowAgent } from '../../components/InboxList';
 import { useQueryClient } from '@tanstack/react-query';
 import { HostMark } from '../../icons';
 import { GroupBand } from '../../components/GroupBand';
@@ -256,6 +258,9 @@ function RequirementDetail({
   // The pad's card peek (查看将发送的需求卡).
   const [peekOpen, setPeekOpen] = useState(false);
   const queryClient = useQueryClient();
+  // The session rows read from the App's own list model — the same rows the Inbox's list shows (subject,
+  // agent, waiting), instant and always in step with it.
+  const list = useListModel(queryClient);
   const [contextPreviews, setContextPreviews] = useState<Record<string, 'loading' | { text?: string; image?: string; link?: string; html?: boolean } | { error: string }>>({});
   const [card, setCard] = useState<string | null>(null);
   // The detail's own two areas: the left list picks, the right shows. History is a row like any other.
@@ -323,6 +328,11 @@ function RequirementDetail({
       });
     }
   }, [detail, id]);
+
+  /** The sessions' rows from the list model, keyed by thread id (null: not in the list). */
+  const rowsByThread = new Map(
+    [...(list?.sections ?? []).flatMap((section) => section.threads), ...(list?.snoozed ?? []), ...(list?.pins ?? [])].map((row) => [row.thread_id, row]),
+  );
 
   /** Which of the requirement's threads have a transcript here, read once per thread while the pane is open. */
   useEffect(() => {
@@ -510,9 +520,21 @@ function RequirementDetail({
                 ))}
               </ReqGroup>
               <ReqGroup label="会话" count={requirement.threads.length > 0 ? String(requirement.threads.length) : ''}>
-                {requirement.threads.map((threadId) => (
-                  <ReqRow key={threadId} selected={view.k === 'session' && view.id === threadId} icon="comment" title={threadMeta[threadId]?.subject ?? '会话'} preview={threadMeta[threadId]?.waiting ? '等你处理' : 'Claude Code'} onClick={() => setView({k: 'session', id: threadId})} />
-                ))}
+                {requirement.threads.map((threadId) => {
+                  const row = rowsByThread.get(threadId) ?? null;
+                  const agent = row ? rowAgent(row) : null;
+                  const waiting = row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting';
+                  return (
+                    <ReqRow
+                      key={threadId}
+                      selected={view.k === 'session' && view.id === threadId}
+                      host={agent?.kind === 'agent' ? agent.host : null}
+                      title={row?.subject ?? threadMeta[threadId]?.subject ?? '会话'}
+                      preview={waiting ? '等你处理' : agent?.kind === 'agent' ? agent.name ?? 'Claude Code' : ''}
+                      onClick={() => setView({k: 'session', id: threadId})}
+                    />
+                  );
+                })}
               </ReqGroup>
               <ReqGroup label="历史" count={(detail?.events ?? []).length > 0 ? String((detail?.events ?? []).length) : ''}>
                 <ReqRow selected={view.k === 'history'} icon="clock" title="时间线" preview={(detail?.events ?? [])[0] ? EVENT_WORDS[(detail!.events[0]!.kind)] ?? '' : '还没有记录'} onClick={() => setView({k: 'history'})} />
@@ -672,7 +694,8 @@ function RequirementDetail({
             {/* The session, embedded: the Inbox's own ThreadPane in this block, fed by the shared cache — the
                 conversation, its reply box and question cards, live, without leaving the requirement. */}
             {view.k === 'session' && (() => {
-              const meta = threadMeta[view.id];
+              const row = rowsByThread.get(view.id) ?? null;
+              const waiting = row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting';
               return (
                 <div className="ib-req-embed">
                   <div className="ib-req-embed-top">
@@ -680,8 +703,8 @@ function RequirementDetail({
                       <Icon name="chevL" size={14} />
                       <span>会话列表</span>
                     </button>
-                    <span className="ib-req-embed-subj" dir="auto">{meta?.subject ?? '会话'}</span>
-                    {meta?.waiting && <span className="ib-req-waiting">等你</span>}
+                    <span className="ib-req-embed-subj" dir="auto">{row?.subject ?? threadMeta[view.id]?.subject ?? '会话'}</span>
+                    {waiting && <span className="ib-req-waiting">等你</span>}
                     <span className="ib-sp" />
                     <button type="button" className="ib-iconbtn" title="在收件箱中打开（全功能视图）" aria-label="在收件箱中打开" onClick={() => onOpenThread(view.id)}>
                       <Icon name="expand" size={14} />
@@ -953,11 +976,11 @@ function ReqGroup({ label, count, children }: { label: string; count: string; ch
 }
 
 /** One row of the detail's left block: the Inbox's own .ib-row (height, hairline, hover, selection), scoped tracks. */
-function ReqRow({ selected, icon, title, preview, onClick }: { selected: boolean; icon: string; title: string; preview: string; onClick: () => void }) {
+function ReqRow({ selected, icon, host = null, title, preview, onClick }: { selected: boolean; icon?: string; host?: string | null; title: string; preview: string; onClick: () => void }) {
   return (
     <div className="ib-rw">
       <button type="button" className={`ib-row ib-req-navrow${selected ? ' ib-sel' : ''}`} aria-current={selected ? 'true' : undefined} onClick={onClick}>
-        <span className="ib-req-navico"><Icon name={icon as never} size={16} /></span>
+        <span className="ib-req-navico">{host !== null ? <HostMark host={host} /> : <Icon name={(icon ?? 'comment') as never} size={16} />}</span>
         <span className="ib-subj ib-req-navsubj">
           <span className="ib-title" dir="auto">{title}</span>
           <span className="ib-req-navp" dir="auto">{preview}</span>
