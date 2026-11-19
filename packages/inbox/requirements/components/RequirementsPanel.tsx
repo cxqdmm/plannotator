@@ -838,7 +838,6 @@ function RequirementDetail({
                 conversation, its reply box and question cards, live, without leaving the requirement. */}
             {view.k === 'session' && (() => {
               const row = rowsByThread.get(view.id) ?? null;
-              const waiting = row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting';
               return (
                 <div className="ib-req-embed">
                   <div className="ib-req-embed-top">
