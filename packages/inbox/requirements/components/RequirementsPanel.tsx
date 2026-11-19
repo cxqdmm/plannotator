@@ -223,12 +223,14 @@ function RequirementCard({
 function RequirementDetail({
   id,
   openThreadId = null,
+  onReplied,
   onClose,
   onPatch,
   onOpenThread,
 }: {
   id: string;
   openThreadId?: string | null;
+  onReplied?: () => void;
   onClose: () => void;
   onPatch: (id: string, patch: { title?: string; notes?: string; stage?: RequirementStage; threads?: string[] }) => void;
   onOpenThread: (threadId: string) => void;
@@ -275,6 +277,9 @@ function RequirementDetail({
   const [card, setCard] = useState<string | null>(null);
   // The detail's own two areas: the left list picks, the right shows. History is a row like any other.
   const [view, setView] = useState<{ k: 'overview' } | { k: 'deliverable'; id: string } | { k: 'session'; id: string } | { k: 'history' }>(openThreadId !== null ? { k: 'session', id: openThreadId } : { k: 'overview' });
+  useEffect(() => {
+    if (openThreadId !== null) setView({ k: 'session', id: openThreadId });
+  }, [openThreadId]);
   const contextDialog = useRef<HTMLDialogElement | null>(null);
 
   /** 编辑: rename any context, a link's address, or a text file's words (rewritten in the library). */
@@ -398,6 +403,7 @@ function RequirementDetail({
       await inboxApi.reply(last.id, { idempotency_key: crypto.randomUUID(), words, questions: [] });
       setQuickSay('');
       putThread(queryClient, threadId, read);
+      onReplied?.();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -571,7 +577,7 @@ function RequirementDetail({
                       selected={view.k === 'session' && view.id === threadId}
                       host={agent?.kind === 'agent' ? agent.host : null}
                       title={(row?.subject?.trim() ? row.subject : null) ?? (threadMeta[threadId]?.subject?.trim() ? threadMeta[threadId]!.subject : null) ?? '会话'}
-                      preview={waiting ? '等你处理' : (row ? previewOf(row) : null) ?? (agent?.kind === 'agent' ? agent.name ?? 'Claude Code' : '')}
+                      preview={waiting ? '' : (row ? previewOf(row) : null) ?? (agent?.kind === 'agent' ? agent.name ?? 'Claude Code' : '')}
                       onClick={() => setView({k: 'session', id: threadId})}
                     />
                   );
@@ -841,13 +847,12 @@ function RequirementDetail({
                       <span>会话列表</span>
                     </button>
                     <span className="ib-req-embed-subj" dir="auto">{row?.subject ?? threadMeta[view.id]?.subject ?? '会话'}</span>
-                    {waiting && <span className="ib-req-waiting">等你</span>}
                     <span className="ib-sp" />
                     <button type="button" className="ib-iconbtn" title="在收件箱中打开（全功能视图）" aria-label="在收件箱中打开" onClick={() => onOpenThread(view.id)}>
                       <Icon name="expand" size={14} />
                     </button>
                   </div>
-                  <EmbeddedThread threadId={view.id} onClose={() => setView({ k: 'overview' })} onChanged={() => void inboxApi.thread(view.id).then((read) => putThread(queryClient, view.id, read))} />
+                  <EmbeddedThread threadId={view.id} onClose={() => setView({ k: 'overview' })} onChanged={() => { void inboxApi.thread(view.id).then((read) => putThread(queryClient, view.id, read)); onReplied?.(); }} />
                 </div>
               );
             })()}
@@ -882,6 +887,9 @@ function RequirementDetail({
 /** The panel: a Board page whose lanes are the seven stages; `archived` shows the 已归档 page instead. */
 export function RequirementsPanel({ on, archived = false, openId = null, openThreadId = null, onView, onOpen, onOpenThread }: { on: boolean; archived?: boolean; openId?: string | null; openThreadId?: string | null; onView: (archived: boolean) => void; onOpen: (id: string | null, threadId?: string | null) => void; onOpenThread: (threadId: string) => void }) {
   const { requirements, archived: archivedList, archivedCount, create, patch, error, clearError, refresh } = useRequirements(on, subscribeRequirementFrames);
+  // 等你 answers at once: the detail can ask for a requirements refresh the moment a reply leaves.
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
   // 等你 is computed from the threads' rows: a reply moves the list's cursor, and that refresh keeps the
   // badges true the moment the person answers.
   const panelClient = useQueryClient();
@@ -1042,6 +1050,7 @@ export function RequirementsPanel({ on, archived = false, openId = null, openThr
             key={openId}
             id={openId}
             openThreadId={openThreadId}
+            onReplied={() => refreshRef.current()}
             onClose={() => onOpen(null, null)}
             onPatch={(id, patchIn) => void patch(id, patchIn)}
             onOpenThread={onOpenThread}
