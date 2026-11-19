@@ -53,6 +53,7 @@ export function RequirementsPanel({
   on: boolean;
   openThreadId?: string | null;
   onOpenThread: (threadId: string) => void;
+  onCompose: (requirementId: string, requirementTitle: string, contexts: { id: string; kind: string; name: string; image?: boolean }[]) => void;
 }) {
   const { requirements, create, refresh } = useRequirements(on, subscribeRequirementFrames);
   const [draft, setDraft] = useState('');
