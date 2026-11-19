@@ -553,8 +553,8 @@ export function Sidebar(props: SidebarProps) {
           </>
         );
       case 'requirements':
+        // 同收件箱/产物等行：一个 ib-nav 按钮（全局同款 hover/选中），等待数是行内的 hold 徽章（同 .ib-n 的位置）。
         return (
-        <div className="ib-navwrap">
         <button
           type="button"
           className={`ib-nav${props.page === 'requirements' ? ' ib-on' : ''}`}
@@ -564,20 +564,13 @@ export function Sidebar(props: SidebarProps) {
         >
           <Icon name="todo" />
           工坊
+          {(props.workshopWaiting ?? 0) > 0 && (
+            <span className="ib-nav-hold" aria-label={`${props.workshopWaiting} 条等你处理`} title={`${props.workshopWaiting} 条等你处理`}>
+              <Icon name="comment" size={11} />
+              {props.workshopWaiting}
+            </span>
+          )}
         </button>
-        {(props.workshopWaiting ?? 0) > 0 && (
-          <button
-            type="button"
-            className="ib-nav-bell"
-            aria-label={`工坊通知：${props.workshopWaiting} 条等你处理`}
-            title={`${props.workshopWaiting} 条等你处理`}
-            onClick={pick(() => props.onWorkshopBell?.())}
-          >
-            <Icon name="comment" size={13} />
-            <span className="ib-nav-bell-n">{props.workshopWaiting}</span>
-          </button>
-        )}
-        </div>
         );
       case 'board':
         return (

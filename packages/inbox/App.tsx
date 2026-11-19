@@ -5607,7 +5607,7 @@ function Inbox() {
         on={requirementsOn}
         openThreadId={route.reqThread ?? null}
         onOpenThread={(threadId) => writeRoute({ page: 'inbox', project: null, thread: threadId })}
-        onCompose={(requirementId, requirementTitle, contexts) => openCompose({ requirement: { id: requirementId, title: requirementTitle, contexts } })}
+        onCompose={(requirementId, requirementTitle, contexts) => openCompose({ requirement: { id: requirementId, title: requirementTitle, contexts }, launch: { agent: null } })}
       />
     );
   } else if (route.page === 'scheduled') {

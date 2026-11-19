@@ -1479,20 +1479,35 @@ export function ComposeDialog(props: ComposeDialogProps) {
             </div>
             {templateMode && (
               <div className="ib-cp-tmpl">
-                <label>背景<textarea rows={2} placeholder="为什么要做？" value={tBackground} onChange={(e) => setTBackground(e.target.value)} /></label>
-                <label>目标<textarea rows={2} placeholder="做到什么程度？" value={tGoal} onChange={(e) => setTGoal(e.target.value)} /></label>
-                <label>上下文材料
-                  <div className="ib-cp-tmpl-ctx">
-                    {(props.request.requirement?.contexts ?? []).length === 0 && <span className="ib-cp-tmpl-ctx-hint">需求的上下文会出现在这里</span>}
-                    {(props.request.requirement?.contexts ?? []).map((ctx) => (
-                      <button key={ctx.id} type="button" className={`ib-cp-tmpl-mat${tContexts.has(ctx.name) ? ' on' : ''}`} onClick={() => setTContexts((held) => { const next = new Set(held); if (next.has(ctx.name)) next.delete(ctx.name); else next.add(ctx.name); return next; })}>
-                        <span className="k">{ctx.kind === 'link' ? '🔗' : ctx.image ? '🖼' : '📄'}</span> {ctx.name}
-                      </button>
-                    ))}
-                    <span className="ib-cp-tmpl-ctx-hint">点击选中/取消</span>
-                  </div>
+                <label>
+                  <span className="ib-cp-tmpl-h">背景</span>
+                  <textarea rows={2} placeholder="为什么要做？" value={tBackground} onChange={(e) => setTBackground(e.target.value)} />
                 </label>
-                <label>验收标准<textarea rows={2} placeholder="怎么判断做好了？" value={tAcceptance} onChange={(e) => setTAcceptance(e.target.value)} /></label>
+                <label>
+                  <span className="ib-cp-tmpl-h">目标</span>
+                  <textarea rows={2} placeholder="做到什么程度？" value={tGoal} onChange={(e) => setTGoal(e.target.value)} />
+                </label>
+                <div className="ib-cp-tmpl-field">
+                  <span className="ib-cp-tmpl-h">上下文材料</span>
+                  <div className="ib-cp-tmpl-ctx">
+                    {(props.request.requirement?.contexts ?? []).length === 0 ? (
+                      <span className="ib-cp-tmpl-ctx-hint">还没有上下文；在工坊的需求里添加，会出现在这里。</span>
+                    ) : (
+                      <>
+                        {(props.request.requirement?.contexts ?? []).map((ctx) => (
+                          <button key={ctx.id} type="button" className={`ib-cp-tmpl-mat${tContexts.has(ctx.name) ? ' on' : ''}`} onClick={() => setTContexts((held) => { const next = new Set(held); if (next.has(ctx.name)) next.delete(ctx.name); else next.add(ctx.name); return next; })}>
+                            <Icon name={(ctx.kind === 'link' ? 'external' : ctx.image ? 'photo' : 'doc') as never} size={13} /> {ctx.name}
+                          </button>
+                        ))}
+                        <span className="ib-cp-tmpl-ctx-hint">点击选中 / 取消</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <label>
+                  <span className="ib-cp-tmpl-h">验收标准</span>
+                  <textarea rows={2} placeholder="怎么判断做好了？" value={tAcceptance} onChange={(e) => setTAcceptance(e.target.value)} />
+                </label>
               </div>
             )}
           </>
