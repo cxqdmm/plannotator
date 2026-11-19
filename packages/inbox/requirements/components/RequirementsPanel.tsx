@@ -233,7 +233,6 @@ function RequirementDetail({
   // own launch read), the words the session starts with, and the going-out itself.
   // The launch card's own choices, loaded once with the requirement (no form to open — the card IS the form).
   const [launch, setLaunch] = useState<{ agents: { agent: string; name: string }[]; projects: { id: string; name: string }[]; agent: string; project: string } | null>(null);
-  const [openRow, setOpenRow] = useState<'agent' | 'project' | null>(null);
   // The rack's open tile (its preview shows under the rack).
   const [previewCtx, setPreviewCtx] = useState<string | null>(null);
   const [startLoading, setStartLoading] = useState(false);
@@ -255,12 +254,6 @@ function RequirementDetail({
   const [editContext, setEditContext] = useState<RequirementContext | null>(null);
   // The pad's card peek (查看将发送的需求卡).
   const [peekOpen, setPeekOpen] = useState(false);
-  // cook's session dual-mode: use a linked session (default the first) or start a fresh one.
-  const [sessionMode, setSessionMode] = useState<'existing' | 'fresh'>('existing');
-  const [pickedSession, setPickedSession] = useState<string | null>(null);
-  const [sessionPickerOpen, setSessionPickerOpen] = useState(false);
-  const [quickSay, setQuickSay] = useState('');
-  const [quickBusy, setQuickBusy] = useState(false);
   const queryClient = useQueryClient();
   // The session rows read from the App's own list model — the same rows the Inbox's list shows (subject,
   // agent, waiting), instant and always in step with it.
@@ -378,30 +371,9 @@ function RequirementDetail({
 
   // The launch card is always there: its choices load with the page, once.
   useEffect(() => {
-    if (detail && detail.requirement.threads.length === 0 && detail.requirement.deliverables.length === 0 && launch === null && !startLoading) loadLaunch();
+    if (detail && detail.requirement.stage === 'design' && launch === null && !startLoading) loadLaunch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detail]);
-
-  /** 快捷指令: the words go to the picked session as the thread's reply — it wakes the session. */
-  const sendQuickSay = async () => {
-    const words = quickSay.trim();
-    const threadId = pickedSession ?? requirement?.threads[0] ?? null;
-    if (!words || !threadId || quickBusy) return;
-    setQuickBusy(true);
-    try {
-      const read = await inboxApi.thread(threadId);
-      const last = [...read.thread.messages].reverse().find((message) => message.author?.kind === 'agent');
-      if (!last) throw new Error('这个会话里还没有可回复的消息。');
-      await inboxApi.reply(last.id, { idempotency_key: crypto.randomUUID(), words, questions: [] });
-      setQuickSay('');
-      putThread(queryClient, threadId, read);
-      onReplied?.();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      setQuickBusy(false);
-    }
-  };
 
   const submitStart = () => {
     if (!launch || starting) return;
@@ -454,26 +426,6 @@ function RequirementDetail({
   const requirement = detail?.requirement ?? null;
 
   // 返工轮次: how many times the requirement has been moved (back) into 需求设计.
-  const reworkRounds = (detail?.events ?? []).filter((event) => event.kind === 'stage' && event.to === "design").length;
-  // The action card's session lines: this requirement's sessions, newest first, one line each.
-  const sessionLines = requirement !== null && requirement.threads.length > 0 ? (
-    <div className="ib-req-sessions">
-      {[...requirement.threads].reverse().map((threadId) => {
-        const row = rowsByThread.get(threadId) ?? null;
-        const agent = row ? rowAgent(row) : null;
-        const waiting = row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting';
-        const subject = (row?.subject?.trim() ? row.subject : null) ?? (threadMeta[threadId]?.subject?.trim() ? threadMeta[threadId]!.subject : null) ?? '会话';
-        return (
-          <div key={threadId} className="ib-req-session-line" onClick={() => setView({ k: 'session', id: threadId })}>
-            <span className="ib-req-session-mark">{agent?.kind === 'agent' ? <HostMark host={agent.host} /> : <Icon name="comment" size={13} />}</span>
-            <span className="ib-req-session-t"><b dir="auto">{subject}</b><small>{agent?.kind === 'agent' ? agent.name ?? 'Claude Code' : '会话'}</small></span>
-            {waiting && <span className="ib-req-session-wait">等你处理</span>}
-          </div>
-        );
-      })}
-    </div>
-  ) : null;
-
 
   return (
     <aside className="ib-req-detail" aria-label="需求详情" data-requirement-detail={id}>
@@ -594,103 +546,14 @@ function RequirementDetail({
 
                 {requirement.stage !== 'done' && (
                   <div className="ib-req-launch">
-                    {reworkRounds >= 2 && (
-                      <div className="ib-req-rework">↩ <b>返工第 {reworkRounds} 轮</b>——改好上下文，重新开始设计；上一轮的会话仍可打开直接留言。</div>
-                    )}
-                    {requirement.stage === 'design' && (
-                      <div className="ib-req-launch-head">
-                        <span className="ib-req-launch-title">开始设计</span>
-                        <span className="ib-req-launch-sub">起一个会话，产出设计方案并走设计评审</span>
+                    {requirement.stage !== 'design' && (
+                      <div className="ib-req-launch-act">
+                        <button type="button" className="ib-req-go restart" onClick={() => { onPatch(id, { stage: 'design' }); setView({ k: 'overview' }); }}>
+                          ↩ 重新设计
+                        </button>
+                        <span className="ib-req-launch-note">回到「需求设计」，会话收到通知；改上下文后再开始设计</span>
                       </div>
                     )}
-                    {requirement.stage === 'design-review' && (
-                      <div className="ib-req-launch-head">
-                        <span className="ib-req-launch-title">设计评审</span>
-                        <span className="ib-req-launch-sub">会话产出的方案在这里评审；通过即进开发</span>
-                      </div>
-                    )}
-                    {(requirement.stage === 'dev' || requirement.stage === 'qa' || requirement.stage === 'code-review') && (
-                      <div className="ib-req-launch-head">
-                        <span className="ib-req-launch-title">{requirementStageLabel(requirement.stage)}中</span>
-                        <span className="ib-req-launch-sub">会话按批准的方案推进；有问题点随时在这里说</span>
-                      </div>
-                    )}
-                    {requirement.stage !== 'design' && sessionLines}
-                    {requirement.threads.length > 0 && (
-                      <div className="ib-req-mode">
-                        <button type="button" className={sessionMode === 'existing' ? 'on' : ''} onClick={() => setSessionMode('existing')}>使用已有会话 <span className="ib-req-mode-n">{requirement.threads.length}</span></button>
-                        <button type="button" className={sessionMode === 'fresh' ? 'on' : ''} onClick={() => setSessionMode('fresh')}>创建新会话</button>
-                      </div>
-                    )}
-                    {requirement.threads.length > 0 && sessionMode === 'existing' && (() => {
-                      const threadId = pickedSession ?? requirement.threads[requirement.threads.length - 1]!;
-                      const row = rowsByThread.get(threadId) ?? null;
-                      const agent = row ? rowAgent(row) : null;
-                      const waiting = row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting';
-                      const subject = (row?.subject?.trim() ? row.subject : null) ?? (threadMeta[threadId]?.subject?.trim() ? threadMeta[threadId]!.subject : null) ?? '会话';
-                      return (
-                        <div className="ib-req-existing">
-                          <div className="ib-req-session-line" onClick={() => setSessionPickerOpen((open) => !open)}>
-                            <span className="ib-req-session-mark">{agent?.kind === 'agent' ? <HostMark host={agent.host} /> : <Icon name="comment" size={13} />}</span>
-                            <span className="ib-req-session-t"><b dir="auto">{subject}</b><small>{requirement.threads.length > 1 ? '点行切换会话' : agent?.kind === 'agent' ? agent.name ?? 'Claude Code' : '会话'}</small></span>
-                            {waiting && <span className="ib-req-session-wait">等你处理</span>}
-                            <Icon name={sessionPickerOpen ? 'chevD' : 'chevR'} size={10} />
-                          </div>
-                          {sessionPickerOpen && requirement.threads.length > 1 && (
-                            <div className="ib-req-drop" role="listbox" aria-label="会话">
-                              {[...requirement.threads].reverse().map((entry) => {
-                                const entryRow = rowsByThread.get(entry) ?? null;
-                                const entrySubject = (entryRow?.subject?.trim() ? entryRow.subject : null) ?? (threadMeta[entry]?.subject?.trim() ? threadMeta[entry]!.subject : null) ?? '会话';
-                                return (
-                                  <button key={entry} type="button" className={entry === threadId ? 'on' : ''} onClick={() => { setPickedSession(entry); setSessionPickerOpen(false); }}>
-                                    {entrySubject}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                          <form className="ib-req-quick" onSubmit={(event) => { event.preventDefault(); void sendQuickSay(); }}>
-                            <input value={quickSay} onChange={(event) => setQuickSay(event.target.value)} placeholder="直接给这个会话下指令——返工意见、补充要求、催进度…" aria-label="快捷指令" disabled={quickBusy} />
-                            <button type="submit" disabled={quickBusy || !quickSay.trim()}>发送</button>
-                          </form>
-                          <span className="ib-req-quickhint">点会话行在右侧展开完整对话</span>
-                        </div>
-                      );
-                    })()}
-                    {(sessionMode === 'fresh' || requirement.threads.length === 0) && requirement.stage === 'design' && (
-                    <div className="ib-req-rows">
-                      <div className={`ib-req-rowpick${openRow === 'agent' ? ' open' : ''}`} onClick={() => setOpenRow((row) => (row === 'agent' ? null : 'agent'))}>
-                        <span className="ib-req-rowlab">会话</span>
-                        <span className="ib-req-rowval">{launch?.agents.find((entry) => entry.agent === launch.agent)?.name ?? (startLoading ? '读取中…' : 'Claude Code')}</span>
-                        <Icon name="chevR" size={10} className="ib-req-rowchev" />
-                      </div>
-                      <div className={`ib-req-rowpick${openRow === 'project' ? ' open' : ''}`} onClick={() => setOpenRow((row) => (row === 'project' ? null : 'project'))}>
-                        <span className="ib-req-rowlab">项目</span>
-                        <span className="ib-req-rowval">{launch?.projects.find((entry) => entry.id === launch.project)?.name ?? (startLoading ? '读取中…' : '自动选择')}<small>会话在其中启动</small></span>
-                        <Icon name="chevR" size={10} className="ib-req-rowchev" />
-                      </div>
-                      {openRow !== null && <div className="ib-req-dropback" onClick={() => setOpenRow(null)} />}
-                      {openRow === 'agent' && (
-                        <div className="ib-req-drop" role="listbox" aria-label="会话类型">
-                          {(launch?.agents ?? []).map((entry) => (
-                            <button key={entry.agent} type="button" className={launch?.agent === entry.agent ? 'on' : ''} onClick={() => { if (launch) setLaunch({ ...launch, agent: entry.agent }); setOpenRow(null); }}>
-                              {entry.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      {openRow === 'project' && (
-                        <div className="ib-req-drop" role="listbox" aria-label="项目">
-                          {(launch?.projects ?? []).map((entry) => (
-                            <button key={entry.id} type="button" className={launch?.project === entry.id ? 'on' : ''} onClick={() => { if (launch) setLaunch({ ...launch, project: entry.id }); setOpenRow(null); }}>
-                              {entry.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    )}
-
                     <div className="ib-req-seclab">
                       上下文 <span className="ib-req-seclab-n">{requirement.contexts.length}</span>
                       <span className="ib-sp" />
@@ -746,7 +609,7 @@ function RequirementDetail({
                       );
                     })()}
 
-                    {(sessionMode === 'fresh' || requirement.threads.length === 0) && requirement.stage === 'design' && (<>
+                    {requirement.stage === 'design' && (<>
                     <div className="ib-req-seclab">需求卡 <span className="ib-req-seclab-n">将作为首条消息发送</span></div>
                     <button type="button" className="ib-req-peek" onClick={() => setPeekOpen((open) => !open)}>
                       <Icon name={peekOpen ? 'chevD' : 'chevR'} size={11} />

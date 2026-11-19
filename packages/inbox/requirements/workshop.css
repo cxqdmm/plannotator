@@ -411,3 +411,6 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-req-navrow .ib-req-navwait { flex: none; display: inline-flex; align-items: center; gap: 3px; padding: 1px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 650; color: color-mix(in oklch, var(--warning) 80%, var(--foreground)); background: color-mix(in oklch, var(--warning) 14%, transparent); }
 /* The notification panel's invisible backdrop: a click anywhere else closes it. */
 .ib-wait-backdrop { position: fixed; inset: 0; z-index: 59; }
+/* 重新设计: the other stages' one macro action — a quiet restart, warm at the border. */
+.ib-req-go.restart { background: none; color: color-mix(in oklch, var(--warning) 85%, var(--foreground)); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--warning) 45%, transparent); }
+.ib-req-go.restart:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--warning) 65%, transparent); }
