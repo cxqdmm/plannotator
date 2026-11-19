@@ -510,7 +510,7 @@ function RequirementDetail({
                       key={threadId}
                       selected={view.k === 'session' && view.id === threadId}
                       host={agent?.kind === 'agent' ? agent.host : null}
-                      title={row?.subject ?? threadMeta[threadId]?.subject ?? '会话'}
+                      title={(row?.subject?.trim() ? row.subject : null) ?? (threadMeta[threadId]?.subject?.trim() ? threadMeta[threadId]!.subject : null) ?? '会话'}
                       preview={waiting ? '等你处理' : (row ? previewOf(row) : null) ?? (agent?.kind === 'agent' ? agent.name ?? 'Claude Code' : '')}
                       onClick={() => setView({k: 'session', id: threadId})}
                     />
