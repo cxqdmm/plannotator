@@ -1300,6 +1300,37 @@ function Inbox() {
   // The Requirements panel (「需求」): on unless the person turned it off — this fork's own module. `#requirements`
   // while it is off: the list, in its place.
   const requirementsOn = settings?.requirements?.on === true;
+  // 工坊通知 (waiting sessions): the requirements' waiting set, event-driven off the list cursor — the same
+  // signal that moves a thread's section, so a reply clears 等你 everywhere at once.
+  const [workshopWaiting, setWorkshopWaiting] = useState<{ id: string; title: string; thread: string }[]>([]);
+  const workshopSeen = useRef<Set<string>>(new Set());
+  const workshopClosed = useRef<Set<string>>(new Set());
+  const [workshopToasts, setWorkshopToasts] = useState<{ id: string; title: string; thread: string }[]>([]);
+  const [waitPanelOpen, setWaitPanelOpen] = useState(false);
+  const workshopListCursor = latest?.cursor ?? null;
+  useEffect(() => {
+    if (!requirementsOn) return;
+    let alive = true;
+    void import('./requirements/api').then(({ readRequirements }) => readRequirements()).then((page) => {
+      if (!alive || !page) return;
+      const waiting = page.requirements
+        .filter((requirement) => requirement.waiting === true && requirement.waiting_thread)
+        .map((requirement) => ({ id: requirement.id, title: requirement.title, thread: requirement.waiting_thread! }));
+      setWorkshopWaiting(waiting);
+      // New arrivals become stay-put toasts (never auto-dismissed; ✕ or 去处理 clears one).
+      const arrived = waiting.filter((item) => !workshopSeen.current.has(item.id) && !workshopClosed.current.has(item.id));
+      for (const item of waiting) workshopSeen.current.add(item.id);
+      if (arrived.length > 0) setWorkshopToasts((held) => [...arrived, ...held.filter((toast) => !workshopClosed.current.has(toast.id))]);
+    }).catch(() => {});
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requirementsOn, workshopListCursor]);
+  const dismissWorkshopToast = (id: string) => {
+    workshopClosed.current.add(id);
+    setWorkshopToasts((held) => held.filter((toast) => toast.id !== id));
+  };
   useEffect(() => {
     if (settings && !requirementsOn && route.page === 'requirements') writeRoute({ page: 'inbox', project: null, thread: null }, { replace: true });
   }, [settings, requirementsOn, route.page]);
@@ -5589,7 +5620,7 @@ function Inbox() {
         openId={route.req ?? null}
         openThreadId={route.reqThread ?? null}
         onView={(to) => writeRoute({ page: 'requirements', project: null, thread: null, reqArchived: to, req: route.req ?? null })}
-        onOpen={(id) => writeRoute({ page: 'requirements', project: null, thread: null, reqArchived: route.reqArchived, req: id })}
+        onOpen={(id, threadId) => writeRoute({ page: 'requirements', project: null, thread: null, reqArchived: route.reqArchived, req: id, reqThread: threadId ?? null })}
         onOpenThread={(threadId) => writeRoute({ page: 'inbox', project: null, thread: threadId })}
       />
     );
@@ -5848,6 +5879,58 @@ function Inbox() {
       data-thread-full={full ? '' : undefined}
       data-tour={tourOn ? String(tourState.step) : undefined}
     >
+      {/* 工坊通知 (waiting sessions): the bell's panel, and the stay-put toasts on the page's right. */}
+      {requirementsOn && waitPanelOpen && (
+        <div className="ib-wait-panel" role="dialog" aria-label="工坊通知">
+          <h4>
+            <Icon name="comment" size={13} /> 工坊通知 <span style={{ marginLeft: 'auto', color: 'var(--border)', fontWeight: 400 }}>{workshopWaiting.length}</span>
+          </h4>
+          {workshopWaiting.length === 0 && <p style={{ padding: '8px 12px', fontSize: '12.5px', color: 'var(--muted-foreground)' }}>没有等你的会话。</p>}
+          {workshopWaiting.map((item) => (
+            <div
+              key={item.id}
+              className="ib-wait"
+              onClick={() => {
+                setWaitPanelOpen(false);
+                writeRoute({ page: 'requirements', project: null, thread: null, reqArchived: false, req: item.id, reqThread: item.thread });
+              }}
+            >
+              <span className="dot" />
+              <span className="t">
+                <b dir="auto">{item.title}</b>
+                <span>会话在等你处理</span>
+                <span className="jump">去处理 ›</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {requirementsOn && workshopToasts.length > 0 && (
+        <div className="ib-wait-stack" role="region" aria-label="工坊新通知">
+          {workshopToasts.map((item) => (
+            <div key={item.id} className="ib-wait-toast">
+              <span className="dot" />
+              <span className="t">
+                <b dir="auto">{item.title}</b>
+                <span>会话在等你处理</span>
+                <button
+                  type="button"
+                  className="go2"
+                  onClick={() => {
+                    dismissWorkshopToast(item.id);
+                    writeRoute({ page: 'requirements', project: null, thread: null, reqArchived: false, req: item.id, reqThread: item.thread });
+                  }}
+                >
+                  去处理 ›
+                </button>
+              </span>
+              <button type="button" className="x" aria-label="关闭通知" title="关闭" onClick={() => dismissWorkshopToast(item.id)}>
+                <Icon name="x" size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       {/* The sidebar's Customize panel (approval "inbox-sidebar-customize"): one for the window, beside the sidebar or, on a phone, a bottom sheet. */}
       {!tourOn && (
         <SidebarCustomizer
@@ -5978,6 +6061,8 @@ function Inbox() {
             // The Board (approval "inbox-board"): a row only while the person has it on; no count (the header has it).
             onBoard={boardEnabled ? () => leave({ page: 'board', project: null, thread: null }) : undefined}
             onRequirements={requirementsOn ? () => leave({ page: 'requirements', project: null, thread: null }) : undefined}
+            workshopWaiting={requirementsOn ? workshopWaiting.length : 0}
+            onWorkshopBell={requirementsOn ? () => setWaitPanelOpen((open) => !open) : undefined}
             onScheduled={scheduledOn ? () => leave({ page: 'scheduled', project: null, thread: null }) : undefined}
             // Reviews: a row only while Code review is on; its count is the last read's "On you" (read at start and on focus).
             onPulls={pullsShown ? () => leave({ page: 'reviews', project: null, thread: null }) : undefined}

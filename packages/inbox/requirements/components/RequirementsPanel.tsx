@@ -74,6 +74,7 @@ function RequirementCard({
   onDragStart,
   onDragEnd,
   onOpen,
+  onOpenWaiting,
   onStart,
   onAdopt,
   onDismiss,
@@ -86,6 +87,7 @@ function RequirementCard({
   onDragStart: () => void;
   onDragEnd: () => void;
   onOpen: () => void;
+  onOpenWaiting: (threadId: string | null) => void;
   onStart: () => void;
   onAdopt: (suggestionId: string) => void;
   onDismiss: (suggestionId: string) => void;
@@ -179,9 +181,17 @@ function RequirementCard({
         </button>
       )}
       {requirement.waiting === true && (
-        <span className="ib-req-waiting" title="这个需求的会话在等你处理">
-          <Icon name="comment" size={12} /> 等你
-        </span>
+        <button
+          type="button"
+          className="ib-req-waiting"
+          title="会话在等你处理——点击直达"
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenWaiting(requirement.waiting_thread ?? null);
+          }}
+        >
+          <Icon name="comment" size={12} /> 等你 ›
+        </button>
       )}
       {(requirement.suggestions.length > 0 || requirement.deliverables.length > 0 || requirement.threads.length > 0) && (
         <span className="ib-bc-bot">
@@ -870,8 +880,17 @@ function RequirementDetail({
 }
 
 /** The panel: a Board page whose lanes are the seven stages; `archived` shows the 已归档 page instead. */
-export function RequirementsPanel({ on, archived = false, openId = null, openThreadId = null, onView, onOpen, onOpenThread }: { on: boolean; archived?: boolean; openId?: string | null; openThreadId?: string | null; onView: (archived: boolean) => void; onOpen: (id: string | null) => void; onOpenThread: (threadId: string) => void }) {
+export function RequirementsPanel({ on, archived = false, openId = null, openThreadId = null, onView, onOpen, onOpenThread }: { on: boolean; archived?: boolean; openId?: string | null; openThreadId?: string | null; onView: (archived: boolean) => void; onOpen: (id: string | null, threadId?: string | null) => void; onOpenThread: (threadId: string) => void }) {
   const { requirements, archived: archivedList, archivedCount, create, patch, error, clearError, refresh } = useRequirements(on, subscribeRequirementFrames);
+  // 等你 is computed from the threads' rows: a reply moves the list's cursor, and that refresh keeps the
+  // badges true the moment the person answers.
+  const panelClient = useQueryClient();
+  const panelList = useListModel(panelClient);
+  const panelListCursor = panelList?.cursor ?? null;
+  useEffect(() => {
+    if (on && panelListCursor !== null) refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panelListCursor]);
   // 新建需求 is a dialog: one question (the title), Enter makes it, Esc walks away — then the card sits in 需求设计, ready to start.
   const newDialog = useRef<HTMLDialogElement | null>(null);
   const [draft, setDraft] = useState('');
@@ -945,6 +964,7 @@ export function RequirementsPanel({ on, archived = false, openId = null, openThr
                     setOver(null);
                   }}
                   onOpen={() => onOpen(requirement.id)}
+                  onOpenWaiting={(threadId) => onOpen(requirement.id, threadId)}
                   onStart={() => onOpen(requirement.id)}
                   onAdopt={(suggestionId) => void adoptSuggestion(requirement.id, suggestionId).then((outcome) => (outcome.ok ? refresh() : undefined))}
                   onDismiss={(suggestionId) => void dismissSuggestion(requirement.id, suggestionId).then((outcome) => (outcome.ok ? refresh() : undefined))}
@@ -1022,7 +1042,7 @@ export function RequirementsPanel({ on, archived = false, openId = null, openThr
             key={openId}
             id={openId}
             openThreadId={openThreadId}
-            onClose={() => onOpen(null)}
+            onClose={() => onOpen(null, null)}
             onPatch={(id, patchIn) => void patch(id, patchIn)}
             onOpenThread={onOpenThread}
           />

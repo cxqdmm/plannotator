@@ -368,3 +368,31 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-req-quick button { flex: none; border: 0; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font: inherit; font-size: var(--ib-fs-12, 12px); font-weight: 600; padding: 6px 13px; cursor: pointer; }
 .ib-req-quick button:disabled { opacity: 0.5; cursor: default; }
 .ib-req-quickhint { font-size: 11px; color: var(--muted-foreground); }
+/* The sidebar 工坊 row's bell and its count (a sibling of the nav, not inside it). */
+.ib-navwrap { display: flex; align-items: center; gap: 2px; }
+.ib-navwrap .ib-nav { flex: 1; min-width: 0; }
+.ib-nav-bell { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px; border: 0; border-radius: 8px; background: none; color: var(--muted-foreground); cursor: pointer; font: inherit; }
+.ib-nav-bell:hover { background: var(--ib-hover, color-mix(in oklch, var(--muted) 45%, transparent)); color: var(--foreground); }
+.ib-nav-bell-n { min-width: 16px; height: 16px; border-radius: 999px; background: color-mix(in oklch, var(--warning) 85%, var(--card)); color: oklch(0.25 0.05 85); font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; }
+/* The notification panel and the stay-put toasts. */
+.ib-wait-panel { position: fixed; left: 232px; top: 64px; width: 330px; background: var(--card); border-radius: 12px; box-shadow: 0 0 0 1px var(--border), 0 20px 44px -14px color-mix(in oklch, var(--ib-shadow-ink, var(--background)) 45%, transparent); padding: 8px; z-index: 60; animation: ib-wait-drop 0.2s cubic-bezier(0.2, 0.7, 0.3, 1); }
+@keyframes ib-wait-drop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.ib-wait-panel h4 { font-size: 12px; font-weight: 650; color: var(--muted-foreground); padding: 6px 10px 8px; display: flex; align-items: center; }
+.ib-wait { display: flex; gap: 10px; padding: 10px 11px; border-radius: 10px; cursor: pointer; }
+.ib-wait:hover { background: color-mix(in oklch, var(--primary) 6%, var(--card)); }
+.ib-wait .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--warning); margin-top: 5px; }
+.ib-wait .t { flex: 1; min-width: 0; }
+.ib-wait .t b { display: block; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ib-wait .t span { display: block; font-size: 11.5px; color: var(--muted-foreground); line-height: 1.5; margin-top: 1px; }
+.ib-wait .t .jump { color: var(--primary); font-size: 11px; font-weight: 600; margin-top: 3px; display: inline-flex; align-items: center; gap: 3px; }
+.ib-wait .when { flex: none; font-size: 10.5px; color: var(--muted-foreground); }
+.ib-wait-stack { position: fixed; right: 18px; top: 64px; width: 300px; display: flex; flex-direction: column; gap: 10px; z-index: 60; }
+.ib-wait-toast { background: var(--card); border-radius: 12px; box-shadow: 0 0 0 1px color-mix(in oklch, var(--warning) 45%, transparent), 0 14px 34px -12px color-mix(in oklch, var(--ib-shadow-ink, var(--background)) 50%, transparent); padding: 12px 14px; display: flex; gap: 10px; animation: ib-wait-slide 0.32s cubic-bezier(0.2, 0.7, 0.3, 1); }
+@keyframes ib-wait-slide { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+.ib-wait-toast .dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--warning); margin-top: 5px; }
+.ib-wait-toast .t { flex: 1; min-width: 0; }
+.ib-wait-toast .t b { display: block; font-size: 13px; font-weight: 650; }
+.ib-wait-toast .t span { display: block; font-size: 11.5px; color: var(--muted-foreground); line-height: 1.55; margin-top: 2px; }
+.ib-wait-toast .go2 { margin-top: 7px; display: inline-flex; align-items: center; gap: 5px; border: 0; border-radius: 7px; background: var(--primary); color: var(--primary-foreground); font: inherit; font-size: 11.5px; font-weight: 600; padding: 5px 12px; cursor: pointer; }
+.ib-wait-toast .x { flex: none; border: 0; background: none; color: var(--muted-foreground); cursor: pointer; width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; }
+.ib-wait-toast .x:hover { background: var(--muted); color: var(--foreground); }

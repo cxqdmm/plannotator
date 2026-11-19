@@ -121,6 +121,9 @@ export interface Requirement {
   /** Computed on reads (never stored): one of this requirement's sessions waits on the person (the thread's
    *  list section is Stopped/Holding/Waiting — the Board's 「You: …」 idea). */
   waiting?: true;
+  /** With `waiting`: the first of the requirement's sessions whose thread waits on the person (its id), for the
+   *  badge's jump straight into that conversation. Computed on reads, never stored. */
+  waiting_thread?: string;
   /** Set when archived (归档): the card leaves the board until restored. Null while active. */
   archived_at?: string | null;
   created_at: string;

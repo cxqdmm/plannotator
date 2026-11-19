@@ -157,8 +157,10 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
 
 export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null; /** Whether a thread's row waits on the person (the Board's You-line idea), for the reads' computed flag. */ waitingOf?: (threadId: string) => boolean }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
   /** waiting, computed on reads: any linked session's thread waits on the person. */
-  const withWaiting = (record: Requirement): Requirement =>
-    record.threads.some((threadId) => options.waitingOf?.(threadId) === true) ? { ...record, waiting: true } : record;
+  const withWaiting = (record: Requirement): Requirement => {
+    const waitingThread = record.threads.find((threadId) => options.waitingOf?.(threadId) === true);
+    return waitingThread === undefined ? record : { ...record, waiting: true, waiting_thread: waitingThread };
+  };
   const dir = join(options.dataDir, "requirements");
   const requirementsPath = join(dir, "requirements.json");
   const eventsPath = join(dir, "requirement-events.json");

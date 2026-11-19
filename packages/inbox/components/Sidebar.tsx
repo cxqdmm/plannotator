@@ -58,6 +58,9 @@ export interface SidebarProps {
   onBoard?: () => void;
   /** The Requirements panel (「需求」): the row above Inbox, shown only while the module is on. */
   onRequirements?: () => void;
+  /** 工坊通知 (waiting sessions): the count on the row's bell; opening its panel. */
+  workshopWaiting?: number;
+  onWorkshopBell?: () => void;
   /** Routines: the row under Board, only while Settings → Capabilities → Routines is on. */
   onScheduled?: () => void;
   /**
@@ -550,9 +553,8 @@ export function Sidebar(props: SidebarProps) {
           </>
         );
       case 'requirements':
-        // The Requirements panel (「需求」, packages/inbox/requirements): the row above Inbox, drawn with
-        // `onRequirements` (absent while the module is off — the layout keeps its place for when it returns).
         return (
+        <div className="ib-navwrap">
         <button
           type="button"
           className={`ib-nav${props.page === 'requirements' ? ' ib-on' : ''}`}
@@ -563,6 +565,19 @@ export function Sidebar(props: SidebarProps) {
           <Icon name="todo" />
           工坊
         </button>
+        {(props.workshopWaiting ?? 0) > 0 && (
+          <button
+            type="button"
+            className="ib-nav-bell"
+            aria-label={`工坊通知：${props.workshopWaiting} 条等你处理`}
+            title={`${props.workshopWaiting} 条等你处理`}
+            onClick={pick(() => props.onWorkshopBell?.())}
+          >
+            <Icon name="comment" size={13} />
+            <span className="ib-nav-bell-n">{props.workshopWaiting}</span>
+          </button>
+        )}
+        </div>
         );
       case 'board':
         return (
