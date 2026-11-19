@@ -409,3 +409,5 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-req-navn { justify-self: end; font-size: var(--ib-fs-11, 11px); color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
 /* The session row's waiting mark, when it waits: the same warning pill the card carries. */
 .ib-req-navrow .ib-req-navwait { flex: none; display: inline-flex; align-items: center; gap: 3px; padding: 1px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 650; color: color-mix(in oklch, var(--warning) 80%, var(--foreground)); background: color-mix(in oklch, var(--warning) 14%, transparent); }
+/* The notification panel's invisible backdrop: a click anywhere else closes it. */
+.ib-wait-backdrop { position: fixed; inset: 0; z-index: 59; }

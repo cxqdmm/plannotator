@@ -1303,9 +1303,6 @@ function Inbox() {
   // 工坊通知 (waiting sessions): the requirements' waiting set, event-driven off the list cursor — the same
   // signal that moves a thread's section, so a reply clears 等你 everywhere at once.
   const [workshopWaiting, setWorkshopWaiting] = useState<{ id: string; title: string; thread: string }[]>([]);
-  const workshopSeen = useRef<Set<string>>(new Set());
-  const workshopClosed = useRef<Set<string>>(new Set());
-  const [workshopToasts, setWorkshopToasts] = useState<{ id: string; title: string; thread: string }[]>([]);
   const [waitPanelOpen, setWaitPanelOpen] = useState(false);
   const workshopListCursor = latest?.cursor ?? null;
   useEffect(() => {
@@ -1317,20 +1314,12 @@ function Inbox() {
         .filter((requirement) => requirement.waiting === true && requirement.waiting_thread)
         .map((requirement) => ({ id: requirement.id, title: requirement.title, thread: requirement.waiting_thread! }));
       setWorkshopWaiting(waiting);
-      // New arrivals become stay-put toasts (never auto-dismissed; ✕ or 去处理 clears one).
-      const arrived = waiting.filter((item) => !workshopSeen.current.has(item.id) && !workshopClosed.current.has(item.id));
-      for (const item of waiting) workshopSeen.current.add(item.id);
-      if (arrived.length > 0) setWorkshopToasts((held) => [...arrived, ...held.filter((toast) => !workshopClosed.current.has(toast.id))]);
     }).catch(() => {});
     return () => {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requirementsOn, workshopListCursor]);
-  const dismissWorkshopToast = (id: string) => {
-    workshopClosed.current.add(id);
-    setWorkshopToasts((held) => held.filter((toast) => toast.id !== id));
-  };
   useEffect(() => {
     if (settings && !requirementsOn && route.page === 'requirements') writeRoute({ page: 'inbox', project: null, thread: null }, { replace: true });
   }, [settings, requirementsOn, route.page]);
@@ -5881,6 +5870,9 @@ function Inbox() {
     >
       {/* 工坊通知 (waiting sessions): the bell's panel, and the stay-put toasts on the page's right. */}
       {requirementsOn && waitPanelOpen && (
+        <div className="ib-wait-backdrop" onClick={() => setWaitPanelOpen(false)} aria-hidden="true" />
+      )}
+      {requirementsOn && waitPanelOpen && (
         <div className="ib-wait-panel" role="dialog" aria-label="工坊通知">
           <h4>
             <Icon name="comment" size={13} /> 工坊通知 <span style={{ marginLeft: 'auto', color: 'var(--border)', fontWeight: 400 }}>{workshopWaiting.length}</span>
@@ -5901,32 +5893,6 @@ function Inbox() {
                 <span>会话在等你处理</span>
                 <span className="jump">去处理 ›</span>
               </span>
-            </div>
-          ))}
-        </div>
-      )}
-      {requirementsOn && workshopToasts.length > 0 && (
-        <div className="ib-wait-stack" role="region" aria-label="工坊新通知">
-          {workshopToasts.map((item) => (
-            <div key={item.id} className="ib-wait-toast">
-              <span className="dot" />
-              <span className="t">
-                <b dir="auto">{item.title}</b>
-                <span>会话在等你处理</span>
-                <button
-                  type="button"
-                  className="go2"
-                  onClick={() => {
-                    dismissWorkshopToast(item.id);
-                    writeRoute({ page: 'requirements', project: null, thread: null, reqArchived: false, req: item.id, reqThread: item.thread });
-                  }}
-                >
-                  去处理 ›
-                </button>
-              </span>
-              <button type="button" className="x" aria-label="关闭通知" title="关闭" onClick={() => dismissWorkshopToast(item.id)}>
-                <Icon name="x" size={13} />
-              </button>
             </div>
           ))}
         </div>
