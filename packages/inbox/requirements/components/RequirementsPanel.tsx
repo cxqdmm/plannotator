@@ -75,6 +75,7 @@ function RequirementCard({
   onDragStart,
   onDragEnd,
   onOpen,
+  onStart,
   onArchiveToggle,
 }: {
   requirement: Requirement;
@@ -84,6 +85,7 @@ function RequirementCard({
   onDragStart: () => void;
   onDragEnd: () => void;
   onOpen: () => void;
+  onStart: () => void;
   onArchiveToggle: () => void;
 }) {
   const archived = requirement.archived_at != null;
@@ -132,6 +134,20 @@ function RequirementCard({
           </span>
         </span>
       </span>
+      {requirement.stage === 'design' && requirement.threads.length === 0 && (
+        <button
+          type="button"
+          className="ib-req-cardstart"
+          data-requirements-card-start=""
+          onClick={(event) => {
+            event.stopPropagation();
+            onStart();
+          }}
+        >
+          <Icon name="play" size={13} />
+          开始设计
+        </button>
+      )}
       {(requirement.suggestions.length > 0 || requirement.deliverables.length > 0 || requirement.threads.length > 0) && (
         <span className="ib-bc-bot">
           <span className="ib-bc-line ib-req-line">
@@ -160,12 +176,16 @@ function RequirementCard({
 /** The detail pane (CardPanel's classes): suggestions to adopt, notes, deliverables, threads, history. */
 function RequirementDetail({
   id,
+  startRequested = false,
+  onStarted,
   onClose,
   onPatch,
   onOpenThread,
 }: {
   id: string;
   onClose: () => void;
+  startRequested?: boolean;
+  onStarted: () => void;
   onPatch: (id: string, patch: { title?: string; notes?: string; stage?: RequirementStage; threads?: string[] }) => void;
   onOpenThread: (threadId: string) => void;
 }) {
@@ -267,6 +287,13 @@ function RequirementDetail({
       setError(cause instanceof Error ? cause.message : String(cause));
     }).finally(() => setStartLoading(false));
   };
+
+  // A card's 开始设计 lands here with the form already wanted: it opens at once, no second click.
+  useEffect(() => {
+    if (startRequested && detail && detail.requirement.threads.length === 0 && detail.requirement.deliverables.length === 0) beginStart();
+    onStarted();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startRequested, detail]);
 
   /** The form's send: a new thread whose first message is the requirement's own words (startThread's launch
    *  target starts the session), the thread linked at once (D2: auto-attach, the link never waits on the agent),
@@ -442,7 +469,7 @@ function RequirementDetail({
                   <p className="ib-req-empty">在 Inbox 里直接开工：起一个会话做这条需求，线程自动连进来，产出与建议回到这里。</p>
                   <button type="button" className="ib-btn ib-req-launch" data-requirements-start="" disabled={startLoading} onClick={beginStart}>
                     <Icon name="play" size={14} />
-                    {startLoading ? '读取可用环境…' : '开始做'}
+                    {startLoading ? '读取可用环境…' : '开始设计'}
                   </button>
                   {/* 已有跑着的终端会话：老路仍在——那句话交给它，它的线程同样连进来。 */}
                   <details className="ib-req-handoff">
@@ -625,11 +652,13 @@ function RequirementDetail({
 /** The panel: a Board page whose lanes are the seven stages; `archived` shows the 已归档 page instead. */
 export function RequirementsPanel({ on, archived = false, openId = null, onView, onOpen, onOpenThread }: { on: boolean; archived?: boolean; openId?: string | null; onView: (archived: boolean) => void; onOpen: (id: string | null) => void; onOpenThread: (threadId: string) => void }) {
   const { requirements, archived: archivedList, archivedCount, create, patch, error, clearError } = useRequirements(on, subscribeRequirementFrames);
-  // 新建需求 is a dialog: one question (the title), Enter makes it, Esc walks away — then the card sits in 待跟进.
+  // 新建需求 is a dialog: one question (the title), Enter makes it, Esc walks away — then the card sits in 需求设计, ready to start.
   const newDialog = useRef<HTMLDialogElement | null>(null);
   const [draft, setDraft] = useState('');
   /** The card being dragged (the Board's own mechanism: state, not the dataTransfer's contents). */
   const [dragging, setDragging] = useState<Requirement | null>(null);
+  // A card's 开始设计 opens the page straight into the launch form (consumed once by the detail).
+  const [wantStart, setWantStart] = useState(false);
   const [over, setOver] = useState<RequirementStage | null>(null);
 
   const submit = () => {
@@ -698,6 +727,7 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
                     setOver(null);
                   }}
                   onOpen={() => onOpen(requirement.id)}
+                  onStart={() => { setWantStart(true); onOpen(requirement.id); }}
                   onArchiveToggle={() => void patch(requirement.id, { archived: requirement.archived_at == null })}
                 />
               ))}
@@ -771,6 +801,8 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
           <RequirementDetail
             key={openId}
             id={openId}
+            startRequested={wantStart}
+            onStarted={() => setWantStart(false)}
             onClose={() => onOpen(null)}
             onPatch={(id, patchIn) => void patch(id, patchIn)}
             onOpenThread={onOpenThread}
@@ -804,7 +836,7 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
           />
-          <p className="ib-req-new-hint">回车创建；Esc 放弃。新需求先落在「待跟进」。</p>
+          <p className="ib-req-new-hint">回车创建；Esc 放弃。新需求直接落在「需求设计」。</p>
           <div className="ib-req-new-act">
             <button type="button" className="ib-btn ib-sm" onClick={() => newDialog.current?.close()}>
               取消

@@ -222,3 +222,7 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 /* A requirement's page is the two blocks on the app's ground: the page container's own card (white, ringed,
    the board's look) steps aside for it. */
 .ib-bpage[data-requirements-view="detail"] { background: transparent; box-shadow: none; border-radius: 0; }
+/* A design-stage card's 开始设计: right on the card, the primary pill — the entry the person looks for. */
+.ib-req-cardstart { align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; margin-top: 2px; padding: 4px 11px; border: 0; border-radius: 999px; background: var(--primary); color: var(--primary-foreground); font: inherit; font-size: var(--ib-fs-12, 12px); font-weight: 550; cursor: pointer; }
+.ib-req-cardstart:hover { filter: brightness(1.05); }
+.ib-req-cardstart:active { transform: scale(0.98); }

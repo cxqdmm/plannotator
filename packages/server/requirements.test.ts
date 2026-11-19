@@ -37,7 +37,7 @@ async function createOne(title = "登录页改版"): Promise<{ id: string }> {
 }
 
 describe("the requirements routes", () => {
-  test("an empty data dir reads as no requirements; a create lands, starts in 待跟进, and writes history", async () => {
+  test("an empty data dir reads as no requirements; a create lands, starts in 需求设计, and writes history", async () => {
     const list = await call("GET", "/api/requirements");
     expect(list.status).toBe(200);
     expect(list.data.requirements).toEqual([]);
@@ -45,7 +45,7 @@ describe("the requirements routes", () => {
     expect(made.id).toStartWith("req_");
     const record = (await call("GET", "/api/requirements")).data.requirements as { title: string; stage: string; priority: string; deliverables: unknown[] }[];
     expect(record).toHaveLength(1);
-    expect(record[0]).toMatchObject({ title: "登录页改版", stage: "triage", priority: "none", deliverables: [] });
+    expect(record[0]).toMatchObject({ title: "登录页改版", stage: "design", priority: "none", deliverables: [] });
     const detail = await call("GET", `/api/requirements/${made.id}`);
     expect((detail.data.events as { kind: string }[]).map((event) => event.kind)).toEqual(["created"]);
     // The records and the history are on disk, so a later instance reads them.
@@ -67,15 +67,15 @@ describe("the requirements routes", () => {
 
   test("a stage move writes a from/to event; a field change names its field; unknown keys are ignored", async () => {
     const made = await createOne();
-    const moved = await call("PATCH", `/api/requirements/${made.id}`, { stage: "design" });
+    const moved = await call("PATCH", `/api/requirements/${made.id}`, { stage: "dev" });
     expect(moved.status).toBe(200);
-    expect((moved.data.requirement as { stage: string }).stage).toBe("design");
+    expect((moved.data.requirement as { stage: string }).stage).toBe("dev");
     const renamed = await call("PATCH", `/api/requirements/${made.id}`, { title: "登录页改版 v2", nope: true });
     expect(renamed.status).toBe(200);
     expect((renamed.data.requirement as { title: string }).title).toBe("登录页改版 v2");
     const events = ((await call("GET", `/api/requirements/${made.id}`)).data.events as { kind: string; from?: string; to?: string; field?: string }[]).slice().reverse();
     expect(events[0]).toMatchObject({ kind: "field", field: "title" });
-    expect(events[1]).toMatchObject({ kind: "stage", from: "triage", to: "design" });
+    expect(events[1]).toMatchObject({ kind: "stage", from: "design", to: "dev" });
     expect(events[2]).toMatchObject({ kind: "created" });
   });
 
@@ -242,6 +242,14 @@ describe("the requirements routes", () => {
     expect(((await call("GET", `/api/requirements/${made}`)).data.requirement as { contexts: unknown[] }).contexts).toHaveLength(2);
     // The context preview reads the file, the person's window only.
     expect((await call("GET", `/api/requirements/${made}/contexts/${upload.id}/content`)).status).toBe(403);
+  });
+
+
+  test("a legacy 待跟进 record reads as 需求设计", async () => {
+    mkdirSync(join(dataDir, "requirements"), { recursive: true });
+    writeFileSync(join(dataDir, "requirements", "requirements.json"), JSON.stringify({ v: 1, requirements: [{ id: "req_old", title: "旧需求", notes: "", stage: "triage", priority: "none", deliverables: [], threads: [], suggestions: [] }] }));
+    const read = await call("GET", "/api/requirements/req_old");
+    expect((read.data.requirement as { stage: string }).stage).toBe("design");
   });
 
   test("a delete removes the record and writes history; an unknown id is 404; an unknown subpath is not this module's", async () => {

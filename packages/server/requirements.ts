@@ -140,7 +140,6 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
   return {
     title: typeof record.title === "string" ? record.title : "",
     notes: typeof record.notes === "string" ? record.notes : "",
-    stage: isRequirementStage(record.stage) ? record.stage : "triage",
     priority: isRequirementPriority(record.priority) ? record.priority : "none",
     deliverables: Array.isArray(record.deliverables) ? record.deliverables : [],
     threads: Array.isArray(record.threads) ? record.threads.filter((id): id is string => typeof id === "string") : [],
@@ -150,6 +149,8 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
     created_at: typeof record.created_at === "string" ? record.created_at : new Date().toISOString(),
     updated_at: typeof record.updated_at === "string" ? record.updated_at : new Date().toISOString(),
     ...record,
+    // After the spread, the mended fields win: a legacy stage (待跟进) stays mended, an array stays an array.
+    stage: record.stage === "triage" ? "design" : isRequirementStage(record.stage) ? record.stage : "design",
   } as Requirement;
 }
 
@@ -223,7 +224,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         id: `req_${ulid()}`,
         title: input.title.trim(),
         notes,
-        stage: "triage",
+        stage: "design",
         priority: input.priority ?? "none",
         deliverables: [],
         threads: [],

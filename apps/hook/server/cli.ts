@@ -298,7 +298,7 @@ export const REQUIREMENT_COMMAND_USAGE = [
   "",
   "Every command takes [--json].",
   `Kinds: ${["design-doc", "review", "code-review", "test-report", "link", "file"].join(", ")} — what the deliverable points at (an annotate session id, owner/repo#123, a URL or a path).`,
-  `Stages: ${["triage", "design", "design-review", "dev", "qa", "code-review", "done"].join(", ")}.`,
+  `Stages: ${["design", "design-review", "dev", "qa", "code-review", "done"].join(", ")}.`,
   "",
   "Works only while the person's workshop panel is on (config.json inboxRequirements); off, it exits 1 with requirements_off.",
 ].join("\n");

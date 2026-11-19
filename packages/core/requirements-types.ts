@@ -11,12 +11,16 @@
  */
 
 /** One requirement's place in its lifecycle, in order. Fixed in v1 (no custom stages). */
-export type RequirementStage = 'triage' | 'design' | 'design-review' | 'dev' | 'qa' | 'code-review' | 'done';
+/**
+ * The lifecycle's stages. 待跟进 (triage) is gone (the person's call, 2026-11-19: a new requirement IS in
+ * design): it stays in the union only as a legacy stored value, normalized to `design` on read — never offered,
+ * never drawn.
+ */
+export type RequirementStage = 'design' | 'design-review' | 'dev' | 'qa' | 'code-review' | 'done' | 'triage';
 
 /** The stages in order. `wants` names the deliverable the stage suggests (the gentle "not attached yet" line; null: none). */
 export const REQUIREMENT_STAGES: readonly { id: RequirementStage; label: string; wants: string | null }[] = [
-  { id: 'triage', label: '待跟进', wants: null },
-  { id: 'design', label: '需求设计', wants: '设计文档' },
+  { id: 'design', label: '需求设计', wants: '设计文档' }, // a fresh requirement starts here
   { id: 'design-review', label: '设计评审', wants: '评审结论' },
   { id: 'dev', label: '需求开发', wants: null },
   { id: 'qa', label: '功能测试', wants: '测试报告' },
