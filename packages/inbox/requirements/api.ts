@@ -105,3 +105,8 @@ export function removeContext(id: string, contextId: string): Promise<WriteOutco
 export function contextContent(id: string, contextId: string): Promise<{ text?: string; image?: string; link?: string; html?: boolean } | { error: string }> {
   return fetch(`/api/requirements/${encodeURIComponent(id)}/contexts/${encodeURIComponent(contextId)}/content`, { headers: { Accept: 'application/json' }, cache: 'no-store' }).then((response) => response.json());
 }
+
+/** 修改上下文: rename (all kinds), a link's address, or a text file's content (rewritten in the requirement's library). */
+export function patchContext(id: string, contextId: string, patch: { name?: string; ref?: string; text?: string }): Promise<WriteOutcome<{ context: unknown }>> {
+  return write('PATCH', `/api/requirements/${encodeURIComponent(id)}/contexts/${encodeURIComponent(contextId)}`, patch as unknown as Record<string, unknown>);
+}

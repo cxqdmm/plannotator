@@ -85,6 +85,7 @@ export interface RequirementStore {
   undeliver(id: string, deliverableId: string): void;
   say(id: string, note: string, by?: string | null): void;
   addContext(id: string, input: { kind: "link" | "file"; name: string; ref: string; image?: boolean; by?: string | null }): RequirementContext;
+  patchContext(id: string, contextId: string, patch: { name?: string; ref?: string }): RequirementContext;
   removeContext(id: string, contextId: string): void;
   suggest(id: string, input: { stage: RequirementStage; why: string; by: string }): RequirementSuggestion;
   /** The person ignores a suggestion: it is dropped, nothing else moves. */
@@ -345,6 +346,25 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       };
       record.contexts.unshift(context);
       recordEvent(id, "context", { to: context.kind, note: context.name });
+      touch(record);
+      save([id]);
+      return context;
+    },
+    patchContext(id: string, contextId: string, patch: { name?: string; ref?: string }) {
+      const record = at(id);
+      const context = record.contexts.find((entry) => entry.id === contextId);
+      if (!context) throw new RequirementStoreError("not_found", "No such context.");
+      if (patch.name !== undefined) {
+        if (typeof patch.name !== "string" || !patch.name.trim()) throw new RequirementStoreError("validation_error", "name: what this material is.", "name");
+        if (patch.name.length > TITLE_MAX) throw new RequirementStoreError("validation_error", `name: at most ${TITLE_MAX} characters.`, "name");
+      }
+      if (patch.ref !== undefined) {
+        if (context.kind !== "link") throw new RequirementStoreError("validation_error", "ref: only a link's address changes.", "ref");
+        if (typeof patch.ref !== "string" || !/^https?:\/\//i.test(patch.ref.trim())) throw new RequirementStoreError("validation_error", "ref: an http(s) URL.", "ref");
+      }
+      if (patch.name !== undefined) context.name = patch.name.trim();
+      if (patch.ref !== undefined) context.ref = patch.ref.trim();
+      recordEvent(id, "context", { note: `changed: ${context.name}` });
       touch(record);
       save([id]);
       return context;
@@ -676,6 +696,18 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
             return json({ context: store.addContext(id, { kind: "file", name, ref: file, ...(image ? { image: true } : {}) }) }, 201);
           }
           return json({ error: "kind: link, text or upload.", code: "validation_error", field: "kind" }, 400);
+        }
+        if (req.method === "PATCH" && contextMatch[1] !== undefined && !contextMatch[2]) {
+          const input = await body(req);
+          const found = store.get(id);
+          const context = found?.requirement.contexts.find((entry) => entry.id === decodeURIComponent(contextMatch[1]!));
+          if (!found || !context) return json({ error: "No such context.", code: "not_found" }, 404);
+          if (typeof input.text === "string") {
+            if (context.kind !== "file" || !context.ref.startsWith(contextDirOf(id))) return json({ error: "text: only the requirement's own text files change here.", code: "validation_error", field: "text" }, 400);
+            if (input.text.length > 512 * 1024) return json({ error: "text: at most 512 KB.", code: "validation_error", field: "text" }, 400);
+            writeFileSync(context.ref, input.text, { mode: 0o600 });
+          }
+          return json({ context: store.patchContext(id, decodeURIComponent(contextMatch[1]!), { ...(typeof input.name === "string" ? { name: input.name } : {}), ...(typeof input.ref === "string" ? { ref: input.ref } : {}) }) });
         }
         if (req.method === "DELETE" && contextMatch[1] !== undefined && !contextMatch[2]) {
           const contextId = decodeURIComponent(contextMatch[1]!);
