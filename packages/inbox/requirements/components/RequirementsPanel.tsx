@@ -23,7 +23,6 @@ import { GroupBand } from '../../components/GroupBand';
 import { ChatMarkdown } from '@plannotator/ui/components/chat';
 import type { InboxLaunchAgent } from '@plannotator/core/inbox-types';
 import type { RequirementContext } from '@plannotator/core/requirements-types';
-import { CopyCommand } from '../../components/RestartNote';
 import { useRequirements } from '../useRequirements';
 import {
   DELIVERABLE_KIND_LABELS,
@@ -77,6 +76,8 @@ function RequirementCard({
   onDragEnd,
   onOpen,
   onStart,
+  onAdopt,
+  onDismiss,
   onArchiveToggle,
 }: {
   requirement: Requirement;
@@ -87,6 +88,8 @@ function RequirementCard({
   onDragEnd: () => void;
   onOpen: () => void;
   onStart: () => void;
+  onAdopt: (suggestionId: string) => void;
+  onDismiss: (suggestionId: string) => void;
   onArchiveToggle: () => void;
 }) {
   const archived = requirement.archived_at != null;
@@ -135,6 +138,33 @@ function RequirementCard({
           </span>
         </span>
       </span>
+      {requirement.suggestions.length > 0 && (
+        <div className="ib-req-cardsug" title={requirement.suggestions.map((s) => `${requirementStageLabel(s.stage)}：${s.why}`).join('\n')}>
+          <span className="ib-req-cardsug-w" dir="auto">→ {requirementStageLabel(requirement.suggestions[0]!.stage)}</span>
+          <button
+            type="button"
+            className="ib-req-cardsug-take"
+            onClick={(event) => {
+              event.stopPropagation();
+              onAdopt(requirement.suggestions[0]!.id);
+            }}
+          >
+            采纳
+          </button>
+          <button
+            type="button"
+            className="ib-req-x"
+            aria-label="忽略建议"
+            title="忽略"
+            onClick={(event) => {
+              event.stopPropagation();
+              onDismiss(requirement.suggestions[0]!.id);
+            }}
+          >
+            <Icon name="x" size={12} />
+          </button>
+        </div>
+      )}
       {requirement.stage === 'design' && requirement.threads.length === 0 && (
         <button
           type="button"
@@ -212,8 +242,8 @@ function RequirementDetail({
   const [contextFile, setContextFile] = useState<File | null>(null);
   const [contextBusy, setContextBusy] = useState(false);
   const [editContext, setEditContext] = useState<RequirementContext | null>(null);
-  // 开始设计 without contexts: the person's rule — nothing starts until the card has material.
-  const [startWarning, setStartWarning] = useState(false);
+  // The pad's card peek (查看将发送的需求卡).
+  const [peekOpen, setPeekOpen] = useState(false);
   const [contextPreviews, setContextPreviews] = useState<Record<string, 'loading' | { text?: string; image?: string; link?: string; html?: boolean } | { error: string }>>({});
   const [card, setCard] = useState<string | null>(null);
   // The detail's own two areas: the left list picks, the right shows. History is a row like any other.
@@ -273,7 +303,6 @@ function RequirementDetail({
   /** Every deliverable previews itself: all contents are read in parallel when the requirement lands, so the
    *  page opens with its documents already on it — nothing to unfold, nothing to wait on one at a time. */
   useEffect(() => {
-    if ((detail?.requirement.contexts.length ?? 0) > 0) setStartWarning(false);
     for (const deliverable of detail?.requirement.deliverables ?? []) {
       if (previews[deliverable.id] !== undefined) continue;
       setPreviews((held) => ({ ...held, [deliverable.id]: 'loading' }));
@@ -302,11 +331,6 @@ function RequirementDetail({
 
   /** 开始做: read what this machine can start (the compose launch block), then the form. */
   const beginStart = () => {
-    if ((detail?.requirement.contexts.length ?? 0) === 0) {
-      setStartWarning(true);
-      setStart(null);
-      return;
-    }
     setStartLoading(true);
     void inboxApi.composeSessions().then((model) => {
       const agents = (model.launch?.agents ?? []).map(({ agent, name }) => ({ agent, name }));
@@ -335,10 +359,6 @@ function RequirementDetail({
    *  and the person lands in the thread — the 对话流 pane is where the work then runs. */
   const submitStart = () => {
     if (!start || starting) return;
-    if ((detail?.requirement.contexts.length ?? 0) === 0) {
-      setStartWarning(true);
-      return;
-    }
     setStarting(true);
     void inboxApi.startThread({
       to: { launch: { agent: start.agent as InboxLaunchAgent, project_id: start.project } },
@@ -473,8 +493,8 @@ function RequirementDetail({
               )}
             </div>
             <div className="ib-req-groups">
-              <ReqGroup label="概览" count={requirement.suggestions.length > 0 ? `${requirement.suggestions.length} 条建议` : ''}>
-                <ReqRow selected={view.k === 'overview'} icon="todo" title="开始做与建议" preview={navPreview('overview', requirement)} onClick={() => setView({k: 'overview'})} />
+              <ReqGroup label="下一步" count={requirement.suggestions.length > 0 ? `${requirement.suggestions.length} 条建议` : ''}>
+                <ReqRow selected={view.k === 'overview'} icon="todo" title="开始设计" preview={navPreview('next', requirement)} onClick={() => setView({k: 'overview'})} />
               </ReqGroup>
               <ReqGroup label="产物" count={requirement.deliverables.length > 0 ? String(requirement.deliverables.length) : ''}>
                 {requirement.deliverables.map((deliverable) => (
@@ -494,34 +514,50 @@ function RequirementDetail({
           <div className="ib-req-pane">
             {view.k === 'overview' && (
               <div className="ib-req-viewbody">
-          {requirement.threads.length === 0 && requirement.deliverables.length === 0 && (
-            <section className="ib-req-next" aria-label="下一步">
-              <h3 className="ib-req-h">下一步</h3>
-              {startWarning && requirement.contexts.length === 0 && (
-                <div className="ib-req-startwarn" role="alert">
-                  <b>还没有上下文，不能开始设计。</b>需求卡要带着背景材料发给会话——先在下面添加 PRD、接口文档或链接。
-                  <button type="button" className="ib-btn ib-sm" onClick={() => { setEditContext(null); setContextKind('link'); setContextName(''); setContextRef(''); setContextText(''); setContextFile(null); contextDialog.current?.showModal(); }}>
-                    去添加
-                  </button>
+                <div className="ib-req-journey" aria-label="阶段">
+                  {REQUIREMENT_STAGES.map((stage, index) => (
+                    <span key={stage.id} className="ib-req-journey-item">
+                      {index > 0 && <span className="ib-req-journey-sep">›</span>}
+                      <span className={`ib-req-journey-stop${requirement.stage === stage.id ? ' on' : ''}`}>{stage.label}</span>
+                    </span>
+                  ))}
                 </div>
-              )}
-              {start === null ? (
-                <>
-                  <p className="ib-req-empty">在 Inbox 里直接开工：起一个会话做这条需求，线程自动连进来，产出与建议回到这里。</p>
-                  <button type="button" className="ib-btn ib-req-launch" data-requirements-start="" disabled={startLoading} onClick={beginStart}>
-                    <Icon name="play" size={14} />
-                    {startLoading ? '读取可用环境…' : '开始设计'}
-                  </button>
-                  {/* 已有跑着的终端会话：老路仍在——那句话交给它，它的线程同样连进来。 */}
-                  <details className="ib-req-handoff">
-                    <summary>已有终端里的会话？给它这句话</summary>
-                    <div className="ib-rw-cmd">
-                      <code data-requirements-handoff="">{`用 plannotator requirement 工具开始做「${requirement.title}」，先出设计方案。`}</code>
-                      <CopyCommand text={`用 plannotator requirement 工具开始做「${requirement.title}」，先出设计方案。`} label="复制交给 agent 的话" announcement="已复制。粘贴到一个 Claude Code 会话即可。" />
-                    </div>
-                  </details>
-                </>
-              ) : (
+
+                {requirement.threads.length === 0 && requirement.deliverables.length === 0 && (
+                  <div className="ib-req-launch">
+                    <span className="ib-req-launch-title">开始设计</span>
+                    <p className="ib-req-launch-sub">起一个会话，带着需求卡和全部上下文开工；产出和建议自动回到这条需求。</p>
+                    {start === null ? (
+                      <>
+                        <div className="ib-req-checklist">
+                          <div className="ib-req-check">
+                            <span className="ib-req-check-k">项目</span>
+                            <span className="ib-req-check-v">{(start as { projects?: { id: string; name: string }[] } | null)?.projects?.find((project) => project.id === (start as { project?: string } | null)?.project)?.name ?? '自动选择'}<small>会话在其中启动</small></span>
+                            <button type="button" className="ib-req-pick" onClick={beginStart}>换一个</button>
+                          </div>
+                          <div className={`ib-req-check${requirement.contexts.length === 0 ? ' miss' : ''}`}>
+                            <span className="ib-req-check-k">需求卡</span>
+                            <span className="ib-req-check-v" dir="auto">{requirement.title}<small>标题 · {requirement.contexts.length} 项上下文 · 开工规则</small></span>
+                            <span className={`ib-req-checkok${requirement.contexts.length === 0 ? ' miss' : ''}`}>{requirement.contexts.length > 0 ? '就绪' : '缺上下文'}</span>
+                          </div>
+                        </div>
+                        <button type="button" className="ib-req-peek" onClick={() => setPeekOpen((open) => !open)}>
+                          <Icon name={peekOpen ? 'chevD' : 'chevR'} size={11} />
+                          {peekOpen ? '收起需求卡' : '查看将发送的需求卡'}
+                        </button>
+                        {peekOpen && card && <pre className="ib-req-cardbody" dir="auto">{card}</pre>}
+                        <div className="ib-req-launch-act">
+                          <button type="button" className={`ib-req-go${requirement.contexts.length === 0 ? ' held' : ''}`} data-requirements-start="" onClick={() => {
+                            if (requirement.contexts.length === 0) { setEditContext(null); setContextKind('link'); setContextName(''); setContextRef(''); setContextText(''); setContextFile(null); contextDialog.current?.showModal(); return; }
+                            beginStart();
+                          }}>
+                            <Icon name="play" size={13} />
+                            {startLoading ? '读取可用环境…' : '开始设计'}
+                          </button>
+                          <span className="ib-req-launch-note">{requirement.contexts.length > 0 ? '会话启动后你会落到它的线程里' : '先补至少一项上下文'}</span>
+                        </div>
+                      </>
+                    ) : (
                 <div className="ib-req-start" data-requirements-start-form="">
                   <label className="ib-req-start-row">
                     项目
@@ -556,87 +592,65 @@ function RequirementDetail({
                   </div>
                   <p className="ib-req-empty">会话在所选项目里启动，带上这条需求开工；你会直接落到它的线程里，右上角的星标就是它的对话流。</p>
                 </div>
-              )}
-            </section>
-          )}
-
-          {/* 上下文 rides beside 开始设计, in the overview: the card a session starts on is made of these. */}
-          <section aria-label="上下文">
-            <div className="ib-req-ovhead">
-              <h3 className="ib-req-h">上下文</h3>
-              <span className="ib-req-ovhead-n">{requirement.contexts.length} 项</span>
-              <span className="ib-sp" />
-              <button type="button" className="ib-btn ib-sm" data-requirements-context-add="" onClick={() => { setEditContext(null); setContextKind('link'); setContextName(''); setContextRef(''); setContextText(''); setContextFile(null); contextDialog.current?.showModal(); }}>
-                <Icon name="plus" size={13} /> 添加
-              </button>
-            </div>
-            {requirement.contexts.length === 0 && (
-              <p className="ib-req-empty">还没有上下文。开始设计前至少要有一项——PRD、接口文档、竞品链接都行。</p>
-            )}
-            <ul className="ib-req-list">
-              {requirement.contexts.map((context) => {
-                const preview = contextPreviews[context.id];
-                return (
-                  <li key={context.id} className="ib-req-dlv ib-req-ctx">
-                    <div className="ib-req-dlv-row">
-                      <Icon name={context.kind === 'link' ? 'clip' : context.image ? 'photo' : 'pen'} size={13} />
-                      <button type="button" className="ib-req-dlv-name ib-req-ctx-open" dir="auto" onClick={() => {
-                        if (preview !== undefined && preview !== 'loading') return setContextPreviews((held) => { const next = { ...held }; delete next[context.id]; return next; });
-                        setContextPreviews((held) => ({ ...held, [context.id]: 'loading' }));
-                        void contextContent(id, context.id).then((answer) => setContextPreviews((held) => ({ ...held, [context.id]: answer as never })));
-                      }}>{context.name}</button>
-                      <span className="ib-req-dlv-meta">{context.kind === 'link' ? new URL(context.ref).hostname : '文件'}</span>
-                      <button type="button" className="ib-req-x" aria-label="编辑上下文" title="编辑" onClick={() => openEditContext(context)}>
-                        <Icon name="pen" size={13} />
-                      </button>
-                      <button type="button" className="ib-req-x" aria-label="移除上下文" title="移除" onClick={() => void removeContext(id, context.id).then((outcome) => (outcome.ok ? read() : setError(outcome.error)))}>
-                        <Icon name="x" size={13} />
-                      </button>
-                    </div>
-                    {preview === 'loading' && <div className="ib-req-dlv-body"><p className="ib-req-empty">读取中…</p></div>}
-                    {preview !== undefined && preview !== 'loading' && !('error' in preview) && preview.text !== undefined && (
-                      <div className="ib-req-dlv-body">
-                        {preview.html ? <iframe className="ib-req-dlv-html" sandbox="allow-scripts" srcDoc={preview.text} title={context.name} /> : <div className="ib-req-dlv-doc" dir="auto"><ChatMarkdown text={preview.text} role="assistant" messageId={`ctx-${context.id}`} /></div>}
-                      </div>
                     )}
-                    {preview !== undefined && preview !== 'loading' && !('error' in preview) && preview.image && (
-                      <div className="ib-req-dlv-body"><img className="ib-req-dlv-img" src={preview.image} alt={context.name} /></div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
+                  </div>
+                )}
 
-          {requirement.suggestions.length > 0 && (
-            <section className="ib-req-sug" aria-label="阶段建议">
-              {requirement.suggestions.map((suggestion) => (
-                <div key={suggestion.id} className="ib-req-sug-row">
-                  <span className="ib-req-sug-why">
-                    建议 → <b>{requirementStageLabel(suggestion.stage)}</b>：{suggestion.why} <span className="ib-req-sug-by">（{suggestion.by}）</span>
-                  </span>
-                  <span className="ib-req-sug-act">
-                    <button
-                      type="button"
-                      className="ib-btn ib-sm"
-                      onClick={() => void adoptSuggestion(id, suggestion.id).then((outcome) => (outcome.ok ? read() : setError(outcome.error)))}
-                    >
-                      采纳
-                    </button>
-                    <button
-                      type="button"
-                      className="ib-req-x"
-                      aria-label="忽略建议"
-                      title="忽略"
-                      onClick={() => void dismissSuggestion(id, suggestion.id).then((outcome) => (outcome.ok ? read() : setError(outcome.error)))}
-                    >
-                      <Icon name="x" size={13} />
-                    </button>
-                  </span>
+                <div className="ib-req-ovhead">
+                  <h3 className="ib-req-h">上下文</h3>
+                  <span className="ib-req-ovhead-n">{requirement.contexts.length} 项</span>
+                  <span className="ib-sp" />
+                  <button type="button" className="ib-btn ib-sm" data-requirements-context-add="" onClick={() => { setEditContext(null); setContextKind('link'); setContextName(''); setContextRef(''); setContextText(''); setContextFile(null); contextDialog.current?.showModal(); }}>
+                    <Icon name="plus" size={13} /> 添加
+                  </button>
                 </div>
-              ))}
-            </section>
-          )}
+                {requirement.contexts.length === 0 ? (
+                  <div className="ib-req-invite">
+                    <span className="ib-req-invite-t"><b>需求卡需要弹药。</b><span>开始设计前至少挂一项背景材料——PRD、接口文档、竞品链接、截图都行，会话开工时会自己读。</span></span>
+                    <button type="button" className="ib-req-invite-go" onClick={() => { setEditContext(null); setContextKind('link'); setContextName(''); setContextRef(''); setContextText(''); setContextFile(null); contextDialog.current?.showModal(); }}>去添加</button>
+                  </div>
+                ) : (
+                <ul className="ib-req-list">
+                  {requirement.contexts.map((context) => {
+                    const preview = contextPreviews[context.id];
+                    return (
+                      <li key={context.id} className="ib-req-dlv ib-req-ctx">
+                        <div className="ib-req-dlv-row">
+                          <span className="ib-req-matkind"><Icon name={context.kind === 'link' ? 'clip' : context.image ? 'photo' : 'pen'} size={14} /></span>
+                          <button type="button" className="ib-req-dlv-name ib-req-ctx-open" dir="auto" onClick={() => {
+                            if (preview !== undefined && preview !== 'loading') return setContextPreviews((held) => { const next = { ...held }; delete next[context.id]; return next; });
+                            setContextPreviews((held) => ({ ...held, [context.id]: 'loading' }));
+                            void contextContent(id, context.id).then((answer) => setContextPreviews((held) => ({ ...held, [context.id]: answer as never })));
+                          }}>
+                            <b>{context.name}</b>
+                            <small>{context.kind === 'link' ? new URL(context.ref).hostname : '文件'}</small>
+                          </button>
+                          <span className="ib-req-matacts">
+                            <button type="button" className="ib-req-x" aria-label="编辑上下文" title="编辑" onClick={() => openEditContext(context)}>
+                              <Icon name="pen" size={13} />
+                            </button>
+                            <button type="button" className="ib-req-x" aria-label="移除上下文" title="移除" onClick={() => void removeContext(id, context.id).then((outcome) => (outcome.ok ? read() : setError(outcome.error)))}>
+                              <Icon name="x" size={13} />
+                            </button>
+                          </span>
+                        </div>
+                        {preview === 'loading' && <div className="ib-req-dlv-body"><p className="ib-req-empty">读取中…</p></div>}
+                        {preview !== undefined && preview !== 'loading' && !('error' in preview) && preview.text !== undefined && (
+                          <div className="ib-req-dlv-body">
+                            {preview.html ? <iframe className="ib-req-dlv-html" sandbox="allow-scripts" srcDoc={preview.text} title={context.name} /> : <div className="ib-req-dlv-doc" dir="auto"><ChatMarkdown text={preview.text} role="assistant" messageId={`ctx-${context.id}`} /></div>}
+                          </div>
+                        )}
+                        {preview !== undefined && preview !== 'loading' && !('error' in preview) && preview.image && (
+                          <div className="ib-req-dlv-body"><img className="ib-req-dlv-img" src={preview.image} alt={context.name} /></div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+                )}
+                <button type="button" className="ib-req-mat-add" onClick={() => { setEditContext(null); setContextKind('link'); setContextName(''); setContextRef(''); setContextText(''); setContextFile(null); contextDialog.current?.showModal(); }}>
+                  ＋ 再添一项——PRD、接口文档、竞品链接、截图都行
+                </button>
               </div>
             )}
             {view.k === 'deliverable' && (() => {
@@ -709,7 +723,7 @@ function RequirementDetail({
 
 /** The panel: a Board page whose lanes are the seven stages; `archived` shows the 已归档 page instead. */
 export function RequirementsPanel({ on, archived = false, openId = null, onView, onOpen, onOpenThread }: { on: boolean; archived?: boolean; openId?: string | null; onView: (archived: boolean) => void; onOpen: (id: string | null) => void; onOpenThread: (threadId: string) => void }) {
-  const { requirements, archived: archivedList, archivedCount, create, patch, error, clearError } = useRequirements(on, subscribeRequirementFrames);
+  const { requirements, archived: archivedList, archivedCount, create, patch, error, clearError, refresh } = useRequirements(on, subscribeRequirementFrames);
   // 新建需求 is a dialog: one question (the title), Enter makes it, Esc walks away — then the card sits in 需求设计, ready to start.
   const newDialog = useRef<HTMLDialogElement | null>(null);
   const [draft, setDraft] = useState('');
@@ -786,6 +800,8 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
                   }}
                   onOpen={() => onOpen(requirement.id)}
                   onStart={() => { setWantStart(true); onOpen(requirement.id); }}
+                  onAdopt={(suggestionId) => void adoptSuggestion(requirement.id, suggestionId).then((outcome) => (outcome.ok ? refresh() : undefined))}
+                  onDismiss={(suggestionId) => void dismissSuggestion(requirement.id, suggestionId).then((outcome) => (outcome.ok ? refresh() : undefined))}
                   onArchiveToggle={() => void patch(requirement.id, { archived: requirement.archived_at == null })}
                 />
               ))}
@@ -921,7 +937,7 @@ async function fileAsBase64(file: File): Promise<string> {
 
 /** One line under a nav row's label: the newest thing that area holds, so the left list reads like the Inbox's. */
 function navPreview(key: string, requirement: Requirement): string {
-  if (key === 'overview') return requirement.suggestions.length > 0 ? `${requirement.suggestions.length} 条建议待采纳` : '开始做与建议';
+  if (key === 'next') return requirement.contexts.length > 0 ? `${requirement.contexts.length} 项上下文就绪` : '先补上下文';
   if (key === 'contexts') return requirement.contexts[0]?.name ?? '还没有背景材料';
   if (key === 'deliverables') return requirement.deliverables[0]?.title ?? requirement.deliverables[0]?.ref.split('/').pop() ?? '还没有产物';
   if (key === 'sessions') return requirement.threads.length > 0 ? '正在为它工作' : '还没有会话';
