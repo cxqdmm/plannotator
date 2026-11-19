@@ -186,10 +186,11 @@
 @keyframes ib-sstr-pulse { 0%, 100% { opacity: 0.35; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
 .ib-sstr-x { margin-left: 2px; background: none; border: none; cursor: pointer; color: var(--muted-foreground); padding: 4px; border-radius: 6px; display: inline-flex; }
 .ib-sstr-x:hover { color: var(--foreground); background: var(--ib-hover); }
-.ib-sstr-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 22px 10px; display: flex; flex-direction: column; scrollbar-width: thin; scrollbar-color: var(--ib-hair, var(--border)) transparent; }
-.ib-sstr-list > .ib-sstr-earlier { align-self: center; background: none; border: 1px solid var(--ib-hair, var(--border)); border-radius: 999px; color: var(--muted-foreground); font: inherit; font-size: var(--ib-fs-11, 11px); padding: 4px 14px; cursor: pointer; margin-bottom: 10px; flex: none; }
-.ib-sstr-empty { margin: 18px 4px; font-size: 12.5px; color: var(--muted-foreground); }
-.ib-sstr-error { margin: 10px 4px; font-size: 12px; color: var(--destructive); }
+/* 不再是滚动容器：滚动在 ChatTranscript 自己的 pane 里；这里只是它上方的固定件 + 它本身。 */
+.ib-sstr-list { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.ib-sstr-list > .ib-sstr-earlier { align-self: center; background: none; border: 1px solid var(--ib-hair, var(--border)); border-radius: 999px; color: var(--muted-foreground); font: inherit; font-size: var(--ib-fs-11, 11px); padding: 4px 14px; cursor: pointer; margin: 10px 0 2px; flex: none; }
+.ib-sstr-empty { margin: 14px 22px 4px; font-size: 12.5px; color: var(--muted-foreground); }
+.ib-sstr-error { margin: 8px 22px 4px; font-size: 12px; color: var(--destructive); }
 /* 工具行：一条安静的行（无边框卡片），点开才见输入与结果 */
 .ib-sstr-toolrow { padding: 1px 0 1px 2px; }
 .ib-sstr-toolrow-head { display: flex; align-items: center; gap: 7px; width: 100%; background: none; border: none; cursor: pointer; font: inherit; font-size: 11.5px; color: var(--muted-foreground); text-align: left; padding: 3px 6px; border-radius: 7px; }

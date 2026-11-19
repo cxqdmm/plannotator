@@ -204,6 +204,25 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
     await inboxApi.reply(last.id, { idempotency_key: crypto.randomUUID(), words: question, questions: [] });
   };
 
+  // 首次进入：历史一大段时 ChatTranscript 的贴底跑在内容撑开高度之前，会停在顶部。
+  // 数据落地后自己补一串延迟钉底（rAF + 120/400/900ms），此后交给它自己的贴边跟随。
+  const pinnedOnce = useRef(false);
+  useEffect(() => {
+    if (entries.length === 0 || pinnedOnce.current) return;
+    pinnedOnce.current = true;
+    setAtBottom(true);
+    const node = list.current;
+    if (!node) return;
+    const pin = () => { node.scrollTop = node.scrollHeight; };
+    pin();
+    requestAnimationFrame(pin);
+    const t1 = window.setTimeout(pin, 120);
+    const t2 = window.setTimeout(pin, 400);
+    const t3 = window.setTimeout(pin, 900);
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); window.clearTimeout(t3); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries.length]);
+
   const earlier = async () => {
     const first = entries[0]?.i ?? 0;
     if (first <= 0) return setMore(false);
@@ -315,7 +334,9 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
         </button>
       </div>
 
-      <div className="ib-sstr-list" ref={list} onScroll={() => {
+      {/* 滚动器是 ChatTranscript 自己的 pane（scrollRef 归它单独所有）；
+          这里只放它上方的固定件，scroll 事件用捕获读取它的位置。 */}
+      <div className="ib-sstr-list" onScrollCapture={() => {
         const node = list.current;
         if (!node) return;
         const bottom = node.scrollHeight - node.scrollTop - node.clientHeight < 28;
