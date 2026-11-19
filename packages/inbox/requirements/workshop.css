@@ -219,3 +219,6 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 @media (max-width: 900px) {
  .ib-req-body { grid-template-columns: minmax(0, 1fr); }}
 .ib-req-new { margin: auto; }
+/* A requirement's page is the two blocks on the app's ground: the page container's own card (white, ringed,
+   the board's look) steps aside for it. */
+.ib-bpage[data-requirements-view="detail"] { background: transparent; box-shadow: none; border-radius: 0; }

@@ -710,7 +710,7 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
   );
 
   return (
-    <section className="ib-bpage" aria-labelledby="ib-req-title" data-requirements-page="" data-requirements-view={archived ? 'archived' : 'board'}>
+    <section className="ib-bpage" aria-labelledby="ib-req-title" data-requirements-page="" data-requirements-view={openId ? 'detail' : archived ? 'archived' : 'board'}>
       {/* The board's own head (工坊, 已归档, 新建) is the board's: a requirement's page takes the whole panel, so
           the head rides only with the board. */}
       {!openId && (
