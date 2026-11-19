@@ -12503,7 +12503,7 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 
 /* ── 工坊 (the workshop, renamed from 需求): the detail is a page of its own, the 对话流 rides beside it. ── */
 /* The detail page: the whole board area, like navigating into the requirement; the X (and the back word) returns. */
-.ib-req-detail { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; border-radius: var(--ib-lr-lg, 10px); background: var(--card); box-shadow: 0 0 0 1px color-mix(in oklch, var(--border) 60%, transparent); overflow: hidden; animation: ib-req-page-in 0.3s cubic-bezier(0.32, 0.72, 0.24, 1); }
+.ib-req-detail { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; }
 @keyframes ib-req-page-in { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ib-req-detail { animation-duration: 1ms; } }
 /* A page, not a side pane: the body breathes, its content keeps a reading measure. */

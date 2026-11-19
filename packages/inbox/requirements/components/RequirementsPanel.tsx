@@ -323,32 +323,6 @@ function RequirementDetail({
 
   return (
     <aside className="ib-req-detail" aria-label="需求详情" data-requirement-detail={id}>
-      <div className="ib-crdp-top">
-        <SidebarTrigger />
-        <button type="button" className="ib-bback" data-requirements-back="" onClick={onClose}>
-          <Icon name="chevL" size={16} />
-          <span className="ib-bback-l">工坊</span>
-        </button>
-        <span className="ib-req-stage ib-crdp-colsent">{requirement ? requirementStageLabel(requirement.stage) : ''}</span>
-        <span className="ib-sp" />
-        {/* The requirement's live session, right here: the first linked thread with a transcript opens the 对话流. */}
-        {streamThreadOf(threadMeta, requirement) && (
-          <button
-            type="button"
-            className="ib-iconbtn ib-req-streambtn"
-            aria-label="对话流"
-            aria-pressed={streamOpen !== null}
-            title="对话流：这个会话自己在读什么、跑什么、改什么"
-            data-requirements-stream=""
-            onClick={() => setStreamOpen((open) => (open === null ? streamThreadOf(threadMeta, requirement) : null))}
-          >
-            <HostMark host="claude-code" />
-          </button>
-        )}
-        <button type="button" className="ib-crdp-x" aria-label="关闭详情，回到工坊" onClick={onClose}>
-          <Icon name="x" size={16} />
-        </button>
-      </div>
       {streamOpen !== null && <SessionStreamPane threadId={streamOpen} onClose={() => setStreamOpen(null)} />}
       <dialog
         className="ib-req-new"
@@ -409,8 +383,26 @@ function RequirementDetail({
           <div className="ib-req-col">
             <div className="ib-lhead">
               <SidebarTrigger />
+              <button type="button" className="ib-bback" data-requirements-back="" onClick={onClose} aria-label="回到工坊">
+                <Icon name="chevL" size={16} />
+                <span className="ib-bback-l">工坊</span>
+              </button>
               <h1 className="ib-lhead-h" dir="auto">{requirement.title}</h1>
               <span className="ib-req-stage-chip">{requirementStageLabel(requirement.stage)}</span>
+              <span className="ib-sp" />
+              {streamThreadOf(threadMeta, requirement) && (
+                <button
+                  type="button"
+                  className="ib-iconbtn ib-req-streambtn"
+                  aria-label="对话流"
+                  aria-pressed={streamOpen !== null}
+                  title="对话流：这个会话自己在读什么、跑什么、改什么"
+                  data-requirements-stream=""
+                  onClick={() => setStreamOpen((open) => (open === null ? streamThreadOf(threadMeta, requirement) : null))}
+                >
+                  <HostMark host="claude-code" />
+                </button>
+              )}
             </div>
             <div className="ib-req-groups">
               <ReqGroup label="概览" count={requirement.suggestions.length > 0 ? `${requirement.suggestions.length} 条建议` : ''}>
