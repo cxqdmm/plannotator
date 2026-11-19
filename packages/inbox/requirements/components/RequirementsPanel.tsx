@@ -213,6 +213,9 @@ function PanelContent({ panel, requirements, rowsByThread, onClose, onOpenThread
     return (
       <>
         {top(row?.subject ?? '会话')}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '4px 14px', borderBottom: '1px solid var(--ib-hair, var(--border))' }}>
+          <button type="button" className="ib-req-wp-panel-expand" onClick={() => onOpenThread(panel.threadId)} title="在收件箱中打开（全功能视图）">在收件箱中打开 ›</button>
+        </div>
         <EmbeddedThread threadId={panel.threadId} onClose={onClose} onChanged={() => { void inboxApi.thread(panel.threadId).then((r) => putThread(queryClient, panel.threadId, r)); }} />
       </>
     );
@@ -269,6 +272,7 @@ function PanelContent({ panel, requirements, rowsByThread, onClose, onOpenThread
           ))}
         </ol>
       </div>
+      {error && <p className="ib-error" role="alert">{error}</p>}
     </>
   );
 }
