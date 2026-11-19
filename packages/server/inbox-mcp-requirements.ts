@@ -2,7 +2,7 @@
  * The workshop (需求) panel's `requirement` tool: the one-line calls an agent working a
  * requirement uses to keep it current — see what it is (get/mine), tie the
  * work to it (link thread), attach what it just finished (deliver), leave a
- * word (say) and propose the next stage (suggest; only the person moves —
+ * word (say); stages move themselves (a delivered design doc enters review; the verdict moves it on) —
  * D1 of the approved lifecycle design). The rules live once, in the store
  * (packages/server/requirements.ts); this module maps the tool onto them, as
  * inbox-mcp-cards.ts maps `card`.
@@ -19,12 +19,12 @@ import { DELIVERABLE_KINDS, DELIVERABLE_KIND_LABELS, REQUIREMENT_STAGES, require
 import type { RequirementStore } from "./requirements";
 import { guarded, okComplete } from "./inbox-mcp-result";
 
-export const INBOX_REQUIREMENT_OPS = ["mine", "get", "link", "deliver", "say", "suggest"] as const;
+export const INBOX_REQUIREMENT_OPS = ["mine", "get", "link", "deliver", "say"] as const;
 export type InboxRequirementOp = (typeof INBOX_REQUIREMENT_OPS)[number];
 
 /** For raw MCP clients; the agent tool words its action line itself (INBOX_AGENT_ACTION_LEADS.requirement). */
 export const REQUIREMENT_DESCRIPTION =
-  'Work the person\'s requirements (the workshop board). op: mine (the requirements of a thread you are in: thread_id; without one, every active requirement), get (one requirement: requirement), link (tie this thread\'s work to it: thread_id), deliver (attach what you just finished: kind one of design-doc, review, code-review, test-report, link, file, and ref — a session id, PR, URL or path), say (one line of progress, shown in its history), suggest (propose the next stage with why — the person adopts it; you never move a stage yourself).';
+  'Work the person\'s requirements (the workshop board). op: mine (the requirements of a thread you are in: thread_id; without one, every active requirement), get (one requirement: requirement), link (tie this thread\'s work to it: thread_id), deliver (attach what you just finished: kind one of design-doc, review, code-review, test-report, link, file, and ref — a session id, PR, URL or path), say (one line of progress, shown in its history). Stages move themselves: deliver a design doc (kind design-doc, or an .md/.html file) and the requirement enters review on its own; the person\'s verdict there moves it on — never propose or move a stage yourself.';
 
 const STAGE_IDS = REQUIREMENT_STAGES.map((stage) => stage.id) as unknown as readonly [RequirementStage, ...RequirementStage[]];
 
@@ -33,18 +33,14 @@ export function requirementLineText(requirement: Requirement): string {
   const parts = [`- ${requirement.id}`, JSON.stringify(requirement.title), requirementStageLabel(requirement.stage)];
   if (requirement.threads.length > 0) parts.push(`threads ${requirement.threads.join(", ")}`);
   parts.push(`deliverables ${requirement.deliverables.length}`);
-  if (requirement.suggestions.length > 0) parts.push(`suggested ${requirement.suggestions.map((s) => requirementStageLabel(s.stage)).join(", ")}`);
   return parts.join(" ");
 }
 
-/** One requirement as its full text answer: stage, threads, deliverables, suggestions, notes. */
+/** One requirement as its full text answer: stage, threads, deliverables, notes. */
 function requirementFullText(requirement: Requirement): string {
   const lines = [requirementLineText(requirement)];
   for (const deliverable of requirement.deliverables) {
     lines.push(`- ${DELIVERABLE_KIND_LABELS[deliverable.kind]}: ${deliverable.title ?? deliverable.ref}${deliverable.title ? ` (${deliverable.ref})` : ""}${deliverable.by ? ` by ${deliverable.by}` : ""}`);
-  }
-  for (const suggestion of requirement.suggestions) {
-    lines.push(`- 建议 → ${requirementStageLabel(suggestion.stage)}: ${suggestion.why} (${suggestion.by})`);
   }
   if (requirement.notes.trim()) lines.push(`备注: ${requirement.notes.length > 300 ? `${requirement.notes.slice(0, 300)}…` : requirement.notes}`);
   return lines.join("\n");
@@ -92,10 +88,7 @@ async function runRequirementCall(context: { requirements?: RequirementStore }, 
     store.say(requirementId, input.note as string, authorOf(input));
     return { text: "Noted on the requirement's history." };
   }
-  if (op === "suggest") {
-    const suggestion = store.suggest(requirementId, { stage: input.stage as RequirementStage, why: input.why as string, by: (authorOf(input) as string | null) ?? "an agent" });
-    return { text: `Suggested ${requirementStageLabel(suggestion.stage)}; the person adopts it on the workshop board.` };
-  }
+  if (op === "suggest") return { text: "suggest is retired: stages move themselves — deliver your design doc and its review moves the stage." };
   return { text: `op: one of ${INBOX_REQUIREMENT_OPS.join(", ")}.` };
 }
 

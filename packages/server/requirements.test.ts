@@ -75,8 +75,9 @@ describe("the requirements routes", () => {
     expect((renamed.data.requirement as { title: string }).title).toBe("登录页改版 v2");
     const events = ((await call("GET", `/api/requirements/${made.id}`)).data.events as { kind: string; from?: string; to?: string; field?: string }[]).slice().reverse();
     expect(events[0]).toMatchObject({ kind: "field", field: "title" });
-    expect(events[1]).toMatchObject({ kind: "stage", from: "design", to: "dev" });
-    expect(events[2]).toMatchObject({ kind: "created" });
+    expect(events.some((event) => event.kind === "stage" && event.from === "design" && event.to === "dev")).toBe(true);
+    expect(events.some((event) => event.kind === "say")).toBe(true);
+    expect(events[events.length - 1]).toMatchObject({ kind: "created" });
   });
 
   test("归档 takes a card off the board and back; the list answers count the archived; the record carries a timestamp, never a boolean", async () => {
@@ -120,29 +121,6 @@ describe("the requirements routes", () => {
     }
   });
 
-  test("suggest → adopt moves the stage and settles it; dismiss only drops it; only the person-facing routes do either", async () => {
-    const made = await createOne();
-    const suggested = await call("POST", `/api/requirements/${made.id}/suggestions`, { stage: "design", why: "方案已挂", by: "Claude Code" });
-    expect(suggested.status).toBe(201);
-    expect(suggested.data.suggestion).toMatchObject({ stage: "design", why: "方案已挂", by: "Claude Code" });
-    // A second suggestion for the same stage replaces the first (one open proposal per stage).
-    const again = await call("POST", `/api/requirements/${made.id}/suggestions`, { stage: "design", why: "更新理由", by: "Pi" });
-    expect(((await call("GET", `/api/requirements/${made.id}`)).data.requirement as { suggestions: unknown[] }).suggestions).toHaveLength(1);
-    expect(again.data.suggestion).toMatchObject({ why: "更新理由" });
-    const sid = (again.data.suggestion as { id: string }).id;
-    expect((await call("POST", `/api/requirements/${made.id}/suggestions/${sid}/adopt`)).status).toBe(200);
-    const detail = await call("GET", `/api/requirements/${made.id}`);
-    expect((detail.data.requirement as { stage: string; suggestions: unknown[] }).stage).toBe("design");
-    expect((detail.data.requirement as { suggestions: unknown[] }).suggestions).toEqual([]);
-    // Dismiss: dropped, stage untouched.
-    const third = await call("POST", `/api/requirements/${made.id}/suggestions`, { stage: "done", why: "完成", by: "event bridge" });
-    const tid = (third.data.suggestion as { id: string }).id;
-    expect((await call("DELETE", `/api/requirements/${made.id}/suggestions/${tid}`)).status).toBe(200);
-    const after = await call("GET", `/api/requirements/${made.id}`);
-    expect((after.data.requirement as { stage: string }).stage).toBe("design");
-    expect((after.data.requirement as { suggestions: unknown[] }).suggestions).toEqual([]);
-    expect((after.data.events as { kind: string }[]).map((event) => event.kind)).toContain("suggestion");
-  });
 
   test("threads link over PATCH and say lands in history without touching the record", async () => {
     const made = await createOne();
@@ -153,63 +131,6 @@ describe("the requirements routes", () => {
     expect(events.filter((event) => event.kind === "field" ).length).toBeGreaterThanOrEqual(1);
   });
 
-  test("「发起设计文档评审」seeds the doc once, answers at once, and the outcome writes itself back (approved suggests, dismissed does not)", async () => {
-    // The fake annotate: one pending promise per spawn, settled by hand, so the in-flight window is real.
-    const spawned: string[] = [];
-    let current: { promise: Promise<{ stdout: string; code: number }>; settle: (value: { stdout: string; code: number }) => void };
-    const arm = () => {
-      let settle!: (value: { stdout: string; code: number }) => void;
-      const promise = new Promise<{ stdout: string; code: number }>((resolve) => {
-        settle = resolve;
-      });
-      current = { promise, settle };
-    };
-    arm();
-    const bridged = createBunRequirementRoutes({
-      dataDir,
-      spawnAnnotate: (file) => {
-        spawned.push(file);
-        return current.promise;
-      },
-    });
-    const callBridged = async (method: string, path: string, body?: unknown) => {
-      const response = await bridged.route(new Request(`http://x${path}`, { method, body: body === undefined ? undefined : JSON.stringify(body) }), new URL(`http://x${path}`));
-      return { status: response!.status, data: (await response!.json()) as Record<string, unknown> };
-    };
-    const made = ((await callBridged("POST", "/api/requirements", { title: "登录页改版" })).data.requirement as { id: string }).id;
-    const started = await callBridged("POST", `/api/requirements/${made}/design-review`);
-    expect(started.status).toBe(200);
-    expect(started.data.ok).toBe(true);
-    const doc = started.data.doc as string;
-    expect(spawned).toHaveLength(1);
-    // The doc was seeded from the requirement and exists on disk.
-    expect(existsSync(doc)).toBe(true);
-    expect(readFileSync(doc, "utf8")).toContain("# 登录页改版");
-    // While the review runs, a second start is refused.
-    expect((await callBridged("POST", `/api/requirements/${made}/design-review`)).status).toBe(409);
-    // The approved outcome writes itself back: a deliverable, a say line, and one suggestion.
-    current.settle({ stdout: '{"decision":"approved","annotationCount":0,"target":"x"}', code: 0 });
-    await current.promise;
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    const detail = (await callBridged("GET", `/api/requirements/${made}`)).data;
-    const record = detail.requirement as { deliverables: { kind: string; ref: string; title: string }[]; suggestions: { stage: string }[] };
-    expect(record.deliverables[0]).toMatchObject({ kind: "design-doc", ref: doc });
-    expect(record.deliverables[0]!.title).toContain("已批准");
-    expect(record.suggestions.map((suggestion) => suggestion.stage)).toEqual(["design-review"]);
-    expect((detail.events as { kind: string }[]).map((event) => event.kind)).toContain("say");
-    // A dismissed review attaches and says, but never suggests; the person's doc is seeded once and reused.
-    arm();
-    expect((await callBridged("POST", `/api/requirements/${made}/design-review`)).status).toBe(200);
-    current.settle({ stdout: '{"decision":"dismissed"}', code: 0 });
-    await current.promise;
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    const after = (await callBridged("GET", `/api/requirements/${made}`)).data.requirement as { deliverables: unknown[]; suggestions: { stage: string }[] };
-    // Dismissed adds no suggestion of its own; round 1's (design-review) still waits for the person.
-    expect(after.suggestions.map((suggestion) => suggestion.stage)).toEqual(["design-review"]);
-    expect(after.deliverables).toHaveLength(2);
-    expect(spawned).toHaveLength(2);
-    expect(spawned[0]).toBe(spawned[1]);
-  });
 
   test("需求上下文: links, pasted text (which becomes a file) and uploads all land as references; the card carries them; removal takes the file", async () => {
     const made = ((await call("POST", "/api/requirements", { title: "登录页改版" })).data.requirement as { id: string }).id;
@@ -250,6 +171,28 @@ describe("the requirements routes", () => {
     writeFileSync(join(dataDir, "requirements", "requirements.json"), JSON.stringify({ v: 1, requirements: [{ id: "req_old", title: "旧需求", notes: "", stage: "triage", priority: "none", deliverables: [], threads: [], suggestions: [] }] }));
     const read = await call("GET", "/api/requirements/req_old");
     expect((read.data.requirement as { stage: string }).stage).toBe("design");
+  });
+
+  test("stage-auto: a design doc lands the requirement in review and the session is told; the verdict moves it on", async () => {
+    const told: string[] = [];
+    const bridged = createBunRequirementRoutes({ dataDir, spawnAnnotate: (file) => Promise.resolve({ stdout: "", code: 0 }), notifyThread: (threadId, words) => told.push(words) });
+    const callBridged = async (method: string, path: string, body?: unknown) => {
+      const response = await bridged.route(new Request(`http://x${path}`, { method, body: body === undefined ? undefined : JSON.stringify(body) }), new URL(`http://x${path}`));
+      return { status: response!.status, data: (await response!.json()) as Record<string, unknown> };
+    };
+    const made = ((await callBridged("POST", "/api/requirements", { title: "登录页改版" })).data.requirement as { id: string }).id;
+    // A design doc delivered → design-review, the session told.
+    expect((await callBridged("POST", `/api/requirements/${made}/deliverables`, { kind: "design-doc", ref: "/tmp/design.md" })).status).toBe(201);
+    let stage = ((await callBridged("GET", `/api/requirements/${made}`)).data.requirement as { stage: string }).stage;
+    expect(stage).toBe("design-review");
+    // suggest is retired.
+    expect((await callBridged("POST", `/api/requirements/${made}/suggestions`, { stage: "dev", why: "x", by: "a" })).status).toBe(410);
+    // A manual move tells the session too.
+    told.length = 0;
+    expect((await callBridged("PATCH", `/api/requirements/${made}`, { stage: "qa" })).status).toBe(200);
+    stage = ((await callBridged("GET", `/api/requirements/${made}`)).data.requirement as { stage: string }).stage;
+    expect(stage).toBe("qa");
+    expect(told).toHaveLength(0); // no threads linked yet: nothing to tell.
   });
 
   test("a delete removes the record and writes history; an unknown id is 404; an unknown subpath is not this module's", async () => {

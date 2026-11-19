@@ -110,3 +110,9 @@ export function contextContent(id: string, contextId: string): Promise<{ text?: 
 export function patchContext(id: string, contextId: string, patch: { name?: string; ref?: string; text?: string }): Promise<WriteOutcome<{ context: unknown }>> {
   return write('PATCH', `/api/requirements/${encodeURIComponent(id)}/contexts/${encodeURIComponent(contextId)}`, patch as unknown as Record<string, unknown>);
 }
+
+/** 去评审 (stage-auto-design §2): the design doc opens in a gated annotate; the verdict moves the stage and
+ *  tells the session (approved → 需求开发; annotated → back to 需求设计 with the notes). */
+export function reviewDeliverable(id: string, deliverableId: string): Promise<WriteOutcome<{ ok: boolean; doc: string }>> {
+  return write('POST', `/api/requirements/${encodeURIComponent(id)}/deliverables/${encodeURIComponent(deliverableId)}/review`, {});
+}

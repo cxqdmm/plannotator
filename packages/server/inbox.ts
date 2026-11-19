@@ -4492,6 +4492,13 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
       const threadId = record?.threads[0];
       return threadId ? store.thread(threadId)?.project.root ?? null : null;
     },
+    // The stage-change notifier (stage-auto-design §1): a person-voiced reply to the thread's newest agent
+    // message — the same channel the window's reply box uses, so the session wakes and reads it.
+    notifyThread: (threadId, words) => {
+      const thread = store.thread(threadId);
+      const last = thread ? [...thread.messages].reverse().find((message) => message.author.kind === "agent") : null;
+      if (last) store.sendReply(last.id, { words, questions: [], idempotency_key: `workshop-stage-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
+    },
     // A session's thread waits on the person (the Board's You-line idea): its list row sits in one of the
     // person's sections (Stopped on you, Holding up work, Waiting on you).
     waitingOf: (threadId) => {

@@ -87,11 +87,6 @@ export interface RequirementStore {
   addContext(id: string, input: { kind: "link" | "file"; name: string; ref: string; image?: boolean; by?: string | null }): RequirementContext;
   patchContext(id: string, contextId: string, patch: { name?: string; ref?: string }): RequirementContext;
   removeContext(id: string, contextId: string): void;
-  suggest(id: string, input: { stage: RequirementStage; why: string; by: string }): RequirementSuggestion;
-  /** The person ignores a suggestion: it is dropped, nothing else moves. */
-  dismiss(id: string, suggestionId: string): void;
-  /** The person adopts one: the stage moves (the only writer of stages besides patch), the suggestion drops. */
-  adopt(id: string, suggestionId: string): Requirement;
   watch: { subscribe(listener: (ids: string[]) => void): () => void };
 }
 
@@ -144,7 +139,8 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
     priority: isRequirementPriority(record.priority) ? record.priority : "none",
     deliverables: Array.isArray(record.deliverables) ? record.deliverables : [],
     threads: Array.isArray(record.threads) ? record.threads.filter((id): id is string => typeof id === "string") : [],
-    suggestions: Array.isArray(record.suggestions) ? record.suggestions : [],
+    // suggest is retired (stage-auto-design): whatever an old file holds, nothing waits on the person.
+    suggestions: [],
     contexts: Array.isArray(record.contexts) ? record.contexts.filter((entry): entry is RequirementContext => typeof entry === "object" && entry !== null && typeof (entry as RequirementContext).id === "string") : [],
     archived_at: record.archived_at ?? null,
     created_at: typeof record.created_at === "string" ? record.created_at : new Date().toISOString(),
@@ -155,7 +151,7 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
   } as Requirement;
 }
 
-export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null; /** Whether a thread's row waits on the person (the Board's You-line idea), for the reads' computed flag. */ waitingOf?: (threadId: string) => boolean }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
+export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null; /** Whether a thread's row waits on the person (the Board's You-line idea), for the reads' computed flag. */ waitingOf?: (threadId: string) => boolean; /** The stage-change notifier (stage-auto-design §1): a person-voiced reply into the requirement's newest session. */ notifyThread?: (threadId: string, words: string) => void }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
   /** waiting, computed on reads: any linked session's thread waits on the person. */
   const withWaiting = (record: Requirement): Requirement => {
     const waitingThread = record.threads.find((threadId) => options.waitingOf?.(threadId) === true);
@@ -383,40 +379,6 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       touch(record);
       save([id]);
     },
-    suggest(id: string, input: { stage: RequirementStage; why: string; by: string }) {
-      const record = at(id);
-      if (!isRequirementStage(input.stage)) throw new RequirementStoreError("validation_error", "stage: one of the seven lifecycle stages.", "stage");
-      if (typeof input.why !== "string" || !input.why.trim()) throw new RequirementStoreError("validation_error", "why: one line.", "why");
-      if (input.why.length > WHY_MAX) throw new RequirementStoreError("validation_error", `why: at most ${WHY_MAX} characters.`, "why");
-      if (typeof input.by !== "string" || !input.by.trim()) throw new RequirementStoreError("validation_error", "by: who proposes it.", "by");
-      // One open proposal per stage: a newer one replaces an unadopted older one.
-      record.suggestions = record.suggestions.filter((suggestion) => suggestion.stage !== input.stage);
-      const suggestion: RequirementSuggestion = { id: `sug_${ulid()}`, stage: input.stage, why: input.why.trim(), by: input.by, at: new Date().toISOString() };
-      record.suggestions.push(suggestion);
-      recordEvent(id, "suggestion", { to: suggestion.stage, note: `${suggestion.by}: ${suggestion.why}` });
-      touch(record);
-      save([id]);
-      return suggestion;
-    },
-    dismiss(id: string, suggestionId: string) {
-      const record = at(id);
-      const before = record.suggestions.length;
-      record.suggestions = record.suggestions.filter((suggestion) => suggestion.id !== suggestionId);
-      if (record.suggestions.length === before) throw new RequirementStoreError("not_found", "No such suggestion.");
-      touch(record);
-      save([id]);
-    },
-    adopt(id: string, suggestionId: string) {
-      const record = at(id);
-      const suggestion = record.suggestions.find((entry) => entry.id === suggestionId);
-      if (!suggestion) throw new RequirementStoreError("not_found", "No such suggestion.");
-      record.suggestions = record.suggestions.filter((entry) => entry.stage !== suggestion.stage);
-      if (record.stage !== suggestion.stage) recordEvent(id, "stage", { from: record.stage, to: suggestion.stage, note: `adopted ${suggestion.by}'s suggestion` });
-      record.stage = suggestion.stage;
-      touch(record);
-      save([id]);
-      return record;
-    },
     watch,
   };
 
@@ -438,6 +400,39 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
    */
   const reviewsInFlight = new Set<string>();
   const designDocOf = (id: string): string => join(options.dataDir, "requirements", "design-docs", `${id}.md`);
+
+  /**
+   * The one way a stage changes (stage-auto-design §1): write it, write history, and tell the requirement's
+   * newest session — a person-voiced reply that wakes it, so no transition is ever mute. Auto rules (a design
+   * doc delivered, a review's verdict) and the person's own drag both land here.
+   */
+  const moveStage = (id: string, to: RequirementStage, why: string, notify: boolean) => {
+    let record: Requirement;
+    try {
+      record = at(id);
+    } catch {
+      return;
+    }
+    if (record.stage === to) return;
+    let notified = false;
+    if (notify) {
+      const threadId = record.threads[record.threads.length - 1];
+      if (threadId && options.notifyThread) {
+        try {
+          options.notifyThread(threadId, `【工坊】需求「${record.title}」已进入「${requirementStageLabel(to)}」：${why}`);
+          notified = true;
+        } catch {
+          // The session is told on a best-effort basis; the stage moves regardless.
+        }
+      }
+    }
+    try {
+      store.patch(id, { stage: to });
+      store.say(id, `${why}${notified ? "（已通知会话）" : ""}`, "阶段流转");
+    } catch {
+      // Gone between the read and the write: nothing to move.
+    }
+  };
 
   /**
    * 需求上下文: the requirement's own folder of background material. Pasted text is written here as a file
@@ -509,7 +504,6 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
           const words = decision === "approved" ? "设计文档已批准" : decision === "annotated" ? `设计文档评审完成，带回批注${typeof outcome.annotationCount === "number" ? ` ${outcome.annotationCount} 条` : ""}` : decision === "dismissed" ? "设计文档评审被关闭，未给结论" : "设计文档评审结束（无结果）";
           store.deliver(id, { kind: "design-doc", ref: doc, title: `设计文档评审（${words}）`, by: null });
           store.say(id, words, "设计评审");
-          if (decision === "approved") store.suggest(id, { stage: "design-review", why: "设计文档已批准，可进入设计评审收尾", by: "设计评审" });
         } catch {
           // The requirement changed under the review (deleted, say): nothing to write back to.
         }
@@ -634,6 +628,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         if (req.method === "PATCH") {
           const input = await body(req);
           const { priority, notes, title, stage, archived, threads } = input;
+          if (stage !== undefined && stage !== store.get(id)?.requirement.stage) moveStage(id, stage as RequirementStage, "你手动移动", true);
           return json({ requirement: store.patch(id, { ...(title !== undefined ? { title: title as string } : {}), ...(notes !== undefined ? { notes: notes as string } : {}), ...(stage !== undefined ? { stage: stage as RequirementStage } : {}), ...(priority !== undefined ? { priority: priority as RequirementPriority } : {}), ...(archived !== undefined ? { archived: archived as boolean } : {}), ...(threads !== undefined ? { threads: threads as string[] } : {}) }) });
         }
         if (req.method === "DELETE") {
@@ -651,7 +646,11 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       if (deliverableMatch) {
         if (req.method === "POST" && deliverableMatch[1] === undefined) {
           const input = await body(req);
-          return json({ deliverable: store.deliver(id, { kind: input.kind as DeliverableKind, ref: input.ref as string, ...(typeof input.title === "string" ? { title: input.title } : {}), by: typeof input.by === "string" ? input.by : null }) }, 201);
+          const deliverable = store.deliver(id, { kind: input.kind as DeliverableKind, ref: input.ref as string, ...(typeof input.title === "string" ? { title: input.title } : {}), by: typeof input.by === "string" ? input.by : null });
+          // A design doc lands the requirement in review (stage-auto-design §1) — the stage is the event's result.
+          const isDesignDoc = input.kind === "design-doc" || (input.kind === "file" && /\.(md|markdown|html?)$/i.test(String(input.ref)));
+          if (isDesignDoc) moveStage(id, "design-review", "设计文档已挂上，等你评审", true);
+          return json({ deliverable }, 201);
         }
         if (req.method === "DELETE" && deliverableMatch[1] !== undefined) {
           store.undeliver(id, decodeURIComponent(deliverableMatch[1]));
@@ -668,6 +667,35 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       if (annotateMatch && req.method === "POST") {
         const started = annotateDeliverable(id, decodeURIComponent(annotateMatch[1]!));
         return started.ok ? json(started) : json({ error: started.error, code: started.code }, started.status);
+      }
+      const reviewMatch = /^deliverables\/([^/]+)\/review$/.exec(deeper);
+      if (reviewMatch && req.method === "POST") {
+        if (!options.spawnAnnotate) return json({ error: "This Inbox cannot open a review here (no annotate runtime).", code: "no_runtime" }, 501);
+        if (reviewsInFlight.has(`review:${id}`)) return json({ error: "This requirement's review is already open.", code: "review_in_flight" }, 409);
+        const found = deliverableAt(id, decodeURIComponent(reviewMatch[1]!));
+        if ("error" in found) return found.error;
+        if (!/\.(md|markdown|txt|html?)$/i.test(found.deliverable.ref)) return json({ error: "Only documents open for review.", code: "not_reviewable" }, 415);
+        const key = `review:${id}`;
+        reviewsInFlight.add(key);
+        const doc = found.deliverable;
+        void options
+          .spawnAnnotate(doc.ref)
+          .then(({ stdout }) => {
+            let outcome: { decision?: unknown; feedback?: unknown; annotationCount?: unknown } = {};
+            try {
+              outcome = JSON.parse(stdout.trim().split("\n").at(-1) ?? "{}") as { decision?: unknown };
+            } catch {
+              outcome = {};
+            }
+            if (outcome.decision === "approved") moveStage(id, "dev", "设计文档已批准，进入需求开发", true);
+            else if (outcome.decision === "annotated") moveStage(id, "design", `设计文档被退回（批注${typeof outcome.annotationCount === "number" ? ` ${outcome.annotationCount} 条` : ""}已带给会话）`, true);
+            // dismissed: no verdict, no move, no message.
+          })
+          .catch(() => {})
+          .finally(() => {
+            reviewsInFlight.delete(key);
+          });
+        return json({ ok: true, doc: doc.ref });
       }
       // 需求上下文 (contexts): the person adds a link, pasted text (which becomes a file in the requirement's
       // context folder), or an uploaded file (base64 in the JSON body, so the window's session check holds).
@@ -743,19 +771,8 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
           }
         }
       }
-      const suggestionMatch = /^suggestions(?:\/([^/]+)(?:\/adopt)?)?$/.exec(deeper);
-      if (suggestionMatch) {
-        if (req.method === "POST" && suggestionMatch[1] === undefined) {
-          const input = await body(req);
-          return json({ suggestion: store.suggest(id, { stage: input.stage as RequirementStage, why: input.why as string, by: input.by as string }) }, 201);
-        }
-        if (req.method === "DELETE" && suggestionMatch[1] !== undefined && !deeper.endsWith("/adopt")) {
-          store.dismiss(id, decodeURIComponent(suggestionMatch[1]));
-          return json({ ok: true });
-        }
-        if (req.method === "POST" && deeper.endsWith("/adopt")) {
-          return json({ requirement: store.adopt(id, decodeURIComponent(suggestionMatch[1]!)) });
-        }
+      if (deeper === "suggestions" || deeper.startsWith("suggestions/")) {
+        return json({ error: "suggest is retired: stages move themselves — deliver a design doc to enter review; its verdict moves the stage.", code: "suggest_retired" }, 410);
       }
       return null;
     } catch (error) {

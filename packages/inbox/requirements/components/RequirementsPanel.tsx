@@ -15,7 +15,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
-import { addContext, adoptSuggestion, annotateDeliverable, contextContent, deliverableContent, dismissSuggestion, patchContext, readRequirement, removeContext } from '../api';
+import { addContext, annotateDeliverable, contextContent, deliverableContent, patchContext, readRequirement, removeContext, reviewDeliverable } from '../api';
 import { inboxApi } from '../../api';
 import { SessionStreamPane } from '../../stream/SessionStreamPane';
 import { EmbeddedThread } from '../EmbeddedThread';
@@ -76,8 +76,8 @@ function RequirementCard({
   onOpen,
   onOpenWaiting,
   onStart,
-  onAdopt,
-  onDismiss,
+  onStartReview,
+  reviewing,
   onArchiveToggle,
 }: {
   requirement: Requirement;
@@ -89,8 +89,8 @@ function RequirementCard({
   onOpen: () => void;
   onOpenWaiting: (threadId: string | null) => void;
   onStart: () => void;
-  onAdopt: (suggestionId: string) => void;
-  onDismiss: (suggestionId: string) => void;
+  onStartReview: (requirementId: string, deliverableId: string) => void;
+  reviewing: string | null;
   onArchiveToggle: () => void;
 }) {
   const archived = requirement.archived_at != null;
@@ -139,32 +139,22 @@ function RequirementCard({
           </span>
         </span>
       </span>
-      {requirement.suggestions.length > 0 && (
-        <div className="ib-req-cardsug" title={requirement.suggestions.map((s) => `${requirementStageLabel(s.stage)}：${s.why}`).join('\n')}>
-          <span className="ib-req-cardsug-w" dir="auto">→ {requirementStageLabel(requirement.suggestions[0]!.stage)}</span>
-          <button
-            type="button"
-            className="ib-req-cardsug-take"
-            onClick={(event) => {
-              event.stopPropagation();
-              onAdopt(requirement.suggestions[0]!.id);
-            }}
-          >
-            采纳
-          </button>
-          <button
-            type="button"
-            className="ib-req-x"
-            aria-label="忽略建议"
-            title="忽略"
-            onClick={(event) => {
-              event.stopPropagation();
-              onDismiss(requirement.suggestions[0]!.id);
-            }}
-          >
-            <Icon name="x" size={12} />
-          </button>
-        </div>
+      {requirement.stage === 'design-review' && reviewingDoc(requirement) !== null && reviewing !== requirement.id && (
+        <button
+          type="button"
+          className="ib-req-cardstart"
+          data-requirements-review=""
+          onClick={(event) => {
+            event.stopPropagation();
+            onStartReview(requirement.id, reviewingDoc(requirement)!.id);
+          }}
+        >
+          <Icon name="pen" size={13} />
+          去评审
+        </button>
+      )}
+      {reviewing === requirement.id && (
+        <span className="ib-req-cardstart" style={{ background: 'var(--muted)', color: 'var(--muted-foreground)' }}>评审已打开…</span>
       )}
       {requirement.stage === 'design' && requirement.threads.length === 0 && (
         <button
@@ -224,6 +214,7 @@ function RequirementDetail({
   id,
   openThreadId = null,
   onReplied,
+  onStartReview,
   onClose,
   onPatch,
   onOpenThread,
@@ -231,6 +222,7 @@ function RequirementDetail({
   id: string;
   openThreadId?: string | null;
   onReplied?: () => void;
+  onStartReview?: (requirementId: string, deliverableId: string) => void;
   onClose: () => void;
   onPatch: (id: string, patch: { title?: string; notes?: string; stage?: RequirementStage; threads?: string[] }) => void;
   onOpenThread: (threadId: string) => void;
@@ -775,37 +767,21 @@ function RequirementDetail({
                     </>)}
 
                     {requirement.stage === 'design-review' && (() => {
-                      const proposal = requirement.suggestions.find((suggestion) => suggestion.stage === 'dev') ?? null;
+                      const doc = requirement.deliverables.find((deliverable) => deliverable.kind === 'design-doc' || /\.(md|markdown|html?)$/i.test(deliverable.ref));
                       return (
                         <div className="ib-req-launch-act">
-                          {proposal ? (
-                            <>
-                              <button type="button" className="ib-req-go ok" onClick={() => void adoptSuggestion(id, proposal.id).then((outcome) => (outcome.ok ? read() : setError(outcome.error)))}>
-                                进入需求开发
-                              </button>
-                              <button type="button" className="ib-req-go sub" onClick={() => onPatch(id, { stage: 'design' })}>
-                                驳回重做
-                              </button>
-                              <span className="ib-req-launch-note">{proposal.why}</span>
-                            </>
+                          {doc ? (
+                            <button type="button" className="ib-req-go" data-requirements-review="" onClick={() => onStartReview?.(id, doc.id)}>
+                              <Icon name="pen" size={13} />
+                              去评审
+                            </button>
                           ) : (
-                            <span className="ib-req-launch-note">评审结论到达后，这里出现「进入需求开发」</span>
+                            <span className="ib-req-launch-note">等设计文档挂上，需求自动进入评审</span>
                           )}
+                          <span className="ib-req-launch-note">批准 → 需求开发；退回 → 需求设计（批注带给会话）</span>
                         </div>
                       );
                     })()}
-
-                    {(requirement.stage === 'dev' || requirement.stage === 'qa' || requirement.stage === 'code-review') && (
-                      <div className="ib-req-launch-act">
-                        <button type="button" className="ib-req-go sub" onClick={() => {
-                          if (requirement.contexts.length === 0) { setEditContext(null); setContextKind('link'); setContextName(''); setContextRef(''); setContextText(''); setContextFile(null); contextDialog.current?.showModal(); return; }
-                          submitStart();
-                        }}>
-                          ＋ 为这个阶段再起一个会话
-                        </button>
-                        <span className="ib-req-launch-note">阶段建议出现在左侧卡片上，一键采纳</span>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -903,6 +879,10 @@ export function RequirementsPanel({ on, archived = false, openId = null, openThr
   const [draft, setDraft] = useState('');
   /** The card being dragged (the Board's own mechanism: state, not the dataTransfer's contents). */
   const [dragging, setDragging] = useState<Requirement | null>(null);
+  // 去评审 (stage-auto-design §2): gated annotate on the design doc; the verdict moves the stage and tells the session.
+  const [reviewing, setReviewing] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const setError = (message: string | null) => setReviewError(message);
   const [over, setOver] = useState<RequirementStage | null>(null);
 
   const submit = () => {
@@ -973,8 +953,8 @@ export function RequirementsPanel({ on, archived = false, openId = null, openThr
                   onOpen={() => onOpen(requirement.id)}
                   onOpenWaiting={(threadId) => onOpen(requirement.id, threadId)}
                   onStart={() => onOpen(requirement.id)}
-                  onAdopt={(suggestionId) => void adoptSuggestion(requirement.id, suggestionId).then((outcome) => (outcome.ok ? refresh() : undefined))}
-                  onDismiss={(suggestionId) => void dismissSuggestion(requirement.id, suggestionId).then((outcome) => (outcome.ok ? refresh() : undefined))}
+                  onStartReview={(requirementId, deliverableId) => { setReviewing(requirementId); void reviewDeliverable(requirementId, deliverableId).then((outcome) => { if (!outcome.ok) { setError(outcome.error); setReviewing(null); } }); }}
+                  reviewing={reviewing}
                   onArchiveToggle={() => void patch(requirement.id, { archived: requirement.archived_at == null })}
                 />
               ))}
@@ -1038,9 +1018,9 @@ export function RequirementsPanel({ on, archived = false, openId = null, openThr
           )}
         </div>
       )}
-      {error && (
+      {(error ?? reviewError) && (
         <div className="ib-error ib-bfail" role="alert">
-          {error}
+          {error ?? reviewError}
         </div>
       )}
       {openId ? (
@@ -1050,6 +1030,15 @@ export function RequirementsPanel({ on, archived = false, openId = null, openThr
             id={openId}
             openThreadId={openThreadId}
             onReplied={() => refreshRef.current()}
+            onStartReview={(requirementId, deliverableId) => {
+              setReviewing(requirementId);
+              void reviewDeliverable(requirementId, deliverableId).then((outcome) => {
+                if (!outcome.ok) {
+                  setError(outcome.error);
+                  setReviewing(null);
+                }
+              });
+            }}
             onClose={() => onOpen(null, null)}
             onPatch={(id, patchIn) => void patch(id, patchIn)}
             onOpenThread={onOpenThread}
@@ -1148,4 +1137,9 @@ function ageOf(iso: string): string {
   if (hours < 24) return `${hours} 小时`;
   const days = Math.floor(hours / 24);
   return days < 30 ? `${days} 天` : `${Math.floor(days / 30)} 个月`;
+}
+
+/** The requirement's reviewable document (stage-auto-design §2): the design doc, or any document file. */
+function reviewingDoc(requirement: Requirement): { id: string } | null {
+  return requirement.deliverables.find((deliverable) => deliverable.kind === 'design-doc' || /\.(md|markdown|html?)$/i.test(deliverable.ref)) ?? null;
 }
