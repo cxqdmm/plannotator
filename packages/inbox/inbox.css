@@ -12620,16 +12620,15 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-req-body { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 0; padding: 0 !important; }
 .ib-req-nav { min-width: 0; display: flex; flex-direction: column; gap: 10px; padding: 18px 14px; border-right: 1px solid var(--ib-line, var(--border)); overflow-y: auto; }
 .ib-req-nav .ib-req-title { padding: 0 4px; }
-.ib-req-navlist { display: flex; flex-direction: column; gap: 2px; }
-.ib-req-navrow { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 8px 10px; border: 0; border-radius: 9px; background: none; cursor: pointer; font: inherit; }
-.ib-req-navrow:hover { background: var(--ib-hover, color-mix(in oklch, var(--muted) 45%, transparent)); }
-.ib-req-navrow.on { background: color-mix(in oklch, var(--primary) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 30%, transparent); }
-.ib-req-navrow-t { display: flex; align-items: center; gap: 6px; font-size: var(--ib-fs-13, 13px); font-weight: 600; color: var(--foreground); }
-.ib-req-navrow.on .ib-req-navrow-t { color: var(--primary); }
-.ib-req-navrow-n { margin-left: auto; font-size: var(--ib-fs-11, 11px); color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
-.ib-req-navrow-p { font-size: var(--ib-fs-11, 11px); color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ib-req-view { min-width: 0; overflow-y: auto; }
-.ib-req-viewbody { display: flex; flex-direction: column; gap: 14px; padding: 18px 26px 26px; max-width: 860px; }
-@media (max-width: 900px) { .ib-req-body { grid-template-columns: minmax(0, 1fr); } .ib-req-nav { border-right: 0; border-bottom: 1px solid var(--ib-line, var(--border)); } }
+/* The detail's left list IS the Inbox's row: .ib-rw/.ib-row keep their own height, hairline, hover fill and
+   selection; only the tracks are this page's (an icon, the title with its preview under, the count at the edge). */
+.ib-req-navlist { display: flex; flex-direction: column; }
+.ib-req-navrow.ib-row { grid-template-columns: 30px minmax(0, 1fr) auto; height: 56px; gap: 0 10px; align-items: center; }
+.ib-req-navico { display: inline-flex; align-items: center; justify-content: center; color: var(--muted-foreground); }
+.ib-req-navrow.ib-sel .ib-req-navico { color: var(--primary); }
+.ib-req-navsubj { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ib-req-navsubj .ib-title { font-size: var(--ib-fs-14, 14px); font-weight: 550; }
+.ib-req-navp { font-size: var(--ib-fs-12, 12px); color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ib-req-navn { justify-self: end; font-size: var(--ib-fs-11, 11px); color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
 /* The dialogs centre on the screen (a native dialog's own margin was unset somewhere upstream). */
 .ib-req-new { margin: auto; }

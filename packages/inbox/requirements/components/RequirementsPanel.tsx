@@ -410,12 +410,23 @@ function RequirementDetail({
           <nav className="ib-req-nav" aria-label="需求内容">
             <h2 className="ib-req-title" dir="auto">{requirement.title}</h2>
             <div className="ib-req-navlist">
-              {([['overview', '概览', 0], ['contexts', '上下文', requirement.contexts.length], ['deliverables', '产物', requirement.deliverables.length], ['sessions', '会话', requirement.threads.length], ['history', '历史', (detail?.events ?? []).length]] as const).map(([key, label, count]) => (
-                <button key={key} type="button" className="ib-req-navrow{view === key ? ' on' : ''}" aria-current={view === key ? 'true' : undefined} onClick={() => setView(key)}>
-                  <span className="ib-req-navrow-t">{label}</span>
-                  <span className="ib-req-navrow-p" dir="auto">{navPreview(key, requirement)}</span>
-                  {count > 0 && <span className="ib-req-navrow-n">{count}</span>}
-                </button>
+              {([['overview', '概览', 'todo', 0], ['contexts', '上下文', 'clip', requirement.contexts.length], ['deliverables', '产物', 'cube', requirement.deliverables.length], ['sessions', '会话', 'comment', requirement.threads.length], ['history', '历史', 'clock', (detail?.events ?? []).length]] as const).map(([key, label, icon, count]) => (
+                <div className="ib-rw" key={key}>
+                  <button
+                    type="button"
+                    className={`ib-row ib-req-navrow${view === key ? ' ib-sel' : ''}`}
+                    aria-current={view === key ? 'true' : undefined}
+                    data-req-view={key}
+                    onClick={() => setView(key)}
+                  >
+                    <span className="ib-req-navico"><Icon name={icon} size={16} /></span>
+                    <span className="ib-subj ib-req-navsubj">
+                      <span className="ib-title" dir="auto">{label}</span>
+                      <span className="ib-req-navp" dir="auto">{navPreview(key, requirement)}</span>
+                    </span>
+                    {count > 0 && <span className="ib-cw ib-req-navn">{count}</span>}
+                  </button>
+                </div>
               ))}
             </div>
           </nav>
