@@ -38,6 +38,11 @@ export function EmbeddedThread({ threadId, onClose, onChanged }: { threadId: str
         const saved = new Map(questions.map((question) => [`${messageId}/${question.key}`, question]));
         putThread(client, threadId, { ...held, thread: keepSavedQuestions(held.thread, saved) });
       }}
+      run={held.run ?? null}
+      attachCommand={held.attach_command ?? null}
+      onRunChanged={() => {
+        void inboxApi.thread(threadId).then((read) => putThread(client, threadId, read));
+      }}
       file={null}
       onOpenFile={() => undefined}
       onOpenGuide={() => undefined}

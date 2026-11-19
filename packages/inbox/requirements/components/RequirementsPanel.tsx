@@ -21,7 +21,7 @@ import { SessionStreamPane } from '../../stream/SessionStreamPane';
 import { EmbeddedThread } from '../EmbeddedThread';
 import { putThread } from '../../data/queries/thread';
 import { useListModel } from '../../data/queries/list';
-import { rowAgent } from '../../components/InboxList';
+import { previewOf, rowAgent } from '../../components/InboxList';
 import { useQueryClient } from '@tanstack/react-query';
 import { HostMark } from '../../icons';
 import { GroupBand } from '../../components/GroupBand';
@@ -48,12 +48,6 @@ const STAGE_ICON: Record<RequirementStage, Parameters<typeof Icon>[0]['name']> =
   'code-review': 'reviews',
   done: 'check',
 };
-
-/** The first of a requirement's threads whose session has a transcript here (null: none), for the 对话流 entry. */
-function streamThreadOf(meta: Record<string, { stream: boolean; subject: string | null; waiting: boolean }>, requirement: Requirement | null): string | null {
-  if (!requirement) return null;
-  return requirement.threads.find((threadId) => meta[threadId]?.stream === true) ?? null;
-}
 
 const EVENT_WORDS: Readonly<Record<RequirementEvent['kind'], string>> = {
   created: '创建',
@@ -496,20 +490,7 @@ function RequirementDetail({
               <h1 className="ib-lhead-h" dir="auto">{requirement.title}</h1>
               <span className="ib-req-stage-chip">{requirementStageLabel(requirement.stage)}</span>
               <span className="ib-sp" />
-              {streamThreadOf(threadMeta, requirement) && (
-                <button
-                  type="button"
-                  className="ib-iconbtn ib-req-streambtn"
-                  aria-label="对话流"
-                  aria-pressed={streamOpen !== null}
-                  title="对话流：这个会话自己在读什么、跑什么、改什么"
-                  data-requirements-stream=""
-                  onClick={() => setStreamOpen((open) => (open === null ? streamThreadOf(threadMeta, requirement) : null))}
-                >
-                  <HostMark host="claude-code" />
-                </button>
-              )}
-            </div>
+                  </div>
             <div className="ib-req-groups">
               <ReqGroup label="下一步" count={requirement.suggestions.length > 0 ? `${requirement.suggestions.length} 条建议` : ''}>
                 <ReqRow selected={view.k === 'overview'} icon="todo" title="开始设计" preview={navPreview('next', requirement)} onClick={() => setView({k: 'overview'})} />
@@ -530,7 +511,7 @@ function RequirementDetail({
                       selected={view.k === 'session' && view.id === threadId}
                       host={agent?.kind === 'agent' ? agent.host : null}
                       title={row?.subject ?? threadMeta[threadId]?.subject ?? '会话'}
-                      preview={waiting ? '等你处理' : agent?.kind === 'agent' ? agent.name ?? 'Claude Code' : ''}
+                      preview={waiting ? '等你处理' : (row ? previewOf(row) : null) ?? (agent?.kind === 'agent' ? agent.name ?? 'Claude Code' : '')}
                       onClick={() => setView({k: 'session', id: threadId})}
                     />
                   );
