@@ -241,7 +241,44 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-req-journey-stop::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: color-mix(in oklch, var(--border) 90%, transparent); }
 .ib-req-journey-stop.on { color: var(--primary); font-weight: 600; }
 .ib-req-journey-stop.on::before { width: 6px; height: 6px; background: var(--primary); }
-.ib-req-launch { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border-radius: 12px; background: linear-gradient(135deg, color-mix(in oklch, var(--primary) 7%, var(--card)), var(--card) 55%); box-shadow: 0 0 0 1px color-mix(in oklch, var(--primary) 22%, transparent); }
+.ib-req-launch { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px 20px; border-radius: 14px; background: var(--card); box-shadow: 0 0 0 1px color-mix(in oklch, var(--primary) 24%, transparent); }
+.ib-req-launch-head { display: flex; align-items: baseline; gap: 10px; }
+.ib-req-launch-sub { font-size: var(--ib-fs-12, 12px); color: var(--muted-foreground); }
+/* The choice rows: click a row, its dropdown opens in place — no form anywhere. */
+.ib-req-rows { position: relative; display: flex; flex-direction: column; gap: 7px; }
+.ib-req-rowpick { position: relative; display: flex; align-items: center; gap: 11px; padding: 9px 12px; border-radius: 10px; background: var(--card); box-shadow: 0 0 0 1px color-mix(in oklch, var(--border) 80%, transparent); font-size: var(--ib-fs-13, 13px); cursor: pointer; transition: box-shadow 150ms ease-out; }
+.ib-req-rowpick:hover { box-shadow: 0 0 0 1px color-mix(in oklch, var(--primary) 40%, transparent); }
+.ib-req-rowpick.open { box-shadow: 0 0 0 1.5px color-mix(in oklch, var(--primary) 55%, transparent); }
+.ib-req-rowlab { flex: none; width: 34px; font-size: var(--ib-fs-11, 11px); color: var(--muted-foreground); }
+.ib-req-rowval { flex: 1; min-width: 0; display: inline-flex; align-items: baseline; gap: 7px; font-weight: 550; }
+.ib-req-rowval small { font-weight: 400; color: var(--muted-foreground); font-size: var(--ib-fs-11, 11px); }
+.ib-req-rowchev { flex: none; color: var(--muted-foreground); transition: transform 160ms cubic-bezier(0.2, 0.7, 0.3, 1); }
+.ib-req-rowpick.open .ib-req-rowchev { transform: rotate(90deg); }
+.ib-req-dropback { position: fixed; inset: 0; z-index: 3; }
+.ib-req-drop { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 4; background: var(--card); border-radius: 11px; box-shadow: 0 0 0 1px color-mix(in oklch, var(--border) 90%, transparent), 0 16px 34px -12px color-mix(in oklch, var(--ib-shadow-ink, var(--background)) 45%, transparent); padding: 5px; animation: ib-req-drop-in 0.18s cubic-bezier(0.2, 0.7, 0.3, 1); }
+@keyframes ib-req-drop-in { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+.ib-req-drop button { display: flex; align-items: center; gap: 9px; width: 100%; border: 0; background: none; font: inherit; font-size: var(--ib-fs-13, 13px); text-align: left; padding: 8px 11px; border-radius: 8px; cursor: pointer; color: var(--foreground); }
+.ib-req-drop button:hover { background: var(--ib-hover, color-mix(in oklch, var(--muted) 45%, transparent)); }
+.ib-req-drop button.on { background: color-mix(in oklch, var(--primary) 9%, transparent); color: var(--primary); font-weight: 600; }
+/* The card's own section labels (上下文, 需求卡) — quieter than the page's. */
+.ib-req-seclab { display: flex; align-items: baseline; gap: 7px; margin-top: 3px; font-size: var(--ib-fs-11, 11px); font-weight: 600; letter-spacing: 0.05em; color: var(--muted-foreground); }
+.ib-req-seclab-n { font-weight: 400; color: color-mix(in oklch, var(--border) 90%, transparent); font-variant-numeric: tabular-nums; }
+.ib-req-seclab-add { margin-left: auto; border: 1px solid var(--border); background: none; border-radius: 7px; padding: 3px 10px; font: inherit; font-size: 11px; color: var(--muted-foreground); cursor: pointer; }
+.ib-req-seclab-add:hover { color: var(--primary); border-color: color-mix(in oklch, var(--primary) 40%, transparent); }
+/* The rack inside the card: tiles, their hover actions, the dashed add, and the tile's preview under them. */
+.ib-req-mats { display: flex; flex-wrap: wrap; gap: 7px; }
+.ib-req-mat { display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px 7px 8px; border-radius: 9px; background: var(--card); box-shadow: 0 0 0 1px color-mix(in oklch, var(--border) 75%, transparent); font-size: var(--ib-fs-12-5, 12.5px); cursor: pointer; transition: box-shadow 150ms ease-out, transform 170ms cubic-bezier(0.2, 0.7, 0.3, 1); }
+.ib-req-mat:hover, .ib-req-mat.on { transform: translateY(-1px); box-shadow: 0 0 0 1px color-mix(in oklch, var(--primary) 35%, transparent), 0 5px 14px -8px color-mix(in oklch, var(--ib-shadow-ink, var(--background)) 35%, transparent); }
+.ib-req-mat b { font-weight: 550; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ib-req-mat small { color: var(--muted-foreground); font-size: 10.5px; }
+.ib-req-mat-kind { width: 22px; height: 22px; border-radius: 6px; background: color-mix(in oklch, var(--primary) 8%, transparent); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.ib-req-mat-acts { display: inline-flex; align-items: center; gap: 1px; opacity: 0; transition: opacity 130ms ease-out; }
+.ib-req-mat:hover .ib-req-mat-acts { opacity: 1; }
+.ib-req-mat-acts button { border: 0; background: none; color: var(--muted-foreground); cursor: pointer; border-radius: 5px; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; }
+.ib-req-mat-acts button:hover { background: var(--ib-hover, color-mix(in oklch, var(--muted) 45%, transparent)); color: var(--foreground); }
+.ib-req-mat-tile-add { border: 1.5px dashed color-mix(in oklch, var(--border) 90%, transparent); background: none; border-radius: 9px; padding: 6px 12px; font: inherit; font-size: var(--ib-fs-12, 12px); color: var(--muted-foreground); cursor: pointer; display: inline-flex; align-items: center; }
+.ib-req-mat-tile-add:hover { color: var(--primary); border-color: color-mix(in oklch, var(--primary) 45%, transparent); }
+.ib-req-mat-preview { display: flex; flex-direction: column; gap: 8px; }
 .ib-req-launch-title { font-size: var(--ib-fs-15, 15px); font-weight: 650; letter-spacing: -0.01em; }
 .ib-req-launch-sub { margin: 0; font-size: var(--ib-fs-12-5, 12.5px); color: var(--muted-foreground); line-height: 1.6; }
 .ib-req-checklist { display: flex; flex-direction: column; gap: 8px; }
