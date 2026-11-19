@@ -18,6 +18,9 @@ import { subscribeRequirementFrames } from '../frames';
 import { addContext, adoptSuggestion, annotateDeliverable, contextContent, deliverableContent, dismissSuggestion, patchContext, readRequirement, removeContext } from '../api';
 import { inboxApi } from '../../api';
 import { SessionStreamPane } from '../../stream/SessionStreamPane';
+import { EmbeddedThread } from '../EmbeddedThread';
+import { putThread } from '../../data/queries/thread';
+import { useQueryClient } from '@tanstack/react-query';
 import { HostMark } from '../../icons';
 import { GroupBand } from '../../components/GroupBand';
 import { ChatMarkdown } from '@plannotator/ui/components/chat';
@@ -213,11 +216,13 @@ function RequirementCard({
 /** The detail pane (CardPanel's classes): suggestions to adopt, notes, deliverables, threads, history. */
 function RequirementDetail({
   id,
+  openThreadId = null,
   onClose,
   onPatch,
   onOpenThread,
 }: {
   id: string;
+  openThreadId?: string | null;
   onClose: () => void;
   onPatch: (id: string, patch: { title?: string; notes?: string; stage?: RequirementStage; threads?: string[] }) => void;
   onOpenThread: (threadId: string) => void;
@@ -250,10 +255,11 @@ function RequirementDetail({
   const [editContext, setEditContext] = useState<RequirementContext | null>(null);
   // The pad's card peek (查看将发送的需求卡).
   const [peekOpen, setPeekOpen] = useState(false);
+  const queryClient = useQueryClient();
   const [contextPreviews, setContextPreviews] = useState<Record<string, 'loading' | { text?: string; image?: string; link?: string; html?: boolean } | { error: string }>>({});
   const [card, setCard] = useState<string | null>(null);
   // The detail's own two areas: the left list picks, the right shows. History is a row like any other.
-  const [view, setView] = useState<{ k: 'overview' } | { k: 'deliverable'; id: string } | { k: 'session'; id: string } | { k: 'history' }>({ k: 'overview' });
+  const [view, setView] = useState<{ k: 'overview' } | { k: 'deliverable'; id: string } | { k: 'session'; id: string } | { k: 'history' }>(openThreadId !== null ? { k: 'session', id: openThreadId } : { k: 'overview' });
   const contextDialog = useRef<HTMLDialogElement | null>(null);
 
   /** 编辑: rename any context, a link's address, or a text file's words (rewritten in the library). */
@@ -370,7 +376,7 @@ function RequirementDetail({
       thread_name: detail?.requirement.title ?? undefined,
     }).then((answer) => {
       onPatch(id, { threads: [...(detail?.requirement.threads ?? []), answer.thread_id] });
-      onOpenThread(answer.thread_id);
+      setView({ k: 'session', id: answer.thread_id });
     }).catch((cause) => {
       setError(cause instanceof Error ? cause.message : String(cause));
       setStarting(false);
@@ -663,19 +669,25 @@ function RequirementDetail({
                 </div>
               );
             })()}
+            {/* The session, embedded: the Inbox's own ThreadPane in this block, fed by the shared cache — the
+                conversation, its reply box and question cards, live, without leaving the requirement. */}
             {view.k === 'session' && (() => {
               const meta = threadMeta[view.id];
               return (
-                <div className="ib-req-viewbody">
-                  <div className="ib-req-itemhead">
-                    <HostMark host="claude-code" />
-                    <h3 className="ib-req-itemtitle" dir="auto">{meta?.subject ?? '会话'}</h3>
+                <div className="ib-req-embed">
+                  <div className="ib-req-embed-top">
+                    <button type="button" className="ib-sstr-back" onClick={() => setView({ k: 'overview' })}>
+                      <Icon name="chevL" size={14} />
+                      <span>会话列表</span>
+                    </button>
+                    <span className="ib-req-embed-subj" dir="auto">{meta?.subject ?? '会话'}</span>
+                    {meta?.waiting && <span className="ib-req-waiting">等你</span>}
                     <span className="ib-sp" />
-                    <button type="button" className="ib-btn ib-sm" onClick={() => onOpenThread(view.id)}>
-                      打开 <Icon name="chevR" size={12} />
+                    <button type="button" className="ib-iconbtn" title="在收件箱中打开（全功能视图）" aria-label="在收件箱中打开" onClick={() => onOpenThread(view.id)}>
+                      <Icon name="expand" size={14} />
                     </button>
                   </div>
-                  <p className="ib-req-empty">这个会话正在为需求「{requirement.title}」工作；打开它进入线程，右上角星标是它的对话流。</p>
+                  <EmbeddedThread threadId={view.id} onClose={() => setView({ k: 'overview' })} onChanged={() => void inboxApi.thread(view.id).then((read) => putThread(queryClient, view.id, read))} />
                 </div>
               );
             })()}
@@ -708,7 +720,7 @@ function RequirementDetail({
 }
 
 /** The panel: a Board page whose lanes are the seven stages; `archived` shows the 已归档 page instead. */
-export function RequirementsPanel({ on, archived = false, openId = null, onView, onOpen, onOpenThread }: { on: boolean; archived?: boolean; openId?: string | null; onView: (archived: boolean) => void; onOpen: (id: string | null) => void; onOpenThread: (threadId: string) => void }) {
+export function RequirementsPanel({ on, archived = false, openId = null, openThreadId = null, onView, onOpen, onOpenThread }: { on: boolean; archived?: boolean; openId?: string | null; openThreadId?: string | null; onView: (archived: boolean) => void; onOpen: (id: string | null) => void; onOpenThread: (threadId: string) => void }) {
   const { requirements, archived: archivedList, archivedCount, create, patch, error, clearError, refresh } = useRequirements(on, subscribeRequirementFrames);
   // 新建需求 is a dialog: one question (the title), Enter makes it, Esc walks away — then the card sits in 需求设计, ready to start.
   const newDialog = useRef<HTMLDialogElement | null>(null);
@@ -859,6 +871,7 @@ export function RequirementsPanel({ on, archived = false, openId = null, onView,
           <RequirementDetail
             key={openId}
             id={openId}
+            openThreadId={openThreadId}
             onClose={() => onOpen(null)}
             onPatch={(id, patchIn) => void patch(id, patchIn)}
             onOpenThread={onOpenThread}
