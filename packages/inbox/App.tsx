@@ -5605,10 +5605,8 @@ function Inbox() {
     main = (
       <RequirementsPanel
         on={requirementsOn}
-        archived={route.reqArchived === true}
         openId={route.req ?? null}
         openThreadId={route.reqThread ?? null}
-        onView={(to) => writeRoute({ page: 'requirements', project: null, thread: null, reqArchived: to, req: route.req ?? null })}
         onOpen={(id, threadId) => writeRoute({ page: 'requirements', project: null, thread: null, reqArchived: route.reqArchived, req: id, reqThread: threadId ?? null })}
         onOpenThread={(threadId) => writeRoute({ page: 'inbox', project: null, thread: threadId })}
       />

@@ -1,1008 +1,334 @@
 /**
- * The Requirements panel (「需求」): a Board-style kanban — the seven lifecycle
- * stages as lanes, cards dragged between them — with the detail pane a
- * requirement opens into (CardPanel's own classes: ib-crdp), all drawn with
- * the Inbox's look in light and dark. The pane carries the Wave 2a surface:
- * rename, notes, 归档/恢复 stays on the card's hover corner, the person
- * adopts or dismisses an agent's stage suggestions (D1: only the person
- * moves), deliverables are attached by hand here or by an agent over the
- * `requirement` MCP tool, and the linked threads (D3: many) open in the
- * Inbox. Owns its data (useRequirements) so App.tsx only mounts it.
- *
- * Words are Simplified Chinese in place, this fork's rule.
+ * The Workshop (工坊): a flat list of requirement cards — no lanes, no stages
+ * on the card, no cook. Each card carries its marks (waiting, sessions,
+ * deliverables, age) and one action: ＋ 开启新会话, a dialog that reuses the
+ * Inbox compose's To-row (agent + project) with a dual-mode message area
+ * (写想法 / 用模板). The detail is a single flat page. Chinese in place.
  */
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Icon } from '../../icons';
+import { useEffect, useRef, useState } from 'react';
+import { ChatMarkdown } from '@plannotator/ui/components/chat';
+import { HostMark, Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
-import { addContext, annotateDeliverable, contextContent, deliverableContent, patchContext, readRequirement, removeContext, reviewDeliverable } from '../api';
+import { annotateDeliverable, deliverableContent, readRequirement, reviewDeliverable } from '../api';
 import { inboxApi } from '../../api';
-import { SessionStreamPane } from '../../stream/SessionStreamPane';
+import type { InboxLaunchAgent } from '@plannotator/core/inbox-types';
 import { EmbeddedThread } from '../EmbeddedThread';
 import { putThread } from '../../data/queries/thread';
 import { useListModel } from '../../data/queries/list';
-import { previewOf, rowAgent } from '../../components/InboxList';
 import { useQueryClient } from '@tanstack/react-query';
-import { HostMark } from '../../icons';
-import { GroupBand } from '../../components/GroupBand';
-import { ChatMarkdown } from '@plannotator/ui/components/chat';
-import type { InboxLaunchAgent } from '@plannotator/core/inbox-types';
-import type { RequirementContext } from '@plannotator/core/requirements-types';
+import { rowAgent } from '../../components/InboxList';
 import { useRequirements } from '../useRequirements';
-import {
-  DELIVERABLE_KIND_LABELS,
-  REQUIREMENT_STAGES,
-  requirementStageLabel,
-  type Requirement,
-  type RequirementEvent,
-  type RequirementStage,
-} from '@plannotator/core/requirements-types';
-
-/** Each stage's mark: the system's own SVG icons, the colour every other one draws in. */
-const STAGE_ICON: Record<RequirementStage, Parameters<typeof Icon>[0]['name']> = {
-  triage: 'inbox',
-  design: 'pen',
-  'design-review': 'eye',
-  dev: 'code',
-  qa: 'todo',
-  'code-review': 'reviews',
-  done: 'check',
-};
+import { DELIVERABLE_KIND_LABELS, type Deliverable, type Requirement, type RequirementContext, type RequirementEvent } from '@plannotator/core/requirements-types';
 
 const EVENT_WORDS: Readonly<Record<RequirementEvent['kind'], string>> = {
-  created: '创建',
-  stage: '移阶段',
-  field: '修改',
-  deleted: '删除',
-  say: '进展',
-  deliverable: '产物',
-  suggestion: '建议',
-  context: '上下文',
+  created: '创建', stage: '阶段', field: '修改', deleted: '删除', say: '动态', deliverable: '产物', suggestion: '建议', context: '上下文',
 };
 
-const timeOf = (iso: string): string => {
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-};
-
-/** One requirement as a lane card: the title opens the detail pane; 归档/恢复 from the hover corner. */
-function RequirementCard({
-  requirement,
-  open,
-  dragging,
-  draggable,
-  onDragStart,
-  onDragEnd,
-  onOpen,
-  onOpenWaiting,
-  onStart,
-  onStartReview,
-  reviewing,
-  onArchiveToggle,
-}: {
-  requirement: Requirement;
-  open: boolean;
-  dragging: boolean;
-  draggable: boolean;
-  onDragStart: () => void;
-  onDragEnd: () => void;
-  onOpen: () => void;
-  onOpenWaiting: (threadId: string | null) => void;
-  onStart: () => void;
-  onStartReview: (requirementId: string, deliverableId: string) => void;
-  reviewing: string | null;
-  onArchiveToggle: () => void;
-}) {
-  const archived = requirement.archived_at != null;
-  return (
-    <li
-      className="ib-bcard"
-      data-card-id={requirement.id}
-      data-requirement-id={requirement.id}
-      data-stage={requirement.stage}
-      data-dragging={dragging ? '' : undefined}
-      data-open={open ? '' : undefined}
-      draggable={draggable ? true : undefined}
-      role="button"
-      tabIndex={0}
-      aria-label={`${requirement.title}（回车打开详情）`}
-      onClick={onOpen}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onOpen();
-        }
-      }}
-      onDragStart={(event) => {
-        event.dataTransfer.setData('text/plain', requirement.id);
-        event.dataTransfer.effectAllowed = 'move';
-        onDragStart();
-      }}
-      onDragEnd={onDragEnd}
-    >
-      <button
-        type="button"
-        className="ib-req-corner"
-        title={archived ? '恢复到看板' : '归档'}
-        aria-label={archived ? '恢复到看板' : '归档'}
-        onClick={(event) => {
-          event.stopPropagation();
-          onArchiveToggle();
-        }}
-      >
-        <Icon name={archived ? 'back' : 'archive'} size={14} />
-      </button>
-      <span className="ib-bc-top">
-        <span className="ib-bc-main" data-card-open="" title={requirement.title}>
-          <span className="ib-bc-t" dir="auto">
-            {requirement.title}
-          </span>
-        </span>
-      </span>
-      {requirement.stage === 'design-review' && reviewingDoc(requirement) !== null && reviewing !== requirement.id && (
-        <button
-          type="button"
-          className="ib-req-cardstart"
-          data-requirements-review=""
-          onClick={(event) => {
-            event.stopPropagation();
-            onStartReview(requirement.id, reviewingDoc(requirement)!.id);
-          }}
-        >
-          <Icon name="pen" size={13} />
-          去评审
-        </button>
-      )}
-      {reviewing === requirement.id && (
-        <span className="ib-req-cardstart" style={{ background: 'var(--muted)', color: 'var(--muted-foreground)' }}>评审已打开…</span>
-      )}
-      {requirement.stage === 'design' && requirement.threads.length === 0 && (
-        <button
-          type="button"
-          className="ib-req-cardstart"
-          data-requirements-card-start=""
-          onClick={(event) => {
-            event.stopPropagation();
-            onStart();
-          }}
-        >
-          <Icon name="play" size={13} />
-          开始设计
-        </button>
-      )}
-      {requirement.waiting === true && (
-        <button
-          type="button"
-          className="ib-req-waiting"
-          title="会话在等你处理——点击直达"
-          onClick={(event) => {
-            event.stopPropagation();
-            onOpenWaiting(requirement.waiting_thread ?? null);
-          }}
-        >
-          <Icon name="comment" size={12} /> 等你 ›
-        </button>
-      )}
-      {(requirement.suggestions.length > 0 || requirement.deliverables.length > 0 || requirement.threads.length > 0) && (
-        <span className="ib-bc-bot">
-          <span className="ib-bc-line ib-req-line">
-            {requirement.suggestions.length > 0 && (
-              <span className="ib-req-mark" title={requirement.suggestions.map((s) => `${requirementStageLabel(s.stage)}：${s.why}`).join('\n')}>
-                <Icon name="swap" size={12} /> {requirementStageLabel(requirement.suggestions[0]!.stage)}
-              </span>
-            )}
-            {requirement.deliverables.length > 0 && (
-              <span className="ib-req-mark" title={requirement.deliverables.map((entry) => `${DELIVERABLE_KIND_LABELS[entry.kind]}：${entry.title ?? entry.ref}`).join('\n')}>
-                <Icon name="clip" size={12} /> {requirement.deliverables.length}
-              </span>
-            )}
-            {requirement.threads.length > 0 && (
-              <span className="ib-req-mark" title={`关联 ${requirement.threads.length} 个线程`}>
-                <Icon name="comment" size={12} /> {requirement.threads.length}
-              </span>
-            )}
-            <span className="ib-req-age" title={`上次动静 ${timeOf(requirement.updated_at)}`}>{ageOf(requirement.updated_at)}</span>
-          </span>
-        </span>
-      )}
-    </li>
-  );
+function timeOf(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function ageOf(iso: string): string {
+  const ms = Date.now() - Date.parse(iso);
+  if (Number.isNaN(ms)) return '';
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return '刚刚';
+  if (m < 60) return `${m} 分钟`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} 小时`;
+  const d = Math.floor(h / 24);
+  return d < 30 ? `${d} 天` : `${Math.floor(d / 30)} 个月`;
 }
 
-/** The detail pane (CardPanel's classes): suggestions to adopt, notes, deliverables, threads, history. */
-function RequirementDetail({
-  id,
-  openThreadId = null,
-  onReplied,
-  onStartReview,
-  onClose,
-  onPatch,
-  onOpenThread,
-}: {
-  id: string;
-  openThreadId?: string | null;
-  onReplied?: () => void;
-  onStartReview?: (requirementId: string, deliverableId: string) => void;
-  onClose: () => void;
-  onPatch: (id: string, patch: { title?: string; notes?: string; stage?: RequirementStage; threads?: string[] }) => void;
-  onOpenThread: (threadId: string) => void;
-}) {
-  const [detail, setDetail] = useState<{ requirement: Requirement; events: RequirementEvent[] } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  // 「开始做」: the form a fresh requirement opens on — the agents and projects the person can start (compose's
-  // own launch read), the words the session starts with, and the going-out itself.
-  // The launch card's own choices, loaded once with the requirement (no form to open — the card IS the form).
-  const [launch, setLaunch] = useState<{ agents: { agent: string; name: string }[]; projects: { id: string; name: string }[]; agent: string; project: string } | null>(null);
-  // The rack's open tile (its preview shows under the rack).
-  const [previewCtx, setPreviewCtx] = useState<string | null>(null);
-  const [startLoading, setStartLoading] = useState(false);
-  const [starting, setStarting] = useState(false);
-  // The requirement's linked threads that own a readable transcript (the thread read's `stream`): their sessions'
-  // 对话流 opens right here in the detail, work beside the requirement it is for.
-  const [threadMeta, setThreadMeta] = useState<Record<string, { stream: boolean; subject: string | null; waiting: boolean }>>({});
-  // A deliverable's preview (fetched on first open) and the one whose annotate page is out.
-  const [previews, setPreviews] = useState<Record<string, 'loading' | { text?: string; image?: string; binary?: boolean; session?: string; html?: boolean; annotatable?: boolean } | { error: string }>>({});
-  const [annotating, setAnnotating] = useState<string | null>(null);
-  // 需求上下文: the add dialog (link / pasted text / uploaded file), each context's preview, and the requirement
-  // card the session starts on (the server's own template, single source).
-  const [contextKind, setContextKind] = useState<'link' | 'text' | 'upload'>('link');
-  const [contextName, setContextName] = useState('');
-  const [contextRef, setContextRef] = useState('');
-  const [contextText, setContextText] = useState('');
-  const [contextFile, setContextFile] = useState<File | null>(null);
-  const [contextBusy, setContextBusy] = useState(false);
-  const [editContext, setEditContext] = useState<RequirementContext | null>(null);
-  // The pad's card peek (查看将发送的需求卡).
-  const [peekOpen, setPeekOpen] = useState(false);
-  const queryClient = useQueryClient();
-  // The session rows read from the App's own list model — the same rows the Inbox's list shows (subject,
-  // agent, waiting), instant and always in step with it.
-  const list = useListModel(queryClient);
-  const [contextPreviews, setContextPreviews] = useState<Record<string, 'loading' | { text?: string; image?: string; link?: string; html?: boolean } | { error: string }>>({});
-  const [card, setCard] = useState<string | null>(null);
-  // The detail's own two areas: the left list picks, the right shows. History is a row like any other.
-  const [view, setView] = useState<{ k: 'overview' } | { k: 'deliverable'; id: string } | { k: 'session'; id: string } | { k: 'history' }>(openThreadId !== null ? { k: 'session', id: openThreadId } : { k: 'overview' });
-  useEffect(() => {
-    if (openThreadId !== null) setView({ k: 'session', id: openThreadId });
-  }, [openThreadId]);
-  const contextDialog = useRef<HTMLDialogElement | null>(null);
-
-  /** 编辑: rename any context, a link's address, or a text file's words (rewritten in the library). */
-  const openEditContext = (context: RequirementContext) => {
-    setEditContext(context);
-    setContextName(context.name);
-    setContextRef(context.kind === 'link' ? context.ref : '');
-    setContextText('');
-    setContextFile(null);
-    setContextKind(context.kind === 'link' ? 'link' : 'text');
-    if (context.kind === 'file' && !context.image && /\.(md|markdown|txt)$/i.test(context.ref)) {
-      setContextText('…');
-      void contextContent(id, context.id).then((answer) => {
-        if (answer && !(answer as { error?: string }).error) setContextText((answer as { text?: string }).text ?? '');
-      });
-    }
-    contextDialog.current?.showModal();
-  };
-
-  /** 添加上下文: link straight in; text becomes a file in the requirement's library; a file uploads (base64 in
-   *  the JSON body, so the window's session check holds). All three land as one reference on the card. */
-  const addTheContext = async () => {
-    if (contextBusy) return;
-    setContextBusy(true);
-    try {
-      let outcome: { ok: boolean; error?: string };
-      if (editContext) {
-        outcome = await patchContext(id, editContext.id, {
-          name: contextName.trim(),
-          ...(editContext.kind === 'link' && contextRef.trim() ? { ref: contextRef.trim() } : {}),
-          ...(editContext.kind === 'file' && contextKind === 'text' ? { text: contextText } : {}),
-        });
-        if (outcome.ok) setContextPreviews((held) => { const next = { ...held }; delete next[editContext.id]; return next; });
-      }
-      else if (contextKind === 'link') outcome = await addContext(id, { kind: 'link', name: contextName.trim(), ref: contextRef.trim() });
-      else if (contextKind === 'text') outcome = await addContext(id, { kind: 'text', name: contextName.trim(), text: contextText });
-      else if (contextFile) outcome = await addContext(id, { kind: 'upload', name: contextName.trim(), data: await fileAsBase64(contextFile) });
-      else outcome = { ok: false, error: '先选一个文件。' };
-      if (!outcome.ok) {
-        setError(outcome.error ?? '添加失败。');
-        return;
-      }
-      contextDialog.current?.close();
-    } finally {
-      setContextBusy(false);
-    }
-  };
-  const [streamOpen, setStreamOpen] = useState<string | null>(null);
-  const streamsRead = useRef<ReadonlySet<string>>(new Set());
-  const reload = useRef<AbortController | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  /** Every deliverable previews itself: all contents are read in parallel when the requirement lands, so the
-   *  page opens with its documents already on it — nothing to unfold, nothing to wait on one at a time. */
-  useEffect(() => {
-    for (const deliverable of detail?.requirement.deliverables ?? []) {
-      if (previews[deliverable.id] !== undefined) continue;
-      setPreviews((held) => ({ ...held, [deliverable.id]: 'loading' }));
-      void deliverableContent(id, deliverable.id).then((answer) => {
-        setPreviews((held) => ({ ...held, [deliverable.id]: answer as never }));
-      });
-    }
-  }, [detail, id]);
-
-  /** The sessions' rows from the list model, keyed by thread id (null: not in the list). */
-  const rowsByThread = new Map(
-    [...(list?.sections ?? []).flatMap((section) => section.threads), ...(list?.snoozed ?? []), ...(list?.pins ?? [])].map((row) => [row.thread_id, row]),
-  );
-
-  /** Which of the requirement's threads have a transcript here, read once per thread while the pane is open. */
-  useEffect(() => {
-    for (const threadId of detail?.requirement.threads ?? []) {
-      if (streamsRead.current.has(threadId)) continue;
-      const read = new Set(streamsRead.current);
-      read.add(threadId);
-      streamsRead.current = read;
-      void inboxApi.thread(threadId).then((answer) => {
-        const row = (answer as { row?: { section?: string } | null }).row;
-        setThreadMeta((held) => ({ ...held, [threadId]: { stream: (answer.thread as { stream?: true }).stream === true, subject: answer.thread.subject ?? null, waiting: row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting' } }));
-      }).catch(() => {
-        const undo = new Set(streamsRead.current);
-        undo.delete(threadId);
-        streamsRead.current = undo;
-      });
-    }
-  }, [detail]);
-
-  /** 开始做: read what this machine can start (the compose launch block), then the form. */
-  const loadLaunch = () => {
-    setStartLoading(true);
-    void inboxApi.composeSessions().then((model) => {
-      const agents = (model.launch?.agents ?? []).map(({ agent, name }) => ({ agent, name }));
-      const projects = (model.launch?.projects ?? []).filter((project) => project.exists).map(({ id, name }) => ({ id, name }));
-      if (agents.length === 0 || projects.length === 0) {
-        setError(agents.length === 0 ? '这台机器现在起不了新会话（没有可用的 agent 运行时）。' : '没有可选的项目文件夹——先在收件箱的 To 里看一眼可用的项目。');
-        return;
-      }
-      const claude = agents.find((entry) => entry.agent === 'claude-code') ?? agents[0]!;
-      setLaunch((held) => ({ agents, projects, agent: held?.agent ?? claude.agent, project: held?.project ?? projects[0]!.id }));
-    }).catch((cause) => {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    }).finally(() => setStartLoading(false));
-  };
-
-  // The launch card is always there: its choices load with the page, once.
-  useEffect(() => {
-    if (detail && detail.requirement.stage === 'design' && launch === null && !startLoading) loadLaunch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detail]);
-
-  const submitStart = () => {
-    if (!launch || starting) return;
-    if ((detail?.requirement.contexts.length ?? 0) === 0) return;
-    setStarting(true);
-    void inboxApi.startThread({
-      to: { launch: { agent: launch.agent as InboxLaunchAgent, project_id: launch.project } },
-      body: card ?? `用 plannotator requirement 工具开始做「${detail?.requirement.title ?? ''}」。`,
-      idempotency_key: crypto.randomUUID(),
-      thread_name: detail?.requirement.title ?? undefined,
-    }).then((answer) => {
-      onPatch(id, { threads: [...(detail?.requirement.threads ?? []), answer.thread_id] });
-      setView({ k: 'session', id: answer.thread_id });
-    }).catch((cause) => {
-      setError(cause instanceof Error ? cause.message : String(cause));
-      setStarting(false);
-    });
-  };
-
-  const read = () => {
-    reload.current?.abort();
-    const controller = new AbortController();
-    reload.current = controller;
-    void readRequirement(id, controller.signal).then((answer) => {
-      if (controller.signal.aborted) return;
-      setDetail(answer);
-      setCard(answer?.card ?? null);
-      if (answer) {
-      }
-    });
-  };
-
-  useEffect(() => {
-    setDetail(null);
-    setError(null);
-    read();
-    // A change anywhere re-reads the open pane (the frames say what changed; one read keeps it exact).
-    const stop = subscribeRequirementFrames(() => {
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(read, 60);
-    });
-    return () => {
-      stop();
-      reload.current?.abort();
-      if (timer.current) clearTimeout(timer.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-
-  const requirement = detail?.requirement ?? null;
-
-  // 返工轮次: how many times the requirement has been moved (back) into 需求设计.
-
+/* ── Card ── */
+function RequirementCard({ requirement, onOpen, onOpenWaiting, onNewSession }: { requirement: Requirement; onOpen: () => void; onOpenWaiting: (threadId: string | null) => void; onNewSession: () => void }) {
   return (
-    <aside className="ib-req-detail" aria-label="需求详情" data-requirement-detail={id}>
-      {streamOpen !== null && <SessionStreamPane threadId={streamOpen} onClose={() => setStreamOpen(null)} />}
-      <dialog
-        className="ib-req-new"
-        aria-labelledby="ib-req-ctx-title"
-        ref={contextDialog}
-      >
-        <form
-          method="dialog"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void addTheContext();
-          }}
-        >
-          <h2 id="ib-req-ctx-title">{editContext ? '编辑上下文' : '添加上下文'}</h2>
-          {!editContext && (
-            <div className="ib-req-ctx-kinds" role="tablist">
-              {(['link', 'text', 'upload'] as const).map((kind) => (
-                <button key={kind} type="button" className={`ib-req-ctx-kind${contextKind === kind ? ' on' : ''}`} role="tab" aria-selected={contextKind === kind} onClick={() => setContextKind(kind)}>
-                  {kind === 'link' ? '链接' : kind === 'text' ? '文本' : '文件'}
-                </button>
-              ))}
-            </div>
-          )}
-          <input
-            className="ib-req-new-input"
-            aria-label="名称"
-            placeholder={contextKind === 'link' ? '名称，如「PRD」' : contextKind === 'text' ? '名称，如「背景说明」' : '名称，如「登录接口文档」'}
-            value={contextName}
-            onChange={(event) => setContextName(event.target.value)}
-          />
-          {contextKind === 'link' && (
-            <input className="ib-req-new-input" aria-label="URL" placeholder="https://…" value={contextRef} onChange={(event) => setContextRef(event.target.value)} />
-          )}
-          {contextKind === 'text' && (
-            <textarea className="ib-req-new-input ib-req-ctx-text" aria-label="内容" rows={7} placeholder="贴进来——保存时自动落成文件" value={contextText} onChange={(event) => setContextText(event.target.value)} />
-          )}
-          {contextKind === 'upload' && !editContext && (
-            <input className="ib-req-ctx-file" aria-label="文件" type="file" onChange={(event) => setContextFile(event.target.files?.[0] ?? null)} />
-          )}
-          <p className="ib-req-new-hint">{contextKind === 'link' ? '会话开工时会拿到这个链接。' : contextKind === 'text' ? '文本保存为需求库里的文件，会话按路径读取。' : '文件拷贝进需求库；图片会话可以直接看。'}</p>
-          <div className="ib-req-new-act">
-            <button type="button" className="ib-btn ib-sm" onClick={() => contextDialog.current?.close()}>
-              取消
-            </button>
-            <button type="submit" className="ib-btn ib-sm ib-req-new-ok" data-requirements-context-create="" disabled={contextBusy || !contextName.trim() || (contextKind === 'link' && !contextRef.trim()) || (contextKind === 'text' && !contextText.trim()) || (contextKind === 'upload' && !contextFile)}>
-              添加
-            </button>
-          </div>
-        </form>
-      </dialog>
-      {requirement === null ? (
-        <div className="ib-crdp-body">
-          <p aria-busy="true">读取需求中…</p>
-        </div>
-      ) : (
-        <div className="ib-crdp-body ib-req-body">
-          {/* Two rounded blocks, as the Inbox's own list column and thread pane: the left block's head is the
-              requirement's name, its groups the areas (a band and rows, as 阻碍工作/安静 are in the list), and
-              whatever row the person picks opens in the right block. */}
-          <div className="ib-req-col">
-            <div className="ib-lhead">
-              <SidebarTrigger />
-              <button type="button" className="ib-bback" data-requirements-back="" onClick={onClose} aria-label="回到工坊">
-                <Icon name="chevL" size={16} />
-                <span className="ib-bback-l">工坊</span>
-              </button>
-              <h1 className="ib-lhead-h" dir="auto">{requirement.title}</h1>
-              <span className="ib-req-stage-chip">{requirementStageLabel(requirement.stage)}</span>
-              <span className="ib-sp" />
-                  </div>
-            <div className="ib-req-groups">
-              <button type="button" className={`ib-req-cookrow${view.k === 'overview' ? ' on' : ''}`} aria-current={view.k === 'overview' ? 'true' : undefined} onClick={() => setView({ k: 'overview' })}>
-                <span className="ib-req-cookchip">cook</span>
-                <span className="ib-req-cookrow-t">指挥中心<small>备料 · 下指令 · 推进阶段</small></span>
-              </button>
-
-              <ReqGroup label="产物" count={requirement.deliverables.length > 0 ? String(requirement.deliverables.length) : ''}>
-                {requirement.deliverables.map((deliverable) => (
-                  <ReqRow key={deliverable.id} selected={view.k === 'deliverable' && view.id === deliverable.id} icon="cube" title={deliverable.title ?? deliverable.ref.split('/').pop() ?? deliverable.ref} preview={DELIVERABLE_KIND_LABELS[deliverable.kind]} onClick={() => { setView({k: 'deliverable', id: deliverable.id}); if (!previews[deliverable.id]) { setPreviews((held) => ({...held, [deliverable.id]: 'loading'})); void deliverableContent(id, deliverable.id).then((answer) => setPreviews((held) => ({...held, [deliverable.id]: answer as never}))); } } } />
-                ))}
-              </ReqGroup>
-              <ReqGroup label="会话" count={requirement.threads.length > 0 ? String(requirement.threads.length) : ''}>
-                {requirement.threads.map((threadId) => {
-                  const row = rowsByThread.get(threadId) ?? null;
-                  const agent = row ? rowAgent(row) : null;
-                  const waiting = row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting';
-                  return (
-                    <ReqRow
-                      key={threadId}
-                      selected={view.k === 'session' && view.id === threadId}
-                      host={agent?.kind === 'agent' ? agent.host : null}
-                      title={(row?.subject?.trim() ? row.subject : null) ?? (threadMeta[threadId]?.subject?.trim() ? threadMeta[threadId]!.subject : null) ?? '会话'}
-                      preview={waiting ? '' : (row ? previewOf(row) : null) ?? (agent?.kind === 'agent' ? agent.name ?? 'Claude Code' : '')}
-                      onClick={() => setView({k: 'session', id: threadId})}
-                    />
-                  );
-                })}
-              </ReqGroup>
-              <ReqGroup label="历史" count={(detail?.events ?? []).length > 0 ? String((detail?.events ?? []).length) : ''}>
-                <ReqRow selected={view.k === 'history'} icon="clock" title="时间线" preview={(detail?.events ?? [])[0] ? EVENT_WORDS[(detail!.events[0]!.kind)] ?? '' : '还没有记录'} onClick={() => setView({k: 'history'})} />
-              </ReqGroup>
-            </div>
-          </div>
-          <div className="ib-req-pane">
-            {view.k === 'overview' && (
-              <div className="ib-req-viewbody">
-                <div className="ib-req-journey" aria-label="阶段">
-                  {REQUIREMENT_STAGES.map((stage, index) => (
-                    <span key={stage.id} className="ib-req-journey-item">
-                      {index > 0 && <span className="ib-req-journey-sep">›</span>}
-                      <span className={`ib-req-journey-stop${requirement.stage === stage.id ? ' on' : ''}`}>{stage.label}</span>
-                    </span>
-                  ))}
-                </div>
-
-                {requirement.stage !== 'done' && (
-                  <div className="ib-req-launch">
-                    {requirement.stage !== 'design' && (
-                      <div className="ib-req-launch-act">
-                        <button type="button" className="ib-req-go restart" onClick={() => { onPatch(id, { stage: 'design' }); setView({ k: 'overview' }); }}>
-                          ↩ 重新设计
-                        </button>
-                        <span className="ib-req-launch-note">回到「需求设计」，会话收到通知；改上下文后再开始设计</span>
-                      </div>
-                    )}
-                    <div className="ib-req-seclab">
-                      上下文 <span className="ib-req-seclab-n">{requirement.contexts.length}</span>
-                      <span className="ib-sp" />
-                      <button type="button" className="ib-req-seclab-add" data-requirements-context-add="" onClick={() => { setEditContext(null); setContextKind('link'); setContextName(''); setContextRef(''); setContextText(''); setContextFile(null); contextDialog.current?.showModal(); }}>＋ 添加</button>
-                    </div>
-                    {requirement.contexts.length === 0 ? (
-                      <div className="ib-req-invite">
-                        <span className="ib-req-invite-t"><b>需求卡需要弹药。</b><span>开始设计前至少挂一项背景材料——PRD、接口文档、竞品链接、截图都行。</span></span>
-                        <button type="button" className="ib-req-invite-go" onClick={() => { setEditContext(null); setContextKind('link'); setContextName(''); setContextRef(''); setContextText(''); setContextFile(null); contextDialog.current?.showModal(); }}>去添加</button>
-                      </div>
-                    ) : (
-                    <div className="ib-req-mats">
-                      {requirement.contexts.map((context) => (
-                        <span key={context.id} className={`ib-req-mat${previewCtx === context.id ? ' on' : ''}`} title={context.name} onClick={() => {
-                          setPreviewCtx((held) => (held === context.id ? null : context.id));
-                          if (contextPreviews[context.id] === undefined) {
-                            setContextPreviews((heldMap) => ({ ...heldMap, [context.id]: 'loading' }));
-                            void contextContent(id, context.id).then((answer) => setContextPreviews((heldMap) => ({ ...heldMap, [context.id]: answer as never })));
-                          }
-                        }}>
-                          <span className="ib-req-mat-kind"><Icon name={context.kind === 'link' ? 'clip' : context.image ? 'photo' : 'pen'} size={12} /></span>
-                          <b>{context.name}</b>
-                          <small>{context.kind === 'link' ? new URL(context.ref).hostname : '文件'}</small>
-                          <span className="ib-req-mat-acts">
-                            <button type="button" aria-label="编辑" title="编辑" onClick={(event) => { event.stopPropagation(); openEditContext(context); }}><Icon name="pen" size={12} /></button>
-                            <button type="button" aria-label="移除" title="移除" onClick={(event) => { event.stopPropagation(); void removeContext(id, context.id).then((outcome) => (outcome.ok ? read() : setError(outcome.error))); }}><Icon name="x" size={12} /></button>
-                          </span>
-                        </span>
-                      ))}
-                      <button type="button" className="ib-req-mat-tile-add" onClick={() => { setEditContext(null); setContextKind('link'); setContextName(''); setContextRef(''); setContextText(''); setContextFile(null); contextDialog.current?.showModal(); }}>＋ 再添一项</button>
-                    </div>
-                    )}
-                    {previewCtx !== null && (() => {
-                      const context = requirement.contexts.find((entry) => entry.id === previewCtx);
-                      const preview = context ? contextPreviews[context.id] : undefined;
-                      if (!context) return null;
-                      return (
-                        <div className="ib-req-mat-preview">
-                          {context.kind === 'link' ? (
-                            <a className="ib-req-ctxlink-big" href={context.ref} target="_blank" rel="noreferrer" dir="auto">{context.ref}</a>
-                          ) : preview === 'loading' || preview === undefined ? (
-                            <p className="ib-req-empty">读取中…</p>
-                          ) : 'error' in preview ? (
-                            <p className="ib-req-empty">{preview.error}</p>
-                          ) : preview.image ? (
-                            <img className="ib-req-dlv-img" src={preview.image} alt={context.name} />
-                          ) : preview.html ? (
-                            <iframe className="ib-req-dlv-html" sandbox="allow-scripts" srcDoc={preview.text} title={context.name} />
-                          ) : (
-                            <div className="ib-req-dlv-doc" dir="auto"><ChatMarkdown text={preview.text ?? ''} role="assistant" messageId={`ctx-${context.id}`} /></div>
-                          )}
-                        </div>
-                      );
-                    })()}
-
-                    {requirement.stage === 'design' && (<>
-                    <div className="ib-req-seclab">需求卡 <span className="ib-req-seclab-n">将作为首条消息发送</span></div>
-                    <button type="button" className="ib-req-peek" onClick={() => setPeekOpen((open) => !open)}>
-                      <Icon name={peekOpen ? 'chevD' : 'chevR'} size={11} />
-                      {peekOpen ? '收起' : '展开查看'}
-                    </button>
-                    {peekOpen && card && <pre className="ib-req-cardbody" dir="auto">{card}</pre>}
-
-                    <div className="ib-req-launch-act">
-                      <button type="button" className={`ib-req-go${requirement.contexts.length === 0 || !launch ? ' held' : ''}`} data-requirements-start="" onClick={() => {
-                        if (requirement.contexts.length === 0) { setEditContext(null); setContextKind('link'); setContextName(''); setContextRef(''); setContextText(''); setContextFile(null); contextDialog.current?.showModal(); return; }
-                        submitStart();
-                      }}>
-                        <Icon name="play" size={13} />
-                        {starting ? '正在启动…' : '开始设计'}
-                      </button>
-                      <span className="ib-req-launch-note">{requirement.contexts.length > 0 ? '会话启动后你会落到它的线程里' : '先补至少一项上下文'}</span>
-                    </div>
-                    </>)}
-
-                    {requirement.stage === 'design-review' && (() => {
-                      const doc = requirement.deliverables.find((deliverable) => deliverable.kind === 'design-doc' || /\.(md|markdown|html?)$/i.test(deliverable.ref));
-                      return (
-                        <div className="ib-req-launch-act">
-                          {doc ? (
-                            <button type="button" className="ib-req-go" data-requirements-review="" onClick={() => onStartReview?.(id, doc.id)}>
-                              <Icon name="pen" size={13} />
-                              去评审
-                            </button>
-                          ) : (
-                            <span className="ib-req-launch-note">等设计文档挂上，需求自动进入评审</span>
-                          )}
-                          <span className="ib-req-launch-note">批准 → 需求开发；退回 → 需求设计（批注带给会话）</span>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-            )}
-            {view.k === 'deliverable' && (() => {
-              const deliverable = requirement.deliverables.find((entry) => entry.id === view.id);
-              if (!deliverable) return null;
-              const content = previews[deliverable.id];
-              const annotatable = /\.(md|markdown|txt|html?)$/i.test(deliverable.ref);
-              return (
-                <div className="ib-req-viewbody">
-                  <div className="ib-req-itemhead">
-                    <span className="ib-req-dlv-kind">{DELIVERABLE_KIND_LABELS[deliverable.kind]}</span>
-                    <h3 className="ib-req-itemtitle" dir="auto">{deliverable.title ?? deliverable.ref.split('/').pop() ?? deliverable.ref}</h3>
-                    <span className="ib-req-dlv-meta">{deliverable.by ? `${deliverable.by} · ` : ''}{timeOf(deliverable.created_at)}</span>
-                  </div>
-                  {content === 'loading' || content === undefined ? <p className="ib-req-empty">读取中…</p> : 'error' in content ? <p className="ib-req-empty">{content.error}</p> : content.session ? <p className="ib-req-empty">这是一次 Plannotator 批注会话（{content.session}），不是文件。</p> : content.image ? <img className="ib-req-dlv-img" src={content.image} alt="产物预览" /> : content.binary ? <p className="ib-req-empty">这个产物不是可在这里预览的文档。</p> : content.html ? <iframe className="ib-req-dlv-html" sandbox="allow-scripts" srcDoc={content.text} title="产物预览" /> : <div className="ib-req-dlv-doc" dir="auto"><ChatMarkdown text={content.text ?? ''} role="assistant" messageId={`dlv-${deliverable.id}`} /></div>}
-                  {annotatable && (
-                    <div className="ib-req-dlv-act">
-                      <button type="button" className="ib-btn ib-sm" disabled={annotating === deliverable.id} onClick={() => { setAnnotating(deliverable.id); void annotateDeliverable(id, deliverable.id).then((outcome) => { setAnnotating(null); if (!outcome.ok) setError(outcome.error); }).catch(() => setAnnotating(null)); }}>
-                        <Icon name="pen" size={13} />
-                        {annotating === deliverable.id ? '批注页已打开，完成后写回历史…' : '批注'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-            {/* The session, embedded: the Inbox's own ThreadPane in this block, fed by the shared cache — the
-                conversation, its reply box and question cards, live, without leaving the requirement. */}
-            {view.k === 'session' && (() => {
-              const row = rowsByThread.get(view.id) ?? null;
-              return (
-                <div className="ib-req-embed">
-                  <div className="ib-req-embed-top">
-                    <button type="button" className="ib-sstr-back" onClick={() => setView({ k: 'overview' })}>
-                      <Icon name="chevL" size={14} />
-                      <span>会话列表</span>
-                    </button>
-                    <span className="ib-req-embed-subj" dir="auto">{row?.subject ?? threadMeta[view.id]?.subject ?? '会话'}</span>
-                    <span className="ib-sp" />
-                    <button type="button" className="ib-iconbtn" title="在收件箱中打开（全功能视图）" aria-label="在收件箱中打开" onClick={() => onOpenThread(view.id)}>
-                      <Icon name="expand" size={14} />
-                    </button>
-                  </div>
-                  <EmbeddedThread threadId={view.id} onClose={() => setView({ k: 'overview' })} onChanged={() => { void inboxApi.thread(view.id).then((read) => putThread(queryClient, view.id, read)); onReplied?.(); }} />
-                </div>
-              );
-            })()}
-            {view.k === 'history' && (
-              <div className="ib-req-viewbody">
-              <section aria-label="历史">
-                <h3 className="ib-req-h">历史</h3>
-                <ol className="ib-req-hist">
-                  {[...(detail?.events ?? [])].reverse().slice(0, 12).map((event) => (
-                    <li key={event.id} className="ib-req-hist-row">
-                      <span className="ib-req-hist-time">{timeOf(event.at)}</span>
-                      <span className="ib-req-hist-word">{EVENT_WORDS[event.kind] ?? event.kind}</span>
-                      {event.note ? <span className="ib-req-hist-note" dir="auto">{event.note.length > 90 ? `${event.note.slice(0, 90)}…` : event.note}</span> : event.field ? <span className="ib-req-hist-note">{event.field}</span> : null}
-                    </li>
-                  ))}
-                </ol>
-              </section>
-              </div>
-            )}
-            {error && (
-              <p className="ib-error" role="alert">
-                {error}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-    </aside>
-  );
-}
-
-/** The panel: a Board page whose lanes are the seven stages; `archived` shows the 已归档 page instead. */
-export function RequirementsPanel({ on, archived = false, openId = null, openThreadId = null, onView, onOpen, onOpenThread }: { on: boolean; archived?: boolean; openId?: string | null; openThreadId?: string | null; onView: (archived: boolean) => void; onOpen: (id: string | null, threadId?: string | null) => void; onOpenThread: (threadId: string) => void }) {
-  const { requirements, archived: archivedList, archivedCount, create, patch, error, clearError, refresh } = useRequirements(on, subscribeRequirementFrames);
-  // 等你 answers at once: the detail can ask for a requirements refresh the moment a reply leaves.
-  const refreshRef = useRef(refresh);
-  refreshRef.current = refresh;
-  // 等你 is computed from the threads' rows: a reply moves the list's cursor, and that refresh keeps the
-  // badges true the moment the person answers.
-  const panelClient = useQueryClient();
-  const panelList = useListModel(panelClient);
-  const panelListCursor = panelList?.cursor ?? null;
-  useEffect(() => {
-    if (on && panelListCursor !== null) refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [panelListCursor]);
-  // 新建需求 is a dialog: one question (the title), Enter makes it, Esc walks away — then the card sits in 需求设计, ready to start.
-  const newDialog = useRef<HTMLDialogElement | null>(null);
-  const [draft, setDraft] = useState('');
-  /** The card being dragged (the Board's own mechanism: state, not the dataTransfer's contents). */
-  const [dragging, setDragging] = useState<Requirement | null>(null);
-  // 去评审 (stage-auto-design §2): gated annotate on the design doc; the verdict moves the stage and tells the session.
-  const [reviewing, setReviewing] = useState<string | null>(null);
-  const [reviewError, setReviewError] = useState<string | null>(null);
-  const setError = (message: string | null) => setReviewError(message);
-  const [over, setOver] = useState<RequirementStage | null>(null);
-
-  const submit = () => {
-    const title = draft.trim();
-    if (!title) {
-      newDialog.current?.close();
-      return;
-    }
-    setDraft('');
-    newDialog.current?.close();
-    void create({ title });
-  };
-
-  const shown = archived ? (archivedList ?? []) : (requirements ?? []);
-  const lanes = new Map<RequirementStage, Requirement[]>(REQUIREMENT_STAGES.map((stage) => [stage.id, [] as Requirement[]]));
-  for (const requirement of shown) lanes.get(requirement.stage)?.push(requirement);
-
-  const board = (
-    <div className="ib-blanes" data-dragging={dragging ? '' : undefined}>
-      {REQUIREMENT_STAGES.map((stage) => {
-        const cards = lanes.get(stage.id) ?? [];
-        const target = !archived && dragging !== null && dragging.stage !== stage.id;
-        const dragOver = (event: React.DragEvent) => {
-          if (!target) return;
-          event.preventDefault();
-          event.dataTransfer.dropEffect = 'move';
-          if (over !== stage.id) setOver(stage.id);
-        };
-        return (
-          <section
-            key={stage.id}
-            className="ib-lane"
-            aria-labelledby={`ib-req-lane-${stage.id}`}
-            data-lane={stage.id}
-            data-drop={target ? '' : undefined}
-            data-over={target && over === stage.id ? '' : undefined}
-            onDragOver={dragOver}
-            onDragEnter={dragOver}
-            onDragLeave={(event) => {
-              if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) setOver((current) => (current === stage.id ? null : current));
-            }}
-            onDrop={(event) => {
-              event.preventDefault();
-              const card = dragging;
-              setDragging(null);
-              setOver(null);
-              if (card && card.stage !== stage.id) void patch(card.id, { stage: stage.id });
-            }}
-          >
-            <h2 className="ib-lane-h" id={`ib-req-lane-${stage.id}`} tabIndex={-1}>
-              <Icon name={STAGE_ICON[stage.id]} size={15} className="ib-req-lane-ico" />
-              <span className="ib-lane-l">{stage.label}</span>
-              <span className="ib-lane-n">{cards.length}</span>
-            </h2>
-            <ul className="ib-lane-cards" aria-labelledby={`ib-req-lane-${stage.id}`}>
-              {cards.map((requirement) => (
-                <RequirementCard
-                  key={requirement.id}
-                  requirement={requirement}
-                  open={openId === requirement.id}
-                  dragging={dragging?.id === requirement.id}
-                  draggable={!archived}
-                  onDragStart={() => setDragging(requirement)}
-                  onDragEnd={() => {
-                    setDragging(null);
-                    setOver(null);
-                  }}
-                  onOpen={() => onOpen(requirement.id)}
-                  onOpenWaiting={(threadId) => onOpen(requirement.id, threadId)}
-                  onStart={() => onOpen(requirement.id)}
-                  onStartReview={(requirementId, deliverableId) => { setReviewing(requirementId); void reviewDeliverable(requirementId, deliverableId).then((outcome) => { if (!outcome.ok) { setError(outcome.error); setReviewing(null); } }); }}
-                  reviewing={reviewing}
-                  onArchiveToggle={() => void patch(requirement.id, { archived: requirement.archived_at == null })}
-                />
-              ))}
-            </ul>
-            {cards.length === 0 && <p className="ib-lane-empty">{archived ? '没有已归档的需求。' : stage.wants ? `还没有需求；此阶段产出${stage.wants}。` : '还没有需求。'}</p>}
-          </section>
-        );
-      })}
+    <div className="ib-req-fcard" data-requirement-id={requirement.id} onClick={onOpen} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }}>
+      <div className="ib-req-fcard-top"><b dir="auto">{requirement.title}</b><span className="ib-req-fcard-age">{ageOf(requirement.updated_at)}</span></div>
+      <div className="ib-req-fcard-marks">
+        {requirement.waiting === true && <button type="button" className="ib-req-fcard-wait" onClick={(e) => { e.stopPropagation(); onOpenWaiting(requirement.waiting_thread ?? null); }}><Icon name="comment" size={11} /> 等你 ›</button>}
+        {requirement.threads.length > 0 && <span className="ib-req-fcard-mark"><Icon name="comment" size={11} /> {requirement.threads.length}</span>}
+        {requirement.deliverables.length > 0 && <span className="ib-req-fcard-mark"><Icon name="clip" size={11} /> {requirement.deliverables.length}</span>}
+        {requirement.contexts.length > 0 && <span className="ib-req-fcard-mark"><Icon name="pen" size={11} /> {requirement.contexts.length}</span>}
+      </div>
+      <div className="ib-req-fcard-act">
+        <button type="button" className="ib-req-fcard-new" onClick={(e) => { e.stopPropagation(); onNewSession(); }}><Icon name="plus" size={12} /> 开启新会话</button>
+      </div>
     </div>
   );
+}
+
+/* ── Panel ── */
+export function RequirementsPanel({ on, openId = null, openThreadId = null, onOpen, onOpenThread }: { on: boolean; openId?: string | null; openThreadId?: string | null; onOpen: (id: string | null, threadId?: string | null) => void; onOpenThread: (threadId: string) => void }) {
+  const { requirements, create, refresh } = useRequirements(on, subscribeRequirementFrames);
+  const [draft, setDraft] = useState('');
+  const newDialog = useRef<HTMLDialogElement | null>(null);
+  const sessionDialog = useRef<HTMLDialogElement | null>(null);
+  const [sessionFor, setSessionFor] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const panelList = useListModel(queryClient);
+  const cursor = panelList?.cursor ?? null;
+  useEffect(() => { if (on && cursor !== null) refresh(); /* eslint-disable-next-line */ }, [cursor]);
+
+  const rowsByThread = new Map(
+    [...(panelList?.sections ?? []).flatMap((s) => s.threads), ...(panelList?.snoozed ?? []), ...(panelList?.pins ?? [])].map((row) => [row.thread_id, row]),
+  );
+
+  const submitNew = () => {
+    const title = draft.trim();
+    if (!title) { newDialog.current?.close(); return; }
+    setDraft(''); newDialog.current?.close(); void create({ title });
+  };
 
   return (
-    <section className="ib-bpage" aria-labelledby="ib-req-title" data-requirements-page="" data-requirements-view={openId ? 'detail' : archived ? 'archived' : 'board'}>
-      {/* The board's own head (工坊, 已归档, 新建) is the board's: a requirement's page takes the whole panel, so
-          the head rides only with the board. */}
+    <section className="ib-bpage" data-requirements-page="" data-requirements-view={openId ? 'detail' : 'list'} aria-label="工坊">
       {!openId && (
-        <div className="ib-bhead">
-          <SidebarTrigger />
-          {archived ? (
-            <>
-              <button type="button" className="ib-bback" data-requirements-back="" onClick={() => onView(false)}>
-                <Icon name="chevL" size={16} />
-                工坊
-              </button>
-              <h1 id="ib-req-title" tabIndex={-1}>
-                已归档
-              </h1>
-            </>
-          ) : (
-            <>
-              <h1 id="ib-req-title" tabIndex={-1}>
-                工坊
-              </h1>
-              <span className="ib-bsp" />
-              <nav className="ib-blinks" aria-label="已归档的需求">
-                <a
-                  href="#requirements&archived"
-                  data-requirements-link="archived"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    onView(true);
-                  }}
-                >
-                  已归档 {archivedCount}
-                </a>
-              </nav>
-              <button
-                type="button"
-                className="ib-btn ib-sm ib-bnew"
-                data-requirements-new=""
-                onClick={() => {
-                  setDraft('');
-                  newDialog.current?.showModal();
-                  clearError();
-                }}
-              >
-                <Icon name="plus" size={15} />
-                新建需求
-              </button>
-            </>
-          )}
+        <div className="ib-req-flat">
+          <div className="ib-req-flat-head">
+            <SidebarTrigger />
+            <h1>工坊</h1>
+            <button type="button" className="ib-req-flat-new" onClick={() => { setDraft(''); newDialog.current?.showModal(); }}><Icon name="plus" size={14} /> 新建需求</button>
+          </div>
+          <div className="ib-req-flat-list">
+            {(requirements ?? []).map((r) => (
+              <RequirementCard key={r.id} requirement={r} onOpen={() => onOpen(r.id)} onOpenWaiting={(t) => onOpen(r.id, t)} onNewSession={() => { setSessionFor(r.id); sessionDialog.current?.showModal(); }} />
+            ))}
+            {(requirements ?? []).length === 0 && <p className="ib-req-flat-empty">还没有需求。新建一个，挂上上下文，开启会话开工。</p>}
+          </div>
         </div>
-      )}
-      {(error ?? reviewError) && (
-        <div className="ib-error ib-bfail" role="alert">
-          {error ?? reviewError}
-        </div>
-      )}
-      {openId ? (
-        <div className="ib-bmain ib-req-main">
-          <RequirementDetail
-            key={openId}
-            id={openId}
-            openThreadId={openThreadId}
-            onReplied={() => refreshRef.current()}
-            onStartReview={(requirementId, deliverableId) => {
-              setReviewing(requirementId);
-              void reviewDeliverable(requirementId, deliverableId).then((outcome) => {
-                if (!outcome.ok) {
-                  setError(outcome.error);
-                  setReviewing(null);
-                }
-              });
-            }}
-            onClose={() => onOpen(null, null)}
-            onPatch={(id, patchIn) => void patch(id, patchIn)}
-            onOpenThread={onOpenThread}
-          />
-        </div>
-      ) : (
-        board
       )}
 
-      <dialog
-        ref={newDialog}
-        className="ib-req-new"
-        aria-labelledby="ib-req-new-title"
-        onClose={() => setDraft('')}
-      >
-        <form
-          method="dialog"
-          onSubmit={(event) => {
-            event.preventDefault();
-            submit();
-          }}
-        >
-          <h2 id="ib-req-new-title">新建需求</h2>
-          <input
-            ref={(node) => {
-              if (node && newDialog.current?.open) queueMicrotask(() => node.focus());
-            }}
-            className="ib-req-new-input"
-            aria-label="需求标题"
-            placeholder="一句话说清要做什么"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-          />
-          <p className="ib-req-new-hint">回车创建；Esc 放弃。新需求直接落在「需求设计」。</p>
+      <dialog ref={newDialog} className="ib-req-new" aria-labelledby="ib-req-new-t" onClose={() => setDraft('')}>
+        <form method="dialog" onSubmit={(e) => { e.preventDefault(); submitNew(); }}>
+          <h2 id="ib-req-new-t">新建需求</h2>
+          <input ref={(n) => { if (n && newDialog.current?.open) queueMicrotask(() => n.focus()); }} className="ib-req-new-input" aria-label="需求标题" placeholder="一句话说清要做什么" value={draft} onChange={(e) => setDraft(e.target.value)} />
+          <p className="ib-req-new-hint">回车创建；Esc 放弃。</p>
           <div className="ib-req-new-act">
-            <button type="button" className="ib-btn ib-sm" onClick={() => newDialog.current?.close()}>
-              取消
-            </button>
-            <button type="submit" className="ib-btn ib-sm ib-req-new-ok" data-requirements-create="" disabled={!draft.trim()}>
-              创建
-            </button>
+            <button type="button" className="ib-btn ib-sm" onClick={() => newDialog.current?.close()}>取消</button>
+            <button type="submit" className="ib-btn ib-sm ib-req-new-ok" disabled={!draft.trim()}>创建</button>
           </div>
         </form>
       </dialog>
+
+      {sessionFor !== null && (
+        <NewSessionDialog requirementId={sessionFor} requirement={(requirements ?? []).find((r) => r.id === sessionFor) ?? null} onClose={() => { sessionDialog.current?.close(); setSessionFor(null); }} onStarted={(t) => { onOpen(sessionFor, t); setSessionFor(null); }} dialogRef={sessionDialog} />
+      )}
+
+      {openId !== null && (
+        <RequirementDetail id={openId} openThreadId={openThreadId} rowsByThread={rowsByThread} onClose={() => onOpen(null, null)} onOpenThread={onOpenThread} onNewSession={() => { setSessionFor(openId); sessionDialog.current?.showModal(); }} queryClient={queryClient} />
+      )}
     </section>
   );
 }
 
-/** A file as base64 for the JSON upload (the window's POSTs carry their session in the body). */
-async function fileAsBase64(file: File): Promise<string> {
-  const buffer = await file.arrayBuffer();
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  const chunk = 0x8000;
-  for (let index = 0; index < bytes.length; index += chunk) binary += String.fromCharCode(...bytes.subarray(index, index + chunk));
-  return btoa(binary);
-}
+/* ── 开启新会话 ── */
+function NewSessionDialog({ requirementId, requirement, onClose, onStarted, dialogRef }: { requirementId: string; requirement: Requirement | null; onClose: () => void; onStarted: (threadId: string) => void; dialogRef: React.RefObject<HTMLDialogElement | null> }) {
+  const [mode, setMode] = useState<'idea' | 'template'>('idea');
+  const [launch, setLaunch] = useState<{ agents: { agent: string; name: string }[]; projects: { id: string; name: string }[]; agent: string; project: string } | null>(null);
+  const [openRow, setOpenRow] = useState<'agent' | 'project' | null>(null);
+  const [words, setWords] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tBg, setTBg] = useState(''); const [tGoal, setTGoal] = useState(''); const [tAcc, setTAcc] = useState('');
+  const [tCtx, setTCtx] = useState<ReadonlySet<string>>(new Set());
 
+  useEffect(() => {
+    void inboxApi.composeSessions().then((m) => {
+      const agents = (m.launch?.agents ?? []).map(({ agent, name }) => ({ agent, name }));
+      const projects = (m.launch?.projects ?? []).filter((p) => p.exists).map(({ id, name }) => ({ id, name }));
+      const claude = agents.find((a) => a.agent === 'claude-code') ?? agents[0];
+      if (agents.length > 0 && projects.length > 0) setLaunch({ agents, projects, agent: claude.agent, project: projects[0]!.id });
+      else setError(agents.length === 0 ? '没有可用的 agent。' : '没有可选的项目。');
+    }).catch((c) => setError(c instanceof Error ? c.message : String(c)));
+  }, []);
 
-/** A group in the detail's left block: the Inbox's own band header (collapsible, count in its corner) and rows. */
-function ReqGroup({ label, count, children }: { label: string; count: string; children: ReactNode }) {
-  const [open, setOpen] = useState(true);
+  const send = async () => {
+    if (!launch || busy) return;
+    setBusy(true);
+    try {
+      const body = mode === 'idea'
+        ? (words.trim() || `用 plannotator requirement 工具开始做「${requirement?.title ?? ''}」。`)
+        : [`# 需求：${requirement?.title ?? ''}`,
+           tBg.trim() ? `\n## 背景\n\n${tBg.trim()}` : '',
+           tGoal.trim() ? `\n## 目标\n\n${tGoal.trim()}` : '',
+           tCtx.size > 0 && requirement ? `\n## 上下文材料\n\n${requirement.contexts.filter((c) => tCtx.has(c.id)).map((c) => `- ${c.kind === 'link' ? `链接：${c.ref}` : `文件：${c.ref}`} —— ${c.name}`).join('\n')}` : '',
+           tAcc.trim() ? `\n## 验收标准\n\n${tAcc.trim()}` : '',
+           `\n用 plannotator requirement 工具 link 本会话到 \`${requirementId}\`。`,
+          ].filter(Boolean).join('\n');
+      const answer = await inboxApi.startThread({ to: { launch: { agent: launch.agent as InboxLaunchAgent, project_id: launch.project } }, body, idempotency_key: crypto.randomUUID(), thread_name: requirement?.title ?? undefined });
+      onStarted(answer.thread_id);
+    } catch (c) { setError(c instanceof Error ? c.message : String(c)); } finally { setBusy(false); }
+  };
+
   return (
-    <div className="ib-group">
-      <GroupBand open={open} onToggle={() => setOpen(!open)}>
-        {label} {count && <span className="ib-n">{count}</span>}
-      </GroupBand>
-      {open && children}
-    </div>
+    <dialog ref={dialogRef} className="ib-req-ns-dialog" aria-labelledby="ib-req-ns-t" onClose={onClose}>
+      <div className="ib-req-ns">
+        <div className="ib-req-ns-head"><span className="ib-req-ns-title">开启新会话</span><span className="ib-req-ns-sub">为「{requirement?.title ?? ''}」</span></div>
+        <div className="ib-req-ns-to">
+          <span className="ib-req-ns-tol">发送给</span>
+          <button type="button" className="ib-req-ns-agent" onClick={() => setOpenRow((r) => (r === 'agent' ? null : 'agent'))}>
+            <span className="ib-req-ns-mk">C</span> {launch?.agents.find((a) => a.agent === launch.agent)?.name ?? '读取中…'}
+          </button>
+          <span className="ib-req-ns-sep">·</span>
+          <button type="button" className="ib-req-ns-proj" onClick={() => setOpenRow((r) => (r === 'project' ? null : 'project'))}>
+            位于 {launch?.projects.find((p) => p.id === launch.project)?.name ?? '读取中…'}
+          </button>
+          {openRow !== null && <div className="ib-req-dropback" onClick={() => setOpenRow(null)} />}
+          {openRow === 'agent' && (
+            <div className="ib-req-ns-drop" role="listbox" aria-label="会话类型">
+              {(launch?.agents ?? []).map((a) => <button key={a.agent} type="button" className={launch?.agent === a.agent ? 'on' : ''} onClick={() => { if (launch) setLaunch({ ...launch, agent: a.agent }); setOpenRow(null); }}>{a.name}</button>)}
+            </div>
+          )}
+          {openRow === 'project' && (
+            <div className="ib-req-ns-drop" role="listbox" aria-label="项目">
+              {(launch?.projects ?? []).map((p) => <button key={p.id} type="button" className={launch?.project === p.id ? 'on' : ''} onClick={() => { if (launch) setLaunch({ ...launch, project: p.id }); setOpenRow(null); }}>{p.name}</button>)}
+            </div>
+          )}
+        </div>
+        <div className="ib-req-ns-tabs">
+          <button type="button" className={mode === 'idea' ? 'on' : ''} onClick={() => setMode('idea')}>写想法</button>
+          <button type="button" className={mode === 'template' ? 'on' : ''} onClick={() => setMode('template')}>用模板</button>
+        </div>
+        {mode === 'idea' ? (
+          <textarea className="ib-req-ns-idea" rows={5} placeholder="把你的想法告诉会话——它会带着需求卡开工…" value={words} onChange={(e) => setWords(e.target.value)} aria-label="想法" />
+        ) : (
+          <div className="ib-req-ns-tmpl">
+            <label>背景<textarea rows={2} placeholder="为什么要做？" value={tBg} onChange={(e) => setTBg(e.target.value)} /></label>
+            <label>目标<textarea rows={2} placeholder="做到什么程度？" value={tGoal} onChange={(e) => setTGoal(e.target.value)} /></label>
+            {requirement && requirement.contexts.length > 0 && (
+              <label>上下文材料
+                <div className="ib-req-ns-ctx">
+                  {requirement.contexts.map((c) => (
+                    <button key={c.id} type="button" className={`ib-req-ns-mat${tCtx.has(c.id) ? ' on' : ''}`} onClick={() => setTCtx((h) => { const n = new Set(h); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n; })}>
+                      <span className="k">{c.kind === 'link' ? '🔗' : c.image ? '🖼' : '📄'}</span> {c.name}
+                    </button>
+                  ))}
+                  <span className="ib-req-ns-ctx-hint">点击选中/取消</span>
+                </div>
+              </label>
+            )}
+            <label>验收标准<textarea rows={2} placeholder="怎么判断做好了？" value={tAcc} onChange={(e) => setTAcc(e.target.value)} /></label>
+          </div>
+        )}
+        {error && <p className="ib-req-ns-error" role="alert">{error}</p>}
+        <div className="ib-req-ns-act">
+          <button type="button" className="ib-req-ns-send" disabled={busy || !launch} onClick={() => void send()}><Icon name="play" size={13} /> {busy ? '正在启动…' : '发送'}</button>
+          <span className="ib-req-ns-note">会话自动关联到这个需求</span>
+        </div>
+      </div>
+    </dialog>
   );
 }
 
-/** One row of the detail's left block: the Inbox's own .ib-row (height, hairline, hover, selection), scoped tracks. */
-function ReqRow({ selected, icon, host = null, title, preview, onClick }: { selected: boolean; icon?: string; host?: string | null; title: string; preview: string; onClick: () => void }) {
+/* ── 详情（平铺） ── */
+function RequirementDetail({ id, openThreadId = null, rowsByThread, onClose, onOpenThread, onNewSession, queryClient }: { id: string; openThreadId?: string | null; rowsByThread: Map<string, unknown>; onClose: () => void; onOpenThread: (threadId: string) => void; onNewSession: () => void; queryClient: import('@tanstack/react-query').QueryClient }) {
+  const [detail, setDetail] = useState<{ requirement: Requirement; events: RequirementEvent[] } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [dlvPreviews, setDlvPreviews] = useState<Record<string, 'loading' | { text?: string; image?: string; binary?: boolean; session?: string; html?: boolean } | { error: string }>>({});
+  const [embedded, setEmbedded] = useState<string | null>(openThreadId);
+  const [annotating, setAnnotating] = useState<string | null>(null);
+  const reload = useRef<AbortController | null>(null);
+
+  const read = () => {
+    reload.current?.abort();
+    const c = new AbortController(); reload.current = c;
+    void readRequirement(id, c.signal).then((a) => { if (!c.signal.aborted) setDetail(a); });
+  };
+  useEffect(() => { read(); return () => reload.current?.abort(); /* eslint-disable-next-line */ }, [id]);
+  useEffect(() => { if (openThreadId !== null) setEmbedded(openThreadId); }, [openThreadId]);
+  useEffect(() => {
+    for (const d of detail?.requirement.deliverables ?? []) {
+      if (dlvPreviews[d.id] !== undefined) continue;
+      setDlvPreviews((h) => ({ ...h, [d.id]: 'loading' }));
+      void deliverableContent(id, d.id).then((a) => setDlvPreviews((h) => ({ ...h, [d.id]: a as never })));
+    }
+    /* eslint-disable-next-line */ }, [detail]);
+
+  const requirement = detail?.requirement ?? null;
+  if (requirement === null) return null;
+
+  const startReview = (dlvId: string) => {
+    void reviewDeliverable(id, dlvId).then((o) => { if (!o.ok) setError(o.error); });
+  };
+
   return (
-    <div className="ib-rw">
-      <button type="button" className={`ib-row ib-req-navrow${selected ? ' ib-sel' : ''}`} aria-current={selected ? 'true' : undefined} onClick={onClick}>
-        <span className="ib-req-navico">{host !== null ? <HostMark host={host} /> : <Icon name={(icon ?? 'comment') as never} size={16} />}</span>
-        <span className="ib-subj ib-req-navsubj">
-          <span className="ib-title" dir="auto">{title}</span>
-          <span className="ib-req-navp" dir="auto">{preview}</span>
-        </span>
-      </button>
+    <div className="ib-req-fd" data-requirement-detail={id}>
+      <div className="ib-req-fd-top">
+        <SidebarTrigger />
+        <button type="button" className="ib-req-fd-back" onClick={onClose}><Icon name="chevL" size={15} /><span>工坊</span></button>
+        <span className="ib-req-fd-title" dir="auto">{requirement.title}</span>
+        <button type="button" className="ib-req-fd-close" aria-label="关闭" onClick={onClose}><Icon name="x" size={16} /></button>
+      </div>
+
+      <div className="ib-req-fd-actions">
+        {requirement.stage === 'design-review' && (() => {
+          const doc = requirement.deliverables.find((d) => d.kind === 'design-doc' || /\.(md|markdown|html?)$/i.test(d.ref));
+          return doc ? <button type="button" className="ib-req-fd-go" onClick={() => startReview(doc.id)}><Icon name="pen" size={13} /> 去评审</button> : <span className="ib-req-fd-desc">等设计文档挂上</span>;
+        })()}
+        <button type="button" className="ib-req-fd-go" onClick={onNewSession}><Icon name="plus" size={13} /> 开启新会话</button>
+      </div>
+
+      <div className="ib-req-fd-grid">
+        <div className="ib-req-fd-col">
+          <h4 className="ib-req-fd-h">上下文 <span>{requirement.contexts.length}</span></h4>
+          {requirement.contexts.length === 0 && <p className="ib-req-fd-empty">还没有上下文。</p>}
+          <div className="ib-req-fd-mats">
+            {requirement.contexts.map((c: RequirementContext) => (
+              <span key={c.id} className="ib-req-fd-mat"><span className="k">{c.kind === 'link' ? '🔗' : c.image ? '🖼' : '📄'}</span><b>{c.name}</b><small>{c.kind === 'link' ? 'link' : '文件'}</small></span>
+            ))}
+          </div>
+          <h4 className="ib-req-fd-h" style={{ marginTop: 18 }}>会话 <span>{requirement.threads.length}</span></h4>
+          {requirement.threads.length === 0 && <p className="ib-req-fd-empty">还没有会话。点上方「开启新会话」。</p>}
+          {requirement.threads.map((threadId) => {
+            const row = rowsByThread.get(threadId) as { subject?: string | null; section?: string } | undefined;
+            const agent = row ? rowAgent(row as never) : null;
+            const waiting = row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting';
+            const subject = (row?.subject?.trim() ? row.subject : null) ?? '会话';
+            return (
+              <div key={threadId} className="ib-req-fd-sess" onClick={() => setEmbedded(threadId)} role="button" tabIndex={0}>
+                <span className="ib-req-fd-sess-mk">{agent?.kind === 'agent' ? <HostMark host={agent.host} /> : <Icon name="comment" size={14} />}</span>
+                <span className="ib-req-fd-sess-t"><b dir="auto">{subject}</b><small>{agent?.kind === 'agent' ? agent.name ?? 'Claude Code' : ''}</small></span>
+                {waiting && <span className="ib-req-fd-sess-wait">等你</span>}
+              </div>
+            );
+          })}
+        </div>
+        <div className="ib-req-fd-col">
+          <h4 className="ib-req-fd-h">产物 <span>{requirement.deliverables.length}</span></h4>
+          {requirement.deliverables.length === 0 && <p className="ib-req-fd-empty">还没有产物。</p>}
+          {requirement.deliverables.map((d: Deliverable) => {
+            const c = dlvPreviews[d.id];
+            const annotatable = /\.(md|markdown|txt|html?)$/i.test(d.ref);
+            return (
+              <div key={d.id} className="ib-req-fd-dlv">
+                <div className="ib-req-fd-dlv-row"><span className="ib-req-fd-dlv-kind">{DELIVERABLE_KIND_LABELS[d.kind]}</span><b dir="auto">{d.title ?? d.ref.split('/').pop() ?? d.ref}</b><small>{d.by ? `${d.by} · ` : ''}{timeOf(d.created_at)}</small></div>
+                {c === 'loading' || c === undefined ? <p className="ib-req-fd-empty">读取中…</p> : 'error' in c ? <p className="ib-req-fd-empty">{c.error}</p> : c.session ? <p className="ib-req-fd-empty">批注会话（{c.session}）</p> : c.image ? <img className="ib-req-fd-dlv-img" src={c.image} alt="预览" /> : c.binary ? <p className="ib-req-fd-empty">不可预览</p> : c.html ? <iframe className="ib-req-fd-dlv-html" sandbox="allow-scripts" srcDoc={c.text} title="预览" /> : <div className="ib-req-fd-dlv-doc" dir="auto"><ChatMarkdown text={c.text ?? ''} role="assistant" messageId={`dlv-${d.id}`} /></div>}
+                {annotatable && <div className="ib-req-fd-dlv-act"><button type="button" className="ib-btn ib-sm" disabled={annotating === d.id} onClick={() => { setAnnotating(d.id); void annotateDeliverable(id, d.id).then((o) => { setAnnotating(null); if (!o.ok) setError(o.error); }); }}><Icon name="pen" size={12} /> 批注</button></div>}
+              </div>
+            );
+          })}
+          <h4 className="ib-req-fd-h" style={{ marginTop: 18 }}>历史 <span>{(detail?.events ?? []).length}</span></h4>
+          <ol className="ib-req-fd-hist">
+            {[...(detail?.events ?? [])].reverse().slice(0, 12).map((e) => (
+              <li key={e.id}><span className="t">{timeOf(e.at)}</span><span className="w">{EVENT_WORDS[e.kind] ?? e.kind}</span><span className="n" dir="auto">{(e.note ?? '').length > 80 ? `${(e.note ?? '').slice(0, 80)}…` : e.note ?? e.field ?? ''}</span></li>
+            ))}
+          </ol>
+        </div>
+      </div>
+
+      {embedded !== null && (
+        <div className="ib-req-fd-embed">
+          <div className="ib-req-fd-embed-top">
+            <button type="button" className="ib-req-fd-embed-back" onClick={() => setEmbedded(null)}><Icon name="chevL" size={14} /><span>返回</span></button>
+            <span className="ib-req-fd-embed-subj" dir="auto">{((rowsByThread.get(embedded) as { subject?: string } | undefined)?.subject ?? '会话')}</span>
+            <span className="ib-sp" />
+            <button type="button" className="ib-iconbtn" title="在收件箱中打开" onClick={() => onOpenThread(embedded)}><Icon name="expand" size={14} /></button>
+          </div>
+          <EmbeddedThread threadId={embedded} onClose={() => setEmbedded(null)} onChanged={() => { void inboxApi.thread(embedded).then((r) => putThread(queryClient, embedded, r)); read(); }} />
+        </div>
+      )}
+      {error && <p className="ib-error" role="alert">{error}</p>}
     </div>
   );
-}
-
-/** The card's 动静年龄: how long since anyone last wrote (the Board's "2d ago"), in the person's words. */
-function ageOf(iso: string): string {
-  const ms = Date.now() - Date.parse(iso);
-  if (Number.isNaN(ms)) return '';
-  const minutes = Math.floor(ms / 60000);
-  if (minutes < 1) return '刚刚';
-  if (minutes < 60) return `${minutes} 分钟`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} 小时`;
-  const days = Math.floor(hours / 24);
-  return days < 30 ? `${days} 天` : `${Math.floor(days / 30)} 个月`;
-}
-
-/** The requirement's reviewable document (stage-auto-design §2): the design doc, or any document file. */
-function reviewingDoc(requirement: Requirement): { id: string } | null {
-  return requirement.deliverables.find((deliverable) => deliverable.kind === 'design-doc' || /\.(md|markdown|html?)$/i.test(deliverable.ref)) ?? null;
 }
