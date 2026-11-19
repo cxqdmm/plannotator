@@ -5605,9 +5605,7 @@ function Inbox() {
     main = (
       <RequirementsPanel
         on={requirementsOn}
-        openId={route.req ?? null}
         openThreadId={route.reqThread ?? null}
-        onOpen={(id, threadId) => writeRoute({ page: 'requirements', project: null, thread: null, reqArchived: route.reqArchived, req: id, reqThread: threadId ?? null })}
         onOpenThread={(threadId) => writeRoute({ page: 'inbox', project: null, thread: threadId })}
         onCompose={(requirementId, requirementTitle, contexts) => openCompose({ requirement: { id: requirementId, title: requirementTitle, contexts } })}
       />

@@ -1,125 +1,85 @@
 /**
- * 工坊 flat v2: a flat list of requirement cards + a single-page detail +
- * a compose-like dialog. Every token from the app's own theme.
+ * 工坊: the Inbox's own shape — a list panel and a right panel. Full width.
  */
 
-/* ── Flat list ── */
-.ib-bpage[data-requirements-page] { flex: 1; min-width: 0; display: flex; flex-direction: column; background: transparent; }
-.ib-req-flat { flex: 1; min-height: 0; overflow-y: auto; padding: 20px max(24px, calc((100% - 720px) / 2)); }
-.ib-req-flat-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.ib-req-flat-head h1 { font-size: var(--ib-fs-20, 20px); font-weight: 650; letter-spacing: -0.01em; margin: 0; }
-.ib-req-flat-new { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; border: 0; cursor: pointer; border-radius: 8px; padding: 6px 14px; background: var(--primary); color: var(--primary-foreground); font: inherit; font-size: 12.5px; font-weight: 600; }
-.ib-req-flat-new:hover { filter: brightness(1.05); }
-.ib-req-flat-empty { color: var(--muted-foreground); font-size: var(--ib-fs-13, 13px); padding: 40px 0; text-align: center; }
+/* ── Layout: two panels side by side, the list narrowing when the panel is open ── */
+.ib-req-wp { flex: 1; min-width: 0; min-height: 0; display: flex; gap: 10px; padding: 10px; background: transparent; }
 
-/* ── Card ── */
-.ib-req-fcard { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 12px; background: var(--card); box-shadow: 0 0 0 1px color-mix(in oklch, var(--border) 70%, transparent); cursor: pointer; transition: box-shadow 150ms ease-out, transform 170ms cubic-bezier(0.2, 0.7, 0.3, 1); margin-bottom: 8px; }
-.ib-req-fcard:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px color-mix(in oklch, var(--primary) 30%, transparent), 0 6px 16px -8px oklch(0.3 0.03 260 / 0.15); }
-.ib-req-fcard:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
-.ib-req-fcard-top { display: flex; align-items: center; gap: 10px; }
-.ib-req-fcard-top b { font-size: 14.5px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ib-req-fcard-age { flex: none; font-size: 11px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
-.ib-req-fcard-marks { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.ib-req-fcard-mark { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
-.ib-req-fcard-wait { display: inline-flex; align-items: center; gap: 4px; padding: 2.5px 10px; border: 0; border-radius: 999px; background: color-mix(in oklch, var(--warning) 14%, transparent); color: color-mix(in oklch, var(--warning) 80%, var(--foreground)); font: inherit; font-size: 11px; font-weight: 650; cursor: pointer; }
-.ib-req-fcard-wait:hover { background: color-mix(in oklch, var(--warning) 20%, transparent); }
-.ib-req-fcard-act { display: flex; align-items: center; gap: 8px; }
-.ib-req-fcard-new { display: inline-flex; align-items: center; gap: 5px; border: 0; cursor: pointer; border-radius: 8px; padding: 6px 14px; background: var(--primary); color: var(--primary-foreground); font: inherit; font-size: 12px; font-weight: 600; transition: transform 150ms cubic-bezier(0.2, 0.7, 0.3, 1); }
-.ib-req-fcard-new:hover { transform: translateY(-1px); filter: brightness(1.05); }
+/* ── The list panel ── */
+.ib-req-wp-list { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--card); border-radius: var(--ib-lr-lg, 10px); box-shadow: 0 0 0 1px color-mix(in oklch, var(--border) 60%, transparent); overflow: hidden; transition: flex 0.2s cubic-bezier(0.2, 0.7, 0.3, 1); }
+.ib-req-wp-list:has(~ .ib-req-wp-panel) { flex: 0 0 340px; }
+.ib-req-wp-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--ib-line, var(--border)); flex: none; }
+.ib-req-wp-head h1 { font-size: 18px; font-weight: 650; letter-spacing: -0.01em; margin: 0; }
+.ib-req-wp-new { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--ib-hair, var(--border)); background: none; border-radius: 7px; padding: 5px 12px; font: inherit; font-size: 12px; color: var(--muted-foreground); cursor: pointer; }
+.ib-req-wp-new:hover { color: var(--primary); border-color: color-mix(in oklch, var(--primary) 40%, transparent); }
+.ib-req-wp-cards { flex: 1; min-height: 0; overflow-y: auto; padding: 10px; }
+.ib-req-wp-empty { color: var(--muted-foreground); font-size: 13px; padding: 40px 0; text-align: center; margin: 0; }
 
-/* ── 开启新会话 dialog ── */
-.ib-req-ns-dialog { border: 0; border-radius: 14px; padding: 0; background: var(--card); color: var(--foreground); box-shadow: var(--ib-float-shadow); width: min(560px, calc(100vw - 48px)); margin: auto; }
-.ib-req-ns-dialog::backdrop { background: color-mix(in oklch, var(--background) 55%, transparent); backdrop-filter: blur(2px); }
-.ib-req-ns { display: flex; flex-direction: column; gap: 13px; padding: 20px 22px 18px; }
-.ib-req-ns-head { display: flex; align-items: baseline; gap: 10px; }
-.ib-req-ns-title { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
-.ib-req-ns-sub { font-size: 12px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ib-req-ns-to { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; background: color-mix(in oklch, var(--muted) 30%, var(--card)); border: 1px solid var(--border); font-size: 13px; }
-.ib-req-ns-tol { flex: none; font-size: 11px; color: var(--muted-foreground); }
-.ib-req-ns-agent { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 13px; font-weight: 550; background: none; border: 0; color: var(--foreground); cursor: pointer; padding: 0; }
-.ib-req-ns-mk { width: 18px; height: 18px; border-radius: 5px; background: color-mix(in oklch, var(--primary) 14%, transparent); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex: none; }
-.ib-req-ns-sep { color: var(--border); flex: none; }
-.ib-req-ns-proj { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: 13px; font-weight: 550; color: var(--muted-foreground); background: none; border: 0; cursor: pointer; padding: 0; }
-.ib-req-ns-proj:hover { color: var(--foreground); }
-.ib-req-ns-drop { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 4; background: var(--card); border-radius: 11px; box-shadow: 0 0 0 1px color-mix(in oklch, var(--border) 90%, transparent), 0 16px 34px -12px color-mix(in oklch, var(--ib-shadow-ink, var(--background)) 45%, transparent); padding: 5px; animation: ib-ns-drop 0.18s cubic-bezier(0.2, 0.7, 0.3, 1); }
-@keyframes ib-ns-drop { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
-.ib-req-ns-drop button { display: flex; align-items: center; gap: 9px; width: 100%; border: 0; background: none; font: inherit; font-size: 13px; text-align: left; padding: 8px 11px; border-radius: 8px; cursor: pointer; color: var(--foreground); }
-.ib-req-ns-drop button:hover { background: var(--ib-hover, color-mix(in oklch, var(--muted) 45%, transparent)); }
-.ib-req-ns-drop button.on { background: color-mix(in oklch, var(--primary) 9%, transparent); color: var(--primary); font-weight: 600; }
-.ib-req-ns-tabs { display: inline-flex; padding: 3px; gap: 3px; border-radius: 10px; background: var(--muted); align-self: flex-start; }
-.ib-req-ns-tabs button { border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 550; color: var(--muted-foreground); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
-.ib-req-ns-tabs button.on { background: var(--card); color: var(--foreground); box-shadow: 0 1px 4px oklch(0.3 0.03 260 / 0.12); }
-.ib-req-ns-idea { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font: inherit; font-size: 13.5px; line-height: 1.65; background: var(--card); color: var(--foreground); resize: vertical; min-height: 100px; outline: none; }
-.ib-req-ns-idea:focus { border-color: color-mix(in oklch, var(--primary) 50%, transparent); }
-.ib-req-ns-idea::placeholder { color: var(--muted-foreground); }
-.ib-req-ns-tmpl { border: 1px solid color-mix(in oklch, var(--primary) 25%, transparent); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; background: color-mix(in oklch, var(--primary) 3%, var(--card)); }
-.ib-req-ns-tmpl label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; color: var(--primary); }
-.ib-req-ns-tmpl textarea { border: 1px solid color-mix(in oklch, var(--border) 80%, transparent); border-radius: 8px; padding: 8px 11px; font: inherit; font-size: 13px; background: var(--card); color: var(--foreground); resize: vertical; min-height: 40px; line-height: 1.6; outline: none; }
-.ib-req-ns-tmpl textarea:focus { border-color: color-mix(in oklch, var(--primary) 45%, transparent); }
-.ib-req-ns-tmpl textarea::placeholder { color: var(--muted-foreground); font-weight: 400; }
-.ib-req-ns-ctx { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1.5px dashed color-mix(in oklch, var(--primary) 30%, transparent); border-radius: 9px; background: color-mix(in oklch, var(--primary) 2%, var(--card)); min-height: 40px; align-items: center; }
-.ib-req-ns-mat { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px 4px 5px; border-radius: 7px; border: 1px solid var(--border); background: var(--card); font: inherit; font-size: 11.5px; font-weight: 500; color: var(--muted-foreground); cursor: pointer; }
-.ib-req-ns-mat .k { font-size: 12px; flex: none; }
-.ib-req-ns-mat.on { border-color: color-mix(in oklch, var(--primary) 40%, transparent); background: color-mix(in oklch, var(--primary) 6%, transparent); color: var(--foreground); font-weight: 550; }
-.ib-req-ns-ctx-hint { font-size: 10.5px; color: var(--muted-foreground); font-weight: 400; }
-.ib-req-ns-error { margin: 0; padding: 8px 12px; border-radius: 8px; background: color-mix(in oklch, var(--destructive, red) 8%, transparent); color: var(--destructive, red); font-size: 12px; }
-.ib-req-ns-act { display: flex; align-items: center; gap: 10px; }
-.ib-req-ns-send { display: inline-flex; align-items: center; gap: 7px; border: 0; cursor: pointer; border-radius: 10px; padding: 9px 20px; background: var(--primary); color: var(--primary-foreground); font: inherit; font-size: 13px; font-weight: 600; box-shadow: 0 6px 16px -6px color-mix(in oklch, var(--primary) 60%, transparent); }
-.ib-req-ns-send:disabled { background: var(--muted); color: var(--muted-foreground); box-shadow: none; cursor: default; }
-.ib-req-ns-note { font-size: 11.5px; color: var(--muted-foreground); }
+/* ── A requirement card (expandable) ── */
+.ib-req-wcard { border: 1px solid var(--ib-hair, var(--border)); border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
+.ib-req-wcard-head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 12px; border: 0; background: none; cursor: pointer; font: inherit; text-align: left; }
+.ib-req-wcard-head:hover { background: var(--ib-hover, color-mix(in oklch, var(--muted) 45%, transparent)); }
+.ib-req-wcard-head b { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ib-req-wcard-wait { flex: none; padding: 1.5px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 650; color: color-mix(in oklch, var(--warning) 80%, var(--foreground)); background: color-mix(in oklch, var(--warning) 12%, transparent); }
+.ib-req-wcard-meta { flex: none; display: inline-flex; gap: 6px; font-size: 10.5px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.ib-req-wcard-body { border-top: 1px solid var(--ib-hair, var(--border)); padding: 6px 8px 8px; }
+.ib-req-wcard-sess { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: 0; border-radius: 8px; background: none; cursor: pointer; font: inherit; font-size: 12.5px; text-align: left; color: var(--foreground); }
+.ib-req-wcard-sess:hover { background: var(--ib-hover); }
+.ib-req-wcard-sess-mk { flex: none; }
+.ib-req-wcard-sess-t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.ib-req-wcard-sess-wait { flex: none; font-size: 10px; font-weight: 650; color: color-mix(in oklch, var(--warning) 80%, var(--foreground)); }
+.ib-req-wcard-entries { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.ib-req-wcard-entries button { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--ib-hair, var(--border)); background: none; border-radius: 7px; padding: 4px 10px; font: inherit; font-size: 11px; color: var(--muted-foreground); cursor: pointer; }
+.ib-req-wcard-entries button:hover { color: var(--primary); border-color: color-mix(in oklch, var(--primary) 35%, transparent); }
 
-/* ── 详情（平铺） ── */
-.ib-req-fd { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--card); border-radius: var(--ib-lr-lg, 10px); box-shadow: 0 0 0 1px color-mix(in oklch, var(--border) 60%, transparent); overflow: hidden; }
-.ib-req-fd-top { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--ib-line, var(--border)); flex: none; }
-.ib-req-fd-back { display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; color: var(--muted-foreground); font: inherit; font-size: 12.5px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
-.ib-req-fd-back:hover { background: var(--ib-hover); color: var(--foreground); }
-.ib-req-fd-title { font-size: 18px; font-weight: 650; letter-spacing: -0.015em; flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.ib-req-fd-close { flex: none; border: 0; background: none; color: var(--muted-foreground); cursor: pointer; width: 32px; height: 32px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; }
-.ib-req-fd-close:hover { background: var(--ib-hover); color: var(--foreground); }
-.ib-req-fd-actions { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--ib-hair, var(--border)); flex: none; }
-.ib-req-fd-go { display: inline-flex; align-items: center; gap: 7px; border: 0; cursor: pointer; border-radius: 10px; padding: 8px 18px; background: var(--primary); color: var(--primary-foreground); font: inherit; font-size: 13px; font-weight: 600; box-shadow: 0 6px 16px -6px color-mix(in oklch, var(--primary) 60%, transparent); }
-.ib-req-fd-go:hover { transform: translateY(-1px); }
-.ib-req-fd-desc { font-size: 12px; color: var(--muted-foreground); line-height: 1.5; }
-.ib-req-fd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 18px 24px 24px; overflow-y: auto; flex: 1; min-height: 0; }
-@media (max-width: 800px) { .ib-req-fd-grid { grid-template-columns: 1fr; } }
-.ib-req-fd-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.ib-req-fd-h { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; color: var(--muted-foreground); display: flex; align-items: baseline; gap: 6px; margin: 0 0 6px; }
-.ib-req-fd-h span { font-weight: 400; color: var(--border); }
-.ib-req-fd-empty { color: var(--muted-foreground); font-size: 12.5px; margin: 0; padding: 4px 0; }
-.ib-req-fd-mats { display: flex; flex-wrap: wrap; gap: 6px; }
-.ib-req-fd-mat { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 6px; border-radius: 8px; background: var(--card); box-shadow: 0 0 0 1px color-mix(in oklch, var(--border) 70%, transparent); font-size: 12px; }
-.ib-req-fd-mat .k { font-size: 13px; flex: none; }
-.ib-req-fd-mat b { font-weight: 550; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ib-req-fd-mat small { color: var(--muted-foreground); font-size: 10px; }
-.ib-req-fd-sess { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 10px; background: var(--card); box-shadow: 0 0 0 1px color-mix(in oklch, var(--border) 70%, transparent); font-size: 12.5px; cursor: pointer; transition: box-shadow 130ms ease-out; margin-bottom: 4px; }
-.ib-req-fd-sess:hover { box-shadow: 0 0 0 1px color-mix(in oklch, var(--primary) 30%, transparent); }
-.ib-req-fd-sess-mk { flex: none; }
-.ib-req-fd-sess-t { flex: 1; min-width: 0; }
-.ib-req-fd-sess-t b { display: block; font-weight: 550; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ib-req-fd-sess-t small { color: var(--muted-foreground); font-size: 10.5px; }
-.ib-req-fd-sess-wait { flex: none; font-size: 10.5px; font-weight: 650; color: color-mix(in oklch, var(--warning) 80%, var(--foreground)); }
-.ib-req-fd-dlv { border: 1px solid var(--ib-hair, var(--border)); border-radius: 10px; background: color-mix(in oklch, var(--background) 35%, var(--card)); overflow: hidden; margin-bottom: 6px; }
-.ib-req-fd-dlv-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
-.ib-req-fd-dlv-kind { flex: none; font-size: 10px; color: var(--primary); background: color-mix(in oklch, var(--primary) 8%, transparent); border-radius: 4px; padding: 1px 6px; font-weight: 600; }
-.ib-req-fd-dlv-row b { flex: 1; min-width: 0; font-weight: 550; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ib-req-fd-dlv-row small { flex: none; color: var(--muted-foreground); font-size: 10px; }
-.ib-req-fd-dlv-img { display: block; max-width: 100%; max-height: 300px; border-radius: 6px; margin: 0 12px 8px; }
-.ib-req-fd-dlv-html { width: 100%; height: 320px; border: 0; margin: 0 12px 8px; border-radius: 6px; }
-.ib-req-fd-dlv-doc { padding: 0 12px 8px; font-size: 12.5px; line-height: 1.6; max-height: 300px; overflow-y: auto; }
-.ib-req-fd-dlv-act { display: flex; justify-content: flex-end; padding: 0 12px 8px; }
-.ib-req-fd-hist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
-.ib-req-fd-hist li { display: flex; align-items: baseline; gap: 8px; padding: 2px 0; font-size: 11.5px; line-height: 1.5; }
-.ib-req-fd-hist .t { flex: none; width: 42px; text-align: right; color: var(--muted-foreground); font-variant-numeric: tabular-nums; font-size: 10px; }
-.ib-req-fd-hist .w { font-weight: 500; flex: none; }
-.ib-req-fd-hist .n { color: var(--muted-foreground); overflow-wrap: anywhere; }
+/* ── The right panel ── */
+.ib-req-wp-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--card); border-radius: var(--ib-lr-lg, 10px); box-shadow: 0 0 0 1px color-mix(in oklch, var(--border) 60%, transparent); overflow: hidden; animation: ib-req-panel-in 0.25s cubic-bezier(0.2, 0.7, 0.3, 1); }
+@keyframes ib-req-panel-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ib-req-wp-panel { animation-duration: 1ms; } }
+.ib-req-wp-panel-top { display: flex; align-items: center; gap: 9px; padding: 12px 14px; border-bottom: 1px solid var(--ib-line, var(--border)); flex: none; }
+.ib-req-wp-panel-back { display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; color: var(--muted-foreground); font: inherit; font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.ib-req-wp-panel-back:hover { background: var(--ib-hover); color: var(--foreground); }
+.ib-req-wp-panel-title { font-size: 13px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ib-req-wp-panel-x { flex: none; border: 0; background: none; color: var(--muted-foreground); cursor: pointer; width: 30px; height: 30px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; }
+.ib-req-wp-panel-x:hover { background: var(--ib-hover); color: var(--foreground); }
+.ib-req-wp-panel-body { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+.ib-req-wp-panel-empty { color: var(--muted-foreground); font-size: 12.5px; margin: 0; }
+.ib-req-wp-dlv { border: 1px solid var(--ib-hair, var(--border)); border-radius: 10px; overflow: hidden; }
+.ib-req-wp-dlv-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
+.ib-req-wp-dlv-kind { flex: none; font-size: 10px; color: var(--primary); background: color-mix(in oklch, var(--primary) 8%, transparent); border-radius: 4px; padding: 1px 6px; font-weight: 600; }
+.ib-req-wp-dlv-row b { flex: 1; min-width: 0; font-weight: 550; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ib-req-wp-dlv-row small { flex: none; color: var(--muted-foreground); font-size: 10px; }
+.ib-req-wp-hist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.ib-req-wp-hist li { display: flex; align-items: baseline; gap: 8px; padding: 2px 0; font-size: 11.5px; line-height: 1.5; }
+.ib-req-wp-hist .t { flex: none; width: 42px; text-align: right; color: var(--muted-foreground); font-variant-numeric: tabular-nums; font-size: 10px; }
+.ib-req-wp-hist .w { font-weight: 500; flex: none; }
+.ib-req-wp-hist .n { color: var(--muted-foreground); overflow-wrap: anywhere; }
+.ib-req-wp-panel .ib-pane { flex: 1; min-height: 0; border-radius: 0; }
 
-/* ── Embedded session overlay ── */
-.ib-req-fd-embed { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--card); z-index: 5; }
-.ib-req-fd-embed-top { display: flex; align-items: center; gap: 9px; padding: 10px 14px; border-bottom: 1px solid var(--ib-line, var(--border)); flex: none; }
-.ib-req-fd-embed-back { display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; color: var(--muted-foreground); font: inherit; font-size: 12.5px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
-.ib-req-fd-embed-back:hover { background: var(--ib-hover); color: var(--foreground); }
-.ib-req-fd-embed-subj { font-size: 13px; font-weight: 600; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ib-req-fd-embed .ib-pane { flex: 1; min-height: 0; border-radius: 0; }
+/* ── 新建 dialog ── */
+.ib-req-new { border: 0; border-radius: 14px; padding: 0; background: var(--card); color: var(--foreground); box-shadow: var(--ib-float-shadow); width: min(440px, calc(100vw - 48px)); margin: auto; }
+.ib-req-new::backdrop { background: color-mix(in oklch, var(--background) 55%, transparent); backdrop-filter: blur(2px); }
+.ib-req-new form { display: flex; flex-direction: column; gap: 12px; padding: 20px 20px 16px; }
+.ib-req-new h2 { margin: 0; font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
+.ib-req-new-input { font: inherit; font-size: 14px; color: var(--foreground); background: color-mix(in oklch, var(--background) 45%, var(--card)); border: 1px solid var(--ib-hair, var(--border)); border-radius: 9px; padding: 9px 12px; outline: none; }
+.ib-req-new-input:focus { border-color: color-mix(in oklch, var(--primary) 50%, transparent); }
+.ib-req-new-act { display: flex; justify-content: flex-end; gap: 8px; }
+.ib-req-new-ok { background: var(--primary); color: var(--primary-foreground); }
+
+/* ── Compose template tab ── */
+.ib-cp-tabs { display: inline-flex; padding: 3px; gap: 3px; border-radius: 10px; background: var(--muted); margin-bottom: 8px; }
+.ib-cp-tabs button { border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 550; color: var(--muted-foreground); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
+.ib-cp-tabs button.on { background: var(--card); color: var(--foreground); box-shadow: 0 1px 4px oklch(0.3 0.03 260 / 0.12); }
+.ib-cp-tmpl { border: 1px solid color-mix(in oklch, var(--primary) 25%, transparent); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; background: color-mix(in oklch, var(--primary) 3%, var(--card)); margin-bottom: 8px; }
+.ib-cp-tmpl label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; color: var(--primary); }
+.ib-cp-tmpl textarea { border: 1px solid color-mix(in oklch, var(--border) 80%, transparent); border-radius: 8px; padding: 8px 11px; font: inherit; font-size: 13px; background: var(--card); color: var(--foreground); resize: vertical; min-height: 40px; line-height: 1.6; outline: none; }
+.ib-cp-tmpl textarea:focus { border-color: color-mix(in oklch, var(--primary) 45%, transparent); }
+.ib-cp-tmpl textarea::placeholder { color: var(--muted-foreground); font-weight: 400; }
+.ib-cp-tmpl-ctx { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1.5px dashed color-mix(in oklch, var(--primary) 30%, transparent); border-radius: 9px; background: color-mix(in oklch, var(--primary) 2%, var(--card)); min-height: 40px; align-items: center; }
+.ib-cp-tmpl-mat { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px 4px 5px; border-radius: 7px; border: 1px solid var(--border); background: var(--card); font: inherit; font-size: 11.5px; font-weight: 500; color: var(--muted-foreground); cursor: pointer; }
+.ib-cp-tmpl-mat .k { font-size: 12px; flex: none; }
+.ib-cp-tmpl-mat.on { border-color: color-mix(in oklch, var(--primary) 40%, transparent); background: color-mix(in oklch, var(--primary) 6%, transparent); color: var(--foreground); font-weight: 550; }
+.ib-cp-tmpl-ctx-hint { font-size: 10.5px; color: var(--muted-foreground); font-weight: 400; }
 
 /* ── Notification panel ── */
 .ib-wait-backdrop { position: fixed; inset: 0; z-index: 59; }
@@ -134,34 +94,9 @@
 .ib-wait .t span { display: block; font-size: 11.5px; color: var(--muted-foreground); line-height: 1.5; margin-top: 1px; }
 .ib-wait .t .jump { color: var(--primary); font-size: 11px; font-weight: 600; margin-top: 3px; display: inline-flex; align-items: center; gap: 3px; }
 
-/* ── 新建需求 dialog ── */
-.ib-req-new { border: 0; border-radius: 14px; padding: 0; background: var(--card); color: var(--foreground); box-shadow: var(--ib-float-shadow); width: min(440px, calc(100vw - 48px)); margin: auto; }
-.ib-req-new::backdrop { background: color-mix(in oklch, var(--background) 55%, transparent); backdrop-filter: blur(2px); }
-.ib-req-new form { display: flex; flex-direction: column; gap: 12px; padding: 20px 20px 16px; }
-.ib-req-new h2 { margin: 0; font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
-.ib-req-new-input { font: inherit; font-size: 14px; color: var(--foreground); background: color-mix(in oklch, var(--background) 45%, var(--card)); border: 1px solid var(--ib-hair, var(--border)); border-radius: 9px; padding: 9px 12px; outline: none; }
-.ib-req-new-input:focus { border-color: color-mix(in oklch, var(--primary) 50%, transparent); }
-.ib-req-new-hint { margin: 0; font-size: 11px; color: var(--muted-foreground); }
-.ib-req-new-act { display: flex; justify-content: flex-end; gap: 8px; }
-.ib-req-new-ok { background: var(--primary); color: var(--primary-foreground); }
-
 /* ── Sidebar bell ── */
 .ib-navwrap { display: flex; align-items: center; gap: 2px; }
 .ib-navwrap .ib-nav { flex: 1; min-width: 0; }
 .ib-nav-bell { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px; border: 0; border-radius: 8px; background: none; color: var(--muted-foreground); cursor: pointer; font: inherit; }
 .ib-nav-bell:hover { background: var(--ib-hover); color: var(--foreground); }
 .ib-nav-bell-n { min-width: 16px; height: 16px; border-radius: 999px; background: color-mix(in oklch, var(--warning) 85%, var(--card)); color: oklch(0.25 0.05 85); font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; }
-/* 用模板 (the compose's template tab, for the Workshop's requirement compose). */
-.ib-cp-tabs { display: inline-flex; padding: 3px; gap: 3px; border-radius: 10px; background: var(--muted); margin-bottom: 8px; }
-.ib-cp-tabs button { border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 550; color: var(--muted-foreground); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
-.ib-cp-tabs button.on { background: var(--card); color: var(--foreground); box-shadow: 0 1px 4px oklch(0.3 0.03 260 / 0.12); }
-.ib-cp-tmpl { border: 1px solid color-mix(in oklch, var(--primary) 25%, transparent); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; background: color-mix(in oklch, var(--primary) 3%, var(--card)); margin-bottom: 8px; }
-.ib-cp-tmpl label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; color: var(--primary); }
-.ib-cp-tmpl textarea { border: 1px solid color-mix(in oklch, var(--border) 80%, transparent); border-radius: 8px; padding: 8px 11px; font: inherit; font-size: 13px; background: var(--card); color: var(--foreground); resize: vertical; min-height: 40px; line-height: 1.6; outline: none; }
-.ib-cp-tmpl textarea:focus { border-color: color-mix(in oklch, var(--primary) 45%, transparent); }
-.ib-cp-tmpl textarea::placeholder { color: var(--muted-foreground); font-weight: 400; }
-.ib-cp-tmpl-ctx { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1.5px dashed color-mix(in oklch, var(--primary) 30%, transparent); border-radius: 9px; background: color-mix(in oklch, var(--primary) 2%, var(--card)); min-height: 40px; align-items: center; }
-.ib-cp-tmpl-mat { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px 4px 5px; border-radius: 7px; border: 1px solid var(--border); background: var(--card); font: inherit; font-size: 11.5px; font-weight: 500; color: var(--muted-foreground); cursor: pointer; }
-.ib-cp-tmpl-mat .k { font-size: 12px; flex: none; }
-.ib-cp-tmpl-mat.on { border-color: color-mix(in oklch, var(--primary) 40%, transparent); background: color-mix(in oklch, var(--primary) 6%, transparent); color: var(--foreground); font-weight: 550; }
-.ib-cp-tmpl-ctx-hint { font-size: 10.5px; color: var(--muted-foreground); font-weight: 400; }
