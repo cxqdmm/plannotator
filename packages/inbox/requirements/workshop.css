@@ -151,3 +151,17 @@
 .ib-nav-bell { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px; border: 0; border-radius: 8px; background: none; color: var(--muted-foreground); cursor: pointer; font: inherit; }
 .ib-nav-bell:hover { background: var(--ib-hover); color: var(--foreground); }
 .ib-nav-bell-n { min-width: 16px; height: 16px; border-radius: 999px; background: color-mix(in oklch, var(--warning) 85%, var(--card)); color: oklch(0.25 0.05 85); font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; }
+/* 用模板 (the compose's template tab, for the Workshop's requirement compose). */
+.ib-cp-tabs { display: inline-flex; padding: 3px; gap: 3px; border-radius: 10px; background: var(--muted); margin-bottom: 8px; }
+.ib-cp-tabs button { border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 550; color: var(--muted-foreground); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
+.ib-cp-tabs button.on { background: var(--card); color: var(--foreground); box-shadow: 0 1px 4px oklch(0.3 0.03 260 / 0.12); }
+.ib-cp-tmpl { border: 1px solid color-mix(in oklch, var(--primary) 25%, transparent); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; background: color-mix(in oklch, var(--primary) 3%, var(--card)); margin-bottom: 8px; }
+.ib-cp-tmpl label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; color: var(--primary); }
+.ib-cp-tmpl textarea { border: 1px solid color-mix(in oklch, var(--border) 80%, transparent); border-radius: 8px; padding: 8px 11px; font: inherit; font-size: 13px; background: var(--card); color: var(--foreground); resize: vertical; min-height: 40px; line-height: 1.6; outline: none; }
+.ib-cp-tmpl textarea:focus { border-color: color-mix(in oklch, var(--primary) 45%, transparent); }
+.ib-cp-tmpl textarea::placeholder { color: var(--muted-foreground); font-weight: 400; }
+.ib-cp-tmpl-ctx { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1.5px dashed color-mix(in oklch, var(--primary) 30%, transparent); border-radius: 9px; background: color-mix(in oklch, var(--primary) 2%, var(--card)); min-height: 40px; align-items: center; }
+.ib-cp-tmpl-mat { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px 4px 5px; border-radius: 7px; border: 1px solid var(--border); background: var(--card); font: inherit; font-size: 11.5px; font-weight: 500; color: var(--muted-foreground); cursor: pointer; }
+.ib-cp-tmpl-mat .k { font-size: 12px; flex: none; }
+.ib-cp-tmpl-mat.on { border-color: color-mix(in oklch, var(--primary) 40%, transparent); background: color-mix(in oklch, var(--primary) 6%, transparent); color: var(--foreground); font-weight: 550; }
+.ib-cp-tmpl-ctx-hint { font-size: 10.5px; color: var(--muted-foreground); font-weight: 400; }

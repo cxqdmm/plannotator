@@ -59,7 +59,7 @@ function RequirementCard({ requirement, onOpen, onOpenWaiting, onNewSession }: {
 }
 
 /* ── Panel ── */
-export function RequirementsPanel({ on, openId = null, openThreadId = null, onOpen, onOpenThread, onCompose }: { on: boolean; openId?: string | null; openThreadId?: string | null; onOpen: (id: string | null, threadId?: string | null) => void; onOpenThread: (threadId: string) => void; onCompose: (requirementId: string, requirementTitle: string) => void }) {
+export function RequirementsPanel({ on, openId = null, openThreadId = null, onOpen, onOpenThread, onCompose }: { on: boolean; openId?: string | null; openThreadId?: string | null; onOpen: (id: string | null, threadId?: string | null) => void; onOpenThread: (threadId: string) => void; onCompose: (requirementId: string, requirementTitle: string, contexts: { id: string; kind: string; name: string; image?: boolean }[]) => void }) {
   const { requirements, create, refresh } = useRequirements(on, subscribeRequirementFrames);
   const [draft, setDraft] = useState('');
   const newDialog = useRef<HTMLDialogElement | null>(null);
@@ -89,7 +89,7 @@ export function RequirementsPanel({ on, openId = null, openThreadId = null, onOp
           </div>
           <div className="ib-req-flat-list">
             {(requirements ?? []).map((r) => (
-              <RequirementCard key={r.id} requirement={r} onOpen={() => onOpen(r.id)} onOpenWaiting={(t) => onOpen(r.id, t)} onNewSession={() => onCompose(r.id, r.title)} />
+              <RequirementCard key={r.id} requirement={r} onOpen={() => onOpen(r.id)} onOpenWaiting={(t) => onOpen(r.id, t)} onNewSession={() => onCompose(r.id, r.title, r.contexts)} />
             ))}
             {(requirements ?? []).length === 0 && <p className="ib-req-flat-empty">还没有需求。新建一个，挂上上下文，开启会话开工。</p>}
           </div>
@@ -110,7 +110,7 @@ export function RequirementsPanel({ on, openId = null, openThreadId = null, onOp
 
 
       {openId !== null && (
-        <RequirementDetail id={openId} openThreadId={openThreadId} rowsByThread={rowsByThread} onClose={() => onOpen(null, null)} onOpenThread={onOpenThread} onNewSession={() => { const r = (requirements ?? []).find((entry) => entry.id === openId); onCompose(openId, r?.title ?? ''); }} queryClient={queryClient} />
+        <RequirementDetail id={openId} openThreadId={openThreadId} rowsByThread={rowsByThread} onClose={() => onOpen(null, null)} onOpenThread={onOpenThread} onNewSession={() => { const r = (requirements ?? []).find((entry) => entry.id === openId); onCompose(openId, r?.title ?? '', r?.contexts ?? []); }} queryClient={queryClient} />
       )}
     </section>
   );

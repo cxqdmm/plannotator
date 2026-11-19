@@ -158,7 +158,7 @@ export interface ComposeRequest {
    * The dialog's title says 为「title」, the body pre-fills with the requirement card, and `ComposeSent`
    * carries `requirementId` so the window links the thread to the requirement — the card's own pattern.
    */
-  requirement?: { id: string; title: string } | null;
+  requirement?: { id: string; title: string; contexts?: readonly { id: string; kind: string; name: string; image?: boolean }[] } | null;
   /** To opens on its own list at once: the person picks a running agent or a new session (compose/openComposer.ts). */
   pickTo?: boolean;
 }
@@ -242,6 +242,27 @@ export function ComposeDialog(props: ComposeDialogProps) {
   const [draft, setDraft] = useState<DraftView | null>(request.draft ?? null);
   const [typed] = useState(() => unsentReview(box?.pick));
   const [body, setBody] = useState(request.draft?.body ?? request.body ?? (request.card ? `${request.card.title}\n\n` : box ? typed.body : ''));
+  // 用模板 (the Workshop's requirement compose): the structured form, its fields, and the mode itself.
+  const [templateMode, setTemplateMode] = useState(false);
+  const [tBackground, setTBackground] = useState('');
+  const [tGoal, setTGoal] = useState('');
+  const [tAcceptance, setTAcceptance] = useState('');
+  const [tContexts, setTContexts] = useState<ReadonlySet<string>>(new Set());
+  /** The template's words as the send reads them: the structured fields as markdown, or null when the idea tab is on. */
+  const templateBody = (): string | null => {
+    if (!templateMode) return null;
+    const req = props.request.requirement;
+    if (!req) return null;
+    const parts = [
+      `# ${req.title}`,
+      tBackground.trim() ? `\n## 背景\n\n${tBackground.trim()}` : '',
+      tGoal.trim() ? `\n## 目标\n\n${tGoal.trim()}` : '',
+      tContexts.size > 0 ? `\n## 上下文材料\n\n${[...tContexts].map((name) => `- ${name}`).join('\n')}` : '',
+      tAcceptance.trim() ? `\n## 验收标准\n\n${tAcceptance.trim()}` : '',
+      `\n用 plannotator requirement 工具 link 本会话到 \`${req.id}\`。`,
+    ].filter(Boolean);
+    return parts.join('\n');
+  };
   // The Board card this thread is for (Create thread), kept on its draft so a draft sent later still links it.
   const card = request.card ?? request.draft?.card ?? null;
   // The pull requests this thread is for (Launch an agent), kept on its draft: To offers only their projects' agents.
@@ -786,7 +807,8 @@ export function ComposeDialog(props: ComposeDialogProps) {
       return;
     }
     // Words or files, as a reply takes: a message of a pasted text tile alone goes. New review's empty words are a guided review.
-    if (!box && !body.trim() && !files.files.some((file) => file.state !== 'refused')) {
+    const templateWords = templateBody();
+    if (!box && !body.trim() && !templateWords && !files.files.some((file) => file.state !== 'refused')) {
       setError('请先写一条消息。');
       textRef.current?.focus();
       return;
@@ -810,7 +832,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
     try {
       // The skills the words reference go with the message as one block at its end, as New message's do (skills.ts).
       const words = !box
-        ? body
+        ? (templateBody() ?? body)
         : reviewKind === 'walkthrough'
           ? walkthroughMessage(body)
           : boxPull || linkOnly
@@ -1448,8 +1470,35 @@ export function ComposeDialog(props: ComposeDialogProps) {
   const composer = (
     <>
       <div className="ib-cp-body">
+        {/* 用模板 (the Workshop's requirement compose): a tab pair above the field, the form replacing it. */}
+        {props.request.requirement && (
+          <>
+            <div className="ib-cp-tabs">
+              <button type="button" className={!templateMode ? 'on' : ''} onClick={() => setTemplateMode(false)}>写想法</button>
+              <button type="button" className={templateMode ? 'on' : ''} onClick={() => setTemplateMode(true)}>用模板</button>
+            </div>
+            {templateMode && (
+              <div className="ib-cp-tmpl">
+                <label>背景<textarea rows={2} placeholder="为什么要做？" value={tBackground} onChange={(e) => setTBackground(e.target.value)} /></label>
+                <label>目标<textarea rows={2} placeholder="做到什么程度？" value={tGoal} onChange={(e) => setTGoal(e.target.value)} /></label>
+                <label>上下文材料
+                  <div className="ib-cp-tmpl-ctx">
+                    {(props.request.requirement?.contexts ?? []).length === 0 && <span className="ib-cp-tmpl-ctx-hint">需求的上下文会出现在这里</span>}
+                    {(props.request.requirement?.contexts ?? []).map((ctx) => (
+                      <button key={ctx.id} type="button" className={`ib-cp-tmpl-mat${tContexts.has(ctx.name) ? ' on' : ''}`} onClick={() => setTContexts((held) => { const next = new Set(held); if (next.has(ctx.name)) next.delete(ctx.name); else next.add(ctx.name); return next; })}>
+                        <span className="k">{ctx.kind === 'link' ? '🔗' : ctx.image ? '🖼' : '📄'}</span> {ctx.name}
+                      </button>
+                    ))}
+                    <span className="ib-cp-tmpl-ctx-hint">点击选中/取消</span>
+                  </div>
+                </label>
+                <label>验收标准<textarea rows={2} placeholder="怎么判断做好了？" value={tAcceptance} onChange={(e) => setTAcceptance(e.target.value)} /></label>
+              </div>
+            )}
+          </>
+        )}
         {/* The Inbox's composer field (#1914): the / and $ skill picker; the Send composes the block. */}
-        <div className="ib-cp-field" data-compose-text="">
+        <div className="ib-cp-field" data-compose-text="" style={templateMode ? { display: 'none' } : undefined}>
           <InboxComposerField
             textareaRef={textRef}
             voice={voice}
