@@ -348,3 +348,23 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-req-go.sub { background: none; color: var(--foreground); box-shadow: inset 0 0 0 1px var(--border); }
 .ib-req-go.sub:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 45%, transparent); color: var(--primary); }
 .ib-req-go.ok { background: var(--success); box-shadow: 0 6px 16px -6px color-mix(in oklch, var(--success) 60%, transparent); }
+/* ── cook (the requirement's command centre): the pinned capsule, the dual-mode, the quick say. ── */
+.ib-req-cookrow { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 0; border-radius: 10px; background: none; cursor: pointer; font: inherit; text-align: left; margin-bottom: 6px; transition: background-color 130ms ease-out, box-shadow 130ms ease-out; }
+.ib-req-cookrow:hover { background: var(--ib-hover, color-mix(in oklch, var(--muted) 45%, transparent)); }
+.ib-req-cookrow.on { background: color-mix(in oklch, var(--primary) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 30%, transparent); }
+.ib-req-cookchip { font-family: var(--font-mono); font-weight: 700; font-size: 14px; color: var(--primary); flex: none; }
+.ib-req-cookrow-t { font-size: var(--ib-fs-13, 13px); font-weight: 600; color: var(--foreground); display: flex; flex-direction: column; gap: 1px; }
+.ib-req-cookrow.on .ib-req-cookrow-t { color: var(--primary); }
+.ib-req-cookrow-t small { font-weight: 400; font-size: var(--ib-fs-11, 11px); color: var(--muted-foreground); }
+.ib-req-mode { display: inline-flex; padding: 3px; gap: 3px; border-radius: 10px; background: var(--muted); align-self: flex-start; }
+.ib-req-mode button { border: 0; background: none; font: inherit; font-size: var(--ib-fs-12-5, 12.5px); font-weight: 550; color: var(--muted-foreground); padding: 6px 14px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.ib-req-mode button.on { background: var(--card); color: var(--foreground); box-shadow: 0 1px 4px color-mix(in oklch, var(--ib-shadow-ink, var(--background)) 40%, transparent); }
+.ib-req-mode-n { font-size: 10px; background: color-mix(in oklch, var(--primary) 12%, transparent); color: var(--primary); border-radius: 999px; padding: 0 6px; font-weight: 600; }
+.ib-req-existing { display: flex; flex-direction: column; gap: 8px; position: relative; }
+.ib-req-quick { display: flex; gap: 8px; align-items: center; background: color-mix(in oklch, var(--ib-lane-bg, var(--muted)) 55%, var(--card)); border: 1px solid var(--border); border-radius: 10px; padding: 3px 3px 3px 12px; }
+.ib-req-quick:focus-within { border-color: color-mix(in oklch, var(--primary) 50%, transparent); }
+.ib-req-quick input { flex: 1; min-width: 0; border: 0; outline: none; background: none; font: inherit; font-size: var(--ib-fs-13, 13px); color: var(--foreground); padding: 7px 0; }
+.ib-req-quick input::placeholder { color: var(--muted-foreground); }
+.ib-req-quick button { flex: none; border: 0; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font: inherit; font-size: var(--ib-fs-12, 12px); font-weight: 600; padding: 6px 13px; cursor: pointer; }
+.ib-req-quick button:disabled { opacity: 0.5; cursor: default; }
+.ib-req-quickhint { font-size: 11px; color: var(--muted-foreground); }
