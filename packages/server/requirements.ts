@@ -627,6 +627,15 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         }
         if (req.method === "PATCH") {
           const input = await body(req);
+          // The Workshop's compose: threads:'ADD' appends (the window's link on send).
+          if (input.threads === 'ADD') {
+            const found = store.get(id);
+            const threadId = typeof input.thread_id === 'string' ? input.thread_id : null;
+            if (found && threadId && !found.requirement.threads.includes(threadId)) {
+              return json({ requirement: store.patch(id, { threads: [...found.requirement.threads, threadId] }) });
+            }
+            return json({ requirement: found?.requirement ?? null });
+          }
           const { priority, notes, title, stage, archived, threads } = input;
           if (stage !== undefined && stage !== store.get(id)?.requirement.stage) moveStage(id, stage as RequirementStage, "你手动移动", true);
           return json({ requirement: store.patch(id, { ...(title !== undefined ? { title: title as string } : {}), ...(notes !== undefined ? { notes: notes as string } : {}), ...(stage !== undefined ? { stage: stage as RequirementStage } : {}), ...(priority !== undefined ? { priority: priority as RequirementPriority } : {}), ...(archived !== undefined ? { archived: archived as boolean } : {}), ...(threads !== undefined ? { threads: threads as string[] } : {}) }) });

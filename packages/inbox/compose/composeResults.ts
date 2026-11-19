@@ -7,6 +7,8 @@ export interface ComposeSent {
   projectName: string;
   draftId: string | null;
   cardId?: string | null;
+  /** The Workshop's 开启新会话: the requirement the sent thread is for, linked by the window. */
+  requirementId?: string | null;
   launched?: boolean;
   pullKeys?: readonly string[] | null;
   machine?: string | null;

@@ -12,7 +12,6 @@ import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
 import { annotateDeliverable, deliverableContent, readRequirement, reviewDeliverable } from '../api';
 import { inboxApi } from '../../api';
-import type { InboxLaunchAgent } from '@plannotator/core/inbox-types';
 import { EmbeddedThread } from '../EmbeddedThread';
 import { putThread } from '../../data/queries/thread';
 import { useListModel } from '../../data/queries/list';
@@ -60,12 +59,10 @@ function RequirementCard({ requirement, onOpen, onOpenWaiting, onNewSession }: {
 }
 
 /* ── Panel ── */
-export function RequirementsPanel({ on, openId = null, openThreadId = null, onOpen, onOpenThread }: { on: boolean; openId?: string | null; openThreadId?: string | null; onOpen: (id: string | null, threadId?: string | null) => void; onOpenThread: (threadId: string) => void }) {
+export function RequirementsPanel({ on, openId = null, openThreadId = null, onOpen, onOpenThread, onCompose }: { on: boolean; openId?: string | null; openThreadId?: string | null; onOpen: (id: string | null, threadId?: string | null) => void; onOpenThread: (threadId: string) => void; onCompose: (requirementId: string, requirementTitle: string) => void }) {
   const { requirements, create, refresh } = useRequirements(on, subscribeRequirementFrames);
   const [draft, setDraft] = useState('');
   const newDialog = useRef<HTMLDialogElement | null>(null);
-  const sessionDialog = useRef<HTMLDialogElement | null>(null);
-  const [sessionFor, setSessionFor] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const panelList = useListModel(queryClient);
   const cursor = panelList?.cursor ?? null;
@@ -92,7 +89,7 @@ export function RequirementsPanel({ on, openId = null, openThreadId = null, onOp
           </div>
           <div className="ib-req-flat-list">
             {(requirements ?? []).map((r) => (
-              <RequirementCard key={r.id} requirement={r} onOpen={() => onOpen(r.id)} onOpenWaiting={(t) => onOpen(r.id, t)} onNewSession={() => { setSessionFor(r.id); sessionDialog.current?.showModal(); }} />
+              <RequirementCard key={r.id} requirement={r} onOpen={() => onOpen(r.id)} onOpenWaiting={(t) => onOpen(r.id, t)} onNewSession={() => onCompose(r.id, r.title)} />
             ))}
             {(requirements ?? []).length === 0 && <p className="ib-req-flat-empty">还没有需求。新建一个，挂上上下文，开启会话开工。</p>}
           </div>
@@ -111,115 +108,14 @@ export function RequirementsPanel({ on, openId = null, openThreadId = null, onOp
         </form>
       </dialog>
 
-      {sessionFor !== null && (
-        <NewSessionDialog requirementId={sessionFor} requirement={(requirements ?? []).find((r) => r.id === sessionFor) ?? null} onClose={() => { sessionDialog.current?.close(); setSessionFor(null); }} onStarted={(t) => { onOpen(sessionFor, t); setSessionFor(null); }} dialogRef={sessionDialog} />
-      )}
 
       {openId !== null && (
-        <RequirementDetail id={openId} openThreadId={openThreadId} rowsByThread={rowsByThread} onClose={() => onOpen(null, null)} onOpenThread={onOpenThread} onNewSession={() => { setSessionFor(openId); sessionDialog.current?.showModal(); }} queryClient={queryClient} />
+        <RequirementDetail id={openId} openThreadId={openThreadId} rowsByThread={rowsByThread} onClose={() => onOpen(null, null)} onOpenThread={onOpenThread} onNewSession={() => { const r = (requirements ?? []).find((entry) => entry.id === openId); onCompose(openId, r?.title ?? ''); }} queryClient={queryClient} />
       )}
     </section>
   );
 }
 
-/* ── 开启新会话 ── */
-function NewSessionDialog({ requirementId, requirement, onClose, onStarted, dialogRef }: { requirementId: string; requirement: Requirement | null; onClose: () => void; onStarted: (threadId: string) => void; dialogRef: React.RefObject<HTMLDialogElement | null> }) {
-  const [mode, setMode] = useState<'idea' | 'template'>('idea');
-  const [launch, setLaunch] = useState<{ agents: { agent: string; name: string }[]; projects: { id: string; name: string }[]; agent: string; project: string } | null>(null);
-  const [openRow, setOpenRow] = useState<'agent' | 'project' | null>(null);
-  const [words, setWords] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [tBg, setTBg] = useState(''); const [tGoal, setTGoal] = useState(''); const [tAcc, setTAcc] = useState('');
-  const [tCtx, setTCtx] = useState<ReadonlySet<string>>(new Set());
-
-  useEffect(() => {
-    void inboxApi.composeSessions().then((m) => {
-      const agents = (m.launch?.agents ?? []).map(({ agent, name }) => ({ agent, name }));
-      const projects = (m.launch?.projects ?? []).filter((p) => p.exists).map(({ id, name }) => ({ id, name }));
-      const claude = agents.find((a) => a.agent === 'claude-code') ?? agents[0];
-      if (agents.length > 0 && projects.length > 0) setLaunch({ agents, projects, agent: claude.agent, project: projects[0]!.id });
-      else setError(agents.length === 0 ? '没有可用的 agent。' : '没有可选的项目。');
-    }).catch((c) => setError(c instanceof Error ? c.message : String(c)));
-  }, []);
-
-  const send = async () => {
-    if (!launch || busy) return;
-    setBusy(true);
-    try {
-      const body = mode === 'idea'
-        ? (words.trim() || `用 plannotator requirement 工具开始做「${requirement?.title ?? ''}」。`)
-        : [`# 需求：${requirement?.title ?? ''}`,
-           tBg.trim() ? `\n## 背景\n\n${tBg.trim()}` : '',
-           tGoal.trim() ? `\n## 目标\n\n${tGoal.trim()}` : '',
-           tCtx.size > 0 && requirement ? `\n## 上下文材料\n\n${requirement.contexts.filter((c) => tCtx.has(c.id)).map((c) => `- ${c.kind === 'link' ? `链接：${c.ref}` : `文件：${c.ref}`} —— ${c.name}`).join('\n')}` : '',
-           tAcc.trim() ? `\n## 验收标准\n\n${tAcc.trim()}` : '',
-           `\n用 plannotator requirement 工具 link 本会话到 \`${requirementId}\`。`,
-          ].filter(Boolean).join('\n');
-      const answer = await inboxApi.startThread({ to: { launch: { agent: launch.agent as InboxLaunchAgent, project_id: launch.project } }, body, idempotency_key: crypto.randomUUID(), thread_name: requirement?.title ?? undefined });
-      onStarted(answer.thread_id);
-    } catch (c) { setError(c instanceof Error ? c.message : String(c)); } finally { setBusy(false); }
-  };
-
-  return (
-    <dialog ref={dialogRef} className="ib-req-ns-dialog" aria-labelledby="ib-req-ns-t" onClose={onClose}>
-      <div className="ib-req-ns">
-        <div className="ib-req-ns-head"><span className="ib-req-ns-title">开启新会话</span><span className="ib-req-ns-sub">为「{requirement?.title ?? ''}」</span></div>
-        <div className="ib-req-ns-to">
-          <span className="ib-req-ns-tol">发送给</span>
-          <button type="button" className="ib-req-ns-agent" onClick={() => setOpenRow((r) => (r === 'agent' ? null : 'agent'))}>
-            <span className="ib-req-ns-mk">C</span> {launch?.agents.find((a) => a.agent === launch.agent)?.name ?? '读取中…'}
-          </button>
-          <span className="ib-req-ns-sep">·</span>
-          <button type="button" className="ib-req-ns-proj" onClick={() => setOpenRow((r) => (r === 'project' ? null : 'project'))}>
-            位于 {launch?.projects.find((p) => p.id === launch.project)?.name ?? '读取中…'}
-          </button>
-          {openRow !== null && <div className="ib-req-dropback" onClick={() => setOpenRow(null)} />}
-          {openRow === 'agent' && (
-            <div className="ib-req-ns-drop" role="listbox" aria-label="会话类型">
-              {(launch?.agents ?? []).map((a) => <button key={a.agent} type="button" className={launch?.agent === a.agent ? 'on' : ''} onClick={() => { if (launch) setLaunch({ ...launch, agent: a.agent }); setOpenRow(null); }}>{a.name}</button>)}
-            </div>
-          )}
-          {openRow === 'project' && (
-            <div className="ib-req-ns-drop" role="listbox" aria-label="项目">
-              {(launch?.projects ?? []).map((p) => <button key={p.id} type="button" className={launch?.project === p.id ? 'on' : ''} onClick={() => { if (launch) setLaunch({ ...launch, project: p.id }); setOpenRow(null); }}>{p.name}</button>)}
-            </div>
-          )}
-        </div>
-        <div className="ib-req-ns-tabs">
-          <button type="button" className={mode === 'idea' ? 'on' : ''} onClick={() => setMode('idea')}>写想法</button>
-          <button type="button" className={mode === 'template' ? 'on' : ''} onClick={() => setMode('template')}>用模板</button>
-        </div>
-        {mode === 'idea' ? (
-          <textarea className="ib-req-ns-idea" rows={5} placeholder="把你的想法告诉会话——它会带着需求卡开工…" value={words} onChange={(e) => setWords(e.target.value)} aria-label="想法" />
-        ) : (
-          <div className="ib-req-ns-tmpl">
-            <label>背景<textarea rows={2} placeholder="为什么要做？" value={tBg} onChange={(e) => setTBg(e.target.value)} /></label>
-            <label>目标<textarea rows={2} placeholder="做到什么程度？" value={tGoal} onChange={(e) => setTGoal(e.target.value)} /></label>
-            {requirement && requirement.contexts.length > 0 && (
-              <label>上下文材料
-                <div className="ib-req-ns-ctx">
-                  {requirement.contexts.map((c) => (
-                    <button key={c.id} type="button" className={`ib-req-ns-mat${tCtx.has(c.id) ? ' on' : ''}`} onClick={() => setTCtx((h) => { const n = new Set(h); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n; })}>
-                      <span className="k">{c.kind === 'link' ? '🔗' : c.image ? '🖼' : '📄'}</span> {c.name}
-                    </button>
-                  ))}
-                  <span className="ib-req-ns-ctx-hint">点击选中/取消</span>
-                </div>
-              </label>
-            )}
-            <label>验收标准<textarea rows={2} placeholder="怎么判断做好了？" value={tAcc} onChange={(e) => setTAcc(e.target.value)} /></label>
-          </div>
-        )}
-        {error && <p className="ib-req-ns-error" role="alert">{error}</p>}
-        <div className="ib-req-ns-act">
-          <button type="button" className="ib-req-ns-send" disabled={busy || !launch} onClick={() => void send()}><Icon name="play" size={13} /> {busy ? '正在启动…' : '发送'}</button>
-          <span className="ib-req-ns-note">会话自动关联到这个需求</span>
-        </div>
-      </div>
-    </dialog>
-  );
-}
 
 /* ── 详情（平铺） ── */
 function RequirementDetail({ id, openThreadId = null, rowsByThread, onClose, onOpenThread, onNewSession, queryClient }: { id: string; openThreadId?: string | null; rowsByThread: Map<string, unknown>; onClose: () => void; onOpenThread: (threadId: string) => void; onNewSession: () => void; queryClient: import('@tanstack/react-query').QueryClient }) {

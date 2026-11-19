@@ -5609,6 +5609,7 @@ function Inbox() {
         openThreadId={route.reqThread ?? null}
         onOpen={(id, threadId) => writeRoute({ page: 'requirements', project: null, thread: null, reqArchived: route.reqArchived, req: id, reqThread: threadId ?? null })}
         onOpenThread={(threadId) => writeRoute({ page: 'inbox', project: null, thread: threadId })}
+        onCompose={(requirementId, requirementTitle) => openCompose({ requirement: { id: requirementId, title: requirementTitle } })}
       />
     );
   } else if (route.page === 'scheduled') {
@@ -6554,6 +6555,14 @@ function Inbox() {
                 .editCard(sent.cardId, { op: 'link', thread_id: sent.threadId })
                 .then(() => refreshCards())
                 .catch(() => showToast({ icon: 'warn', lead: '已发送，但未关联到卡片', phoneLead: '未关联到卡片', detail: '请从收件箱打开该会话。' }, 7000));
+            }
+            // The Workshop's 开启新会话: the thread is linked to the requirement (stage-auto flat v2).
+            if (sent.requirementId) {
+              void fetch(`/api/requirements/${encodeURIComponent(sent.requirementId)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ threads: 'ADD' }),
+              }).catch(() => {});
             }
             // Launch an agent from Pull requests: the new thread is the PRs' agent's, so verdicts and Reply go there.
             if (sent.pullKeys && sent.pullKeys.length > 0) {

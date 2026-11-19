@@ -153,6 +153,12 @@ export interface ComposeRequest {
   launch?: { agent: string | null } | null;
   /** Files the message starts with, uploaded as picked ones are (compose/openComposer.ts). */
   files?: readonly File[];
+  /**
+   * The Workshop's 开启新会话 (stage-auto flat v2): this message starts a session for a requirement.
+   * The dialog's title says 为「title」, the body pre-fills with the requirement card, and `ComposeSent`
+   * carries `requirementId` so the window links the thread to the requirement — the card's own pattern.
+   */
+  requirement?: { id: string; title: string } | null;
   /** To opens on its own list at once: the person picks a running agent or a new session (compose/openComposer.ts). */
   pickTo?: boolean;
 }
@@ -862,7 +868,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
           }
         : { session: target!.session, host: target!.host, projectName: targetMachineName ? `${target!.project.name} · ${targetMachineName}` : target!.project.name };
       if (box) forgetUnsentReview();
-      props.onSent({ threadId: result.thread_id, session: sentTo.session, host: sentTo.host, projectName: machine ? sentTo.projectName : (result.project?.name ?? sentTo.projectName), draftId: draft?.id ?? null, cardId: card?.id ?? null, pullKeys: pulls?.keys ?? null, pullAsk: boxPull ? (body.trim() ? 'custom' : 'guide') : pulls ? pullLaunchAsk(body, pulls.ask_line) : null, ...(start ? { launched: true } : {}), ...(machine ? { machine } : {}) });
+      props.onSent({ threadId: result.thread_id, session: sentTo.session, host: sentTo.host, projectName: machine ? sentTo.projectName : (result.project?.name ?? sentTo.projectName), draftId: draft?.id ?? null, cardId: card?.id ?? null, requirementId: props.request.requirement?.id ?? null, pullKeys: pulls?.keys ?? null, pullAsk: boxPull ? (body.trim() ? 'custom' : 'guide') : pulls ? pullLaunchAsk(body, pulls.ask_line) : null, ...(start ? { launched: true } : {}), ...(machine ? { machine } : {}) });
     } catch (cause) {
       if (cause instanceof InboxHeldError && (start?.machine || targetOn) && props.onHeld) {
         // That machine's Inbox could not take it now (asleep, or slow): it waits in this Inbox's outbox and starts there
@@ -1112,7 +1118,7 @@ export function ComposeDialog(props: ComposeDialogProps) {
   const loading = !model;
   // Save draft only for something written: an empty compose offers none.
   const saveOffered = keepsDrafts && !sendable && !loading && !empty;
-  const title = box ? '新评审' : draft ? '草稿' : '新消息';
+  const title = box ? '新评审' : draft ? '草稿' : props.request.requirement ? `开启新会话 · 为「${props.request.requirement.title}」` : '新消息';
   // A scratch start names the folder a Send would make now (from the thread's name).
   const scratchFolder = launch?.scratch ? scratchFolderOf(launch.scratch.root, threadName.trim() || (reviewName ?? suggested)) : null;
   // Linked machines: the folder menu's groups, each scratch row named for its own machine's root and the thread's name.
