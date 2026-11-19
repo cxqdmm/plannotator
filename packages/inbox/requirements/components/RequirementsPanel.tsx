@@ -419,6 +419,28 @@ function RequirementDetail({
 
   const requirement = detail?.requirement ?? null;
 
+  // 返工轮次: how many times the requirement has been moved (back) into 需求设计.
+  const reworkRounds = (detail?.events ?? []).filter((event) => event.kind === 'stage' && event.to === "design").length;
+  // The action card's session lines: this requirement's sessions, newest first, one line each.
+  const sessionLines = requirement !== null && requirement.threads.length > 0 ? (
+    <div className="ib-req-sessions">
+      {[...requirement.threads].reverse().map((threadId) => {
+        const row = rowsByThread.get(threadId) ?? null;
+        const agent = row ? rowAgent(row) : null;
+        const waiting = row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting';
+        const subject = (row?.subject?.trim() ? row.subject : null) ?? (threadMeta[threadId]?.subject?.trim() ? threadMeta[threadId]!.subject : null) ?? '会话';
+        return (
+          <div key={threadId} className="ib-req-session-line" onClick={() => setView({ k: 'session', id: threadId })}>
+            <span className="ib-req-session-mark">{agent?.kind === 'agent' ? <HostMark host={agent.host} /> : <Icon name="comment" size={13} />}</span>
+            <span className="ib-req-session-t"><b dir="auto">{subject}</b><small>{agent?.kind === 'agent' ? agent.name ?? 'Claude Code' : '会话'}</small></span>
+            {waiting && <span className="ib-req-session-wait">等你处理</span>}
+          </div>
+        );
+      })}
+    </div>
+  ) : null;
+
+
   return (
     <aside className="ib-req-detail" aria-label="需求详情" data-requirement-detail={id}>
       {streamOpen !== null && <SessionStreamPane threadId={streamOpen} onClose={() => setStreamOpen(null)} />}
@@ -534,12 +556,31 @@ function RequirementDetail({
                   ))}
                 </div>
 
-                {requirement.threads.length === 0 && requirement.deliverables.length === 0 && (
+                {requirement.stage !== 'done' && (
                   <div className="ib-req-launch">
-                    <div className="ib-req-launch-head">
-                      <span className="ib-req-launch-title">开始设计</span>
-                      <span className="ib-req-launch-sub">起一个会话，带着下面的上下文和需求卡开工</span>
-                    </div>
+                    {reworkRounds >= 2 && (
+                      <div className="ib-req-rework">↩ <b>返工第 {reworkRounds} 轮</b>——改好上下文，重新开始设计；上一轮的会话仍可打开直接留言。</div>
+                    )}
+                    {requirement.stage === 'design' && (
+                      <div className="ib-req-launch-head">
+                        <span className="ib-req-launch-title">开始设计</span>
+                        <span className="ib-req-launch-sub">起一个会话，产出设计方案并走设计评审</span>
+                      </div>
+                    )}
+                    {requirement.stage === 'design-review' && (
+                      <div className="ib-req-launch-head">
+                        <span className="ib-req-launch-title">设计评审</span>
+                        <span className="ib-req-launch-sub">会话产出的方案在这里评审；通过即进开发</span>
+                      </div>
+                    )}
+                    {(requirement.stage === 'dev' || requirement.stage === 'qa' || requirement.stage === 'code-review') && (
+                      <div className="ib-req-launch-head">
+                        <span className="ib-req-launch-title">{requirementStageLabel(requirement.stage)}中</span>
+                        <span className="ib-req-launch-sub">会话按批准的方案推进；有问题点随时在这里说</span>
+                      </div>
+                    )}
+                    {sessionLines}
+                    {requirement.stage === 'design' && (
                     <div className="ib-req-rows">
                       <div className={`ib-req-rowpick${openRow === 'agent' ? ' open' : ''}`} onClick={() => setOpenRow((row) => (row === 'agent' ? null : 'agent'))}>
                         <span className="ib-req-rowlab">会话</span>
@@ -571,6 +612,7 @@ function RequirementDetail({
                         </div>
                       )}
                     </div>
+                    )}
 
                     <div className="ib-req-seclab">
                       上下文 <span className="ib-req-seclab-n">{requirement.contexts.length}</span>
@@ -627,6 +669,7 @@ function RequirementDetail({
                       );
                     })()}
 
+                    {requirement.stage === 'design' && (<>
                     <div className="ib-req-seclab">需求卡 <span className="ib-req-seclab-n">将作为首条消息发送</span></div>
                     <button type="button" className="ib-req-peek" onClick={() => setPeekOpen((open) => !open)}>
                       <Icon name={peekOpen ? 'chevD' : 'chevR'} size={11} />
@@ -644,6 +687,40 @@ function RequirementDetail({
                       </button>
                       <span className="ib-req-launch-note">{requirement.contexts.length > 0 ? '会话启动后你会落到它的线程里' : '先补至少一项上下文'}</span>
                     </div>
+                    </>)}
+
+                    {requirement.stage === 'design-review' && (() => {
+                      const proposal = requirement.suggestions.find((suggestion) => suggestion.stage === 'dev') ?? null;
+                      return (
+                        <div className="ib-req-launch-act">
+                          {proposal ? (
+                            <>
+                              <button type="button" className="ib-req-go ok" onClick={() => void adoptSuggestion(id, proposal.id).then((outcome) => (outcome.ok ? read() : setError(outcome.error)))}>
+                                进入需求开发
+                              </button>
+                              <button type="button" className="ib-req-go sub" onClick={() => onPatch(id, { stage: 'design' })}>
+                                驳回重做
+                              </button>
+                              <span className="ib-req-launch-note">{proposal.why}</span>
+                            </>
+                          ) : (
+                            <span className="ib-req-launch-note">评审结论到达后，这里出现「进入需求开发」</span>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {(requirement.stage === 'dev' || requirement.stage === 'qa' || requirement.stage === 'code-review') && (
+                      <div className="ib-req-launch-act">
+                        <button type="button" className="ib-req-go sub" onClick={() => {
+                          if (requirement.contexts.length === 0) { setEditContext(null); setContextKind('link'); setContextName(''); setContextRef(''); setContextText(''); setContextFile(null); contextDialog.current?.showModal(); return; }
+                          submitStart();
+                        }}>
+                          ＋ 为这个阶段再起一个会话
+                        </button>
+                        <span className="ib-req-launch-note">阶段建议出现在左侧卡片上，一键采纳</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

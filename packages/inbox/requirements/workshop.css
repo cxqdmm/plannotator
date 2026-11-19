@@ -334,3 +334,17 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-req-embed-top { display: flex; align-items: center; gap: 9px; padding: 10px 14px; border-bottom: 1px solid var(--ib-line, var(--border)); }
 .ib-req-embed-subj { font-size: var(--ib-fs-13, 13px); font-weight: 600; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ib-req-embed .ib-pane { flex: 1; min-height: 0; border-radius: 0; }
+/* The action card's session lines and the rework note (stage-actions-mock). */
+.ib-req-sessions { display: flex; flex-direction: column; gap: 7px; }
+.ib-req-session-line { display: flex; align-items: center; gap: 10px; padding: 10px 13px; border-radius: 10px; background: var(--card); box-shadow: 0 0 0 1px color-mix(in oklch, var(--border) 80%, transparent); font-size: var(--ib-fs-13, 13px); cursor: pointer; transition: box-shadow 150ms ease-out, transform 170ms cubic-bezier(0.2, 0.7, 0.3, 1); }
+.ib-req-session-line:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px color-mix(in oklch, var(--primary) 35%, transparent); }
+.ib-req-session-mark { flex: none; }
+.ib-req-session-t { flex: 1; min-width: 0; }
+.ib-req-session-t b { display: block; font-weight: 550; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ib-req-session-t small { color: var(--muted-foreground); font-size: var(--ib-fs-11, 11px); }
+.ib-req-session-wait { flex: none; font-size: var(--ib-fs-11, 11px); font-weight: 600; color: color-mix(in oklch, var(--warning) 85%, var(--foreground)); }
+.ib-req-rework { display: flex; align-items: baseline; gap: 6px; padding: 9px 13px; border-radius: 10px; background: color-mix(in oklch, var(--warning) 7%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--warning) 35%, transparent); font-size: var(--ib-fs-12-5, 12.5px); line-height: 1.55; }
+.ib-req-rework b { color: color-mix(in oklch, var(--warning) 85%, var(--foreground)); }
+.ib-req-go.sub { background: none; color: var(--foreground); box-shadow: inset 0 0 0 1px var(--border); }
+.ib-req-go.sub:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 45%, transparent); color: var(--primary); }
+.ib-req-go.ok { background: var(--success); box-shadow: 0 6px 16px -6px color-mix(in oklch, var(--success) 60%, transparent); }
