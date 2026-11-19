@@ -12384,7 +12384,6 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
 /* A lane the drag hovers breathes its highlight in (the Board's inset ring, with the panel's own ease). */
 .ib-bpage[data-requirements-page] .ib-lane { transition: background-color 120ms ease-out, box-shadow 180ms cubic-bezier(0.2, 0.7, 0.3, 1); }
 /* The detail pane's own bits (Wave 2a): the pane itself is CardPanel's ib-crdp above. */
-.ib-req-detail { flex-basis: min(520px, 42%); }
 .ib-req-title { width: 100%; min-width: 0; margin: 0; padding: 2px 6px; border: 0; border-radius: 6px; background: transparent; color: var(--foreground); font: inherit; font-size: var(--ib-fs-20, 20px); font-weight: 650; letter-spacing: -0.01em; line-height: 1.3; overflow-wrap: anywhere; outline: none; }
 .ib-req-h { margin: 0 0 6px; font-size: var(--ib-fs-13, 13px); font-weight: 600; color: var(--muted-foreground); text-transform: none; }
 .ib-req-empty { margin: 0 0 8px; color: var(--muted-foreground); font-size: var(--ib-fs-13, 13px); line-height: 1.45; }
@@ -12507,7 +12506,6 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 @keyframes ib-req-page-in { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ib-req-detail { animation-duration: 1ms; } }
 /* A page, not a side pane: the body breathes, its content keeps a reading measure. */
-.ib-req-detail .ib-crdp-body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 8px 40px; padding: 20px 30px 28px; align-items: start; }
 .ib-req-detail .ib-sstr { z-index: 5; }
 .ib-req-streambtn[aria-pressed="true"] { color: var(--primary); }
 /* The workshop's lanes read, not squeeze: wider than the Board's, the row scrolls when they cannot all fit. */
@@ -12592,7 +12590,6 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 .ib-req-work { min-width: 0; }
 .ib-req-side { position: sticky; top: 0; min-width: 0; padding-top: 26px; }
 .ib-req-error-row { grid-column: 1 / -1; }
-@media (max-width: 980px) { .ib-req-detail .ib-crdp-body { grid-template-columns: minmax(0, 1fr); } .ib-req-side { position: static; padding-top: 0; } }
 
 /* 新建需求: one question in a dialog — the house's own floating card, dim behind it. */
 .ib-req-new { border: 0; border-radius: 14px; padding: 0; background: var(--card); color: var(--foreground); box-shadow: var(--ib-float-shadow); width: min(440px, calc(100vw - 48px)); }
@@ -12619,7 +12616,8 @@ a.ib-req-dlv-ref:hover { color: var(--primary); text-decoration: underline; }
 /* ── The detail as the Inbox reads it: a list of what the requirement holds (left), the picked thing (right). ── */
 /* The detail as the Inbox's own two blocks: a list column (rounded, its head the requirement's name, groups
    with the list's own band headers and rows) and a pane (rounded, the picked thing). */
-.ib-req-body { display: grid; grid-template-columns: minmax(300px, 340px) minmax(0, 1fr); gap: 10px; padding: 10px; }
+.ib-req-detail .ib-crdp-body, .ib-req-body { padding: 0; background: transparent; }
+.ib-req-body { display: grid; grid-template-columns: minmax(300px, 340px) minmax(0, 1fr); gap: 10px; }
 .ib-req-col { min-width: 0; display: flex; flex-direction: column; border-radius: var(--ib-lr-lg, 10px); background: var(--card); box-shadow: 0 0 0 1px color-mix(in oklch, var(--border) 60%, transparent); overflow: hidden; }
 .ib-req-col .ib-lhead { padding: 12px 14px; border-bottom: 1px solid var(--ib-line, var(--border)); }
 .ib-req-col .ib-lhead-h { font-size: var(--ib-fs-15, 15px); font-weight: 650; letter-spacing: -0.01em; margin: 0; min-width: 0; overflow-wrap: anywhere; }
