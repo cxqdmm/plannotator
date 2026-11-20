@@ -10,7 +10,7 @@ import { ChatMarkdown } from '@plannotator/ui/components/chat';
 import { HostMark, Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
-import { addContext, annotateDeliverable, deliverableContent, readRequirement, removeContext } from '../api';
+import { addContext, annotateDeliverable, deliverableContent, readRequirement, removeContext, reviewDeliverable } from '../api';
 import { inboxApi } from '../../api';
 import { EmbeddedThread } from '../EmbeddedThread';
 import { putThread } from '../../data/queries/thread';
@@ -112,7 +112,7 @@ export function RequirementsPanel({
         </div>
         <div className="ib-req-wp-cards">
           {(requirements ?? []).map((r) => (
-            <ReqCard key={r.id} requirement={r} rowsByThread={rowsByThread} threadBusy={threadBusy} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onDeliverables={() => setPanel({ k: 'deliverables', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} />
+            <ReqCard key={r.id} requirement={r} rowsByThread={rowsByThread} threadBusy={threadBusy} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onDeliverables={() => setPanel({ k: 'deliverables', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onReview={(reqId, dlvId) => { void reviewDeliverable(reqId, dlvId).then((o) => { if (!o.ok) console.warn(o.error); }); }} />
           ))}
           {(requirements ?? []).length === 0 && <p className="ib-req-wp-empty">还没有需求。</p>}
         </div>
@@ -144,7 +144,7 @@ export function RequirementsPanel({
 
 /* ── A requirement card: icon + wrapping title, hover actions (out of flow), created
  * time pinned right on row 1, and its sessions as rows INSIDE the card. ── */
-function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContexts, onDeliverables, onHistory, onNewSession }: {
+function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContexts, onDeliverables, onHistory, onNewSession, onReview }: {
   requirement: Requirement;
   rowsByThread: Map<string, unknown>;
   threadBusy: Record<string, boolean | null>;
@@ -153,6 +153,7 @@ function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContex
   onDeliverables: () => void;
   onHistory: () => void;
   onNewSession: () => void;
+  onReview: (requirementId: string, deliverableId: string) => void;
 }) {
   return (
     <div className="ib-req-wcard" data-requirement-id={r.id}>
@@ -199,6 +200,39 @@ function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContex
         })}
         {r.threads.length === 0 && <p className="ib-req-wcard-nosess">还没有会话；悬停需求，点"开启新会话"。</p>}
       </div>
+
+      {/* 审阅状态行：会话行正下方，等审的文档一目了然（review-on-card-design） */}
+      {(() => {
+        const doc = r.deliverables.find((d) => d.kind === 'design-doc' || /\.(md|markdown|html?)$/i.test(d.ref));
+        if (!doc) return null;
+        if (r.stage === 'design-review') {
+          return (
+            <div className="ib-req-wcard-review">
+              <Icon name="pen" size={12} />
+              <span className="ib-req-wcard-review-t" dir="auto">{doc.title ?? doc.ref.split('/').pop() ?? doc.ref}</span>
+              <button type="button" className="ib-req-wcard-review-go" onClick={() => onReview(r.id, doc.id)}>去审阅</button>
+            </div>
+          );
+        }
+        if (r.stage === 'dev' || r.stage === 'qa' || r.stage === 'code-review' || r.stage === 'done') {
+          return (
+            <div className="ib-req-wcard-review done">
+              <Icon name="check" size={12} />
+              <span className="ib-req-wcard-review-t">{doc.title ?? '设计文档'} — 已通过</span>
+            </div>
+          );
+        }
+        // design stage with a doc: it was sent back — quiet.
+        if (r.stage === 'design' && r.deliverables.length > 0) {
+          return (
+            <div className="ib-req-wcard-review back">
+              <Icon name="chevL" size={12} />
+              <span className="ib-req-wcard-review-t">{doc.title ?? '设计文档'} — 已退回</span>
+            </div>
+          );
+        }
+        return null;
+      })()}
     </div>
   );
 }
