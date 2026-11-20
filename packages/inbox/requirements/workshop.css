@@ -181,3 +181,15 @@
 .ib-req-wcard-review-t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ib-req-wcard-review-go { flex: none; display: inline-flex; align-items: center; border: 0; border-radius: 7px; padding: 4px 12px; background: var(--primary); color: var(--primary-foreground); font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; }
 .ib-req-wcard-review-go:hover { filter: brightness(1.05); }
+
+/* ── 新建 dialog ── */
+.ib-req-new { border: 0; border-radius: 14px; padding: 0; background: var(--card); color: var(--foreground); box-shadow: var(--ib-float-shadow, 0 0 0 1px color-mix(in oklch, var(--border) 60%, transparent), 0 20px 44px -14px color-mix(in oklch, var(--background) 45%, transparent)); width: min(440px, calc(100vw - 48px)); margin: auto; }
+.ib-req-new::backdrop { background: color-mix(in oklch, var(--background) 55%, transparent); backdrop-filter: blur(2px); }
+.ib-req-new form { display: flex; flex-direction: column; gap: 12px; padding: 18px 18px 16px; }
+.ib-req-new h2 { margin: 0; font-size: 15px; font-weight: 650; }
+.ib-req-new-input { font: inherit; font-size: 13.5px; color: var(--foreground); background: var(--background); border: 1px solid var(--border); border-radius: 10px; padding: 10px 13px; outline: none; width: 100%; }
+.ib-req-new-input:focus { border-color: color-mix(in oklch, var(--primary) 55%, var(--border)); }
+.ib-req-new-input::placeholder { color: var(--muted-foreground); }
+.ib-req-new-act { display: flex; justify-content: flex-end; gap: 8px; }
+.ib-req-new-ok { background: var(--primary) !important; color: var(--primary-foreground) !important; border: 0 !important; }
+.ib-req-new-ok:disabled { opacity: 0.5; }
