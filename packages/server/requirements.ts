@@ -16,7 +16,7 @@
  * then rename), this process the single writer — the inbox/*.json pattern.
  * The whole set is held in memory (personal scale, the design doc's §9.3).
  */
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join, basename } from "node:path";
 import { ulid } from "@plannotator/core/inbox-types";
 import { loadConfig } from "@plannotator/shared/config";
@@ -81,7 +81,7 @@ export interface RequirementStore {
   patch(id: string, patch: RequirementPatch): Requirement;
   remove(id: string): void;
   link(id: string, threadId: string, by?: string | null): Requirement;
-  deliver(id: string, input: { kind: DeliverableKind; ref: string; title?: string; by?: string | null }): Deliverable;
+  deliver(id: string, input: { kind: DeliverableKind; ref: string; title?: string; by?: string | null }): Deliverable & { entered_review?: true };
   undeliver(id: string, deliverableId: string): void;
   say(id: string, note: string, by?: string | null): void;
   addContext(id: string, input: { kind: "link" | "file"; name: string; ref: string; image?: boolean; by?: string | null }): RequirementContext;
@@ -297,6 +297,13 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       const record = at(id);
       if (!isDeliverableKind(input.kind)) throw new RequirementStoreError("validation_error", `kind: one of ${DELIVERABLE_KINDS.join(", ")}.`, "kind");
       if (typeof input.ref !== "string" || !input.ref.trim()) throw new RequirementStoreError("validation_error", "ref: what the deliverable points at.", "ref");
+      // 治本（deliver→review 闭环的保证）：design-doc 的 ref 必须是可审阅的文档（.md/.markdown/.txt/.html 的
+      // 路径或 URL）。会话 id（pn-…）不是文档——评审开不了它；把文档存成文件再交付。
+      if (input.kind === "design-doc" && !/\.(md|markdown|txt|html?)$/i.test(input.ref.trim()))
+        throw new RequirementStoreError("validation_error", "design-doc 的 ref 必须是文档本身（.md/.markdown/.txt/.html 的路径或 URL，扩展名结尾），不是会话 id 或其他句柄。把设计文档存成文件再交付。", "ref");
+      // link 类同样自包含：必须是完整 URL（http/https）。会话 id（pn-）不是链接——注册表会随会话退出销毁。
+      if (input.kind === "link" && !/^https?:\/\//i.test(input.ref.trim()))
+        throw new RequirementStoreError("validation_error", "link 的 ref 必须是完整 URL（http:// 或 https:// 开头），不是会话 id 或路径。给能直接打开的地址。", "ref");
       if (input.ref.length > REF_MAX) throw new RequirementStoreError("validation_error", `ref: at most ${REF_MAX} characters.`, "ref");
       if (input.title !== undefined && (typeof input.title !== "string" || input.title.length > TITLE_MAX)) throw new RequirementStoreError("validation_error", `title: at most ${TITLE_MAX} characters.`, "title");
       const deliverable: Deliverable = {
@@ -308,10 +315,18 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         created_at: new Date().toISOString(),
       };
       record.deliverables.unshift(deliverable);
-      recordEvent(id, "deliverable", { to: deliverable.kind, note: deliverable.title ?? deliverable.ref });
+      recordEvent(id, "deliverable", { to: deliverable.kind, note: deliverable.title ?? deliverable.ref, field: deliverable.ref, from: deliverable.id });
+      // 阶段自动规则（stage-auto-design §1），规则只此一份：design-doc（或 .md/.html 的 file）落地，
+      // 需求即进设计评审。HTTP 路由与 requirement 工具的 deliver 都走这里，谁也不能绕开。
+      const entersReview = input.kind === "design-doc" || (input.kind === "file" && /\.(md|markdown|html?)$/i.test(deliverable.ref));
+      const stageBefore = record.stage;
+      if (entersReview && stageBefore !== "design-review") {
+        record.stage = "design-review";
+        recordEvent(id, "stage", { from: stageBefore, to: "design-review", note: "设计文档已挂上，等你评审" });
+      }
       touch(record);
       save([id]);
-      return deliverable;
+      return { ...deliverable, ...(entersReview && stageBefore !== "design-review" ? { entered_review: true as const } : {}) };
     },
     undeliver(id: string, deliverableId: string) {
       const record = at(id);
@@ -481,42 +496,6 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
     }
     return file;
   };
-  const startDesignReview = (id: string): { ok: true; doc: string } | { ok: false; status: number; error: string; code: string } => {
-    if (!options.spawnAnnotate) return { ok: false, status: 501, error: "This Inbox cannot start a review (no annotate runtime).", code: "no_runtime" };
-    if (reviewsInFlight.has(id)) return { ok: false, status: 409, error: "A design review of this requirement is already open.", code: "review_in_flight" };
-    let record: Requirement;
-    try {
-      record = at(id);
-    } catch {
-      return { ok: false, status: 404, error: "No such requirement.", code: "not_found" };
-    }
-    const doc = seedDesignDoc(record);
-    reviewsInFlight.add(id);
-    void options
-      .spawnAnnotate(doc)
-      .then(({ stdout }) => {
-        let outcome: { decision?: unknown; annotationCount?: unknown } = {};
-        try {
-          outcome = JSON.parse(stdout.trim().split("\n").at(-1) ?? "{}") as { decision?: unknown };
-        } catch {
-          outcome = {};
-        }
-        const decision = outcome.decision === "approved" ? "approved" : outcome.decision === "dismissed" ? "dismissed" : outcome.decision === "annotated" ? "annotated" : "unknown";
-        try {
-          const words = decision === "approved" ? "设计文档已批准" : decision === "annotated" ? `设计文档评审完成，带回批注${typeof outcome.annotationCount === "number" ? ` ${outcome.annotationCount} 条` : ""}` : decision === "dismissed" ? "设计文档评审被关闭，未给结论" : "设计文档评审结束（无结果）";
-          store.deliver(id, { kind: "design-doc", ref: doc, title: `设计文档评审（${words}）`, by: null });
-          store.say(id, words, "设计评审");
-        } catch {
-          // The requirement changed under the review (deleted, say): nothing to write back to.
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        reviewsInFlight.delete(id);
-      });
-    return { ok: true, doc };
-  };
-
   /**
    * A deliverable's own preview and its annotation (「产物」 in the detail): the content route reads the ref the
    * deliverable points at — the person's own window only (the browser's own `Sec-Fetch-Site`), text capped, images
@@ -568,18 +547,73 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       return json({ error: "这个产物的文件在这台机器上读不到。", code: "unreadable" }, 404);
     }
   };
-  const annotateDeliverable = (id: string, deliverableId: string): { ok: true } | { ok: false; status: number; error: string; code: string } => {
+  /** pn- 会话 id 的解析：注册表（sessions/*.json 的 reviewId）命中后，活的给 URL，
+   *  死的给它的 target——那次会话打开的原始文档路径，可重新 annotate。 */
+  const resolveRef = (ref: string): { kind: "live"; url: string } | { kind: "file"; file: string } | { kind: "raw"; ref: string } => {
+    if (!/^pn-/.test(ref)) return { kind: "raw", ref };
+    try {
+      const dir = join(options.dataDir, "sessions");
+      for (const name of readdirSync(dir)) {
+        if (!name.endsWith(".json")) continue;
+        try {
+          const info = JSON.parse(readFileSync(join(dir, name), "utf8")) as { pid: number; url: string; target?: string; reviewId?: string };
+          if (info.reviewId !== ref) continue;
+          let alive = false;
+          try { process.kill(info.pid, 0); alive = true; } catch { alive = false; }
+          if (alive) return { kind: "live", url: info.url };
+          if (info.target) return { kind: "file", file: info.target };
+          return { kind: "raw", ref };
+        } catch { /* 一条坏记录不挡路 */ }
+      }
+    } catch { /* 无注册表目录 */ }
+    return { kind: "raw", ref };
+  };
+  /** 要打开的文档路径：pn- 解出 target；相对路径按需求会话的项目根绝对化。null = 打不开（活的会话或解不出）。 */
+  const fileTargetOf = (id: string, ref: string): { file: string } | { url: string } | null => {
+    const resolved = resolveRef(ref);
+    if (resolved.kind === "live") return { url: resolved.url };
+    const file = resolved.kind === "file" ? resolved.file : ref;
+    if (/^https?:/.test(file)) return null;
+    const absolute = file.startsWith("/") || /^[A-Za-z]:[\/]/.test(file) ? file : options.projectRootOf ? join(options.projectRootOf(id) ?? ".", file) : file;
+    return { file: absolute };
+  };
+
+  /** 同一个文档已有活着的 annotate 会话就直接复用（幂等点击，不再每次 spawn 新链接）。 */
+  const aliveAnnotateOf = (file: string): string | null => {
+    const same = (a: string, b: string) => a.replaceAll("\\", "/").toLowerCase() === b.replaceAll("\\", "/").toLowerCase();
+    try {
+      const dir = join(options.dataDir, "sessions");
+      for (const name of readdirSync(dir)) {
+        if (!name.endsWith(".json")) continue;
+        try {
+          const info = JSON.parse(readFileSync(join(dir, name), "utf8")) as { pid: number; url: string; mode?: string; target?: string };
+          if (info.mode !== "annotate" || !info.target || !same(info.target, file)) continue;
+          try { process.kill(info.pid, 0); } catch { continue; }
+          return info.url;
+        } catch { /* 一条坏记录不挡路 */ }
+      }
+    } catch { /* 无注册表目录 */ }
+    return null;
+  };
+
+  const annotateDeliverable = (id: string, deliverableId: string): { ok: true; url?: string } | { ok: false; status: number; error: string; code: string } => {
     if (!options.spawnAnnotate) return { ok: false, status: 501, error: "This Inbox cannot annotate here (no annotate runtime).", code: "no_runtime" };
     if (reviewsInFlight.has(`${id}:${deliverableId}`)) return { ok: false, status: 409, error: "This deliverable is already open for annotation.", code: "annotate_in_flight" };
     const found = deliverableAt(id, deliverableId);
     if ("error" in found) return { ok: false, status: 404, error: "No such deliverable.", code: "not_found" };
-    if (!ANNOTATABLE_SUFFIXES.some((suffix) => found.deliverable.ref.toLowerCase().endsWith(suffix))) {
-      return { ok: false, status: 415, error: "Only documents (markdown, text, HTML) open for annotation.", code: "not_annotatable" };
+    const target = fileTargetOf(id, found.deliverable.ref);
+    if (target && "url" in target) return { ok: true, url: target.url };
+    if (target && "file" in target) {
+      const alive = aliveAnnotateOf(target.file);
+      if (alive) return { ok: true, url: alive };
+    }
+    if (!target || !ANNOTATABLE_SUFFIXES.some((suffix) => target.file.toLowerCase().endsWith(suffix))) {
+      return { ok: false, status: 415, error: "只有文档（markdown/文本/HTML）能打开批注；这个交付物解析不出可打开的文档。", code: "not_annotatable" };
     }
     const key = `${id}:${deliverableId}`;
     reviewsInFlight.add(key);
     void options
-      .spawnAnnotate(found.deliverable.ref)
+      .spawnAnnotate(target.file)
       .then(({ stdout }) => {
         let outcome: { decision?: unknown; annotationCount?: unknown } = {};
         try {
@@ -648,19 +682,19 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         }
         return json({ error: "Use GET, POST, PATCH or DELETE.", code: "method" }, 405);
       }
-      const designReviewMatch = deeper === "design-review" && req.method === "POST";
-      if (designReviewMatch) {
-        const started = startDesignReview(id);
-        return started.ok ? json(started) : json({ error: started.error, code: started.code }, started.status);
-      }
       const deliverableMatch = /^deliverables(?:\/([^/]+))?$/.exec(deeper);
       if (deliverableMatch) {
         if (req.method === "POST" && deliverableMatch[1] === undefined) {
           const input = await body(req);
           const deliverable = store.deliver(id, { kind: input.kind as DeliverableKind, ref: input.ref as string, ...(typeof input.title === "string" ? { title: input.title } : {}), by: typeof input.by === "string" ? input.by : null });
-          // A design doc lands the requirement in review (stage-auto-design §1) — the stage is the event's result.
-          const isDesignDoc = input.kind === "design-doc" || (input.kind === "file" && /\.(md|markdown|html?)$/i.test(String(input.ref)));
-          if (isDesignDoc) moveStage(id, "design-review", "设计文档已挂上，等你评审", true);
+          if (deliverable.entered_review) {
+            // 阶段移动在 store.deliver 里（两条路径同一份规则）；这里补线程通知，让会话不哑进场。
+            const after = store.get(id)?.requirement;
+            const threadId = after?.threads.at(-1);
+            if (threadId && options.notifyThread) {
+              try { options.notifyThread(threadId, `【工坊】需求「${after.title}」已进入「设计评审」：设计文档已挂上，等你评审`); } catch { /* best effort */ }
+            }
+          }
           return json({ deliverable }, 201);
         }
         if (req.method === "DELETE" && deliverableMatch[1] !== undefined) {
@@ -685,12 +719,15 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         if (reviewsInFlight.has(`review:${id}`)) return json({ error: "This requirement's review is already open.", code: "review_in_flight" }, 409);
         const found = deliverableAt(id, decodeURIComponent(reviewMatch[1]!));
         if ("error" in found) return found.error;
-        if (!/\.(md|markdown|txt|html?)$/i.test(found.deliverable.ref)) return json({ error: "Only documents open for review.", code: "not_reviewable" }, 415);
+        // 评审不复用：裁决必须由本次 spawn 的 stdout 捕获（复用别人的会话 = 没人读它的 verdict，
+        // 批准后阶段不动）。批注端点才复用。pn- 解出文档路径后照常自起门控评审。
+        const reviewTarget = fileTargetOf(id, found.deliverable.ref);
+        if (!reviewTarget || !/\.(md|markdown|txt|html?)$/i.test(reviewTarget.file)) return json({ error: "Only documents open for review.", code: "not_reviewable" }, 415);
         const key = `review:${id}`;
         reviewsInFlight.add(key);
         const doc = found.deliverable;
         void options
-          .spawnAnnotate(doc.ref)
+          .spawnAnnotate(reviewTarget.file)
           .then(({ stdout }) => {
             let outcome: { decision?: unknown; feedback?: unknown; annotationCount?: unknown } = {};
             try {

@@ -10,7 +10,7 @@ import { ChatMarkdown } from '@plannotator/ui/components/chat';
 import { HostMark, Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
-import { addContext, annotateDeliverable, deliverableContent, readRequirement, removeContext, reviewDeliverable } from '../api';
+import { addContext, annotateDeliverable, readRequirement, removeContext, reviewDeliverable } from '../api';
 import { inboxApi } from '../../api';
 import { EmbeddedThread } from '../EmbeddedThread';
 import { putThread } from '../../data/queries/thread';
@@ -19,7 +19,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { rowAgent } from '../../components/InboxList';
 import { Tip } from '../../components/Tip';
 import { useRequirements } from '../useRequirements';
-import { DELIVERABLE_KIND_LABELS, type Deliverable, type Requirement, type RequirementEvent } from '@plannotator/core/requirements-types';
+import { DELIVERABLE_KIND_LABELS, requirementStageLabel, type Requirement, type RequirementEvent } from '@plannotator/core/requirements-types';
 
 const EVENT_WORDS: Readonly<Record<RequirementEvent['kind'], string>> = {
   created: '创建', stage: '阶段', field: '修改', deleted: '删除', say: '动态', deliverable: '产物', suggestion: '建议', context: '上下文',
@@ -61,9 +61,8 @@ function useThreadBusy(threadIds: readonly string[], on: boolean): Record<string
 
 /** What the right panel shows. */
 type Panel =
-  | { k: 'session'; threadId: string }
+  | { k: 'session'; threadId: string; fileId?: string | null; artifacts?: boolean }
   | { k: 'contexts'; requirementId: string }
-  | { k: 'deliverables'; requirementId: string }
   | { k: 'history'; requirementId: string }
   | null;
 
@@ -72,11 +71,13 @@ export function RequirementsPanel({
   openThreadId = null,
   onOpenThread,
   onCompose,
+  onToast,
 }: {
   on: boolean;
   openThreadId?: string | null;
   onOpenThread: (threadId: string) => void;
   onCompose: (requirementId: string, requirementTitle: string, contexts: { id: string; kind: string; name: string; image?: boolean }[]) => void;
+  onToast: (toast: unknown, ms?: number) => void;
 }) {
   const { requirements, create, refresh } = useRequirements(on, subscribeRequirementFrames);
   const [draft, setDraft] = useState('');
@@ -112,7 +113,16 @@ export function RequirementsPanel({
         </div>
         <div className="ib-req-wp-cards">
           {(requirements ?? []).map((r) => (
-            <ReqCard key={r.id} requirement={r} rowsByThread={rowsByThread} threadBusy={threadBusy} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onDeliverables={() => setPanel({ k: 'deliverables', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onReview={(reqId, dlvId) => { void reviewDeliverable(reqId, dlvId).then((o) => { if (!o.ok) console.warn(o.error); }); }} />
+            <ReqCard key={r.id} requirement={r} rowsByThread={rowsByThread} threadBusy={threadBusy} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onReview={(reqId, dlvId) => {
+                  // 同步开空窗保住手势；复用成功带 url 就导航，spawn 成功由子进程开浏览器，失败关窗报错。
+                  const win = window.open('about:blank', '_blank');
+                  void reviewDeliverable(reqId, dlvId).then((o) => {
+                    const url = o.ok ? o.answer.url : undefined;
+                    if (url && win) win.location.href = url;
+                    else if (!o.ok) { win?.close(); onToast({ icon: 'excl', lead: `审阅没能打开：${o.error}`, wrap: true }); }
+                    else win?.close();
+                  });
+                }} />
           ))}
           {(requirements ?? []).length === 0 && <p className="ib-req-wp-empty">还没有需求。</p>}
         </div>
@@ -121,10 +131,19 @@ export function RequirementsPanel({
       {/* The right panel: a session is the product's own ThreadPane (ib-pane) alone — no wrapper, no double chrome. */}
       {panel !== null &&
         (panel.k === 'session' ? (
-          <EmbeddedThread threadId={panel.threadId} onClose={() => setPanel(null)} onChanged={() => { void inboxApi.thread(panel.threadId).then((r) => putThread(queryClient, panel.threadId, r)); }} />
+          <EmbeddedThread threadId={panel.threadId} fileId={panel.fileId ?? null} artifacts={panel.artifacts ?? false} onClose={() => setPanel(null)} onChanged={() => { void inboxApi.thread(panel.threadId).then((r) => putThread(queryClient, panel.threadId, r)); }} />
         ) : (
           <div className="ib-req-wp-panel">
-            <PanelContent panel={panel} requirements={requirements ?? []} rowsByThread={rowsByThread} onClose={() => setPanel(null)} onOpenThread={onOpenThread} queryClient={queryClient} />
+            <PanelContent panel={panel} requirements={requirements ?? []} rowsByThread={rowsByThread} onClose={() => setPanel(null)} onOpenThread={onOpenThread} queryClient={queryClient} onOpenSessionFile={(threadId, fileId) => setPanel({ k: 'session', threadId, fileId })} onToast={onToast} onReview={(reqId, dlvId) => {
+                  // 同步开空窗保住手势；复用成功带 url 就导航，spawn 成功由子进程开浏览器，失败关窗报错。
+                  const win = window.open('about:blank', '_blank');
+                  void reviewDeliverable(reqId, dlvId).then((o) => {
+                    const url = o.ok ? o.answer.url : undefined;
+                    if (url && win) win.location.href = url;
+                    else if (!o.ok) { win?.close(); onToast({ icon: 'excl', lead: `审阅没能打开：${o.error}`, wrap: true }); }
+                    else win?.close();
+                  });
+                }} />
           </div>
         ))}
 
@@ -144,13 +163,12 @@ export function RequirementsPanel({
 
 /* ── A requirement card: icon + wrapping title, hover actions (out of flow), created
  * time pinned right on row 1, and its sessions as rows INSIDE the card. ── */
-function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContexts, onDeliverables, onHistory, onNewSession, onReview }: {
+function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContexts, onHistory, onNewSession, onReview }: {
   requirement: Requirement;
   rowsByThread: Map<string, unknown>;
   threadBusy: Record<string, boolean | null>;
   onSession: (threadId: string) => void;
   onContexts: () => void;
-  onDeliverables: () => void;
   onHistory: () => void;
   onNewSession: () => void;
   onReview: (requirementId: string, deliverableId: string) => void;
@@ -158,21 +176,20 @@ function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContex
   return (
     <div className="ib-req-wcard" data-requirement-id={r.id}>
       <div className="ib-req-wcard-head">
-        <span className="ib-req-wcard-ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="4" y="4" width="16" height="16" rx="4.5" />
-            <path d="M8 12.2l2.6 2.6L16 9.4" />
-          </svg>
-        </span>
         <b className="ib-req-wcard-title" dir="auto">{r.title}</b>
+        {/* 常驻图标操作（气泡提示名字与数量）；窄面板下随标题换行、右对齐 */}
+        <div className="ib-req-wcard-acts">
+          <Tip content={`开启新会话${r.threads.length > 0 ? `（已有 ${r.threads.length} 个）` : ''}`}>
+            <button type="button" className="ib-req-wact" onClick={onNewSession} aria-label="开启新会话"><Icon name="compose" size={15} /></button>
+          </Tip>
+          <Tip content={`上下文（${r.contexts.length}）`}>
+            <button type="button" className="ib-req-wact" onClick={onContexts} aria-label="上下文"><Icon name="book" size={15} /></button>
+          </Tip>
+          <Tip content="历史">
+            <button type="button" className="ib-req-wact" onClick={onHistory} aria-label="历史"><Icon name="clock" size={15} /></button>
+          </Tip>
+        </div>
         <span className="ib-req-wcard-time" title={timeOf(r.created_at)}>{timeOf(r.created_at)}</span>
-      </div>
-      {/* 悬停浮现的操作：文档流，标题下方，超出换行；不可见不占空间 */}
-      <div className="ib-req-wcard-acts">
-        <button type="button" onClick={onNewSession}><Icon name="plus" size={12} /> 开启新会话</button>
-        <button type="button" onClick={onContexts}><Icon name="pen" size={12} /> 上下文{r.contexts.length > 0 ? ` ${r.contexts.length}` : ''}</button>
-        <button type="button" onClick={onDeliverables}><Icon name="clip" size={12} /> 产物{r.deliverables.length > 0 ? ` ${r.deliverables.length}` : ''}</button>
-        <button type="button" onClick={onHistory}><Icon name="clock" size={12} /> 历史</button>
       </div>
       {/* 会话就在卡片里：agent 侧栏的行模式 */}
       <div className="ib-req-wcard-sessions">
@@ -182,8 +199,8 @@ function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContex
           const waiting = row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting';
           const subject = (row?.subject?.trim() ? row.subject : null) ?? '会话';
           return (
-            <button key={tid} type="button" className="ib-req-wcard-sess" onClick={() => onSession(tid)}>
-              <span className="ib-req-wcard-sess-mk">{agent?.kind === 'agent' ? <HostMark host={agent.host} /> : <Icon name="comment" size={14} />}</span>
+            <div key={tid} role="button" tabIndex={0} className="ib-req-wcard-sess" onClick={() => onSession(tid)} onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onSession(tid); } }}>
+              <span className={`ib-req-wcard-sess-mk${threadBusy[tid] === true ? ' running' : ''}`}>{agent?.kind === 'agent' ? <HostMark host={agent.host} /> : <Icon name="comment" size={14} />}</span>
               <span className="ib-req-wcard-sess-t" dir="auto">{subject}</span>
               {threadBusy[tid] === true && (
                 <span className="ib-req-wcard-live">
@@ -191,47 +208,42 @@ function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContex
                 </span>
               )}
               {waiting && (
-                <span className="ib-req-wcard-hold">
-                  <Icon name="clock" size={11} /> 等你回复
-                </span>
+                <>
+                  <span className="ib-req-wcard-sep" aria-hidden="true" />
+                  <span className="ib-req-wcard-hold">
+                    <Icon name="clock" size={11} /> 等你回复
+                  </span>
+                </>
               )}
-            </button>
+              <Tip content="会话产物">
+                <button
+                  type="button"
+                  className="ib-req-wcard-sess-art"
+                  aria-label={`${subject} 的产物`}
+                  onClick={(e) => { e.stopPropagation(); setPanel({ k: 'session', threadId: tid, artifacts: true }); }}
+                >
+                  <Icon name="artifacts" size={13} />
+                </button>
+              </Tip>
+            </div>
           );
         })}
         {r.threads.length === 0 && <p className="ib-req-wcard-nosess">还没有会话；悬停需求，点"开启新会话"。</p>}
       </div>
 
-      {/* 审阅状态行：会话行正下方，等审的文档一目了然（review-on-card-design） */}
+      {/* 审阅横幅：只在你需要行动时出现（design-review 阶段）；审完即随阶段消失。
+          通过/退回是过程信息，住在历史里，不上卡片。 */}
       {(() => {
+        if (r.stage !== 'design-review') return null;
         const doc = r.deliverables.find((d) => d.kind === 'design-doc' || /\.(md|markdown|html?)$/i.test(d.ref));
         if (!doc) return null;
-        if (r.stage === 'design-review') {
-          return (
-            <div className="ib-req-wcard-review">
-              <Icon name="pen" size={12} />
-              <span className="ib-req-wcard-review-t" dir="auto">{doc.title ?? doc.ref.split('/').pop() ?? doc.ref}</span>
-              <button type="button" className="ib-req-wcard-review-go" onClick={() => onReview(r.id, doc.id)}>去审阅</button>
-            </div>
-          );
-        }
-        if (r.stage === 'dev' || r.stage === 'qa' || r.stage === 'code-review' || r.stage === 'done') {
-          return (
-            <div className="ib-req-wcard-review done">
-              <Icon name="check" size={12} />
-              <span className="ib-req-wcard-review-t">{doc.title ?? '设计文档'} — 已通过</span>
-            </div>
-          );
-        }
-        // design stage with a doc: it was sent back — quiet.
-        if (r.stage === 'design' && r.deliverables.length > 0) {
-          return (
-            <div className="ib-req-wcard-review back">
-              <Icon name="chevL" size={12} />
-              <span className="ib-req-wcard-review-t">{doc.title ?? '设计文档'} — 已退回</span>
-            </div>
-          );
-        }
-        return null;
+        return (
+          <div className="ib-req-verdict wait">
+            <Icon name="eye" size={13} />
+            <span className="ib-req-verdict-doc" dir="auto" title={doc.title ?? doc.ref}>{doc.title ?? doc.ref.split('/').pop() ?? doc.ref}</span>
+            <button type="button" className="ib-req-verdict-go" onClick={() => onReview(r.id, doc.id)}>去审阅</button>
+          </div>
+        );
       })()}
     </div>
   );
@@ -351,19 +363,21 @@ function ContextsBody({ requirementId, contexts, onChanged, onError }: {
 }
 
 /* ── The right panel's content ── */
-function PanelContent({ panel, requirements, rowsByThread, onClose, onOpenThread, queryClient }: {
+function PanelContent({ panel, requirements, rowsByThread, onClose, onOpenThread, queryClient, onOpenSessionFile, onReview, onToast }: {
   panel: NonNullable<Panel>;
   requirements: Requirement[];
   rowsByThread: Map<string, unknown>;
   onClose: () => void;
   onOpenThread: (threadId: string) => void;
   queryClient: import('@tanstack/react-query').QueryClient;
+  onOpenSessionFile: (threadId: string, fileId: string | null) => void;
+  onReview: (reqId: string, deliverableId: string) => void;
+  onToast: (toast: unknown, ms?: number) => void;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [annotating, setAnnotating] = useState<string | null>(null);
   /** 上下文增删后 +1，重读详情。 */
   const [bump, setBump] = useState(0);
-  const [dlvPreviews, setDlvPreviews] = useState<Record<string, 'loading' | { text?: string; image?: string; binary?: boolean; session?: string; html?: boolean } | { error: string }>>({});
   const [detail, setDetail] = useState<{ requirement: Requirement; events: RequirementEvent[] } | null>(null);
   const reload = useRef<AbortController | null>(null);
 
@@ -378,15 +392,6 @@ function PanelContent({ panel, requirements, rowsByThread, onClose, onOpenThread
     return () => { c.abort(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reqId, bump]);
-
-  useEffect(() => {
-    for (const d of detail?.requirement.deliverables ?? []) {
-      if (dlvPreviews[d.id] !== undefined) continue;
-      setDlvPreviews((h) => ({ ...h, [d.id]: 'loading' }));
-      void deliverableContent(reqId!, d.id).then((a) => setDlvPreviews((h) => ({ ...h, [d.id]: a as never })));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detail]);
 
   const top = (title: string) => (
     <div className="ib-req-wp-panel-top">
@@ -404,47 +409,88 @@ function PanelContent({ panel, requirements, rowsByThread, onClose, onOpenThread
     );
   }
 
-  if (panel.k === 'deliverables') {
-    return (
-      <>
-        {top(`产物 · ${req?.title ?? ''}`)}
-        <div className="ib-req-wp-panel-body">
-          {(detail?.requirement.deliverables ?? []).length === 0 && <p className="ib-req-wp-panel-empty">还没有产物。</p>}
-          {(detail?.requirement.deliverables ?? []).map((d: Deliverable) => {
-            const c = dlvPreviews[d.id];
-            return (
-              <div key={d.id} className="ib-req-wp-dlv">
-                <div className="ib-req-wp-dlv-row"><span className="ib-req-wp-dlv-kind">{DELIVERABLE_KIND_LABELS[d.kind]}</span><b dir="auto">{d.title ?? d.ref.split('/').pop() ?? d.ref}</b><small>{timeOf(d.created_at)}</small></div>
-                {c === 'loading' || c === undefined ? <p className="ib-req-wp-panel-empty">读取中…</p>
-                  : 'error' in c ? <p className="ib-req-wp-panel-empty">{c.error}</p>
-                  : c.image ? <img src={c.image} alt="预览" style={{ maxWidth: '100%', borderRadius: 6 }} />
-                  : c.html ? <iframe sandbox="allow-scripts" srcDoc={c.text} title="预览" style={{ width: '100%', height: 300, border: 0, borderRadius: 6 }} />
-                  : <div dir="auto" style={{ fontSize: 12.5, lineHeight: 1.6 }}><ChatMarkdown text={c.text ?? ''} role="assistant" messageId={`dlv-${d.id}`} /></div>}
-                {/\.(md|markdown|txt|html?)$/i.test(d.ref) && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '4px 10px' }}>
-                    <button type="button" className="ib-btn ib-sm" disabled={annotating === d.id} onClick={() => { setAnnotating(d.id); void annotateDeliverable(reqId!, d.id).then((o) => { setAnnotating(null); if (!o.ok) setError(o.error); }); }}><Icon name="pen" size={12} /> 批注</button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </>
-    );
-  }
-
   // history
   return (
     <>
       {top(`历史 · ${req?.title ?? ''}`)}
-      <div className="ib-req-wp-panel-body">
-        <ol className="ib-req-wp-hist">
-          {[...(detail?.events ?? [])].reverse().slice(0, 20).map((e) => (
-            <li key={e.id}><span className="t">{timeOf(e.at)}</span><span className="w">{EVENT_WORDS[e.kind] ?? e.kind}</span><span className="n">{(e.note ?? '').length > 80 ? (e.note ?? '').slice(0, 80) + '…' : e.note ?? e.field ?? ''}</span></li>
-          ))}
+      <div className="ib-req-wp-panel-body ib-req-hist-body">
+        <ol className="ib-req-hist">
+          {[...(detail?.events ?? [])].reverse().map((e) => {
+            const stageLine = e.kind === 'stage' && (e.from || e.to)
+              ? `${e.from ? requirementStageLabel(e.from as never) : '?'} → ${e.to ? requirementStageLabel(e.to as never) : '?'}`
+              : null;
+            const note = e.note ?? '';
+            return (
+              <li key={e.id} className="ib-req-hist-item" data-k={e.kind}>
+                <span className="ib-req-hist-time">{timeOf(e.at)}</span>
+                <span className="ib-req-hist-dot" aria-hidden="true" />
+                <div className="ib-req-hist-main">
+                  <div className="ib-req-hist-head">
+                    <span className="ib-req-hist-kind">{e.kind === 'deliverable' ? DELIVERABLE_KIND_LABELS[(e.to ?? '') as never] ?? '交付' : EVENT_WORDS[e.kind] ?? e.kind}</span>
+                    {stageLine && <span className="ib-req-hist-sub" dir="auto">{stageLine}</span>}
+                    {!stageLine && e.kind !== 'deliverable' && e.field && <span className="ib-req-hist-sub" dir="auto">{e.field}</span>}
+                  </div>
+                  {note.trim() && (e.kind === 'deliverable' && e.field ? (
+                    <div className="ib-req-hist-dlv" data-review={(() => {
+                      const older = (detail?.requirement.deliverables ?? []).find((d) => (d.title ?? d.ref) === note) ?? null;
+                      const ref = e.field ?? older?.ref ?? '';
+                      const dlvId = e.from ?? older?.id ?? '';
+                      return (detail?.requirement.stage ?? req?.stage) === 'design-review' && e.to === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref) && dlvId && reqId ? '' : undefined;
+                    })()}>
+                    <button
+                      type="button"
+                      className="ib-req-hist-open"
+                      title={e.field}
+                      onClick={() => {
+                        // 旧事件没带 id/ref：按标题回查当前交付物列表（无需重新生成）。
+                        const older = (detail?.requirement.deliverables ?? []).find((d) => (d.title ?? d.ref) === note) ?? null;
+                        const ref = e.field ?? older?.ref ?? '';
+                        const dlvId = e.from ?? older?.id ?? ''; // 事件携带的交付物 id（recordEvent 的 from）
+                        if (!dlvId || !reqId) return;
+                        const underReview = (detail?.requirement.stage ?? req?.stage) === 'design-review' && e.to === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref);
+                        if (underReview) { onReview(reqId, dlvId); return; }
+                        if (/^https?:/.test(ref)) { window.open(ref, '_blank', 'noreferrer'); return; }
+                        {
+                          // 同步开空窗保住用户手势（异步回调里的 window.open 会被弹窗拦截吞掉），拿到地址再导航。
+                          const win = window.open('about:blank', '_blank');
+                          setAnnotating(e.id ?? ref);
+                          void annotateDeliverable(reqId, dlvId).then((o) => {
+                            setAnnotating(null);
+                            const url = o.ok ? o.answer.url : undefined;
+                            if (url && win) win.location.href = url;
+                            else {
+                              win?.close();
+                              setError(o.ok ? '没有可打开的地址。' : o.error);
+                              onToast({ icon: 'excl', lead: o.ok ? '没有可打开的地址。' : `预览没能打开：${o.error}`, wrap: true });
+                            }
+                          });
+                        }
+                      }}
+                    >
+                      {note}
+                    </button>
+                    {(() => {
+                      const older = (detail?.requirement.deliverables ?? []).find((d) => (d.title ?? d.ref) === note) ?? null;
+                      const ref = e.field ?? older?.ref ?? '';
+                      const dlvId = e.from ?? older?.id ?? '';
+                      const reviewable = (detail?.requirement.stage ?? req?.stage) === 'design-review' && e.to === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref) && dlvId && reqId;
+                      return reviewable ? (
+                        <button type="button" className="ib-req-hist-review" onClick={() => reqId && onReview(reqId, dlvId)}>去审阅</button>
+                      ) : null;
+                    })()}
+                    </div>
+                  ) : (
+                    <p className="ib-req-hist-note" dir="auto">{note}</p>
+                  ))}
+                </div>
+              </li>
+            );
+          })}
+          {(detail?.events ?? []).length === 0 && <p className="ib-req-hist-none">还没有事件。</p>}
         </ol>
       </div>
       {error && <p className="ib-error" role="alert">{error}</p>}
     </>
   );
 }
+

@@ -24,6 +24,7 @@ import { ChatTranscript, type ChatMessage, type ChatMessagePart, type ChatStatus
 import { isImeCompositionKey } from '@plannotator/ui/utils/commentSubmitKey';
 import type { InboxRunState } from '@plannotator/core/inbox-types';
 import { Icon } from '../icons';
+import { Tip } from '../components/Tip';
 import { inboxApi, type InboxStreamEntry, type InboxAskTurnWire } from '../api';
 import { InboxApiError } from '../apiError';
 
@@ -69,6 +70,8 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
   const [busy, setBusy] = useState(false);
   /** The thread's run line (the product's own working state): 'none' when the thread has no run (not a launched session). */
   const [runState, setRunState] = useState<InboxRunState | 'none' | null>(null);
+  /** The thread's own subject (askRead carries it): the stream's title, so it always names the conversation. */
+  const [subject, setSubject] = useState<string | null>(null);
   /** The writer session's live `busy` (the sessions read, `wrote_thread` first): true = a turn runs now. */
   const [sessionBusy, setSessionBusy] = useState<boolean | null>(null);
   /** The ask conversation's own word: a turn is being answered (askRead's `running`). */
@@ -125,6 +128,7 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
         const model = await inboxApi.askRead(threadId);
         if (!alive) return;
         setAskRunning(model.running !== null);
+        setSubject(model.subject);
         const turns = model.conversation?.turns ?? [];
         const asEntries: InboxStreamEntry[] = [];
         turns.forEach((turn: InboxAskTurnWire, index: number) => {
@@ -259,31 +263,25 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
     });
   }, [entries]);
 
-  // 运行中: the product's own signals, in order — the run line (launched sessions), the writer session's live
-  // busy, the ask conversation's `running`; a tool call still without its result is the last fallback.
-  const toolRunning = entries.some((entry) => entry.kind === 'tool' && entry.result === undefined);
+  // 运行中: the writer session's LIVE busy read has the last word — it says idle, it is idle (a turn's last
+  // tool call often never gets its result line, and the run line can lag; neither may keep the pill lit).
+  // The rest only speak when the connection has no opinion (null): the run line, the ask conversation's
+  // `running`, and a tool call still without its result — and a tool only counts for 90s (older than that,
+  // the line simply never got its pair).
+  const toolRunning = entries.some((entry) => entry.kind === 'tool' && entry.result === undefined && Date.now() - (entry.t ?? 0) < 90_000);
   const working =
-    runState === 'working' || runState === 'starting' ||
-    sessionBusy === true ||
-    askRunning ||
-    ((runState === 'none' || runState === null) && toolRunning);
+    sessionBusy !== null
+      ? sessionBusy === true
+      : runState === 'working' || runState === 'starting' || askRunning || toolRunning;
   workingRef.current = working;
   const status: ChatStatus = working ? 'streaming' : 'ready';
-  /** The top bar's state pill: always a word for where the session stands, never a guess. */
-  const runPill = (() => {
-    if (working) return { cls: 'live', node: <><span className="ib-spin" aria-hidden="true" /> 运行中</> };
-    switch (runState) {
-      case 'waiting_answer': return { cls: 'hold', node: <><Icon name="clock" size={11} /> 等你回复</> };
-      case 'waiting_terminal': return { cls: 'hold', node: <><Icon name="clock" size={11} /> 等终端输入</> };
-      case 'stopped': return { cls: 'off', node: <>已停止</> };
-      case 'failed': return { cls: 'off', node: <>失败</> };
-      case 'missing': return { cls: 'off', node: <>不在运行</> };
-      default:
-        // No run line (not a launched session): the live connection still said something.
-        if (sessionBusy === false) return { cls: 'off', node: <>空闲</> };
-        return null;
-    }
-  })();
+  /** 终端镜像，只有两态：终端在跑（思考/输出）→ 运行中；输出结束 → 空闲。
+   *  run 线的中间语言（等终端输入等）不进这里——那是启动器视角，不是终端事实。 */
+  const runPill = working
+    ? { cls: 'live', node: <><span className="ib-spin" aria-hidden="true" /> 运行中</> }
+    : sessionBusy === false
+      ? { cls: 'off', node: <>空闲</> }
+      : null;
 
   const renderPart = (part: ChatMessagePart): React.ReactNode | undefined => {
     if (part.type === 'tool') {
@@ -321,14 +319,14 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
   return (
     <div className="ib-sstr" aria-label="会话对话流" data-stream-pane="">
       <div className="ib-sstr-top">
-        <button type="button" className="ib-sstr-back" onClick={onClose}>
-          <Icon name="chevL" size={14} />
-          <span>收起</span>
-        </button>
-        <span className="ib-sstr-title">对话流</span>
-        <span className="ib-sstr-sess">claude</span>
+        <Tip content="回到会话">
+          <button type="button" className="ib-sstr-back" onClick={onClose} aria-label="回到会话">
+            <Icon name="chevL" size={16} />
+          </button>
+        </Tip>
+        <span className="ib-sstr-title" dir="auto" title={subject ?? undefined}>{subject ?? '会话'}</span>
         {runPill && <span className={`ib-sstr-live ib-sstr-pill-${runPill.cls}`}>{runPill.node}</span>}
-        <span className="ib-sp" />
+        <span className="ib-sstr-sep" aria-hidden="true" />
         <button type="button" className="ib-sstr-x" aria-label="关闭对话流" onClick={onClose}>
           <Icon name="x" size={16} />
         </button>

@@ -4482,7 +4482,7 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
   const requirements = createBunRequirementRoutes({
     dataDir,
     spawnAnnotate: (file) => {
-      const child = Bun.spawn([...selfCommand, "annotate", file, "--gate", "--json"], { stdout: "pipe", stderr: "ignore", stdin: "ignore" });
+      const child = Bun.spawn([...selfCommand, "annotate", file, "--gate", "--json"], { stdout: "pipe", stderr: "ignore", stdin: "ignore", windowsHide: true });
       return Promise.all([new Response(child.stdout).text(), child.exited]).then(([stdout, code]) => ({ stdout, code }));
     },
     // An agent delivers from its working folder: its relative paths resolve against the project root of the

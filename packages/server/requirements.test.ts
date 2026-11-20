@@ -103,11 +103,15 @@ describe("the requirements routes", () => {
     expect((await call("PATCH", `/api/requirements/${made.id}`, { archived: "yes" })).status).toBe(400);
   });
 
-  test("deliverables attach and remove over the routes, with history; a bad kind or empty ref is refused", async () => {
+  test("deliverables attach and remove over the routes, with history; a bad kind, empty ref, or a non-document design-doc ref is refused", async () => {
     const made = await createOne();
-    const attached = await call("POST", `/api/requirements/${made.id}/deliverables`, { kind: "design-doc", ref: "sess_123", title: "登录页方案", by: "Claude Code" });
+    // 治本：design-doc 的 ref 必须是文档（评审开的是文档本身），会话 id 之类的句柄当场拒收。
+    const refused = await call("POST", `/api/requirements/${made.id}/deliverables`, { kind: "design-doc", ref: "sess_123", title: "登录页方案", by: "Claude Code" });
+    expect(refused.status).toBe(400);
+    expect((refused.data as { error: string }).error).toContain("文档");
+    const attached = await call("POST", `/api/requirements/${made.id}/deliverables`, { kind: "design-doc", ref: "docs/login-plan.md", title: "登录页方案", by: "Claude Code" });
     expect(attached.status).toBe(201);
-    expect(attached.data.deliverable).toMatchObject({ kind: "design-doc", ref: "sess_123", title: "登录页方案", by: "Claude Code" });
+    expect(attached.data.deliverable).toMatchObject({ kind: "design-doc", ref: "docs/login-plan.md", title: "登录页方案", by: "Claude Code" });
     const detail = await call("GET", `/api/requirements/${made.id}`);
     expect((detail.data.requirement as { deliverables: { id: string }[] }).deliverables).toHaveLength(1);
     expect((detail.data.events as { kind: string }[]).map((event) => event.kind)).toContain("deliverable");
@@ -116,7 +120,7 @@ describe("the requirements routes", () => {
     // A GET under deliverables/:id is not this module's subpath: the route answers null (the caller 404s).
     expect(await routes().route(new Request(`http://x/api/requirements/${made.id}/deliverables/${id}`), new URL(`http://x/api/requirements/${made.id}/deliverables/${id}`))).toBeNull();
     expect(((await call("GET", `/api/requirements/${made.id}`)).data.requirement as { deliverables: unknown[] }).deliverables).toEqual([]);
-    for (const body of [{ kind: "napkin", ref: "x" }, { kind: "link", ref: "  " }]) {
+    for (const body of [{ kind: "napkin", ref: "x" }, { kind: "link", ref: "  " }, { kind: "link", ref: "pn-123" }]) {
       expect((await call("POST", `/api/requirements/${made.id}/deliverables`, body)).status).toBe(400);
     }
   });

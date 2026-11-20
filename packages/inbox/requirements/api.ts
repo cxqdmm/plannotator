@@ -76,19 +76,13 @@ export function dismissSuggestion(id: string, suggestionId: string): Promise<Wri
   return write('DELETE', `/api/requirements/${encodeURIComponent(id)}/suggestions/${encodeURIComponent(suggestionId)}`, {});
 }
 
-/** 「发起设计文档评审」: opens a gated annotate session on the requirement's design doc; the outcome writes
- * itself back (a deliverable, a say line, and on approval a suggestion), and the event stream refreshes the pane. */
-export function startDesignReview(id: string): Promise<WriteOutcome<{ ok: boolean; doc: string }>> {
-  return write('POST', `/api/requirements/${encodeURIComponent(id)}/design-review`, {});
-}
-
 /** A deliverable's preview: text (markdown/plain) or an image, the person's own window only. */
 export function deliverableContent(id: string, deliverableId: string): Promise<{ text?: string; image?: string; binary?: boolean; annotatable?: boolean } | { error: string }> {
   return fetch(`/api/requirements/${encodeURIComponent(id)}/deliverables/${encodeURIComponent(deliverableId)}/content`, { headers: { Accept: 'application/json' }, cache: 'no-store' }).then((response) => response.json());
 }
 
 /** 批注: the deliverable's document opens in a plain annotate session; what comes back lands in the history. */
-export function annotateDeliverable(id: string, deliverableId: string): Promise<WriteOutcome<{ ok: boolean }>> {
+export function annotateDeliverable(id: string, deliverableId: string): Promise<WriteOutcome<{ ok: boolean; url?: string }>> {
   return write('POST', `/api/requirements/${encodeURIComponent(id)}/deliverables/${encodeURIComponent(deliverableId)}/annotate`, {});
 }
 
@@ -113,6 +107,6 @@ export function patchContext(id: string, contextId: string, patch: { name?: stri
 
 /** 去评审 (stage-auto-design §2): the design doc opens in a gated annotate; the verdict moves the stage and
  *  tells the session (approved → 需求开发; annotated → back to 需求设计 with the notes). */
-export function reviewDeliverable(id: string, deliverableId: string): Promise<WriteOutcome<{ ok: boolean; doc: string }>> {
+export function reviewDeliverable(id: string, deliverableId: string): Promise<WriteOutcome<{ ok: boolean; doc?: string; url?: string }>> {
   return write('POST', `/api/requirements/${encodeURIComponent(id)}/deliverables/${encodeURIComponent(deliverableId)}/review`, {});
 }

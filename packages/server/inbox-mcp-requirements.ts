@@ -15,7 +15,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod";
-import { DELIVERABLE_KINDS, DELIVERABLE_KIND_LABELS, REQUIREMENT_STAGES, requirementStageLabel, type DeliverableKind, type Requirement, type RequirementStage } from "@plannotator/core/requirements-types";
+import { DELIVERABLE_KINDS, DELIVERABLE_KIND_LABELS, requirementStageLabel, type DeliverableKind, type Requirement } from "@plannotator/core/requirements-types";
 import type { RequirementStore } from "./requirements";
 import { guarded, okComplete } from "./inbox-mcp-result";
 
@@ -24,9 +24,8 @@ export type InboxRequirementOp = (typeof INBOX_REQUIREMENT_OPS)[number];
 
 /** For raw MCP clients; the agent tool words its action line itself (INBOX_AGENT_ACTION_LEADS.requirement). */
 export const REQUIREMENT_DESCRIPTION =
-  'Work the person\'s requirements (the workshop board). op: mine (the requirements of a thread you are in: thread_id; without one, every active requirement), get (one requirement: requirement), link (tie this thread\'s work to it: thread_id), deliver (attach what you just finished: kind one of design-doc, test-report, link, file, and ref — a session id, PR, URL or path), say (one line of progress, shown in its history). Stages move themselves: deliver a design doc (kind design-doc, or an .md/.html file) and the requirement enters review on its own; the person\'s verdict there moves it on — never propose or move a stage yourself.';
+  'Work the person\'s requirements (the workshop board). op: mine (the requirements of a thread you are in: thread_id; without one, every active requirement), get (one requirement: requirement), link (tie this thread\'s work to it: thread_id), deliver (attach what you just finished: kind one of design-doc, test-report, link, file, and ref — a path, URL or PR; a link ref is a full http(s) URL; a design-doc ref is the document itself, a .md/.markdown/.txt/.html path or URL you saved, NEVER a session id like pn-…: the review opens the document, so anything else is refused), say (one line of progress, shown in its history). Stages move themselves: deliver a design doc (kind design-doc, or an .md/.html file) and the requirement enters review on its own; the person\'s verdict there moves it on — never propose or move a stage yourself.';
 
-const STAGE_IDS = REQUIREMENT_STAGES.map((stage) => stage.id) as unknown as readonly [RequirementStage, ...RequirementStage[]];
 
 /** One requirement as one line of text: every fact an agent acts on. */
 export function requirementLineText(requirement: Requirement): string {
@@ -88,7 +87,6 @@ async function runRequirementCall(context: { requirements?: RequirementStore }, 
     store.say(requirementId, input.note as string, authorOf(input));
     return { text: "Noted on the requirement's history." };
   }
-  if (op === "suggest") return { text: "suggest is retired: stages move themselves — deliver your design doc and its review moves the stage." };
   return { text: `op: one of ${INBOX_REQUIREMENT_OPS.join(", ")}.` };
 }
 
@@ -107,8 +105,6 @@ export function registerInboxRequirementTool(server: McpServer, context: { requi
           ref: z.string().optional().describe("deliver: what it points at — a session id, owner/repo#123, a URL or a path."),
           title: z.string().optional().describe("deliver: the deliverable's name, a few words."),
           note: z.string().optional().describe("say: one line of progress."),
-          stage: z.enum(STAGE_IDS).optional().describe("suggest: the stage you propose. Only the person moves a stage."),
-          why: z.string().optional().describe("suggest: one line of why."),
           agent_name: z.string().optional().describe("How the person sees you, e.g. \"Claude Code\"."),
           agent_host: z.string().optional().describe("Your agent host, e.g. claude-code, codex, cursor."),
           agent_session: z.string().optional().describe("Your session id; the `plannotator inbox mcp` shim fills it."),
