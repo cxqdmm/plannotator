@@ -228,3 +228,21 @@
 
 /* 侧栏工坊行的等待徽章（随尾部丢失找回） */
 .ib-nav .ib-nav-hold { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 1.5px 8px; border-radius: 999px; background: var(--ib-badge-hold-bg); color: var(--ib-badge-hold-fg, currentcolor); font-size: 10.5px; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+/* ── 用模板（compose 的需求模板模式）：安静的表单——无彩色底，小节标题弱化，
+      输入统一 10px 圆角，材料 chip 选中灰底（随 CSS 尾部丢失重写找回） ── */
+.ib-cp-tabs { display: inline-flex; padding: 3px; gap: 3px; border-radius: 10px; background: var(--muted); margin-bottom: 10px; }
+.ib-cp-tabs button { border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 550; color: var(--muted-foreground); padding: 6px 14px; border-radius: 8px; cursor: pointer; transition: color 120ms ease-out; }
+.ib-cp-tabs button.on { background: var(--card); color: var(--foreground); box-shadow: 0 1px 4px oklch(0.3 0.03 260 / 0.12); }
+.ib-cp-tmpl { border: 1px solid var(--ib-hair, var(--border)); border-radius: 12px; padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 14px; background: var(--card); margin-bottom: 10px; }
+.ib-cp-tmpl label, .ib-cp-tmpl-field { display: flex; flex-direction: column; gap: 6px; }
+.ib-cp-tmpl-h { font-size: 11px; font-weight: 650; letter-spacing: 0.05em; color: var(--muted-foreground); }
+.ib-cp-tmpl textarea { border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; font: inherit; font-size: 13px; background: var(--background); color: var(--foreground); resize: vertical; min-height: 42px; line-height: 1.6; outline: none; transition: border-color 120ms ease-out; }
+.ib-cp-tmpl textarea:focus { border-color: color-mix(in oklch, var(--primary) 55%, var(--border)); }
+.ib-cp-tmpl textarea::placeholder { color: var(--muted-foreground); font-weight: 400; }
+.ib-cp-tmpl-ctx { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 34px; }
+.ib-cp-tmpl-mat { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--border); background: none; font: inherit; font-size: 11.5px; font-weight: 600; color: var(--muted-foreground); cursor: pointer; transition: background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out; }
+.ib-cp-tmpl-mat svg { flex: none; }
+.ib-cp-tmpl-mat:hover { color: var(--foreground); border-color: var(--muted-foreground); }
+.ib-cp-tmpl-mat.on { background: var(--muted); color: var(--foreground); border-color: transparent; font-weight: 650; }
+.ib-cp-tmpl-ctx-hint { font-size: 10.5px; color: var(--muted-foreground); font-weight: 400; }
