@@ -137,7 +137,9 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
     title: typeof record.title === "string" ? record.title : "",
     notes: typeof record.notes === "string" ? record.notes : "",
     priority: isRequirementPriority(record.priority) ? record.priority : "none",
-    deliverables: Array.isArray(record.deliverables) ? record.deliverables : [],
+    // review and code-review are retired as kinds (they are conclusions, not artifacts): whatever an old
+    // file holds in those kinds is dropped on read — the history already carries the conclusion.
+    deliverables: Array.isArray(record.deliverables) ? record.deliverables.filter((d) => (d as { kind: string }).kind !== 'review' && (d as { kind: string }).kind !== 'code-review') : [],
     threads: Array.isArray(record.threads) ? record.threads.filter((id): id is string => typeof id === "string") : [],
     // suggest is retired (stage-auto-design): whatever an old file holds, nothing waits on the person.
     suggestions: [],

@@ -21,10 +21,10 @@ export type RequirementStage = 'design' | 'design-review' | 'dev' | 'qa' | 'code
 /** The stages in order. `wants` names the deliverable the stage suggests (the gentle "not attached yet" line; null: none). */
 export const REQUIREMENT_STAGES: readonly { id: RequirementStage; label: string; wants: string | null }[] = [
   { id: 'design', label: '需求设计', wants: '设计文档' }, // a fresh requirement starts here
-  { id: 'design-review', label: '设计评审', wants: '评审结论' },
+  { id: 'design-review', label: '设计评审', wants: '设计文档' },
   { id: 'dev', label: '需求开发', wants: null },
   { id: 'qa', label: '功能测试', wants: '测试报告' },
-  { id: 'code-review', label: '代码评审', wants: '代码评审' },
+  { id: 'code-review', label: '代码评审', wants: null },
   { id: 'done', label: '已完成', wants: null },
 ];
 
@@ -42,7 +42,7 @@ export function isRequirementStage(value: unknown): value is RequirementStage {
 export type RequirementPriority = 'urgent' | 'high' | 'medium' | 'low' | 'none';
 
 /** The deliverable kinds: what each stage's product is a reference TO. */
-export const DELIVERABLE_KINDS = ['design-doc', 'review', 'code-review', 'test-report', 'link', 'file'] as const;
+export const DELIVERABLE_KINDS = ['design-doc', 'test-report', 'link', 'file'] as const;
 
 export function isDeliverableKind(value: unknown): value is DeliverableKind {
   return typeof value === 'string' && (DELIVERABLE_KINDS as readonly string[]).includes(value);
@@ -51,8 +51,6 @@ export function isDeliverableKind(value: unknown): value is DeliverableKind {
 /** What a deliverable is, for its line in the detail pane (browser UI: Chinese, this fork's rule). */
 export const DELIVERABLE_KIND_LABELS: Readonly<Record<DeliverableKind, string>> = {
   'design-doc': '设计文档',
-  review: '评审结论',
-  'code-review': '代码评审',
   'test-report': '测试报告',
   link: '链接',
   file: '文件',

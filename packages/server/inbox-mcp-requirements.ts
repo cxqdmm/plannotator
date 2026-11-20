@@ -24,7 +24,7 @@ export type InboxRequirementOp = (typeof INBOX_REQUIREMENT_OPS)[number];
 
 /** For raw MCP clients; the agent tool words its action line itself (INBOX_AGENT_ACTION_LEADS.requirement). */
 export const REQUIREMENT_DESCRIPTION =
-  'Work the person\'s requirements (the workshop board). op: mine (the requirements of a thread you are in: thread_id; without one, every active requirement), get (one requirement: requirement), link (tie this thread\'s work to it: thread_id), deliver (attach what you just finished: kind one of design-doc, review, code-review, test-report, link, file, and ref — a session id, PR, URL or path), say (one line of progress, shown in its history). Stages move themselves: deliver a design doc (kind design-doc, or an .md/.html file) and the requirement enters review on its own; the person\'s verdict there moves it on — never propose or move a stage yourself.';
+  'Work the person\'s requirements (the workshop board). op: mine (the requirements of a thread you are in: thread_id; without one, every active requirement), get (one requirement: requirement), link (tie this thread\'s work to it: thread_id), deliver (attach what you just finished: kind one of design-doc, test-report, link, file, and ref — a session id, PR, URL or path), say (one line of progress, shown in its history). Stages move themselves: deliver a design doc (kind design-doc, or an .md/.html file) and the requirement enters review on its own; the person\'s verdict there moves it on — never propose or move a stage yourself.';
 
 const STAGE_IDS = REQUIREMENT_STAGES.map((stage) => stage.id) as unknown as readonly [RequirementStage, ...RequirementStage[]];
 
