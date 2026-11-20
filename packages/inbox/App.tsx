@@ -291,6 +291,7 @@ import { SIDEBAR_OPEN_COOKIE, HIDE_AWAY_MACHINES_COOKIE, COMPOSE_LAST_COOKIE, DR
 import { shapeFrameListeners, subscribeShapeFrames } from './app/shapeFrames';
 import { requirementFrameListeners } from './requirements/frames';
 import { RequirementsPanel } from './requirements/components/RequirementsPanel';
+import { linkThreadRequirement } from './requirements/api';
 import { readRoute, routeOf, type Route } from './app/route';
 import { hashOf, writeRoute } from './app/writeRoute';
 import { TOUR_ENDED_STATE, settleTourEntry, settleOldExperimental, settleMovedSettings, stripStrayMsg, stripClickSignal, REVIEWS_AFTER_STORE_MS, REVIEWS_AFTER_STORE_MAX_MS, settleReviewsAlias } from './app/boot';
@@ -6557,11 +6558,9 @@ function Inbox() {
             }
             // The Workshop's 开启新会话: the thread is linked to the requirement (stage-auto flat v2).
             if (sent.requirementId) {
-              void fetch(`/api/requirements/${encodeURIComponent(sent.requirementId)}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ threads: 'ADD' }),
-              }).catch(() => {});
+              void linkThreadRequirement(sent.requirementId, sent.threadId)
+                .then((o) => { if (!o.ok) showToast({ icon: 'warn', lead: '已发送，但未挂到需求', detail: o.error, wrap: true }, 7000); })
+                .catch(() => showToast({ icon: 'warn', lead: '已发送，但未挂到需求', phoneLead: '未挂到需求' }, 7000));
             }
             // Launch an agent from Pull requests: the new thread is the PRs' agent's, so verdicts and Reply go there.
             if (sent.pullKeys && sent.pullKeys.length > 0) {

@@ -480,7 +480,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       }
       lines.push("");
     }
-    lines.push("## 开始吧", "", `1. 用 plannotator requirement 工具把本会话 link 到 \`${record.id}\`；`, "2. 读完上下文再动手；有不清楚的先用 Ask 提问，不要猜；", "3. 阶段性产出用 deliver 挂回本需求；该进下一阶段时 suggest，由人采纳。");
+    lines.push("## 开始吧", "", "1. 读完上下文再动手；有不清楚的先用 Ask 提问，不要猜；", "2. 阶段性产出用 deliver 挂回本需求；该进下一阶段时 suggest，由人采纳。", `（本会话已自动挂到需求 \`${record.id}\`，无需再 link。）`);
     return lines.join("\n");
   };
   const seedDesignDoc = (record: Requirement): string => {

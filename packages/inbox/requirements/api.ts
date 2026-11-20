@@ -86,6 +86,14 @@ export function annotateDeliverable(id: string, deliverableId: string): Promise<
   return write('POST', `/api/requirements/${encodeURIComponent(id)}/deliverables/${encodeURIComponent(deliverableId)}/annotate`, {});
 }
 
+/** 把线程挂到需求（开启新会话发送即调）：读现状合并后 PATCH，避免整组替换丢掉别的线程。 */
+export async function linkThreadRequirement(id: string, threadId: string): Promise<WriteOutcome<{ requirement: unknown }>> {
+  const read = await readRequirement(id);
+  const held = read?.requirement.threads ?? [];
+  if (held.includes(threadId)) return { ok: true, answer: { requirement: null } };
+  return patchRequirement(id, { threads: [...held, threadId] });
+}
+
 /** 需求上下文: a link, pasted text (which becomes a file), or an uploaded file (base64). */
 export function addContext(id: string, input: { kind: 'link'; name: string; ref: string } | { kind: 'text'; name: string; text: string } | { kind: 'upload'; name: string; data: string }): Promise<WriteOutcome<{ context: unknown }>> {
   return write('POST', `/api/requirements/${encodeURIComponent(id)}/contexts`, input as unknown as Record<string, unknown>);
