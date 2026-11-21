@@ -42,7 +42,14 @@ describe("lan-door", () => {
         const noCookie = await fetch(`http://127.0.0.1:${door.port}/api/plan`);
         expect(noCookie.status).toBe(403);
 
-        // 5) 关门后端口不再服务
+        // 5) 门自答 lan-view 标记：页面探路用，带不带 Cookie 都答（只说明"这是门"，不漏数据）
+        const view = await fetch(`http://127.0.0.1:${door.port}/api/lan-view`);
+        expect(view.status).toBe(200);
+        expect(await view.json()).toEqual({ lan: true });
+        const viewNoCookie = await fetch(`http://127.0.0.1:${door.port}/api/lan-view`);
+        expect(viewNoCookie.status).toBe(200);
+
+        // 6) 关门后端口不再服务
         door.stop();
         expect(door.state()).toEqual({ on: false, url: null });
         await expect(fetch(`http://127.0.0.1:${door.port}/api/plan`, { headers: { cookie } })).rejects.toThrow();

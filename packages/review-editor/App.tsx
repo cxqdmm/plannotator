@@ -567,6 +567,13 @@ const ReviewApp: React.FC = () => {
     useState<LineAnnotationComposeRequest | null>(null);
   const nextLineAnnotationComposeRequestId = useRef(0);
   const [showExportModal, setShowExportModal] = useState(false);
+  /** 局域网门内视图（同事只读）：探 /api/lan-view——门自答 200；主任的页面不走门，404。 */
+  const [lanReadOnly, setLanReadOnly] = useState(false);
+  useEffect(() => {
+    void fetch('/api/lan-view').then(res => (res.ok ? res.json() : null)).then((v) => {
+      if (v && (v as { lan?: boolean }).lan === true) setLanReadOnly(true);
+    }).catch(() => {});
+  }, []);
   /** 分享到局域网（方案 B）：令牌门的状态与开关（评审服务的 /api/lan-share，同 annotate 面）。 */
   const [lanShare, setLanShare] = useState<{ on: boolean; url: string | null }>({ on: false, url: null });
   const toggleLanShare = useCallback(async (on: boolean): Promise<string | null> => {
@@ -5787,7 +5794,7 @@ const ReviewApp: React.FC = () => {
   const patchHasDiffHeaders = /^(diff --git |--- |\+\+\+ |@@ |Index: )/m.test(diffData?.rawPatch ?? '');
   const compactReviewActions: CompactReviewAction[] = !isCompactTouchLayout
     ? []
-    : !origin
+    : !origin || lanReadOnly // 门内（同事只读）与无来源同款：只留复制反馈，拍板行不给
       ? [{
           id: 'copy',
           label: copyFeedback === '反馈已复制！' ? '反馈已复制' : '复制反馈',
@@ -6273,10 +6280,17 @@ const ReviewApp: React.FC = () => {
                   </div>
                 )}
 
-                {/* Agent mode: ghost-X Close + the adaptive decision control
-                    (Approve at zero, Send Feedback · n otherwise; the caret
-                    carries the alternates and the note composer). */}
-                {!platformMode ? (
+                {/* 局域网门内（同事只读）：拍板按钮收起——点了也只是被门 403 挡下，
+                    看得见点不动徒增困惑；徽标说清谁拍板。 */}
+                {lanReadOnly ? (
+                  <div
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground px-2 py-1 rounded border border-border bg-muted/40"
+                    data-lan-readonly-badge=""
+                    title="只读评审视图：可以看和批注（存在你的浏览器里），通过/关闭由评审主人决定"
+                  >
+                    只读评审 · 由评审主人拍板
+                  </div>
+                ) : !platformMode ? (
                   <>
                     <ExitButton
                       appearance="ghost"

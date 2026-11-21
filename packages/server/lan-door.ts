@@ -80,6 +80,11 @@ export function createLanDoor(options: { forward: (req: Request) => Promise<Resp
       async fetch(req): Promise<Response> {
         const url = new URL(req.url);
         const path = url.pathname;
+        // 页面探路：门自己答（不转发）。同事视图的页面据此收起拍板按钮、亮只读徽标；
+        // 主任自己的页面不走门 → 会话没有这个路径 → 404 → 页面知道自己不是门内视图。
+        if (path === "/api/lan-view" && req.method === "GET") {
+          return Response.json({ lan: true }, { headers: { "Cache-Control": "no-store" } });
+        }
         // 入口：验令牌、种 Cookie、回页面。主服务可能把 / 重定向到带会话令牌的
         // 路径（annotate 的 /s/<token>），重定向不能出本门——这里手动跟到最终页面。
         if (path === `/t/${token}` && req.method === "GET") {
