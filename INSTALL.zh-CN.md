@@ -65,7 +65,13 @@ plannotator inbox
 - **二进制**（或它的 `.gz` 压缩版，约 70 MB，到位后解压）；
 - **插件包** `plannotator-plugin-<版本>.zip`（**不到 1 MB**）——只含插件本体（市场清单 + hooks/mod），不带源码和构建产物。
 
-插件包在 Release 附件里拿；拿不到时可以自制：建一个文件夹，按下面的结构从仓库复制 4 样东西再压缩即可（目录结构必须一致，`marketplace.json` 里写的插件位置是 `./apps/hook`）：
+插件包在 Release 附件里拿；拿不到时自制——仓库里一条命令（在仓库根目录）：
+
+```
+bun run package:plugin
+```
+
+它按下面的结构从仓库摘 4 样东西、压成 `plannotator-plugin-<版本>.zip`，放到仓库旁边的 `plannotator-local-builds/v<版本>/`（目录结构必须一致，`marketplace.json` 里写的插件位置是 `./apps/hook`）：
 
 ```
 plugin/

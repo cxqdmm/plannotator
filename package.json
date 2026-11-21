@@ -25,6 +25,7 @@
     "dev:review": "bun run --cwd apps/review dev",
     "build:hook": "bun run --cwd apps/hook build",
     "build:opencode": "bun run --cwd apps/opencode-plugin build",
+    "package:plugin": "bun scripts/plugin-package.mjs",
     "build:review": "bun run --cwd apps/review build",
     "build": "bun run build:review && bun run build:hook && bun run build:opencode",
     "check:release-version": "node scripts/check-release-version.mjs",
