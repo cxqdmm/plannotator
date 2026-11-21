@@ -17,7 +17,7 @@
  * The whole set is held in memory (personal scale, the design doc's §9.3).
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { join, basename } from "node:path";
+import { isAbsolute, join, basename } from "node:path";
 import { ulid } from "@plannotator/core/inbox-types";
 import { loadConfig } from "@plannotator/shared/config";
 import {
@@ -574,7 +574,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
     if (resolved.kind === "live") return { url: resolved.url };
     const file = resolved.kind === "file" ? resolved.file : ref;
     if (/^https?:/.test(file)) return null;
-    const absolute = file.startsWith("/") || /^[A-Za-z]:[\/]/.test(file) ? file : options.projectRootOf ? join(options.projectRootOf(id) ?? ".", file) : file;
+    const absolute = isAbsolute(file) ? file : options.projectRootOf ? join(options.projectRootOf(id) ?? ".", file) : file;
     return { file: absolute };
   };
 
