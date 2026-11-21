@@ -15,6 +15,7 @@ import { crossOriginRefusalBody, isSameOriginOrNoOrigin } from "@plannotator/sha
 import { likelyAppHtmlEncoding, prewarmAppHtml } from "@plannotator/shared/app-html";
 import { openPackedApp, packedAppResponse } from "@plannotator/shared/packed-app";
 import { isRemoteSession, getServerHostname, startBunServerOnAvailablePort, buildAdvertisedUrl, getLocalUrlHostname } from "./remote";
+import { createLanDoor } from "./lan-door";
 import { createRequestHostGuard } from "./request-host-guard";
 import { withPlannotatorServerHeader } from "./plannotator-server-marker";
 import { isSameOriginRequest, refuseCrossOriginWrite } from "./request-origin-guard";
@@ -908,6 +909,8 @@ export async function startAnnotateServer(
   let liveAppUrl = "";
 
   const requestHostGuard = createRequestHostGuard();
+  /** 局域网门（lan-door.ts）：主人按需开关的令牌直达入口。 */
+  let lanDoor: ReturnType<typeof createLanDoor> | null = null;
   const server = await startBunServerOnAvailablePort((port) =>
     Bun.serve<AgentTerminalSocketData>(withPlannotatorServerHeader({
         hostname: getServerHostname(),
@@ -949,6 +952,24 @@ export async function startAnnotateServer(
           }
           if (isAgentTerminalWsRoute(url.pathname)) {
             return new Response("Agent terminal is unavailable", { status: 404 });
+          }
+
+          // 局域网门（方案 B）：主人开/关一个带令牌的二次监听，内网同事浏览器直达本会话；
+          // 门内只读（写接口在门口就挡了），GET 状态 + POST 开关。门转发的请求到不了这里。
+          if (url.pathname === "/api/lan-share" && (req.method === "GET" || req.method === "POST")) {
+            if (req.method === "GET") return Response.json(lanDoor?.state() ?? { on: false, url: null }, { headers: { "Cache-Control": "no-store" } });
+            const body = await req.json().catch(() => ({})) as { on?: unknown };
+            if (body.on === true) {
+              lanDoor ??= createLanDoor({
+                forward: (doorReq) => {
+                  const from = new URL(doorReq.url);
+                  return fetch(new Request(`http://127.0.0.1:${boundPort}${from.pathname}${from.search}`, doorReq));
+                },
+              });
+              return Response.json(lanDoor.start(), { headers: { "Cache-Control": "no-store" } });
+            }
+            lanDoor?.stop();
+            return Response.json({ on: false, url: null }, { headers: { "Cache-Control": "no-store" } });
           }
 
           // API: Get plan content (reuse /api/plan so the plan editor UI works)
