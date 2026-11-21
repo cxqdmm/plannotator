@@ -1646,6 +1646,14 @@ ${result.text}`);
       unsubscribe();
       for (const host of hostList) host.close?.();
     },
+    /** Stop the launched session a thread's root owns (the workshop's archive): null when the thread has no launch here. */
+    stopThread: async (threadId: string): Promise<unknown> => {
+      const root = store.message(threadId);
+      if (!root?.launch) return null;
+      const host = hostOf(root.launch);
+      if (!host) return null;
+      return stopLaunch(root, host);
+    },
 
     /**
      * A launched session's permission hook (`POST /api/inbox/launch/:id/permission`), after the

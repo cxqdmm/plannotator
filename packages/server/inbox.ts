@@ -4494,6 +4494,7 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     },
     // The stage-change notifier (stage-auto-design §1): a person-voiced reply to the thread's newest agent
     // message — the same channel the window's reply box uses, so the session wakes and reads it.
+    stopLaunchOf: (threadId) => launch.stopThread(threadId),
     notifyThread: (threadId, words) => {
       const thread = store.thread(threadId);
       const last = thread ? [...thread.messages].reverse().find((message) => message.author.kind === "agent") : null;

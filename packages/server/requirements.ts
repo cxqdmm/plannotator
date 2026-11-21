@@ -153,7 +153,7 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
   } as Requirement;
 }
 
-export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null; /** Whether a thread's row waits on the person (the Board's You-line idea), for the reads' computed flag. */ waitingOf?: (threadId: string) => boolean; /** The stage-change notifier (stage-auto-design §1): a person-voiced reply into the requirement's newest session. */ notifyThread?: (threadId: string, words: string) => void }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
+export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null; /** Whether a thread's row waits on the person (the Board's You-line idea), for the reads' computed flag. */ waitingOf?: (threadId: string) => boolean; /** The stage-change notifier (stage-auto-design §1): a person-voiced reply into the requirement's newest session. */ notifyThread?: (threadId: string, words: string) => void; /** Stop the launched session a thread owns (the workshop's archive releases Inbox-spawned agents). */ stopLaunchOf?: (threadId: string) => Promise<unknown> }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
   /** waiting, computed on reads: any linked session's thread waits on the person. */
   const withWaiting = (record: Requirement): Requirement => {
     const waitingThread = record.threads.find((threadId) => options.waitingOf?.(threadId) === true);
@@ -695,14 +695,26 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         const released = record.threads;
         if (record.archived_at == null) store.patch(id, { archived: true });
         if (released.length > 0) store.patch(id, { threads: [] });
-        store.say(id, `需求已归档，${released.length} 个会话已释放`, "归档");
+        // Inbox 自己拉起的会话直接停掉（like delete）；外部会话只解除挂载并告知停手。
+        let stopped = 0;
         for (const threadId of released) {
-          if (!options.notifyThread) break;
-          try {
-            options.notifyThread(threadId, `【工坊】需求「${record.title}」已归档：相关工作停止，本会话已与它解除关联。有遗留产物请另行交代。`);
-          } catch { /* best effort */ }
+          if (options.stopLaunchOf) {
+            try {
+              const outcome = await options.stopLaunchOf(threadId);
+              if (outcome != null) {
+                stopped += 1;
+                continue; // 停止本身就是交代；再发回复会把它复活（reply → respawn）
+              }
+            } catch { /* best effort */ }
+          }
+          if (options.notifyThread) {
+            try {
+              options.notifyThread(threadId, `【工坊】需求「${record.title}」已归档：相关工作停止，本会话已与它解除关联。有遗留产物请另行交代。`);
+            } catch { /* best effort */ }
+          }
         }
-        return json({ ok: true, released: released.length });
+        store.say(id, `需求已归档，${released.length} 个会话已释放${stopped > 0 ? `，其中 ${stopped} 个 Inbox 启动的会话已停止` : ""}`, "归档");
+        return json({ ok: true, released: released.length, stopped });
       }
       const deliverableMatch = /^deliverables(?:\/([^/]+))?$/.exec(deeper);
       if (deliverableMatch) {
