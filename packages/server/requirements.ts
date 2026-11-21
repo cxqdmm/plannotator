@@ -16,7 +16,7 @@
  * then rename), this process the single writer — the inbox/*.json pattern.
  * The whole set is held in memory (personal scale, the design doc's §9.3).
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, basename } from "node:path";
 import { ulid } from "@plannotator/core/inbox-types";
 import { loadConfig } from "@plannotator/shared/config";
@@ -547,6 +547,44 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       return json({ error: "这个产物的文件在这台机器上读不到。", code: "unreadable" }, 404);
     }
   };
+  /**
+   * 裁决监听（review-verdicts.jsonl）：任何入口起的门控评审（人的去审阅、agent 的
+   *  annotate、桥接）退出时都把决定写进这份记录；这里轮询新行，凡文档与某需求
+   * 待审设计文档相同（路径归一比较）即流转其阶段。从此审阅页只有一个语义。
+   */
+  const sameDoc = (a: string, b: string) => a.replaceAll("\\", "/").toLowerCase() === b.replaceAll("\\", "/").toLowerCase();
+  const verdictPath = () => join(options.dataDir, "requirements", "review-verdicts.jsonl");
+  let verdictOffset = 0;
+  try {
+    verdictOffset = existsSync(verdictPath()) ? statSync(verdictPath()).size : 0;
+  } catch { /* 从头读 */ }
+  const onVerdictLine = (line: string) => {
+    try {
+      const verdict = JSON.parse(line) as { decision?: string; annotationCount?: number; doc?: string; feedback?: string };
+      if (!verdict.doc || (verdict.decision !== "approved" && verdict.decision !== "annotated")) return;
+      for (const record of store.list(false).requirements) {
+        if (record.stage !== "design-review") continue;
+        const doc = record.deliverables.find((d) => d.kind === "design-doc" || /\.(md|markdown|html?)$/i.test(d.ref));
+        if (!doc) continue;
+        const target = fileTargetOf(record.id, doc.ref);
+        if (!target || !("file" in target) || !sameDoc(target.file, verdict.doc ?? "")) continue;
+        if (verdict.decision === "approved") moveStage(record.id, "dev", "设计文档已批准（评审页裁决），进入需求开发", true);
+        else moveStage(record.id, "design", `设计文档被退回（评审页批注${typeof verdict.annotationCount === "number" ? ` ${verdict.annotationCount} 条` : ""}已带回会话）`, true);
+        return; // 一条裁决只落一个需求（同一文档不会同时待审于两个需求）
+      }
+    } catch { /* 坏行跳过 */ }
+  };
+  const verdictTimer = setInterval(() => {
+    try {
+      if (!existsSync(verdictPath())) return;
+      const text = readFileSync(verdictPath(), "utf8");
+      if (text.length <= verdictOffset) return;
+      for (const line of text.slice(verdictOffset).split("\n")) if (line.trim()) onVerdictLine(line);
+      verdictOffset = text.length;
+    } catch { /* 读失败下轮再试 */ }
+  }, 2000);
+  verdictTimer.unref?.();
+
   /** pn- 会话 id 的解析：注册表（sessions/*.json 的 reviewId）命中后，活的给 URL，
    *  死的给它的 target——那次会话打开的原始文档路径，可重新 annotate。 */
   const resolveRef = (ref: string): { kind: "live"; url: string } | { kind: "file"; file: string } | { kind: "raw"; ref: string } => {

@@ -129,11 +129,47 @@ export function formatAnnotateOutcome(
   return result.feedback || null;
 }
 
+export interface AnnotateOutcomeExtra {
+  /** The decision target (file/folder/URL) the verdict is about: recorded with the verdict. */
+  target?: { kind: string; target: string; origin?: string } | { kind: "bundle"; bundlePaths: string[]; origin?: string };
+}
+
+/**
+ * The durable verdict line (review-verdicts.jsonl): every gated annotate writes its
+ * decision here, whoever spawned it (the person's 去审阅, an agent's CLI call, a bridge).
+ * The workshop listens to this file, so ANY review page of the same document drives the
+ * requirement's stage — the person never has to know which entry point opened the page.
+ */
+export function appendReviewVerdict(decision: string, extra: (AnnotateApprovalNotesContext & AnnotateOutcomeExtra) | undefined, count: number, feedback: string): void {
+  try {
+    // Lazy requires keep this module loadable in non-node builds (Pi vendors it).
+    const fs = require("node:fs");
+    const path = require("node:path");
+    const os = require("node:os");
+    const dataDir = process.env.PLANNOTATOR_DATA_DIR ?? path.join(os.homedir(), ".plannotator");
+    const dir = path.join(dataDir, "requirements");
+    fs.mkdirSync(dir, { recursive: true });
+    const target = extra?.target && "target" in extra.target ? extra.target.target : extra?.target && "bundlePaths" in extra.target ? extra.target.bundlePaths.join(", ") : undefined;
+    fs.appendFileSync(path.join(dir, "review-verdicts.jsonl"), JSON.stringify({ at: new Date().toISOString(), decision, annotationCount: count, ...(feedback ? { feedback } : {}), ...(target ? { doc: target } : {}) }) + "\n");
+  } catch {
+    // Best effort: stdout remains the contract; the durable line is the workshop's bonus.
+  }
+}
+
 export function createAnnotateOutcomeEmitter(
   options: AnnotateOutputOptions,
 ): (result: AnnotateOutcome, extra?: AnnotateApprovalNotesContext & AnnotateOutcomeExtra) => void {
   return (result, extra) => {
     const output = formatAnnotateOutcome(result, options, extra);
     if (output !== null) console.log(output);
+    // A structured decision (gate/json mode): record it durably for the workshop.
+    if (options.json && output !== null) {
+      const decision = /"decision":"approved"/.test(output) ? "approved" : /"decision":"dismissed"/.test(output) ? "dismissed" : /"decision":"annotated"/.test(output) ? "annotated" : null;
+      if (decision) {
+        const count = Number(/"annotationCount":(\d+)/.exec(output)?.[1] ?? 0);
+        const feedback = /"feedback":"((?:[^"\\]|\\.)*)"/.exec(output)?.[1] ?? "";
+        appendReviewVerdict(decision, extra, count, feedback);
+      }
+    }
   };
 }
