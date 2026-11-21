@@ -60,15 +60,30 @@ plannotator inbox
 
 ## 二、内网机器安装（访问不了 GitHub）
 
-思路：把两个东西用 U 盘 / 内网共享拷过去——① 二进制单文件；② 仓库 zip（插件那半）。全程不访问外网。
+只需要拷两个文件，全程不访问外网：
 
-1. 在能上网的机器上，从 <https://github.com/cxqdmm/plannotator/releases> 下载对应系统的二进制（同上表），并下载该版本的**源码 zip**（Release 页面下方，或仓库 `chinese-fork` 分支的 Code → Download ZIP）；
-2. 两个文件拷到内网机器；
-3. 二进制按上面“第 2 步”放进 PATH；
-4. 源码 zip 解压到固定位置（如 `D:\tools\plannotator`），然后在 Claude Code 里：
+- **二进制**（或它的 `.gz` 压缩版，约 70 MB，到位后解压）；
+- **插件包** `plannotator-plugin-<版本>.zip`（**不到 1 MB**）——只含插件本体（市场清单 + hooks/mod），不带源码和构建产物。
+
+插件包在 Release 附件里拿；拿不到时可以自制：建一个文件夹，按下面的结构从仓库复制 4 样东西再压缩即可（目录结构必须一致，`marketplace.json` 里写的插件位置是 `./apps/hook`）：
+
+```
+plugin/
+├── .claude-plugin/marketplace.json        ← 仓库根 .claude-plugin/
+└── apps/hook/
+    ├── .claude-plugin/plugin.json         ← 仓库 apps/hook/.claude-plugin/
+    ├── package.json                       ← 仓库 apps/hook/
+    └── hooks/                             ← 仓库 apps/hook/hooks/（约 1.5 MB）
+```
+
+安装步骤：
+
+1. 两个文件用 U 盘 / 内网共享拷到内网机器；
+2. 二进制按上面“第 2 步”放进 PATH；
+3. 插件 zip 解压到固定位置（如 `D:\tools\plannotator-plugin\plugin`），然后在 Claude Code 里：
 
    ```
-   /plugin marketplace add D:\tools\plannotator
+   /plugin marketplace add D:\tools\plannotator-plugin\plugin
    ```
 
    （写你自己的解压路径——marketplace 支持本地目录，插件文件全从硬盘读，不联网）
@@ -78,7 +93,7 @@ plannotator inbox
    ```
 
    重启 Claude Code；
-5. 运行 `plannotator inbox` 打开收件箱/工坊。
+4. 运行 `plannotator inbox` 打开收件箱/工坊。
 
 ## 更新
 
