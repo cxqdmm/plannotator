@@ -4,7 +4,7 @@ import { shortTime } from '../format';
 import { Icon, TailscaleMark } from '../icons';
 import { PairFlow } from './PairFlow';
 import { Tip } from './Tip';
-import { ThroughCloudflare } from './ThroughCloudflare';
+// ThroughCloudflare exists but is not mounted in this fork (internal-network tool).
 import { Switch } from './SettingSwitch';
 
 const PLATFORM: Record<string, string> = { ios: 'iPhone', android: 'Android' };
@@ -479,7 +479,8 @@ export function DevicesSection({ phones, tailscale, via, tailscaleBusy, onToggle
         </>
       )}
       {tailscale && <OverYourTailnet state={tailscale} via={via} busy={tailscaleBusy} onToggle={onToggleTailscale} />}
-      <ThroughCloudflare />
+      {/* This fork publishes through no one's cloud: the Cloudflare Access
+          section (ThroughCloudflare) is not mounted. The tailnet above stays. */}
     </>
   );
 }

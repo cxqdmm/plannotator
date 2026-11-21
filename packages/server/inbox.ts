@@ -7455,27 +7455,34 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     },
   });
   tailscale.start();
-  cfAccess = createInboxCfAccess({
-    dataDir,
-    registry: () => registry,
-    dispatch: async (req) => {
-      fromCfDoor.add(req);
-      return markPlannotatorResponse(await encodeInboxResponse(req, await served(req, "tailnet")));
-    },
-    forbiddenPort: (candidate) => candidate === port || candidate === INBOX_FORBIDDEN_PORT || isDoorTailnetPort(candidate),
-    maxRequestBodySize: INBOX_MAX_REQUEST_BYTES,
-    note: debugLog ? (event, data) => debugLog.note(event, data) : undefined,
-    ...options.cloudflareAccess,
-  });
-  cfAccess.start();
-  cfRoutes = createCfAccessRoutes({
-    dataDir,
-    door: cfAccess,
-    json,
-    readBody,
-    sessionMismatch: (body) => (checkServerSession(body, serverSession) === "mismatch" ? json(serverSessionMismatchBody(INBOX_SERVER_SESSION_MISMATCH_ERROR), 409) : null),
-    hooks: options.cloudflareAccessRoutes,
-  });
+  // This fork builds no Cloudflare Access door by default (an internal-network
+  // tool does not publish through someone's cloud): only PLANNOTATOR_CF_ACCESS=1
+  // or explicit cf options (the tests') bring it up. Everything downstream
+  // already treats a null door as "off".
+  const cfAccessEnabled = process.env.PLANNOTATOR_CF_ACCESS === "1" || options.cloudflareAccess !== undefined || options.cloudflareAccessRoutes !== undefined;
+  if (cfAccessEnabled) {
+    cfAccess = createInboxCfAccess({
+      dataDir,
+      registry: () => registry,
+      dispatch: async (req) => {
+        fromCfDoor.add(req);
+        return markPlannotatorResponse(await encodeInboxResponse(req, await served(req, "tailnet")));
+      },
+      forbiddenPort: (candidate) => candidate === port || candidate === INBOX_FORBIDDEN_PORT || isDoorTailnetPort(candidate),
+      maxRequestBodySize: INBOX_MAX_REQUEST_BYTES,
+      note: debugLog ? (event, data) => debugLog.note(event, data) : undefined,
+      ...options.cloudflareAccess,
+    });
+    cfAccess.start();
+    cfRoutes = createCfAccessRoutes({
+      dataDir,
+      door: cfAccess,
+      json,
+      readBody,
+      sessionMismatch: (body) => (checkServerSession(body, serverSession) === "mismatch" ? json(serverSessionMismatchBody(INBOX_SERVER_SESSION_MISMATCH_ERROR), 409) : null),
+      hooks: options.cloudflareAccessRoutes,
+    });
+  }
   {
     const devices = createInboxDevices({
       dataDir,
