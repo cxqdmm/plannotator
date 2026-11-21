@@ -15,6 +15,7 @@ import { wrapFeedbackForAgent } from '../utils/parser';
 import { copyTextToClipboard } from '../utils/clipboard';
 import { noteServerSessionMismatch, withServerSession } from '../utils/serverSession';
 import { OverlayScrollArea } from './OverlayScrollArea';
+import { LanShareCard } from './LanShareCard';
 
 /** POST body shape sent to the notes endpoint (mirrors what the Notes tab builds today). */
 interface SaveToNotesPayload {
@@ -356,52 +357,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   </button>
                 </div>
               ) : null}
-              {/* 分享到局域网（方案 B）：内网同事浏览器直达本会话；门内只读，拍板在主人 */}
-              {lanAvailable && (
-                <div className="border border-border rounded-lg p-4 bg-muted/40" data-lan-share={lanShareUrl ? 'on' : 'off'}>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">
-                    分享到局域网
-                  </label>
-                  <p className="text-[11px] text-muted-foreground mb-3">
-                    开一个带令牌的内网入口，把链接发给同网段的同事，对方浏览器直接打开本评审——看的是同一个会话，始终最新。
-                    对方是只读视图：可以自行批注（存在他自己的浏览器里），批准/否决/发送反馈仍只有你能做。
-                  </p>
-                  {lanShareUrl ? (
-                    <>
-                      <div className="flex items-center gap-2 mb-2">
-                        <input
-                          readOnly
-                          value={lanShareUrl}
-                          className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-xs font-mono focus:outline-none"
-                          onClick={e => (e.target as HTMLInputElement).select()}
-                          data-lan-share-url=""
-                        />
-                        <button
-                          onClick={() => void handleCopy(lanShareUrl, 'annotations')}
-                          className="px-3 py-1.5 rounded-lg bg-background border border-border text-xs font-medium hover:bg-muted transition-colors"
-                        >
-                          {copied === 'annotations' ? '已复制' : '复制链接'}
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => void onToggleLanShare!(false)}
-                        className="px-3 py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-muted transition-colors"
-                        data-lan-share-stop=""
-                      >
-                        关闭共享
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => void onToggleLanShare!(true)}
-                      className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
-                      data-lan-share-start=""
-                    >
-                      开启共享
-                    </button>
-                  )}
-                </div>
-              )}
+              {/* 分享到局域网（方案 B）：内网同事浏览器直达本会话；门内只读，拍板在主人。
+                  卡片本体与代码评审页共用（LanShareCard）。 */}
+              {lanAvailable && <LanShareCard lanShareUrl={lanShareUrl ?? null} onToggle={onToggleLanShare!} />}
               {/* Short URL — primary copy target when available */}
               {shortShareUrl ? (
                 <div>

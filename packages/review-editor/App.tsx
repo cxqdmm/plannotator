@@ -16,6 +16,7 @@ import { ExitButton } from '@plannotator/ui/components/ToolbarButtons';
 import { buildDecisionSpec, type DecisionActionId, type DecisionMenuItem } from '@plannotator/ui/utils/decisionSpec';
 import { installPlainTextPaste } from '@plannotator/ui/utils/pasteInsert';
 import { DecisionControl, DecisionNoteDialog, type DecisionHandler } from '@plannotator/ui/components/DecisionControl';
+import { LanShareCard } from '@plannotator/ui/components/LanShareCard';
 import {
   buildReviewApprovalBody,
   compactPrimaryIdForReviewDecision,
@@ -566,6 +567,27 @@ const ReviewApp: React.FC = () => {
     useState<LineAnnotationComposeRequest | null>(null);
   const nextLineAnnotationComposeRequestId = useRef(0);
   const [showExportModal, setShowExportModal] = useState(false);
+  /** 分享到局域网（方案 B）：令牌门的状态与开关（评审服务的 /api/lan-share，同 annotate 面）。 */
+  const [lanShare, setLanShare] = useState<{ on: boolean; url: string | null }>({ on: false, url: null });
+  const toggleLanShare = useCallback(async (on: boolean): Promise<string | null> => {
+    try {
+      const res = await fetch('/api/lan-share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ on }) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const state = await res.json() as { on: boolean; url: string | null };
+      setLanShare(state);
+      return state.url ?? null;
+    } catch {
+      toast.error(on ? '开启局域网共享失败' : '关闭局域网共享失败');
+      return lanShare.url;
+    }
+  }, [lanShare.url]);
+  // 打开导出弹窗时读一次门的现状（门开着换个标签回来，弹窗里该直接是开着的）。
+  useEffect(() => {
+    if (!showExportModal) return;
+    void fetch('/api/lan-share').then(res => (res.ok ? res.json() : null)).then((state) => {
+      if (state && typeof state.on === 'boolean') setLanShare(state as { on: boolean; url: string | null });
+    }).catch(() => {});
+  }, [showExportModal]);
   const [showWorktreeDialog, setShowWorktreeDialog] = useState(false);
   const [openSettingsMenu, setOpenSettingsMenu] = useState(false);
   const [showNoAnnotationsDialog, setShowNoAnnotationsDialog] = useState(false);
@@ -6885,7 +6907,7 @@ const ReviewApp: React.FC = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
             <div className="bg-card border border-border rounded-xl w-full max-w-2xl flex flex-col max-h-[80vh] shadow-2xl">
               <div className="p-4 border-b border-border flex justify-between items-center">
-                <h3 className="font-semibold text-sm">导出评审反馈</h3>
+                <h3 className="font-semibold text-sm">导出与分享</h3>
                 <button
                   onClick={() => setShowExportModal(false)}
                   className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
@@ -6896,7 +6918,9 @@ const ReviewApp: React.FC = () => {
                 </button>
               </div>
               <div className="flex-1 overflow-auto p-4">
-                <div className="text-xs text-muted-foreground mb-2">
+                {/* 分享到局域网：与导出弹窗（annotate/plan 面）共用同一张卡。 */}
+                <LanShareCard lanShareUrl={lanShare.url} onToggle={toggleLanShare} />
+                <div className="text-xs text-muted-foreground mb-2 mt-4">
                   {allAnnotations.length} 条标注
                 </div>
                 <pre className="export-code-block whitespace-pre-wrap">
