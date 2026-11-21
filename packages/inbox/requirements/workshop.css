@@ -108,17 +108,8 @@
 .ib-req-hist-item .ib-req-hist-dot { background: color-mix(in oklch, var(--muted-foreground) 55%, transparent); }
 .ib-req-hist-item[data-k="deliverable"] .ib-req-hist-dot { background: var(--muted-foreground); }
 
-/* 审阅横幅：状态词醒目（等审/通过/退回），文档名全文换行；宽度自适应卡片 */
-.ib-req-verdict { margin: 4px 10px 0; width: 340px; max-width: 100%; border-radius: 999px; padding: 4px 6px 4px 12px; display: flex; align-items: center; gap: 8px; font-size: 12px; min-width: 0; }
-.ib-req-verdict b { font-weight: 700; flex: none; }
 /* 一行承载：文档名吃掉剩余宽度，超出省略 */
-.ib-req-verdict-doc { flex: 1; min-width: 0; font-size: 11.5px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ib-req-verdict.wait { background: color-mix(in oklab, var(--primary) 9%, transparent); color: var(--primary); }
-.ib-req-verdict.pass { background: color-mix(in oklab, var(--success, oklch(0.6 0.15 150)) 10%, transparent); color: var(--success, oklch(0.6 0.15 150)); }
-.ib-req-verdict.back { background: color-mix(in oklab, var(--warning, oklch(0.75 0.15 85)) 12%, transparent); color: color-mix(in oklab, var(--warning, oklch(0.75 0.15 85)) 75%, var(--foreground)); }
 /* 去审阅：描边样式（不是整块紫底） */
-.ib-req-verdict-go { flex: none; border: 1px solid color-mix(in oklab, var(--primary) 45%, transparent); border-radius: 999px; padding: 2.5px 11px; background: transparent; color: var(--primary); font: inherit; font-size: 11px; font-weight: 650; cursor: pointer; transition: background-color 120ms ease-out; }
-.ib-req-verdict-go:hover { background: color-mix(in oklab, var(--primary) 12%, transparent); }
 
 /* ── 产物面板：交付记录 + 会话产物网格 ── */
 .ib-req-dlv-body { display: flex; flex-direction: column; gap: 18px; }
