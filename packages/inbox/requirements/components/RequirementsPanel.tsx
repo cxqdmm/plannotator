@@ -250,16 +250,7 @@ function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContex
                 );
               })()}
               <span className="ib-req-wcard-stage">{requirementStageLabel(r.stage)}</span>
-              <Tip content="会话产物">
-                <button
-                  type="button"
-                  className="ib-req-wcard-sess-art"
-                  aria-label={`${subject} 的产物`}
-                  onClick={(e) => { e.stopPropagation(); setPanel({ k: 'session', threadId: tid, artifacts: true }); }}
-                >
-                  <Icon name="artifacts" size={13} />
-                </button>
-              </Tip>
+
             </div>
           );
         })}
