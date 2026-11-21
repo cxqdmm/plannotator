@@ -682,6 +682,28 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         }
         return json({ error: "Use GET, POST, PATCH or DELETE.", code: "method" }, 405);
       }
+      // 归档：需求退场，全部会话释放（线程解除挂载，回到收件箱本身——尤其是 Inbox 拉起的会话，
+      // 留在已归档需求下会变成触达不了的终端）。历史留痕，并给每个会话捎一句话让它停手。
+      const archiveMatch = deeper === "archive" && req.method === "POST";
+      if (archiveMatch) {
+        let record: Requirement;
+        try {
+          record = at(id);
+        } catch {
+          return json({ error: "No such requirement.", code: "not_found" }, 404);
+        }
+        const released = record.threads;
+        if (record.archived_at == null) store.patch(id, { archived: true });
+        if (released.length > 0) store.patch(id, { threads: [] });
+        store.say(id, `需求已归档，${released.length} 个会话已释放`, "归档");
+        for (const threadId of released) {
+          if (!options.notifyThread) break;
+          try {
+            options.notifyThread(threadId, `【工坊】需求「${record.title}」已归档：相关工作停止，本会话已与它解除关联。有遗留产物请另行交代。`);
+          } catch { /* best effort */ }
+        }
+        return json({ ok: true, released: released.length });
+      }
       const deliverableMatch = /^deliverables(?:\/([^/]+))?$/.exec(deeper);
       if (deliverableMatch) {
         if (req.method === "POST" && deliverableMatch[1] === undefined) {

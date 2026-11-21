@@ -35,6 +35,7 @@
 }
 .ib-req-wact:hover { background: color-mix(in oklch, var(--muted) 55%, transparent); color: var(--foreground); }
 .ib-req-wact:active { transform: scale(0.94); }
+.ib-req-wact-archive:hover { background: color-mix(in oklch, var(--destructive) 14%, transparent); color: var(--destructive); }
 .ib-req-wact svg { flex: none; }
 
 /* 会话：卡片内的行（agent 侧栏模式） */

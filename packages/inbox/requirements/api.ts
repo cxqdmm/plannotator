@@ -86,6 +86,11 @@ export function annotateDeliverable(id: string, deliverableId: string): Promise<
   return write('POST', `/api/requirements/${encodeURIComponent(id)}/deliverables/${encodeURIComponent(deliverableId)}/annotate`, {});
 }
 
+/** 归档需求：退场并释放全部会话（线程解除挂载，回到收件箱本身）。 */
+export function archiveRequirement(id: string): Promise<WriteOutcome<{ ok: boolean; released: number }>> {
+  return write('POST', `/api/requirements/${encodeURIComponent(id)}/archive`, {});
+}
+
 /** 把线程挂到需求（开启新会话发送即调）：读现状合并后 PATCH，避免整组替换丢掉别的线程。 */
 export async function linkThreadRequirement(id: string, threadId: string): Promise<WriteOutcome<{ requirement: unknown }>> {
   const read = await readRequirement(id);

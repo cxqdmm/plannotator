@@ -10,7 +10,7 @@ import { ChatMarkdown } from '@plannotator/ui/components/chat';
 import { HostMark, Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
-import { addContext, annotateDeliverable, readRequirement, removeContext, reviewDeliverable } from '../api';
+import { addContext, annotateDeliverable, archiveRequirement, readRequirement, removeContext, reviewDeliverable } from '../api';
 import { inboxApi } from '../../api';
 import { EmbeddedThread } from '../EmbeddedThread';
 import { putThread } from '../../data/queries/thread';
@@ -113,7 +113,7 @@ export function RequirementsPanel({
         </div>
         <div className="ib-req-wp-cards">
           {(requirements ?? []).map((r) => (
-            <ReqCard key={r.id} requirement={r} rowsByThread={rowsByThread} threadBusy={threadBusy} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onReview={(reqId, dlvId) => {
+            <ReqCard key={r.id} requirement={r} rowsByThread={rowsByThread} threadBusy={threadBusy} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
                   // 同步开空窗保住手势；复用成功带 url 就导航，spawn 成功由子进程开浏览器，失败关窗报错。
                   const win = window.open('about:blank', '_blank');
                   void reviewDeliverable(reqId, dlvId).then((o) => {
@@ -163,7 +163,7 @@ export function RequirementsPanel({
 
 /* ── A requirement card: icon + wrapping title, hover actions (out of flow), created
  * time pinned right on row 1, and its sessions as rows INSIDE the card. ── */
-function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContexts, onHistory, onNewSession, onReview }: {
+function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContexts, onHistory, onNewSession, onToast, onReview }: {
   requirement: Requirement;
   rowsByThread: Map<string, unknown>;
   threadBusy: Record<string, boolean | null>;
@@ -171,6 +171,7 @@ function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContex
   onContexts: () => void;
   onHistory: () => void;
   onNewSession: () => void;
+  onToast: (toast: unknown, ms?: number) => void;
   onReview: (requirementId: string, deliverableId: string) => void;
 }) {
   return (
@@ -187,6 +188,16 @@ function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContex
           </Tip>
           <Tip content="历史">
             <button type="button" className="ib-req-wact" onClick={onHistory} aria-label="历史"><Icon name="clock" size={15} /></button>
+          </Tip>
+          <Tip content="归档（释放全部会话）">
+            <button
+              type="button"
+              className="ib-req-wact ib-req-wact-archive"
+              aria-label="归档需求"
+              onClick={() => { void archiveRequirement(r.id).then((o) => { if (!o.ok) onToast({ icon: 'excl', lead: `归档失败：${o.error}`, wrap: true }); }); }}
+            >
+              <Icon name="archive" size={15} />
+            </button>
           </Tip>
         </div>
         <span className="ib-req-wcard-time" title={timeOf(r.created_at)}>{timeOf(r.created_at)}</span>
