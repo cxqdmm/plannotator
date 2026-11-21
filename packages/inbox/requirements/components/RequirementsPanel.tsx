@@ -226,6 +226,26 @@ function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContex
                   </span>
                 </>
               )}
+              {(() => {
+                // 审阅融合进会话：待审的设计文档挂在最新会话上（产出它的那个），按类型选图标。
+                if (r.stage !== 'design-review' || tid !== r.threads[r.threads.length - 1]) return null;
+                const doc = r.deliverables.find((d) => d.kind === 'design-doc' || /\.(md|markdown|html?)$/i.test(d.ref));
+                if (!doc) return null;
+                const REVIEW_ICON: Record<string, string> = { 'design-doc': 'doc', 'test-report': 'checkCircle', link: 'external', file: 'clip' };
+                return (
+                  <Tip content={`去审阅 · ${doc.title ?? doc.ref}`}>
+                    <button
+                      type="button"
+                      className="ib-req-wcard-sess-review"
+                      aria-label={`去审阅 ${doc.title ?? doc.ref}`}
+                      onClick={(ev) => { ev.stopPropagation(); onReview(r.id, doc.id); }}
+                    >
+                      <Icon name={(REVIEW_ICON[doc.kind] ?? 'doc') as never} size={13} />
+                      <span>去审阅</span>
+                    </button>
+                  </Tip>
+                );
+              })()}
               <Tip content="会话产物">
                 <button
                   type="button"
@@ -242,20 +262,6 @@ function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContex
         {r.threads.length === 0 && <p className="ib-req-wcard-nosess">还没有会话；悬停需求，点"开启新会话"。</p>}
       </div>
 
-      {/* 审阅横幅：只在你需要行动时出现（design-review 阶段）；审完即随阶段消失。
-          通过/退回是过程信息，住在历史里，不上卡片。 */}
-      {(() => {
-        if (r.stage !== 'design-review') return null;
-        const doc = r.deliverables.find((d) => d.kind === 'design-doc' || /\.(md|markdown|html?)$/i.test(d.ref));
-        if (!doc) return null;
-        return (
-          <div className="ib-req-verdict wait">
-            <Icon name="eye" size={13} />
-            <span className="ib-req-verdict-doc" dir="auto" title={doc.title ?? doc.ref}>{doc.title ?? doc.ref.split('/').pop() ?? doc.ref}</span>
-            <button type="button" className="ib-req-verdict-go" onClick={() => onReview(r.id, doc.id)}>去审阅</button>
-          </div>
-        );
-      })()}
     </div>
   );
 }
