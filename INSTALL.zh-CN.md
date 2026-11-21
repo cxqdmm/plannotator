@@ -165,6 +165,7 @@ plugin/
 
 - **OpenCode 1** 的字段名不同：`"plugin": ["<同上路径>"]`（数组里直接放路径字符串），其余步骤一样；
 - 插件文件夹的再生产：仓库里 `bun run build:opencode` 后，按 `apps/opencode-plugin/package.json` 的 `files` 清单把 dist、commands、skills、scripts、plannotator.html、review-editor.html、diagram-engine 拷出来（约 64 MB）。里面内嵌的界面页就是汉化版——这正是不用 npm 包的原因。
+- **二进制的本地全套打包**（维护者用，与 CI 同款命令、只出 Windows + macOS）：仓库根目录 `bun run package:binaries`——自动构建 UI、交叉编译 4 个二进制、出 `.sha256` 与压缩副本（Windows `.gz`、mac `.tar.xz`），产物落在仓库旁的 `plannotator-local-builds/v<版本>/`。
 
 ## 更新
 
