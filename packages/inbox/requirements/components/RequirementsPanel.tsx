@@ -18,6 +18,7 @@ import { useListModel } from '../../data/queries/list';
 import { useQueryClient } from '@tanstack/react-query';
 import { rowAgent } from '../../components/InboxList';
 import { Tip } from '../../components/Tip';
+import { Menu } from '@base-ui/react/menu';
 import { useRequirements } from '../useRequirements';
 import { DELIVERABLE_KIND_LABELS, requirementStageLabel, type Requirement, type RequirementEvent } from '@plannotator/core/requirements-types';
 
@@ -177,22 +178,30 @@ function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContex
           <Tip content={`开启新会话${r.threads.length > 0 ? `（已有 ${r.threads.length} 个）` : ''}`}>
             <button type="button" className="ib-req-wact" onClick={onNewSession} aria-label="开启新会话"><Icon name="compose" size={15} /></button>
           </Tip>
-          <Tip content={`上下文（${r.contexts.length}）`}>
-            <button type="button" className="ib-req-wact" onClick={onContexts} aria-label="上下文"><Icon name="book" size={15} /></button>
-          </Tip>
           <Tip content="历史">
             <button type="button" className="ib-req-wact" onClick={onHistory} aria-label="历史"><Icon name="clock" size={15} /></button>
           </Tip>
-          <Tip content="归档（释放全部会话）">
-            <button
-              type="button"
-              className="ib-req-wact ib-req-wact-archive"
-              aria-label="归档需求"
-              onClick={() => { void archiveRequirement(r.id).then((o) => { if (!o.ok) onToast({ icon: 'excl', lead: `归档失败：${o.error}`, wrap: true }); }); }}
-            >
-              <Icon name="archive" size={15} />
-            </button>
-          </Tip>
+          {/* ⋯：次要操作收进菜单（样式/交互对齐会话面板的三点菜单） */}
+          <Menu.Root modal={false}>
+            <Tip content="更多">
+              <Menu.Trigger className="ib-req-wact" aria-label="更多操作" data-req-more="">
+                <Icon name="dots" size={15} />
+              </Menu.Trigger>
+            </Tip>
+            <Menu.Portal>
+              <Menu.Positioner className="ib-pm-pos" side="bottom" align="end" sideOffset={4}>
+                <Menu.Popup className="ib-pm" aria-label={`需求「${r.title}」的操作`}>
+                  <Menu.Item className="ib-pmi" label="上下文" onClick={onContexts} data-req-menu="contexts">
+                    <Icon name="book" size={14} /> 上下文（{r.contexts.length}）
+                  </Menu.Item>
+                  <Menu.Separator className="ib-pm-sep" />
+                  <Menu.Item className="ib-pmi" label="归档需求" onClick={() => { void archiveRequirement(r.id).then((o) => { if (!o.ok) onToast({ icon: 'excl', lead: `归档失败：${o.error}`, wrap: true }); }); }} data-req-menu="archive">
+                    <Icon name="archive" size={14} /> 归档（释放全部会话）
+                  </Menu.Item>
+                </Menu.Popup>
+              </Menu.Positioner>
+            </Menu.Portal>
+          </Menu.Root>
         </div>
         <span className="ib-req-wcard-time" title={timeOf(r.created_at)}>{timeOf(r.created_at)}</span>
       </div>
