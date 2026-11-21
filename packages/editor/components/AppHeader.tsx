@@ -114,6 +114,9 @@ interface AppHeaderProps {
   };
   /** Bumped by Mod+Shift+Enter to open the decision control's note composer. */
   decisionNoteRequest?: number;
+  /** 局域网门内视图（同事只读）：拍板件（通过/发送反馈/关闭）整体换成只读徽标——
+   *  同事点了也只是被门 403 挡下，看得见点不动徒增困惑。 */
+  lanReadOnly?: boolean;
 
   // Callback config (null when no bot callback)
   callbackConfig: CallbackConfig | null;
@@ -224,6 +227,7 @@ export const AppHeader = React.memo<AppHeaderProps>(({
   annotateDecision,
   planDecision,
   decisionNoteRequest,
+  lanReadOnly,
   callbackConfig,
   taterMode,
   mobileSettingsOpen,
@@ -373,7 +377,16 @@ export const AppHeader = React.memo<AppHeaderProps>(({
 
         {!compactTouchLayout && isApiMode && (!linkedDocIsActive || annotateMode) && !archiveMode && !goalSetupMode && (
           <>
-            {questionProgress && questionProgress.total > 0 && (
+            {lanReadOnly && (
+              <div
+                className="flex items-center gap-1.5 text-xs text-muted-foreground px-2 py-1 rounded border border-border bg-muted/40"
+                data-lan-readonly-badge=""
+                title="只读评审视图：可以看和批注（存在你的浏览器里），通过/关闭由评审主人决定"
+              >
+                只读评审 · 由评审主人拍板
+              </div>
+            )}
+            {!lanReadOnly && questionProgress && questionProgress.total > 0 && (
               <QuestionProgressChip
                 done={questionProgress.done}
                 total={questionProgress.total}
@@ -381,7 +394,7 @@ export const AppHeader = React.memo<AppHeaderProps>(({
                 onJump={questionProgress.onJump}
               />
             )}
-            {annotateMode ? (
+            {lanReadOnly ? null : annotateMode ? (
               <>
                 <ExitButton
                   appearance="ghost"

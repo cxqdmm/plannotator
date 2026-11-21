@@ -587,6 +587,14 @@ const App: React.FC = () => {
   );
   const [showExport, setShowExport] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  /** 局域网门内视图（同事只读）：探 /api/lan-view——门自答 200；主任的页面不走门，404。
+   *  门内收起 通过/发送反馈/关闭 拍板件（点了也被门 403 挡下），换只读徽标。 */
+  const [lanReadOnly, setLanReadOnly] = useState(false);
+  useEffect(() => {
+    void fetch('/api/lan-view').then(res => (res.ok ? res.json() : null)).then((v) => {
+      if (v && (v as { lan?: boolean }).lan === true) setLanReadOnly(true);
+    }).catch(() => {});
+  }, []);
   /** 分享到局域网（方案 B）：令牌门的状态与开关（会话服务的 /api/lan-share）。 */
   const [lanShare, setLanShare] = useState<{ on: boolean; url: string | null }>({ on: false, url: null });
   const toggleLanShare = useCallback(async (on: boolean): Promise<string | null> => {
@@ -6852,7 +6860,10 @@ const App: React.FC = () => {
   const compactActionBusy = isSubmitting || isExiting || goalSetupAction.isSubmitting;
   const compactReviewActions: CompactPlanReviewAction[] = !isCompactTouchLayout
     ? []
-    : callbackConfig && !isApiMode && isSharedSession
+    : // 局域网门内（同事只读）：紧凑拍板行一个不给（点了也被门 403 挡下）。
+      lanReadOnly
+      ? []
+      : callbackConfig && !isApiMode && isSharedSession
       ? [
           {
             id: 'feedback',
@@ -7574,6 +7585,7 @@ const App: React.FC = () => {
         <RefHoverCards rootRef={refCardRootRef} onlyWithData />
         <AppHeader
           sticky={!usesDocumentScroll}
+          lanReadOnly={lanReadOnly}
           htmlSurface={isHtmlSurface}
           htmlAnnotateArmed={htmlAnnotateArmed}
           onToggleHtmlAnnotate={isHtmlSurface && !documentReadOnly ? handleHtmlAnnotateToggle : undefined}
