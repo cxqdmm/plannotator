@@ -20,6 +20,7 @@ import type { Origin } from "@plannotator/shared/agents";
 import { isAbsolute, resolve } from "path";
 import { statSync } from "node:fs";
 import { isRemoteSession, getServerHostname, startBunServerOnAvailablePort, buildAdvertisedUrl, getLocalUrlHostname } from "./remote";
+import { createLanDoor } from "./lan-door";
 import { createRequestHostGuard } from "./request-host-guard";
 import { withPlannotatorServerHeader } from "./plannotator-server-marker";
 import { isSameOriginRequest, refuseCrossOriginWrite } from "./request-origin-guard";
@@ -319,6 +320,8 @@ export async function startPlannotatorServer(
   const externalAnnotations = mode !== "archive" ? createExternalAnnotationHandler("plan") : null;
   // Set once bound: "Ask this session" answers only a loopback Host with this port.
   let boundPort: number | undefined;
+  /** 局域网门（lan-door.ts）：主人按需开关的令牌直达入口。 */
+  let lanDoor: ReturnType<typeof createLanDoor> | null = null;
   const aiRuntime = mode !== "archive" && resolveAIEnabled() ? await createAIRuntime({ sessionBridge: options.sessionBridge, getServerPort: () => boundPort, localHostname }) : null;
   // `slug` dates the archive files under ~/.plannotator/plans/, which is where
   // listArchivedPlans reads the date back out of the filename. `historySlug`
@@ -519,6 +522,24 @@ export async function startPlannotatorServer(
           if (url.pathname === "/api/done" && req.method === "POST") {
             resolveDone?.();
             return Response.json({ ok: true });
+          }
+
+          // 局域网门（方案 B）：主人开/关一个带令牌的二次监听，内网同事浏览器直达本会话；
+          // 门内只读（写接口在门口就挡了），GET 状态 + POST 开关。门转发的请求到不了这里。
+          if (url.pathname === "/api/lan-share" && (req.method === "GET" || req.method === "POST")) {
+            if (req.method === "GET") return Response.json(lanDoor?.state() ?? { on: false, url: null }, { headers: { "Cache-Control": "no-store" } });
+            const body = await req.json().catch(() => ({})) as { on?: unknown };
+            if (body.on === true) {
+              lanDoor ??= createLanDoor({
+                forward: (doorReq) => {
+                  const from = new URL(doorReq.url);
+                  return fetch(new Request(`http://127.0.0.1:${boundPort}${from.pathname}${from.search}`, doorReq));
+                },
+              });
+              return Response.json(lanDoor.start(), { headers: { "Cache-Control": "no-store" } });
+            }
+            lanDoor?.stop();
+            return Response.json({ on: false, url: null }, { headers: { "Cache-Control": "no-store" } });
           }
 
           if (mode === "archive" && isArchiveDocumentMutation(req.method, url.pathname)) {

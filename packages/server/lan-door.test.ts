@@ -1,0 +1,52 @@
+import { describe, expect, test } from "bun:test";
+import { createLanDoor } from "./lan-door";
+
+/** 起一个假主服务（回环），门转发到它。 */
+async function withMain(serve: (req: Request, path: string) => Response | Promise<Response>, run: (mainPort: number) => Promise<void>) {
+  const main = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: (req) => serve(req, new URL(req.url).pathname) });
+  try {
+    await run(main.port);
+  } finally {
+    main.stop(true);
+  }
+}
+
+describe("lan-door", () => {
+  test("入口种 Cookie 并回页面；带 Cookie 的 GET 放行；写接口 403；无令牌 403", async () => {
+    await withMain(
+      (req, path) => (path === "/api/plan" ? Response.json({ plan: "# hi" }) : new Response("<html>page</html>", { headers: { "Content-Type": "text/html" } })),
+      async (mainPort) => {
+        const door = createLanDoor({ forward: (r) => fetch(new Request(`http://127.0.0.1:${mainPort}${new URL(r.url).pathname}`, r)) });
+        const state = door.start();
+        expect(state.on).toBe(true);
+        expect(state.url).toMatch(new RegExp(`^http://.+:\\d+/t/[0-9a-f]{32}$`));
+
+        // 1) 入口：带 Set-Cookie，回的是主服务的页面
+        const entry = await fetch(state.url!, { redirect: "manual" });
+        expect(entry.status).toBe(200);
+        expect(await entry.text()).toContain("page");
+        const cookie = entry.headers.get("set-cookie")?.split(";")[0] ?? "";
+        expect(cookie).toContain("plannotator-lan=");
+
+        // 2) 带 Cookie 的 GET API 放行
+        const read = await fetch(`http://127.0.0.1:${door.port}/api/plan`, { headers: { cookie } });
+        expect(read.status).toBe(200);
+        expect(await read.json()).toEqual({ plan: "# hi" });
+
+        // 3) 写接口在门口挡下（同事只读）
+        const write = await fetch(`http://127.0.0.1:${door.port}/api/approve`, { method: "POST", headers: { cookie, "Content-Type": "application/json" }, body: "{}" });
+        expect(write.status).toBe(403);
+        expect(((await write.json()) as { code?: string }).code).toBe("lan_readonly");
+
+        // 4) 没有令牌 Cookie 一律 403
+        const noCookie = await fetch(`http://127.0.0.1:${door.port}/api/plan`);
+        expect(noCookie.status).toBe(403);
+
+        // 5) 关门后端口不再服务
+        door.stop();
+        expect(door.state()).toEqual({ on: false, url: null });
+        await expect(fetch(`http://127.0.0.1:${door.port}/api/plan`, { headers: { cookie } })).rejects.toThrow();
+      },
+    );
+  });
+});

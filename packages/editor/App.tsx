@@ -587,6 +587,26 @@ const App: React.FC = () => {
   );
   const [showExport, setShowExport] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  /** 分享到局域网（方案 B）：令牌门的状态与开关（会话服务的 /api/lan-share）。 */
+  const [lanShare, setLanShare] = useState<{ on: boolean; url: string | null }>({ on: false, url: null });
+  const toggleLanShare = useCallback(async (on: boolean): Promise<string | null> => {
+    try {
+      const res = await fetch('/api/lan-share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ on }) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const state = await res.json() as { on: boolean; url: string | null };
+      setLanShare(state);
+      return state.url ?? null;
+    } catch {
+      toast.error(on ? '开启局域网共享失败' : '关闭局域网共享失败');
+      return lanShare.url;
+    }
+  }, [lanShare.url]);
+  useEffect(() => {
+    if (!showExport) return;
+    void fetch('/api/lan-share').then(res => (res.ok ? res.json() : null)).then((state) => {
+      if (state && typeof state.on === 'boolean') setLanShare(state as { on: boolean; url: string | null });
+    }).catch(() => {});
+  }, [showExport]);
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [showSourceFileEditWarning, setShowSourceFileEditWarning] = useState(false);
   const [sourceFileEditWarningAction, setSourceFileEditWarningAction] = useState<SourceFileEditWarningAction>('send-feedback');
@@ -8280,6 +8300,8 @@ const App: React.FC = () => {
           isGeneratingShortUrl={isGeneratingShortUrl}
           shortUrlError={shortUrlError}
           onGenerateShortUrl={generateShortUrl}
+          lanShareUrl={lanShare.url}
+          onToggleLanShare={toggleLanShare}
           {/* 评审件（方案 A）暂收：评审页是分块构建（/assets 由会话服务端供），
               拷走的单 HTML 打不开；待单文件构建变体（照 shape.html 的配方）再启用。
               isReviewPacket={isReviewPacket}
