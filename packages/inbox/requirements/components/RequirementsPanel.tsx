@@ -5,11 +5,11 @@
  * clicking a session, a deliverable, or the contexts opens its panel
  * beside the list; the list narrows, the panel fills the rest.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { HostMark, Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
-import { addContext, annotateDeliverable, archiveRequirement, readRequirement, removeContext, reviewDeliverable, startCodeReview, startSessionCodeReview } from '../api';
+import { addContext, annotateDeliverable, archiveRequirement, readRequirement, removeContext, reviewDeliverable, startSessionCodeReview } from '../api';
 import { inboxApi } from '../../api';
 import { EmbeddedThread } from '../EmbeddedThread';
 import { putThread } from '../../data/queries/thread';
@@ -155,14 +155,22 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
   onToast: (toast: unknown, ms?: number) => void;
   onReview: (requirementId: string, deliverableId: string) => void;
 }) {
+  // 弹层的容器：.pn-inbox 本身（同 CopyMenus 的 usePortal）。菜单出 .pn-inbox 门，
+  // svg 拿不到描边样式，图标会糊成实心块——工坊菜单此前没传 container，正是这个症状。
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [portal, setPortal] = useState<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    const root = cardRef.current?.closest<HTMLElement>('.pn-inbox');
+    if (root) setPortal(root);
+  });
   return (
-    <div className="ib-req-wcard" data-requirement-id={r.id}>
+    <div ref={cardRef} className="ib-req-wcard" data-requirement-id={r.id}>
       <div className="ib-req-wcard-head">
         <b className="ib-req-wcard-title" dir="auto">{r.title}</b>
         {/* 常驻图标操作（气泡提示名字与数量）；窄面板下随标题换行、右对齐 */}
         <div className="ib-req-wcard-acts">
           <Tip content={`开启新会话${r.threads.length > 0 ? `（已有 ${r.threads.length} 个）` : ''}`}>
-            <button type="button" className="ib-req-wact" onClick={onNewSession} aria-label="开启新会话"><Icon name="compose" size={15} /></button>
+            <button type="button" className="ib-req-wact" onClick={onNewSession} aria-label="开启新会话"><Icon name="chatPlus" size={15} /></button>
           </Tip>
           <Tip content="历史">
             <button type="button" className="ib-req-wact" onClick={onHistory} aria-label="历史"><Icon name="clock" size={15} /></button>
@@ -174,22 +182,11 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
                 <Icon name="dots" size={15} />
               </Menu.Trigger>
             </Tip>
-            <Menu.Portal>
+            <Menu.Portal container={portal ?? undefined}>
               <Menu.Positioner className="ib-pm-pos" side="bottom" align="end" sideOffset={4}>
                 <Menu.Popup className="ib-pm" aria-label={`需求「${r.title}」的操作`}>
                   <Menu.Item className="ib-pmi" label="上下文" onClick={onContexts} data-req-menu="contexts">
                     <Icon name="book" size={15} /> 上下文（{r.contexts.length}）
-                  </Menu.Item>
-                  {/* 手动代码评审（v1）：按本需求会话的项目起常驻评审页；比较对象在页面里随时切。
-                      占位标签同步开（保留用户手势），成功后定向——异步 window.open 会被弹窗拦截静默吞掉。 */}
-                  <Menu.Item className="ib-pmi" label="代码评审" data-req-menu="code-review" onClick={() => {
-                    const tab = window.open('', '_blank');
-                    void startCodeReview(r.id).then((outcome) => {
-                      if (outcome.ok) { if (tab) tab.location.href = outcome.answer.url; else window.open(outcome.answer.url, '_blank', 'noreferrer'); }
-                      else { tab?.close(); onToast({ icon: 'excl', lead: `代码评审没能打开：${outcome.error}`, wrap: true }); }
-                    });
-                  }}>
-                    <Icon name="gitBranch" size={15} /> 代码评审（常驻查看）
                   </Menu.Item>
                   <Menu.Separator className="ib-pm-sep" />
                   <Menu.Item className="ib-pmi" label="归档需求" onClick={() => { void archiveRequirement(r.id).then((o) => { if (!o.ok) onToast({ icon: 'excl', lead: `归档失败：${o.error}`, wrap: true }); }); }} data-req-menu="archive">
@@ -235,36 +232,11 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
                   </span>
                 </>
               )}
-              {/* 门控代码评审（挂会话）：页面自开、带 关闭/通过，结论落需求历史并送达本会话。 */}
-              <Tip content="代码评审 · 结论送达本会话">
-                <button
-                  type="button"
-                  className="ib-req-wcard-sess-codereview"
-                  aria-label={`对 ${subject} 的项目发起代码评审`}
-                  data-req-code-review=""
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    void startSessionCodeReview(r.id, tid).then((outcome) => {
-                      if (!outcome.ok) { onToast({ icon: 'excl', lead: `代码评审没能打开：${outcome.error}`, wrap: true }); return; }
-                      if (outcome.answer.state === 'already') {
-                        // 标签被手动关掉不会杀门控子进程：评审其实还活着——把同一个链接重新打开（同设计评审的复用路径）。
-                        if (outcome.answer.url) window.open(outcome.answer.url, '_blank', 'noreferrer');
-                        onToast({ icon: 'clock', lead: outcome.answer.url ? '这个会话的评审还在进行中——已重新打开那个评审页。' : '这个会话的评审已在进行中，评审页即将弹出。' });
-                        return;
-                      }
-                      onToast({ icon: 'check', lead: '评审页已打开；结论将送达本会话并记入需求历史。' });
-                    });
-                  }}
-                >
-                  <Icon name="gitBranch" size={13} />
-                </button>
-              </Tip>
               {(() => {
-                // 审阅融合进会话：待审的设计文档挂在最新会话上（产出它的那个），按类型选图标。
+                // 审阅融合进会话：待审的设计文档挂在最新会话上（产出它的那个）。
                 if (r.stage !== 'design-review' || tid !== r.threads[r.threads.length - 1]) return null;
                 const doc = r.deliverables.find((d) => d.kind === 'design-doc' || /\.(md|markdown|html?)$/i.test(d.ref));
                 if (!doc) return null;
-                const REVIEW_ICON: Record<string, string> = { 'design-doc': 'doc', 'test-report': 'checkCircle', link: 'external', file: 'clip' };
                 return (
                   <Tip content={`去审阅 · ${doc.title ?? doc.ref}`}>
                     <button
@@ -273,14 +245,46 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
                       aria-label={`去审阅 ${doc.title ?? doc.ref}`}
                       onClick={(ev) => { ev.stopPropagation(); onReview(r.id, doc.id); }}
                     >
-                      <Icon name={(REVIEW_ICON[doc.kind] ?? 'doc') as never} size={13} />
+                      <Icon name="search" size={11} />
                       <span>去审阅</span>
                     </button>
                   </Tip>
                 );
               })()}
               <span className="ib-req-wcard-stage">{requirementStageLabel(r.stage)}</span>
-
+              {/* 门控代码评审（挂会话）挪进行尾 ⋯ 菜单：悬停才现的图标太隐晦，菜单里给它名字和去向。 */}
+              <Menu.Root modal={false}>
+                <Menu.Trigger
+                  className="ib-req-wcard-sess-more"
+                  aria-label={`会话「${subject}」的更多操作`}
+                  data-sess-more=""
+                  onClick={(ev) => ev.stopPropagation()}
+                  onKeyDown={(ev) => ev.stopPropagation()}
+                >
+                  <Icon name="dots" size={14} />
+                </Menu.Trigger>
+                <Menu.Portal container={portal ?? undefined}>
+                  <Menu.Positioner className="ib-pm-pos" side="bottom" align="end" sideOffset={4}>
+                    <Menu.Popup className="ib-pm" aria-label={`会话「${subject}」的操作`}>
+                      {/* 页面自开、带 关闭/通过，结论落需求历史并送达本会话。 */}
+                      <Menu.Item className="ib-pmi" label="代码评审" data-sess-menu="code-review" onClick={() => {
+                        void startSessionCodeReview(r.id, tid).then((outcome) => {
+                          if (!outcome.ok) { onToast({ icon: 'excl', lead: `代码评审没能打开：${outcome.error}`, wrap: true }); return; }
+                          if (outcome.answer.state === 'already') {
+                            // 标签被手动关掉不会杀门控子进程：评审其实还活着——把同一个链接重新打开（同设计评审的复用路径）。
+                            if (outcome.answer.url) window.open(outcome.answer.url, '_blank', 'noreferrer');
+                            onToast({ icon: 'clock', lead: outcome.answer.url ? '这个会话的评审还在进行中——已重新打开那个评审页。' : '这个会话的评审已在进行中，评审页即将弹出。' });
+                            return;
+                          }
+                          onToast({ icon: 'check', lead: '评审页已打开；结论将送达本会话并记入需求历史。' });
+                        });
+                      }}>
+                        <Icon name="gitBranch" size={15} /> 代码评审 · 结论送达本会话
+                      </Menu.Item>
+                    </Menu.Popup>
+                  </Menu.Positioner>
+                </Menu.Portal>
+              </Menu.Root>
             </div>
           );
         })}

@@ -43,14 +43,15 @@
 .ib-req-wcard-nosess { margin: 0; padding: 2px 4px; font-size: 11.5px; color: var(--muted-foreground); }
 .ib-req-wcard-sess { display: inline-flex; align-items: center; gap: 8px; width: 340px; max-width: 100%; padding: 5px 12px; border: 0; border-radius: 999px; background: color-mix(in oklch, var(--foreground) 6%, transparent); cursor: pointer; font: inherit; font-size: 12px; text-align: left; color: var(--foreground); transition: background-color 120ms ease-out; }
 .ib-req-wcard-sess:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
-.ib-req-wcard-sess-review { flex: none; display: inline-flex; align-items: center; gap: 5px; padding: 2.5px 11px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--primary) 45%, transparent); background: transparent; color: var(--primary); font: inherit; font-size: 10.5px; font-weight: 650; cursor: pointer; transition: background-color 120ms ease-out; }
-.ib-req-wcard-sess-review:hover { background: color-mix(in oklab, var(--primary) 12%, transparent); }
+/* 去审阅：安静的描边小片（放大镜图标），悬停才亮起主色——不再是常亮的粗描边胶囊 */
+.ib-req-wcard-sess-review { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--ib-hair, var(--border)); background: transparent; color: var(--muted-foreground); font: inherit; font-size: 10.5px; font-weight: 550; cursor: pointer; transition: background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out; }
+.ib-req-wcard-sess-review:hover { color: var(--primary); border-color: color-mix(in oklab, var(--primary) 45%, transparent); background: color-mix(in oklab, var(--primary) 8%, transparent); }
 .ib-req-wcard-stage { flex: none; font-size: 10.5px; font-weight: 650; color: var(--muted-foreground); font-variant-numeric: tabular-nums; padding: 1px 2px; }
-/* 会话行的门控代码评审按钮：悬停显现，不打断行的整洁 */
-.ib-req-wcard-sess-codereview { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: 0; border-radius: 6px; background: transparent; color: var(--muted-foreground); cursor: pointer; opacity: 0; transition: opacity 120ms ease-out, background-color 120ms ease-out, color 120ms ease-out; }
-.ib-req-wcard-sess:hover .ib-req-wcard-sess-codereview, .ib-req-wcard-sess-codereview:focus-visible { opacity: 1; }
-.ib-req-wcard-sess-codereview:hover { background: var(--ib-hover, var(--muted)); color: var(--foreground); }
-@media (hover: none) { .ib-req-wcard-sess-codereview { opacity: 1; } }
+/* 会话行尾的 ⋯：更多操作（代码评审在里面），悬停显现，不打断行的整洁 */
+.ib-req-wcard-sess-more { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: 0; border-radius: 6px; background: transparent; color: var(--muted-foreground); cursor: pointer; opacity: 0; transition: opacity 120ms ease-out, background-color 120ms ease-out, color 120ms ease-out; }
+.ib-req-wcard-sess:hover .ib-req-wcard-sess-more, .ib-req-wcard-sess-more:focus-visible, .ib-req-wcard-sess-more[data-popup-open] { opacity: 1; }
+.ib-req-wcard-sess-more:hover { background: var(--ib-hover, var(--muted)); color: var(--foreground); }
+@media (hover: none) { .ib-req-wcard-sess-more { opacity: 1; } }
 .ib-req-wcard-sess:hover { background: color-mix(in oklch, var(--muted) 60%, transparent); }
 .ib-req-wcard-sess-mk { flex: none; display: inline-flex; }
 /* 运行中的心跳转动：绕中心转一圈（缓起缓停，ease-in-out），停一拍，再转——缓慢往复 */
@@ -61,10 +62,10 @@
 /* 等你回复：hold 徽章（--ib-badge-hold-* 与收件箱一致） */
 /* 运行中（主色系：活动）与 等你回复（土黄系：全产品"等你"家族色）分家；
    竖线只在"等你"存在时出现在它左侧。 */
-.ib-req-wcard-live { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; background: color-mix(in oklab, var(--primary) 14%, transparent); color: var(--primary); font-size: 10.5px; font-weight: 650; }
-.ib-req-wcard-hold { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; background: var(--ib-badge-hold-bg); color: var(--ib-badge-hold-fg, currentcolor); font-size: 10.5px; font-weight: 650; }
+.ib-req-wcard-live { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: color-mix(in oklab, var(--primary) 14%, transparent); color: var(--primary); font-size: 10.5px; font-weight: 550; }
+.ib-req-wcard-hold { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: color-mix(in oklab, var(--ib-badge-hold-bg) 55%, transparent); color: var(--ib-badge-hold-fg, currentcolor); font-size: 10.5px; font-weight: 550; }
 /* 已归档：灰调徽章——展示照旧，只多这个字样 */
-.ib-req-wcard-arch { flex: none; display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; background: var(--muted); color: var(--muted-foreground); font-size: 10.5px; font-weight: 650; }
+.ib-req-wcard-arch { flex: none; display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; background: var(--muted); color: var(--muted-foreground); font-size: 10.5px; font-weight: 550; }
 .ib-req-wcard-sep { flex: none; width: 1px; height: 12px; border-radius: 1px; background: var(--ib-hair, var(--border)); margin: 0 2px; }
 
 /* ── The right panel ── */
