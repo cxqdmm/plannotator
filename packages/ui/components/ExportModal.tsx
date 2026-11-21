@@ -56,6 +56,12 @@ interface ExportModalProps {
   shortUrlError?: string;
   /** Generate a short URL on demand (user clicks "Create short link") */
   onGenerateShortUrl?: () => void | Promise<unknown>;
+  /** 导出评审件（.html 自包含文件，内网传文件离线看）。仅本机（服务端供页）会话提供。 */
+  onExportReviewPacket?: () => void | Promise<unknown>;
+  /** 交回意见（小 .txt，粘进「导入」合并）。仅在评审件模式提供。 */
+  onExportVerdict?: () => void | Promise<unknown>;
+  /** This session was opened from an exported review-packet file. */
+  isReviewPacket?: boolean;
   annotationsOutput: string;
   annotationCount: number;
   taterSprite?: React.ReactNode;
@@ -88,6 +94,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   isGeneratingShortUrl = false,
   shortUrlError = '',
   onGenerateShortUrl,
+  onExportReviewPacket,
+  onExportVerdict,
+  isReviewPacket = false,
   annotationsOutput,
   annotationCount,
   taterSprite,
@@ -98,7 +107,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onSaveToNotes = defaultSaveToNotes,
   wrapCopiedAnnotations = wrapFeedbackForAgent,
 }) => {
-  const defaultTab = initialTab || (sharingEnabled ? 'share' : 'annotations');
+  // The 评审件 card keeps the share tab alive in this fork even with link
+  // sharing off (the default): exporting a file needs no network.
+  const packetAvailable = !!onExportReviewPacket || !!onExportVerdict;
+  const showShareTab = sharingEnabled || packetAvailable;
+  const defaultTab = initialTab || (showShareTab ? 'share' : 'annotations');
   const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
   const [copied, setCopied] = useState<'short' | 'full' | 'annotations' | false>(false);
   const [saveStatus, setSaveStatus] = useState<Record<SaveTarget, SaveStatus>>({ obsidian: 'idle', bear: 'idle', octarine: 'idle', notion: 'idle' });
@@ -108,9 +121,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   // Reset tab when modal opens
   useEffect(() => {
     if (isOpen) {
-      setActiveTab(initialTab || (sharingEnabled ? 'share' : 'annotations'));
+      setActiveTab(initialTab || (showShareTab ? 'share' : 'annotations'));
     }
-  }, [isOpen, initialTab, sharingEnabled]);
+  }, [isOpen, initialTab, showShareTab]);
 
   // Reset save status when modal opens
   useEffect(() => {
@@ -224,7 +237,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const readyCount = [isObsidianReady, isBearReady, isOctarineReady, isNotionReady].filter(Boolean).length;
 
   // Determine which tabs to show
-  const showTabs = sharingEnabled || showNotesTab;
+  const showTabs = showShareTab || showNotesTab;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
@@ -260,7 +273,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           {/* Tabs */}
           {showTabs && (
             <div className="flex gap-1 bg-muted rounded-lg p-1 mb-4">
-              {sharingEnabled && (
+              {showShareTab && (
                 <button
                   onClick={() => setActiveTab('share')}
                   className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
@@ -298,8 +311,44 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           )}
 
           {/* Tab content */}
-          {activeTab === 'share' && sharingEnabled ? (
+          {activeTab === 'share' && showShareTab ? (
             <div className="space-y-4">
+              {/* 评审件：内网分享的文件形态（方案 A）——导出给同事、或（评审件模式）交回意见 */}
+              {isReviewPacket && onExportVerdict ? (
+                <div className="border border-border rounded-lg p-4 bg-muted/40" data-review-packet="verdict">
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                    交回意见
+                  </label>
+                  <p className="text-[11px] text-muted-foreground mb-3">
+                    你正在看的是一个评审件文件。批注完成后点下面按钮，会下载一个小 .txt；
+                    把它发回给导出人，对方粘贴进「导入」即可合并你的意见。全程不需要网络。
+                  </p>
+                  <button
+                    onClick={() => void onExportVerdict()}
+                    className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
+                    data-review-packet-verdict=""
+                  >
+                    交回意见（.txt）
+                  </button>
+                </div>
+              ) : onExportReviewPacket ? (
+                <div className="border border-border rounded-lg p-4 bg-muted/40" data-review-packet="export">
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                    导出评审件
+                  </label>
+                  <p className="text-[11px] text-muted-foreground mb-3">
+                    生成一个自包含的 .html 文件（素材 + 批注工具 + 你已有的批注），通过内网 IM /
+                    共享盘 / U 盘发给同事；对方双击即可离线查看和批注，再交回意见文件。不经过任何服务器。
+                  </p>
+                  <button
+                    onClick={() => void onExportReviewPacket()}
+                    className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
+                    data-review-packet-export=""
+                  >
+                    导出评审件（.html）
+                  </button>
+                </div>
+              ) : null}
               {/* Short URL — primary copy target when available */}
               {shortShareUrl ? (
                 <div>

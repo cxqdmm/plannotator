@@ -192,6 +192,30 @@ function buildSourceArray(annotations: Annotation[]): (string | undefined)[] | n
 }
 
 /**
+ * The share payload of the current document and annotations — one builder for
+ * every transport (hash link, paste short link, and this fork's review packet
+ * file: packages/ui/utils/reviewPacket.ts).
+ */
+export function buildSharePayload(
+  markdown: string,
+  annotations: Annotation[],
+  globalAttachments?: ImageAttachment[],
+  rawHtml?: string,
+  renderAs?: DocumentRenderAs,
+): SharePayload {
+  const diffContexts = buildDiffContextArray(annotations);
+  const sources = buildSourceArray(annotations);
+  return {
+    p: markdown,
+    a: toShareable(annotations),
+    g: globalAttachments?.length ? toShareableImages(globalAttachments) : undefined,
+    ...(diffContexts ? { d: diffContexts } : {}),
+    ...(sources ? { s: sources } : {}),
+    ...(rawHtml ? { h: rawHtml, r: 'html' as const } : renderAs === 'asciidoc' ? { r: 'asciidoc' as const } : {}),
+  };
+}
+
+/**
  * Generate a full shareable URL from plan and annotations.
  *
  * This fork has no external share portal: `baseUrl` must name a self-hosted
@@ -209,17 +233,7 @@ export async function generateShareUrl(
   // HTML content is too large for URL hashes — force paste service path
   if (rawHtml) return null;
   if (!baseUrl) return null;
-  const diffContexts = buildDiffContextArray(annotations);
-  const sources = buildSourceArray(annotations);
-  const payload: SharePayload = {
-    p: markdown,
-    a: toShareable(annotations),
-    g: globalAttachments?.length ? toShareableImages(globalAttachments) : undefined,
-    ...(diffContexts ? { d: diffContexts } : {}),
-    ...(sources ? { s: sources } : {}),
-    ...(renderAs === 'asciidoc' ? { r: 'asciidoc' as const } : {}),
-  };
-
+  const payload = buildSharePayload(markdown, annotations, globalAttachments, undefined, renderAs);
   const hash = await compress(payload);
   return `${baseUrl}/#${hash}`;
 }
@@ -298,17 +312,7 @@ export async function createShortShareUrl(
   if (!pasteApi || !shareBase) return null;
 
   try {
-    const diffContexts = buildDiffContextArray(annotations);
-    const sources = buildSourceArray(annotations);
-    const payload: SharePayload = {
-      p: markdown,
-      a: toShareable(annotations),
-      g: globalAttachments?.length ? toShareableImages(globalAttachments) : undefined,
-      ...(diffContexts ? { d: diffContexts } : {}),
-      ...(sources ? { s: sources } : {}),
-      ...(rawHtml ? { h: rawHtml, r: 'html' as const } : renderAs === 'asciidoc' ? { r: 'asciidoc' as const } : {}),
-    };
-
+    const payload = buildSharePayload(markdown, annotations, globalAttachments, rawHtml, renderAs);
     const compressed = await compress(payload);
 
     // Encrypt before uploading — the service only sees ciphertext

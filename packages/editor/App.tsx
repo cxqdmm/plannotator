@@ -2636,6 +2636,7 @@ const App: React.FC = () => {
   // URL-based sharing
   const {
     isSharedSession,
+    isReviewPacket,
     isLoadingShared,
     shareUrl,
     shareUrlSize,
@@ -2647,6 +2648,8 @@ const App: React.FC = () => {
     clearPendingSharedAnnotations,
     generateShortUrl,
     importFromShareUrl,
+    exportReviewPacket,
+    exportVerdict,
     shareLoadError,
     clearShareLoadError,
   } = useSharing(
@@ -8277,6 +8280,9 @@ const App: React.FC = () => {
           isGeneratingShortUrl={isGeneratingShortUrl}
           shortUrlError={shortUrlError}
           onGenerateShortUrl={generateShortUrl}
+          isReviewPacket={isReviewPacket}
+          onExportReviewPacket={isReviewPacket ? undefined : () => exportReviewPacket(planHeading ?? '评审件')}
+          onExportVerdict={isReviewPacket ? () => exportVerdict(planHeading ?? '评审件') : undefined}
           annotationsOutput={
             // Computed only while the modal is open: composeFeedback runs a
             // unified diff when edits exist — not per-render work.

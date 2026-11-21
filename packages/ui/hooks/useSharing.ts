@@ -14,6 +14,8 @@ import {
   type SharePayload,
   parseShareHash,
   generateShareUrl,
+  buildSharePayload,
+  compress,
   decompress,
   fromShareable,
   parseShareableImages,
@@ -21,6 +23,7 @@ import {
   createShortShareUrl,
   loadFromPasteId,
 } from '../utils/sharing';
+import { injectReviewPacket, readReviewPacket, verdictText, downloadTextFile, safeFileStem, type ReviewPacket } from '../utils/reviewPacket';
 
 export interface ImportResult {
   success: boolean;
@@ -69,6 +72,15 @@ interface UseSharingResult {
   /** Import annotations from a teammate's share URL */
   importFromShareUrl: (url: string) => Promise<ImportResult>;
 
+  /** This session was opened from an exported review-packet .html file (offline intranet sharing). */
+  isReviewPacket: boolean;
+
+  /** 导出评审件：素材+批注装进一个自包含 .html 文件（内网传文件用）。 */
+  exportReviewPacket: (title: string, by?: string) => Promise<boolean>;
+
+  /** 交回意见：当前批注压成小 .txt（评审件模式下的回流动作）。 */
+  exportVerdict: (title: string, by?: string) => Promise<boolean>;
+
   /** Error message when a shared URL failed to load on mount */
   shareLoadError: string;
 
@@ -115,6 +127,7 @@ export function useSharing(
   renderAs?: DocumentRenderAs,
 ): UseSharingResult {
   const [isSharedSession, setIsSharedSession] = useState(false);
+  const [isReviewPacket, setIsReviewPacket] = useState(false);
   const [isLoadingShared, setIsLoadingShared] = useState(true);
   const [shareUrl, setShareUrl] = useState('');
   const [shareUrlSize, setShareUrlSize] = useState('');
@@ -151,7 +164,32 @@ export function useSharing(
 
   const clearShareLoadError = useCallback(() => setShareLoadError(''), []);
 
-  // Load shared state from URL hash (or paste-service short URL)
+  /** Apply a hydrated payload (share hash, paste short link, or review packet): material, annotations, attachments. */
+  const applyPayload = useCallback((payload: SharePayload) => {
+    if (payload.h && payload.r === 'html') {
+      setRawHtml?.(payload.h);
+      setShareHtml?.(payload.h);
+      setRenderAs?.('html');
+      setMarkdown('');
+    } else {
+      setMarkdown(payload.p);
+      setRenderAs?.(payload.r === 'asciidoc' ? 'asciidoc' : 'markdown');
+      setRawHtml?.('');
+      setShareHtml?.('');
+    }
+
+    const restoredAnnotations = fromShareable(payload.a, payload.d, payload.s);
+    setAnnotations(restoredAnnotations);
+
+    const parsedGlobalAttachments = parseShareableImages(payload.g) ?? [];
+    setGlobalAttachments(parsedGlobalAttachments);
+    setSharedGlobalAttachments(parsedGlobalAttachments.length ? parsedGlobalAttachments : null);
+    setPendingSharedAnnotations(restoredAnnotations);
+    setIsSharedSession(true);
+    onSharedLoad?.();
+  }, [setMarkdown, setAnnotations, setGlobalAttachments, onSharedLoad, setRawHtml, setShareHtml, setRenderAs]);
+
+  // Load shared state from URL hash (or paste-service short URL, or an embedded review packet)
   const loadFromHash = useCallback(async () => {
     try {
       // Check for short URL path pattern: /p/<id>
@@ -174,30 +212,9 @@ export function useSharing(
 
         const payload = await loadFromPasteId(pasteId, pasteFromFragment ?? pasteApiUrl, encryptionKey);
         if (payload) {
-          if (payload.h && payload.r === 'html') {
-            setRawHtml?.(payload.h);
-            setShareHtml?.(payload.h);
-            setRenderAs?.('html');
-            setMarkdown('');
-          } else {
-            setMarkdown(payload.p);
-            setRenderAs?.(payload.r === 'asciidoc' ? 'asciidoc' : 'markdown');
-            setRawHtml?.('');
-            setShareHtml?.('');
-          }
-
-          const restoredAnnotations = fromShareable(payload.a, payload.d, payload.s);
-          setAnnotations(restoredAnnotations);
-
-          const parsedGlobalAttachments = parseShareableImages(payload.g) ?? [];
-          setGlobalAttachments(parsedGlobalAttachments);
-          setSharedGlobalAttachments(parsedGlobalAttachments.length ? parsedGlobalAttachments : null);
-
-          setPendingSharedAnnotations(restoredAnnotations);
-          setIsSharedSession(true);
+          applyPayload(payload);
           shortShareUrlLifecycleRef.current = { _tag: 'incoming-hydration' };
           setShortShareUrl(incomingShortUrl);
-          onSharedLoad?.();
 
           // Remove the /p/<id> path from browser history so a refresh doesn't
           // attempt a network fetch. The plan is now held in memory.
@@ -216,39 +233,22 @@ export function useSharing(
 
       // Not a share payload — leave it for Viewer to scroll to (or ignore).
       if (!looksLikeSharePayload(hash)) {
+        // A review packet file carries its material inside the page itself
+        // (packages/ui/utils/reviewPacket.ts): hydrate from it when present.
+        const packet = readReviewPacket();
+        if (packet) {
+          applyPayload(packet);
+          setIsReviewPacket(true);
+          window.history.replaceState({}, '', window.location.pathname);
+          return true;
+        }
         return false;
       }
 
       const payload = await parseShareHash();
 
       if (payload) {
-        if (payload.h && payload.r === 'html') {
-          setRawHtml?.(payload.h);
-          setShareHtml?.(payload.h);
-          setRenderAs?.('html');
-          setMarkdown('');
-        } else {
-          setMarkdown(payload.p);
-          setRenderAs?.(payload.r === 'asciidoc' ? 'asciidoc' : 'markdown');
-          setRawHtml?.('');
-          setShareHtml?.('');
-        }
-
-        // Convert shareable annotations to full annotations
-        const restoredAnnotations = fromShareable(payload.a, payload.d, payload.s);
-        setAnnotations(restoredAnnotations);
-
-        const parsedGlobalAttachments = parseShareableImages(payload.g) ?? [];
-        setGlobalAttachments(parsedGlobalAttachments);
-        setSharedGlobalAttachments(parsedGlobalAttachments.length ? parsedGlobalAttachments : null);
-
-        // Store for later application to DOM
-        setPendingSharedAnnotations(restoredAnnotations);
-
-        setIsSharedSession(true);
-
-        // Notify parent that we loaded from a share
-        onSharedLoad?.();
+        applyPayload(payload);
 
         // Clear the hash from URL to prevent re-loading on refresh
         // but keep the state in memory
@@ -271,7 +271,7 @@ export function useSharing(
       setShareLoadError('加载共享计划失败 —— 发生了意外错误。');
       return false;
     }
-  }, [setMarkdown, setAnnotations, setGlobalAttachments, onSharedLoad, pasteApiUrl, setRawHtml, setShareHtml, setRenderAs]);
+  }, [setMarkdown, setAnnotations, setGlobalAttachments, onSharedLoad, pasteApiUrl, setRawHtml, setShareHtml, setRenderAs, applyPayload]);
 
   // Load from hash on mount
   useEffect(() => {
@@ -404,6 +404,49 @@ export function useSharing(
     }
   }, [markdown, annotations, globalAttachments, shareBaseUrl, pasteApiUrl, rawHtml, resolveRawHtmlForShare, renderAs, shareRequestContext]);
 
+  /**
+   * 评审件导出（方案 A）：把本页自己的单文件 HTML 拿来，注入「素材 + 当前批注」的
+   * 数据岛，下载成一个 .html——内网当文件传，对方双击离线打开。仅在线（服务端
+   * 供页）会话可用；评审件模式（isReviewPacket）下没有"自己"可取，导出的是意见。
+   */
+  const exportReviewPacket = useCallback(async (title: string, by?: string): Promise<boolean> => {
+    if (isReviewPacket) return false;
+    try {
+      const htmlForShare = rawHtml ? (await resolveRawHtmlForShare?.()) ?? rawHtml : undefined;
+      const packet: ReviewPacket = {
+        ...buildSharePayload(markdown, annotations, globalAttachments, htmlForShare, renderAs),
+        ...(by ? { by } : {}),
+        made: new Date().toISOString(),
+      };
+      const page = await fetch(window.location.href.split('#')[0], { cache: 'no-store' });
+      if (!page.ok) throw new Error(`读取本页失败（${page.status}）`);
+      const html = injectReviewPacket(await page.text(), packet);
+      downloadTextFile(`${safeFileStem(title)}.html`, html, 'text/html;charset=utf-8');
+      return true;
+    } catch (e) {
+      console.error('[reviewPacket] export failed:', e);
+      setShareLoadError(e instanceof Error ? e.message : '导出评审件失败。');
+      return false;
+    }
+  }, [isReviewPacket, markdown, annotations, globalAttachments, rawHtml, resolveRawHtmlForShare, renderAs]);
+
+  /**
+   * 交回意见（评审件模式）：把审阅人当前的批注压成与分享链接同款的 base64 串，
+   * 存成小 .txt；发起人把它粘进「导入」框即合并（importFromShareUrl 按 #hash 解析）。
+   */
+  const exportVerdict = useCallback(async (title: string, by?: string): Promise<boolean> => {
+    try {
+      const payload = buildSharePayload(markdown, annotations, globalAttachments, undefined, renderAs === 'html' ? undefined : renderAs);
+      const hash = await compress(payload);
+      downloadTextFile(`评审意见-${safeFileStem(title)}.txt`, verdictText(hash, title, by));
+      return true;
+    } catch (e) {
+      console.error('[reviewPacket] verdict failed:', e);
+      setShareLoadError(e instanceof Error ? e.message : '导出意见失败。');
+      return false;
+    }
+  }, [markdown, annotations, globalAttachments, renderAs]);
+
   // Import annotations from a teammate's share URL (supports both hash-based and short /p/<id> URLs)
   const importFromShareUrl = useCallback(async (url: string): Promise<ImportResult> => {
     try {
@@ -502,6 +545,7 @@ export function useSharing(
 
   return {
     isSharedSession,
+    isReviewPacket,
     isLoadingShared,
     shareUrl,
     shareUrlSize,
@@ -514,6 +558,8 @@ export function useSharing(
     refreshShareUrl,
     generateShortUrl,
     importFromShareUrl,
+    exportReviewPacket,
+    exportVerdict,
     shareLoadError,
     clearShareLoadError,
   };
