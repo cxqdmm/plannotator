@@ -6,7 +6,7 @@
 
 ## 前提
 
-- 已装好 Claude Code，能正常使用；
+- 已装好 Claude Code（用 OpenCode 的同学看文末「三、OpenCode 的接入」，前提一样）；
 - 不需要 bun / node（二进制是自包含单文件）。
 
 ## 一、联网机器安装
@@ -100,6 +100,28 @@ plugin/
 
    重启 Claude Code；
 4. 运行 `plannotator inbox` 打开收件箱/工坊。
+
+## 三、OpenCode 的接入
+
+前提同样：`plannotator` 二进制已在 PATH（上面第 2 步）。OpenCode 的插件**不走 Claude Code 的 marketplace**，在 `opencode.json` 里指到本地插件文件夹即可：
+
+- 插件文件夹：`plannotator-opencode-plugin-<版本>`（Release 附件或 `plannotator-local-builds/v<版本>/`，zip 解压即得，约 64 MB）；
+- **OpenCode 2**（`opencode.json`）：
+
+  ```json
+  {
+    "$schema": "https://opencode.ai/config.json",
+    "plugins": [
+      { "package": "D:\\tools\\plannotator-opencode-plugin-0.29.0" }
+    ]
+  }
+  ```
+
+  （写你自己的解压路径；Windows 路径在 JSON 里要 `\\` 双反斜杠。想要计划工作流可加 `"options": { "workflow": "plan-agent" }`）
+- **OpenCode 1** 字段名不同：`"plugin": ["<同上路径>"]`；
+- 然后 `opencode2 reload`（或重启 OpenCode），`opencode2 plugin list` 里出现 plannotator 即成功。
+
+**为什么本地装而不用 npm**：npm 上的 `@plannotator/opencode` 是上游英文版，它内嵌的界面页也是上游的；本地这份是本 fork 构建的，汉化界面、工坊配套都在里面。插件文件夹的再生产：仓库里 `bun run build:opencode` 后，按 `apps/opencode-plugin/package.json` 的 `files` 清单把 dist/commands/skills/scripts、plannotator.html、review-editor.html、diagram-engine 拷出来即可。
 
 ## 更新
 
