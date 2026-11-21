@@ -424,7 +424,7 @@ export async function runGuideShare(argv: string[], env: NodeJS.ProcessEnv = pro
   if (parsedSource.args.rest.length > 0) return { code: 2, stderr: `Unknown argument: ${parsedSource.args.rest[0]}\n\n${GUIDE_CLI_USAGE}\n` };
 
   if (!resolveSharingEnabled(loadConfig(), env)) {
-    return { code: 1, stderr: "Sharing is disabled (PLANNOTATOR_SHARE=disabled or share: \"disabled\" in the data dir's config.json). Use `plannotator guide export` for a local file instead.\n" };
+    return { code: 1, stderr: "Sharing is disabled (no self-hosted share/paste/guide host configured, or PLANNOTATOR_SHARE=disabled / share: \"disabled\" in the data dir's config.json). Use `plannotator guide export` for a local file instead.\n" };
   }
   const source = loadSnapshotSource(parsedSource.args, cwd, io);
   if (!source.ok) return source.result;
@@ -444,6 +444,9 @@ export async function runGuideShare(argv: string[], env: NodeJS.ProcessEnv = pro
 
   const mode = publicFlag.present ? "plain" : "encrypted";
   const serviceUrl = resolveGuideShareUrl(loadConfig(), env);
+  if (!serviceUrl) {
+    return { code: 1, stderr: "No guide share host configured (PLANNOTATOR_GUIDE_SHARE_URL or guideShareUrl in config.json names a self-hosted one). Use `plannotator guide export` for a local file instead.\n" };
+  }
   let shared;
   try {
     shared = await shareGuide(source.snapshot, { serviceUrl, mode, ttlSeconds, viewer: GUIDE_VIEWER_MANIFEST, fetch: io.fetch });
@@ -491,6 +494,9 @@ export async function runGuideUnshare(argv: string[], env: NodeJS.ProcessEnv = p
   if (!tokenOpt.value) return { code: 2, stderr: `unshare needs --token <deleteToken>.\n\n${GUIDE_CLI_USAGE}\n` };
   const remembered = listAllSavedGuides().filter(({ envelope }) => envelope.share?.id === id);
   const serviceUrl = remembered[0]?.envelope.share?.serviceUrl ?? resolveGuideShareUrl(loadConfig(), env);
+  if (!serviceUrl) {
+    return { code: 1, stderr: "No guide share host configured (PLANNOTATOR_GUIDE_SHARE_URL or guideShareUrl in config.json names a self-hosted one), and no saved guide remembers this link's host.\n" };
+  }
 
   try {
     await unshareGuide(id, tokenOpt.value, { serviceUrl, fetch: io.fetch });

@@ -605,8 +605,9 @@ describe("plannotator guide", () => {
       const viaConfig = await runGuideCli(["share", "--id", "1000-exportable"], {}, workDir, { fetch: svc.fetch });
       expect(viaConfig.code).toBe(1);
       expect(svc.calls.length).toBe(0);
-      // Env re-enables over config.
-      const reenabled = await runGuideCli(["share", "--id", "1000-exportable"], { PLANNOTATOR_SHARE: "enabled" }, workDir, { fetch: svc.fetch });
+      // Env re-enables over config (a self-hosted guide host must be named too:
+      // this fork has no default one).
+      const reenabled = await runGuideCli(["share", "--id", "1000-exportable"], { PLANNOTATOR_SHARE: "enabled", PLANNOTATOR_GUIDE_SHARE_URL: "https://guides.example.test" }, workDir, { fetch: svc.fetch });
       expect(reenabled.code).toBe(0);
       expect(svc.calls.length).toBe(1);
     });
@@ -650,10 +651,11 @@ describe("plannotator guide", () => {
       expect((await runGuideCli(["unshare"], {}, workDir)).code).toBe(2);
       expect((await runGuideCli(["unshare", "abc"], {}, workDir)).code).toBe(2);
       expect((await runGuideCli(["unshare", "abc", "--token", "t", "extra"], {}, workDir)).code).toBe(2);
-      const gone = await runGuideCli(["unshare", "abc", "--token", "t"], {}, workDir, { fetch: fakeService(() => Response.json({ error: "not found" }, { status: 404 })).fetch });
+      const host = { PLANNOTATOR_GUIDE_SHARE_URL: "https://guides.example.test" };
+      const gone = await runGuideCli(["unshare", "abc", "--token", "t"], host, workDir, { fetch: fakeService(() => Response.json({ error: "not found" }, { status: 404 })).fetch });
       expect(gone.code).toBe(1);
       expect(gone.stderr).toContain("already removed or expired");
-      const denied = await runGuideCli(["unshare", "abc", "--token", "t"], {}, workDir, { fetch: fakeService(() => new Response(null, { status: 401 })).fetch });
+      const denied = await runGuideCli(["unshare", "abc", "--token", "t"], host, workDir, { fetch: fakeService(() => new Response(null, { status: 401 })).fetch });
       expect(denied.code).toBe(1);
       expect(denied.stderr).toContain("token");
     });

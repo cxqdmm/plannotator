@@ -2483,6 +2483,7 @@ export async function startReviewServer(
             const serviceUrl = resolveGuideShareUrl(config);
             if (req.method === "POST") {
               if (!resolveSharingEnabled(config)) return Response.json({ error: "sharing disabled" }, { status: 403 });
+              if (!serviceUrl) return Response.json({ error: "no guide share host configured (PLANNOTATOR_GUIDE_SHARE_URL)" }, { status: 403 });
               // Every body field is optional, so no body at all means the defaults.
               let body: { public?: unknown; ttlSeconds?: unknown };
               try {

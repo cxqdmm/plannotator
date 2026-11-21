@@ -2396,12 +2396,10 @@ export function resolveSharingEnabled(config: PlannotatorConfig, env: NodeJS.Pro
   if (envVal !== undefined) return envVal !== "disabled";
   if (config.share !== undefined) return config.share !== "disabled";
   // This fork ships no external share/paste service: sharing stays off until a
-  // self-hosted one is named (PLANNOTATOR_SHARE_URL / PLANNOTATOR_PASTE_URL).
-  return !!(env.PLANNOTATOR_SHARE_URL || env.PLANNOTATOR_PASTE_URL);
+  // self-hosted one is named (PLANNOTATOR_SHARE_URL / PLANNOTATOR_PASTE_URL /
+  // PLANNOTATOR_GUIDE_SHARE_URL).
+  return !!(env.PLANNOTATOR_SHARE_URL || env.PLANNOTATOR_PASTE_URL || env.PLANNOTATOR_GUIDE_SHARE_URL);
 }
-
-/** Where shared Guided Reviews are uploaded by default (guide share hosting contract, §7). */
-export const DEFAULT_GUIDE_SHARE_URL = "https://guides.show";
 
 /**
  * Validate and normalize a guide share service URL: http(s) only, credentials,
@@ -2423,29 +2421,30 @@ export function normalizeGuideShareUrl(input: string): string | null {
 const warnedInvalidGuideShareUrls = new Set<string>();
 
 /**
- * Resolve the guide host that guide share links are created on.
+ * Resolve the guide host that guide share links are created on — this fork's
+ * own only: no external default any more.
  *
  * Priority (highest wins):
- *   PLANNOTATOR_GUIDE_SHARE_URL env var  →  config.guideShareUrl  →  https://guides.show
+ *   PLANNOTATOR_GUIDE_SHARE_URL env var  →  config.guideShareUrl  →  null (sharing off)
  *
  * An empty (but set) env var counts as unset. A value that is not an http(s)
- * URL warns once per value on stderr and falls back to the default: a share
- * setting must never break a server launch or a CLI run. Whether sharing is
- * allowed at all is a separate question (`resolveSharingEnabled`).
+ * URL warns once per value on stderr and reads as unset: a share setting must
+ * never break a server launch or a CLI run. Whether sharing is allowed at all
+ * is a separate question (`resolveSharingEnabled`).
  */
-export function resolveGuideShareUrl(config: PlannotatorConfig, env: NodeJS.ProcessEnv = process.env): string {
+export function resolveGuideShareUrl(config: PlannotatorConfig, env: NodeJS.ProcessEnv = process.env): string | null {
   const envVal = env.PLANNOTATOR_GUIDE_SHARE_URL;
   const raw = envVal !== undefined && envVal.trim() !== "" ? envVal : config.guideShareUrl;
-  if (typeof raw !== "string" || raw.trim() === "") return DEFAULT_GUIDE_SHARE_URL;
+  if (typeof raw !== "string" || raw.trim() === "") return null;
   const normalized = normalizeGuideShareUrl(raw);
   if (normalized) return normalized;
   if (!warnedInvalidGuideShareUrls.has(raw)) {
     warnedInvalidGuideShareUrls.add(raw);
     process.stderr.write(
-      `[plannotator] Warning: invalid guide share URL ${JSON.stringify(raw)} — expected an http(s) URL; using ${DEFAULT_GUIDE_SHARE_URL}\n`,
+      `[plannotator] Warning: invalid guide share URL ${JSON.stringify(raw)} — expected an http(s) URL; treating it as unset (guide sharing stays off).\n`,
     );
   }
-  return DEFAULT_GUIDE_SHARE_URL;
+  return null;
 }
 
 /** Validate a public reverse-proxy URL as an HTTP(S) origin without a path. */

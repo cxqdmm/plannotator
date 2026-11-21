@@ -45,7 +45,6 @@ import {
   resolveDefaultDiffType,
   resolveDefaultDiffTypeFor,
   resolveInboxLaunch,
-  DEFAULT_GUIDE_SHARE_URL,
   __setConfigLockTimingsForTest,
   __setConfigSaveMergeWindowHookForTest,
 } from "./config";
@@ -1066,8 +1065,8 @@ async function waitForFile(path: string): Promise<void> {
 }
 
 describe("resolveGuideShareUrl", () => {
-  test("defaults to guides.show; config key is honored; env wins", () => {
-    expect(resolveGuideShareUrl({}, {})).toBe(DEFAULT_GUIDE_SHARE_URL);
+  test("this fork defaults to null (no external host); config key is honored; env wins", () => {
+    expect(resolveGuideShareUrl({}, {})).toBe(null);
     expect(resolveGuideShareUrl({ guideShareUrl: "https://guides.example.test" }, {})).toBe("https://guides.example.test");
     expect(resolveGuideShareUrl({ guideShareUrl: "https://guides.example.test" }, { PLANNOTATOR_GUIDE_SHARE_URL: "http://localhost:8788" })).toBe("http://localhost:8788");
     // An empty (but set) env var counts as unset.
@@ -1080,7 +1079,7 @@ describe("resolveGuideShareUrl", () => {
     expect(resolveGuideShareUrl({}, { PLANNOTATOR_GUIDE_SHARE_URL: "  https://guides.example.test  " })).toBe("https://guides.example.test");
   });
 
-  test("non-http(s) or unparsable values warn once and fall back to the default", () => {
+  test("non-http(s) or unparsable values warn once and read as unset", () => {
     const writes: string[] = [];
     const spy = spyOn(process.stderr, "write").mockImplementation(((chunk: unknown) => {
       writes.push(String(chunk));
@@ -1088,10 +1087,10 @@ describe("resolveGuideShareUrl", () => {
     }) as typeof process.stderr.write);
     try {
       for (const v of ["ftp://guides.example.test", "javascript:alert(1)", "not a url", "guides.example.test"]) {
-        expect(resolveGuideShareUrl({}, { PLANNOTATOR_GUIDE_SHARE_URL: v })).toBe(DEFAULT_GUIDE_SHARE_URL);
-        expect(resolveGuideShareUrl({ guideShareUrl: v }, {})).toBe(DEFAULT_GUIDE_SHARE_URL);
+        expect(resolveGuideShareUrl({}, { PLANNOTATOR_GUIDE_SHARE_URL: v })).toBe(null);
+        expect(resolveGuideShareUrl({ guideShareUrl: v }, {})).toBe(null);
       }
-      expect(resolveGuideShareUrl({ guideShareUrl: 42 as unknown as string }, {})).toBe(DEFAULT_GUIDE_SHARE_URL);
+      expect(resolveGuideShareUrl({ guideShareUrl: 42 as unknown as string }, {})).toBe(null);
     } finally {
       spy.mockRestore();
     }
