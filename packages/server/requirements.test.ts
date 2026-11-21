@@ -177,26 +177,15 @@ describe("the requirements routes", () => {
     expect((read.data.requirement as { stage: string }).stage).toBe("design");
   });
 
-  test("stage-auto: a design doc lands the requirement in review and the session is told; the verdict moves it on", async () => {
-    const told: string[] = [];
-    const bridged = createBunRequirementRoutes({ dataDir, spawnAnnotate: (file) => Promise.resolve({ stdout: "", code: 0 }), notifyThread: (threadId, words) => told.push(words) });
-    const callBridged = async (method: string, path: string, body?: unknown) => {
-      const response = await bridged.route(new Request(`http://x${path}`, { method, body: body === undefined ? undefined : JSON.stringify(body) }), new URL(`http://x${path}`));
-      return { status: response!.status, data: (await response!.json()) as Record<string, unknown> };
-    };
-    const made = ((await callBridged("POST", "/api/requirements", { title: "登录页改版" })).data.requirement as { id: string }).id;
-    // A design doc delivered → design-review, the session told.
-    expect((await callBridged("POST", `/api/requirements/${made}/deliverables`, { kind: "design-doc", ref: "/tmp/design.md" })).status).toBe(201);
-    let stage = ((await callBridged("GET", `/api/requirements/${made}`)).data.requirement as { stage: string }).stage;
-    expect(stage).toBe("design-review");
-    // suggest is retired.
-    expect((await callBridged("POST", `/api/requirements/${made}/suggestions`, { stage: "dev", why: "x", by: "a" })).status).toBe(410);
-    // A manual move tells the session too.
-    told.length = 0;
-    expect((await callBridged("PATCH", `/api/requirements/${made}`, { stage: "qa" })).status).toBe(200);
-    stage = ((await callBridged("GET", `/api/requirements/${made}`)).data.requirement as { stage: string }).stage;
-    expect(stage).toBe("qa");
-    expect(told).toHaveLength(0); // no threads linked yet: nothing to tell.
+  test("stage moves only through the stage op / PATCH: a delivered design doc does NOT auto-move it", async () => {
+    const made = await createOne();
+    await call("POST", `/api/requirements/${made.id}/deliverables`, { kind: "design-doc", ref: "docs/plan.md", by: null });
+    const afterDeliver = await call("GET", `/api/requirements/${made.id}`);
+    expect((afterDeliver.data.requirement as { stage: string }).stage).toBe("design");
+    const moved = await call("PATCH", `/api/requirements/${made.id}`, { stage: "design-review" });
+    expect((moved.data.requirement as { stage: string }).stage).toBe("design-review");
+    const events = (await call("GET", `/api/requirements/${made.id}`)).data.events as { kind: string; from?: string; to?: string }[];
+    expect(events.some((event) => event.kind === "stage" && event.from === "design" && event.to === "design-review")).toBe(true);
   });
 
   test("a delete removes the record and writes history; an unknown id is 404; an unknown subpath is not this module's", async () => {

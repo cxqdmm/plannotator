@@ -240,6 +240,7 @@ function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContex
                   </Tip>
                 );
               })()}
+              <span className="ib-req-wcard-stage">{requirementStageLabel(r.stage)}</span>
               <Tip content="会话产物">
                 <button
                   type="button"

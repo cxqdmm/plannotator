@@ -81,7 +81,7 @@ export interface RequirementStore {
   patch(id: string, patch: RequirementPatch): Requirement;
   remove(id: string): void;
   link(id: string, threadId: string, by?: string | null): Requirement;
-  deliver(id: string, input: { kind: DeliverableKind; ref: string; title?: string; by?: string | null }): Deliverable & { entered_review?: true };
+  deliver(id: string, input: { kind: DeliverableKind; ref: string; title?: string; by?: string | null }): Deliverable;
   undeliver(id: string, deliverableId: string): void;
   say(id: string, note: string, by?: string | null): void;
   addContext(id: string, input: { kind: "link" | "file"; name: string; ref: string; image?: boolean; by?: string | null }): RequirementContext;
@@ -316,17 +316,9 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       };
       record.deliverables.unshift(deliverable);
       recordEvent(id, "deliverable", { to: deliverable.kind, note: deliverable.title ?? deliverable.ref, field: deliverable.ref, from: deliverable.id });
-      // 阶段自动规则（stage-auto-design §1），规则只此一份：design-doc（或 .md/.html 的 file）落地，
-      // 需求即进设计评审。HTTP 路由与 requirement 工具的 deliver 都走这里，谁也不能绕开。
-      const entersReview = input.kind === "design-doc" || (input.kind === "file" && /\.(md|markdown|html?)$/i.test(deliverable.ref));
-      const stageBefore = record.stage;
-      if (entersReview && stageBefore !== "design-review") {
-        record.stage = "design-review";
-        recordEvent(id, "stage", { from: stageBefore, to: "design-review", note: "设计文档已挂上，等你评审" });
-      }
       touch(record);
       save([id]);
-      return { ...deliverable, ...(entersReview && stageBefore !== "design-review" ? { entered_review: true as const } : {}) };
+      return deliverable;
     },
     undeliver(id: string, deliverableId: string) {
       const record = at(id);
@@ -417,39 +409,6 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
    */
   const reviewsInFlight = new Set<string>();
   const designDocOf = (id: string): string => join(options.dataDir, "requirements", "design-docs", `${id}.md`);
-
-  /**
-   * The one way a stage changes (stage-auto-design §1): write it, write history, and tell the requirement's
-   * newest session — a person-voiced reply that wakes it, so no transition is ever mute. Auto rules (a design
-   * doc delivered, a review's verdict) and the person's own drag both land here.
-   */
-  const moveStage = (id: string, to: RequirementStage, why: string, notify: boolean) => {
-    let record: Requirement;
-    try {
-      record = at(id);
-    } catch {
-      return;
-    }
-    if (record.stage === to) return;
-    let notified = false;
-    if (notify) {
-      const threadId = record.threads[record.threads.length - 1];
-      if (threadId && options.notifyThread) {
-        try {
-          options.notifyThread(threadId, `【工坊】需求「${record.title}」已进入「${requirementStageLabel(to)}」：${why}`);
-          notified = true;
-        } catch {
-          // The session is told on a best-effort basis; the stage moves regardless.
-        }
-      }
-    }
-    try {
-      store.patch(id, { stage: to });
-      store.say(id, `${why}${notified ? "（已通知会话）" : ""}`, "阶段流转");
-    } catch {
-      // Gone between the read and the write: nothing to move.
-    }
-  };
 
   /**
    * 需求上下文: the requirement's own folder of background material. Pasted text is written here as a file
@@ -547,55 +506,6 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       return json({ error: "这个产物的文件在这台机器上读不到。", code: "unreadable" }, 404);
     }
   };
-  /**
-   * 裁决监听（review-verdicts.jsonl）：任何入口起的门控评审（人的去审阅、agent 的
-   *  annotate、桥接）退出时都把决定写进这份记录；这里轮询新行，凡文档与某需求
-   * 待审设计文档相同（路径归一比较）即流转其阶段。从此审阅页只有一个语义。
-   */
-  const sameDoc = (a: string, b: string) => a.replaceAll("\\", "/").toLowerCase() === b.replaceAll("\\", "/").toLowerCase();
-  const verdictPath = () => join(options.dataDir, "requirements", "review-verdicts.jsonl");
-  let verdictOffset = 0;
-  try {
-    verdictOffset = existsSync(verdictPath()) ? statSync(verdictPath()).size : 0;
-  } catch { /* 从头读 */ }
-  const onVerdictLine = (line: string) => {
-    try {
-      const verdict = JSON.parse(line) as { decision?: string; annotationCount?: number; doc?: string; feedback?: string };
-      if (!verdict.doc || (verdict.decision !== "approved" && verdict.decision !== "annotated")) return;
-      for (const record of store.list(false).requirements) {
-        if (record.stage !== "design-review") continue;
-        const doc = record.deliverables.find((d) => d.kind === "design-doc" || /\.(md|markdown|html?)$/i.test(d.ref));
-        if (!doc) continue;
-        const target = fileTargetOf(record.id, doc.ref);
-        if (!target || !("file" in target) || !sameDoc(target.file, verdict.doc ?? "")) continue;
-        if (verdict.decision === "approved") moveStage(record.id, "dev", "设计文档已批准（评审页裁决），进入需求开发", true);
-        else moveStage(record.id, "design", `设计文档被退回（评审页批注${typeof verdict.annotationCount === "number" ? ` ${verdict.annotationCount} 条` : ""}已带回会话）`, true);
-        return; // 一条裁决只落一个需求（同一文档不会同时待审于两个需求）
-      }
-    } catch { /* 坏行跳过 */ }
-  };
-  const readNewVerdicts = () => {
-    try {
-      if (!existsSync(verdictPath())) return;
-      const text = readFileSync(verdictPath(), "utf8");
-      if (text.length <= verdictOffset) return;
-      for (const line of text.slice(verdictOffset).split("\n")) if (line.trim()) onVerdictLine(line);
-      verdictOffset = text.length;
-    } catch { /* 读失败下次事件再读 */ }
-  };
-  // 文件系统事件（Windows ReadDirectoryChangesW / macOS FSEvents / Linux inotify）：
-  // 裁决落盘的瞬间读到，无轮询空转；watch 不可用的文件系统退化为 2s 兜底。
-  let verdictWatcher: { close(): void } | null = null;
-  try {
-    verdictWatcher = watch(options.dataDir, { recursive: false }, (event, filename) => {
-      if (filename == null || String(filename).replaceAll("\\", "/").endsWith("review-verdicts.jsonl")) readNewVerdicts();
-    });
-    verdictWatcher.unref?.();
-  } catch {
-    const fallback = setInterval(readNewVerdicts, 2000);
-    fallback.unref?.();
-  }
-
   /** pn- 会话 id 的解析：注册表（sessions/*.json 的 reviewId）命中后，活的给 URL，
    *  死的给它的 target——那次会话打开的原始文档路径，可重新 annotate。 */
   const resolveRef = (ref: string): { kind: "live"; url: string } | { kind: "file"; file: string } | { kind: "raw"; ref: string } => {
@@ -722,7 +632,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
             return json({ requirement: found?.requirement ?? null });
           }
           const { priority, notes, title, stage, archived, threads } = input;
-          if (stage !== undefined && stage !== store.get(id)?.requirement.stage) moveStage(id, stage as RequirementStage, "你手动移动", true);
+          if (stage !== undefined && stage !== store.get(id)?.requirement.stage) store.say(id, `阶段：${requirementStageLabel(store.get(id)!.requirement.stage)} → ${requirementStageLabel(stage as RequirementStage)}（手动）`, "阶段");
           return json({ requirement: store.patch(id, { ...(title !== undefined ? { title: title as string } : {}), ...(notes !== undefined ? { notes: notes as string } : {}), ...(stage !== undefined ? { stage: stage as RequirementStage } : {}), ...(priority !== undefined ? { priority: priority as RequirementPriority } : {}), ...(archived !== undefined ? { archived: archived as boolean } : {}), ...(threads !== undefined ? { threads: threads as string[] } : {}) }) });
         }
         if (req.method === "DELETE") {
@@ -770,14 +680,6 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         if (req.method === "POST" && deliverableMatch[1] === undefined) {
           const input = await body(req);
           const deliverable = store.deliver(id, { kind: input.kind as DeliverableKind, ref: input.ref as string, ...(typeof input.title === "string" ? { title: input.title } : {}), by: typeof input.by === "string" ? input.by : null });
-          if (deliverable.entered_review) {
-            // 阶段移动在 store.deliver 里（两条路径同一份规则）；这里补线程通知，让会话不哑进场。
-            const after = store.get(id)?.requirement;
-            const threadId = after?.threads.at(-1);
-            if (threadId && options.notifyThread) {
-              try { options.notifyThread(threadId, `【工坊】需求「${after.title}」已进入「设计评审」：设计文档已挂上，等你评审`); } catch { /* best effort */ }
-            }
-          }
           return json({ deliverable }, 201);
         }
         if (req.method === "DELETE" && deliverableMatch[1] !== undefined) {
@@ -826,8 +728,6 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
             } catch {
               outcome = {};
             }
-            if (outcome.decision === "approved") moveStage(id, "dev", "设计文档已批准，进入需求开发", true);
-            else if (outcome.decision === "annotated") moveStage(id, "design", `设计文档被退回（批注${typeof outcome.annotationCount === "number" ? ` ${outcome.annotationCount} 条` : ""}已带给会话）`, true);
             // dismissed: no verdict, no move, no message.
           })
           .catch(() => {})
