@@ -145,6 +145,7 @@
 .ib-sstr-pending { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted-foreground); }
 .ib-sstr-pending::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); animation: ib-sstr-pulse 1.1s ease-in-out infinite; }
 @keyframes ib-sstr-pulse { 0%, 100% { opacity: 0.35; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
+.ib-sstr-zap { font-size: 11px; color: var(--primary); }
 .ib-sstr-x { margin-left: 2px; background: none; border: none; cursor: pointer; color: var(--muted-foreground); padding: 4px; border-radius: 6px; display: inline-flex; }
 .ib-sstr-x:hover { color: var(--foreground); background: var(--ib-hover); }
 /* 不再是滚动容器：滚动在 ChatTranscript 自己的 pane 里；这里只是它上方的固定件 + 它本身。 */

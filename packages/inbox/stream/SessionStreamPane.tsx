@@ -187,7 +187,11 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
     setBusy(true);
     setWords('');
     try {
-      await sendAsReply(question);
+      const messageId = await sendAsReply(question);
+      // 它正在跑：立即注入运行中的轮次（Send now）——新想法当场打断，不用等这轮跑完。
+      if (sessionBusy === true && messageId) {
+        try { await inboxApi.sendNow(messageId); } catch { /* 注入失败则按排队送达，不丢话 */ }
+      }
       merge([{ i: ++echo.current, t: Date.now(), kind: 'you', text: question }]);
       setAtBottom(true);
     } catch (cause) {
@@ -200,12 +204,15 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
 
   /** The resting-session path: the thread's reply, addressed to its newest agent message. It wakes the session;
    *  the words then show in the thread too — that is the reply's own record, not this pane's doing. */
-  const sendAsReply = async (question: string) => {
+  /** The resting-session path. Returns the person's message id: a busy session's reply can be pushed
+   *  into the running turn right away (Send now) — that is how the stream interrupts a working agent. */
+  const sendAsReply = async (question: string): Promise<string | null> => {
     const read = await inboxApi.thread(threadId);
     const messages = read.thread.messages ?? [];
     const last = [...messages].reverse().find((message) => message.author?.kind === 'agent');
     if (!last) throw new Error('这个线程里还没有会话消息可回复。');
-    await inboxApi.reply(last.id, { idempotency_key: crypto.randomUUID(), words: question, questions: [] });
+    const sent = await inboxApi.reply(last.id, { idempotency_key: crypto.randomUUID(), words: question, questions: [] });
+    return sent.message?.id ?? null;
   };
 
   // 首次进入：历史一大段时 ChatTranscript 的贴底跑在内容撑开高度之前，会停在顶部。
@@ -388,7 +395,7 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
               dir="auto"
               value={words}
               disabled={busy}
-              placeholder="问它、吩咐它…"
+              placeholder={sessionBusy === true ? '它在跑，发出去会立刻注入这一轮…' : '问它、吩咐它…'}
               aria-label="对话"
               onChange={(event) => setWords(event.target.value)}
               onKeyDown={(event) => {
@@ -410,6 +417,7 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
             aria-label="发送"
           >
             {busy ? <span className="ib-spin" aria-hidden="true" /> : <SendGlyph />}
+            {sessionBusy === true && !busy && <span className="ib-sstr-zap" aria-hidden="true">⚡</span>}
           </button>
         </div>
       </div>
