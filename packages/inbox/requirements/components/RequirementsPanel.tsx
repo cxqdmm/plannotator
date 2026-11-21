@@ -31,35 +31,6 @@ function timeOf(iso: string): string {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-/** 每个线程的写入会话是否正在跑一轮（inboxApi.sessions 的 per-thread 轻读，写入者优先）。
- *  工坊的会话行据此常驻展示 运行中；null = 连接没说（不显示）。 */
-function useThreadBusy(threadIds: readonly string[], on: boolean): Record<string, boolean | null> {
-  const [busy, setBusy] = useState<Record<string, boolean | null>>({});
-  const key = threadIds.join(',');
-  useEffect(() => {
-    if (!on || key === '') return;
-    let alive = true;
-    const read = async () => {
-      const ids = key.split(',');
-      const reads = await Promise.all(ids.map(async (id) => {
-        try {
-          const model = await inboxApi.sessions(id);
-          const writer = model.sessions.find((s) => s.wrote_thread) ?? model.sessions[0] ?? null;
-          return [id, writer ? writer.busy : null] as const;
-        } catch {
-          return [id, null] as const;
-        }
-      }));
-      if (!alive) return;
-      setBusy(Object.fromEntries(reads));
-    };
-    void read();
-    const timer = setInterval(() => void read(), 4000);
-    return () => { alive = false; clearInterval(timer); };
-  }, [key, on]);
-  return busy;
-}
-
 /** What the right panel shows. */
 type Panel =
   | { k: 'session'; threadId: string; fileId?: string | null; artifacts?: boolean }
@@ -93,10 +64,6 @@ export function RequirementsPanel({
     [...(list?.sections ?? []).flatMap((s) => s.threads), ...(list?.snoozed ?? []), ...(list?.pins ?? [])].map((row) => [row.thread_id, row]),
   );
 
-  // 会话行的工作状态：每个线程的写入会话 busy（轻读，4s 一轮）。
-  const threadIds = [...new Set((requirements ?? []).flatMap((r) => r.threads))];
-  const threadBusy = useThreadBusy(threadIds, on);
-
   const submitNew = () => {
     const title = draft.trim();
     if (!title) { newDialog.current?.close(); return; }
@@ -114,7 +81,7 @@ export function RequirementsPanel({
         </div>
         <div className="ib-req-wp-cards">
           {(requirements ?? []).map((r) => (
-            <ReqCard key={r.id} requirement={r} rowsByThread={rowsByThread} threadBusy={threadBusy} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
+            <ReqCard key={r.id} requirement={r} rowsByThread={rowsByThread} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
                   // 评审现在总是自起门控会话（子进程自己开浏览器）；只有复用路径带 url 才在这里导航。
                   void reviewDeliverable(reqId, dlvId).then((o) => {
                     if (!o.ok) { onToast({ icon: 'excl', lead: `审阅没能打开：${o.error}`, wrap: true }); return; }
@@ -158,10 +125,9 @@ export function RequirementsPanel({
 
 /* ── A requirement card: icon + wrapping title, hover actions (out of flow), created
  * time pinned right on row 1, and its sessions as rows INSIDE the card. ── */
-function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContexts, onHistory, onNewSession, onToast, onReview }: {
+function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistory, onNewSession, onToast, onReview }: {
   requirement: Requirement;
   rowsByThread: Map<string, unknown>;
-  threadBusy: Record<string, boolean | null>;
   onSession: (threadId: string) => void;
   onContexts: () => void;
   onHistory: () => void;
@@ -208,17 +174,21 @@ function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContex
       {/* 会话就在卡片里：agent 侧栏的行模式 */}
       <div className="ib-req-wcard-sessions">
         {r.threads.map((tid) => {
-          const row = rowsByThread.get(tid) as { subject?: string | null; section?: string } | undefined;
+          const row = rowsByThread.get(tid) as { subject?: string | null; section?: string; run?: 'starting' | 'working' | 'cloning' | null } | undefined;
           const agent = row ? rowAgent(row as never) : null;
           const waiting = row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting';
           const subject = (row?.subject?.trim() ? row.subject : null) ?? '会话';
+          // 工作状态＝收件箱会话行自己的方案：行上的 run 字（启动的会话才有，launch 的 run line 决定），
+          // 同一个字表（InboxList 的 countWords）；event: deliveries 挪动它，这里不自己轮询。
+          // 已归档的会话不在活跃列表里，没有行，也就永远不会显示工作状态。
+          const runWord = row?.run === 'starting' ? '启动中' : row?.run === 'cloning' ? '克隆中' : row?.run === 'working' ? '工作中' : null;
           return (
             <div key={tid} role="button" tabIndex={0} className="ib-req-wcard-sess" onClick={() => onSession(tid)} onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onSession(tid); } }}>
-              <span className={`ib-req-wcard-sess-mk${threadBusy[tid] === true ? ' running' : ''}`}>{agent?.kind === 'agent' ? <HostMark host={agent.host} /> : <Icon name="comment" size={14} />}</span>
+              <span className={`ib-req-wcard-sess-mk${runWord !== null ? ' running' : ''}`}>{agent?.kind === 'agent' ? <HostMark host={agent.host} /> : <Icon name="comment" size={14} />}</span>
               <span className="ib-req-wcard-sess-t" dir="auto">{subject}</span>
-              {threadBusy[tid] === true && (
+              {runWord !== null && (
                 <span className="ib-req-wcard-live">
-                  <span className="ib-spin" aria-hidden="true" /> 运行中
+                  <span className="ib-spin" aria-hidden="true" /> {runWord}
                 </span>
               )}
               {waiting && (

@@ -153,7 +153,9 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
       try {
         const model = await inboxApi.sessions(threadId);
         if (!alive) return;
-        const writer = model.sessions.find((s) => s.wrote_thread) ?? model.sessions[0] ?? null;
+        // 只认在本线程写过字的会话：这份列表装的是整个项目的活跃会话，兜底拿
+        // sessions[0] 会把别的线程正在跑的会话算到本会话头上（已归档会话尤其如此）。
+        const writer = model.sessions.find((s) => s.wrote_thread) ?? null;
         setSessionBusy(writer ? writer.busy : null);
       } catch {
         // Bonus, not the spine.
