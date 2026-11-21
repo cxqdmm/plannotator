@@ -19,14 +19,21 @@ export interface LanDoorState {
 
 const COOKIE = "plannotator-lan";
 
-/** 内网 IPv4（第一个非内部地址）；没有就退回主机名。 */
+/** 内网 IPv4：优先物理网卡（以太网/WLAN），跳过虚拟网卡（WSL 的 vEthernet、
+ *  Default Switch 等）——不然广告出去的链接是个谁也到不了的虚拟地址。 */
 function lanAddress(): string {
-  for (const list of Object.values(networkInterfaces())) {
+  const physical = /^(eth|en\d|wlan|wi-?fi|以太网|本地连接)/i;
+  const virtual = /(vethernet|wsl|virtual|hyper-?v|docker|vbox|vmware|loopback|tailscale|utun|tailscale)/i;
+  const found: { address: string; rank: number }[] = [];
+  for (const [name, list] of Object.entries(networkInterfaces())) {
     for (const net of list ?? []) {
-      if (net.family === "IPv4" && !net.internal) return net.address;
+      if (net.family !== "IPv4" || net.internal) continue;
+      const rank = physical.test(name) ? 2 : virtual.test(name) ? 0 : 1;
+      found.push({ address: net.address, rank });
     }
   }
-  return "127.0.0.1";
+  found.sort((a, b) => b.rank - a.rank);
+  return found[0]?.address ?? "127.0.0.1";
 }
 
 export function createLanDoor(options: { forward: (req: Request) => Promise<Response> | Response }) {
