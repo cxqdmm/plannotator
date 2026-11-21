@@ -51,13 +51,26 @@ export function createLanDoor(options: { forward: (req: Request) => Promise<Resp
       async fetch(req): Promise<Response> {
         const url = new URL(req.url);
         const path = url.pathname;
-        // 入口：验令牌、种 Cookie、回页面。
+        // 入口：验令牌、种 Cookie、回页面。主服务可能把 / 重定向到带会话令牌的
+        // 路径（annotate 的 /s/<token>），重定向不能出本门——这里手动跟到最终页面。
         if (path === `/t/${token}` && req.method === "GET") {
-          const page = await options.forward(new Request("http://lan/", { headers: req.headers }));
-          const headers = new Headers(page.headers);
-          headers.append("Set-Cookie", `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`);
-          headers.set("Cache-Control", "no-store");
-          return new Response(page.body, { status: page.status, headers });
+          const cookie = `${COOKIE}=${token}`;
+          const headers = { cookie: [req.headers.get("cookie"), cookie].filter(Boolean).join("; ") };
+          let target = "/";
+          for (let hop = 0; hop < 6; hop += 1) {
+            const page = await options.forward(new Request(`http://lan${target}`, { headers }));
+            const location = page.headers.get("location");
+            if (page.status >= 300 && page.status < 400 && location) {
+              const next = new URL(location, "http://lan");
+              target = `${next.pathname}${next.search}`;
+              continue;
+            }
+            const out = new Headers(page.headers);
+            out.append("Set-Cookie", `${cookie}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`);
+            out.set("Cache-Control", "no-store");
+            return new Response(page.body, { status: page.status, headers: out });
+          }
+          return new Response("评审入口重定向过多。", { status: 502, headers: { "Content-Type": "text/plain; charset=utf-8" } });
         }
         const cookie = req.headers.get("cookie") ?? "";
         if (!cookie.includes(`${COOKIE}=${token}`)) {
