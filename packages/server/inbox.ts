@@ -4489,6 +4489,10 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
 
   // The Requirements module (「需求」, requirements.ts): storage, routes and the change watch, mounted like Shape's.
   // spawnAnnotate backs 「发起设计文档评审」: this binary's own annotate, gated, its JSON captured on exit.
+  // 手动代码评审的两个幂等登记簿（同设计评审 aliveAnnotateOf 的规矩：重复点击复用，不重开）：
+  // 常驻评审页按项目根复用地址；门控评审一个会话同时只跑一个。
+  const standingReviews = new Map<string, { url: string; stop: () => void }>();
+  const gatedReviews = new Map<string, Bun.Subprocess>();
   const requirements = createBunRequirementRoutes({
     dataDir,
     spawnAnnotate: (file) => {
@@ -4496,8 +4500,11 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
       return Promise.all([new Response(child.stdout).text(), child.exited]).then(([stdout, code]) => ({ stdout, code }));
     },
     // 手动代码评审（工坊入口）：项目根 → 常驻评审页。比较对象（未提交/分支/提交…）页面里随时切。
+    // 幂等：同一项目已有活着的常驻评审页就直接复用它的地址，重复点击打开同一个链接。
     startCodeReview: options.reviewHtml
       ? async (projectRoot) => {
+          const alive = standingReviews.get(projectRoot);
+          if (alive) return { url: alive.url };
           try {
             const prepared = await prepareLocalReviewDiff({ cwd: projectRoot, configuredDiffType: "uncommitted", requestedDiffType: "uncommitted" });
             const server = await startReviewServer({
@@ -4511,6 +4518,7 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
               portEphemeral: true,
               title: `${await detectProjectName(projectRoot) ?? "项目"} · 代码评审`,
             });
+            standingReviews.set(projectRoot, { url: server.url, stop: () => server.stop() });
             return { url: server.url };
           } catch (cause) {
             return { error: cause instanceof Error ? cause.message : String(cause) };
@@ -4527,9 +4535,14 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     // The gated code review a session row starts (会话行入口): one thread's own project root.
     threadProjectRootOf: (threadId) => store.thread(threadId)?.project.root ?? null,
     // 门控代码评审（会话行入口）：门控子进程（页面自开、带 关闭/通过），结论落需求历史并送达该会话。
-    startGatedCodeReview: (projectRoot, requirementId, threadId) => {
+    // 幂等：一个会话同时只有一个评审在跑——重复点击不再起新进程，返回 already。
+    startGatedCodeReview: (projectRoot, requirementId, threadId): "started" | "already" => {
+      const running = gatedReviews.get(threadId);
+      if (running && running.exitCode === null) return "already";
       const child = Bun.spawn([...selfCommand, "review", "--json"], { cwd: projectRoot, stdout: "pipe", stderr: "ignore", stdin: "ignore", windowsHide: true });
+      gatedReviews.set(threadId, child);
       void Promise.all([new Response(child.stdout).text(), child.exited]).then(([stdout]) => {
+        gatedReviews.delete(threadId);
         let verdict: { decision?: unknown; message?: unknown } = {};
         try {
           verdict = JSON.parse(stdout.trim().split("\n").at(-1) ?? "{}") as { decision?: unknown; message?: unknown };
@@ -4548,6 +4561,7 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
         const last = thread ? [...thread.messages].reverse().find((message) => message.author.kind === "agent") : null;
         if (last && label !== "关闭（无结论）") store.sendReply(last.id, { words: `【代码评审·${label}】\n${words}`, questions: [], idempotency_key: `workshop-review-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
       });
+      return "started";
     },
     // The stage-change notifier (stage-auto-design §1): a person-voiced reply to the thread's newest agent
     // message — the same channel the window's reply box uses, so the session wakes and reads it.

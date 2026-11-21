@@ -92,7 +92,7 @@ export async function startCodeReview(id: string): Promise<WriteOutcome<{ url: s
   return write('POST', `/api/requirements/${encodeURIComponent(id)}/code-review`, {});
 }
 /** 门控代码评审（会话行入口）：页面自动弹出、带 关闭/通过，结论落需求历史并送达该会话。 */
-export async function startSessionCodeReview(id: string, threadId: string): Promise<WriteOutcome<{ ok: boolean }>> {
+export async function startSessionCodeReview(id: string, threadId: string): Promise<WriteOutcome<{ ok: boolean; state: 'started' | 'already' }>> {
   return write('POST', `/api/requirements/${encodeURIComponent(id)}/code-review`, { thread_id: threadId });
 }
 export function archiveRequirement(id: string): Promise<WriteOutcome<{ ok: boolean; released: number }>> {

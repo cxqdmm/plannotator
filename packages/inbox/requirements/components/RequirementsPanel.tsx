@@ -245,7 +245,10 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
                   onClick={(ev) => {
                     ev.stopPropagation();
                     void startSessionCodeReview(r.id, tid).then((outcome) => {
-                      onToast(outcome.ok ? { icon: 'check', lead: '评审页已打开；结论将送达本会话并记入需求历史。' } : { icon: 'excl', lead: `代码评审没能打开：${outcome.error}`, wrap: true });
+                      if (!outcome.ok) { onToast({ icon: 'excl', lead: `代码评审没能打开：${outcome.error}`, wrap: true }); return; }
+                      onToast(outcome.answer.state === 'already'
+                        ? { icon: 'clock', lead: '这个会话的评审已在进行中——回到已打开的那个评审页继续。' }
+                        : { icon: 'check', lead: '评审页已打开；结论将送达本会话并记入需求历史。' });
                     });
                   }}
                 >
