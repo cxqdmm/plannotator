@@ -192,11 +192,11 @@ function ReqCard({ requirement: r, rowsByThread, threadBusy, onSession, onContex
               <Menu.Positioner className="ib-pm-pos" side="bottom" align="end" sideOffset={4}>
                 <Menu.Popup className="ib-pm" aria-label={`需求「${r.title}」的操作`}>
                   <Menu.Item className="ib-pmi" label="上下文" onClick={onContexts} data-req-menu="contexts">
-                    <Icon name="book" size={14} /> 上下文（{r.contexts.length}）
+                    上下文（{r.contexts.length}）
                   </Menu.Item>
                   <Menu.Separator className="ib-pm-sep" />
                   <Menu.Item className="ib-pmi" label="归档需求" onClick={() => { void archiveRequirement(r.id).then((o) => { if (!o.ok) onToast({ icon: 'excl', lead: `归档失败：${o.error}`, wrap: true }); }); }} data-req-menu="archive">
-                    <Icon name="archive" size={14} /> 归档（释放全部会话）
+                    归档（释放全部会话）
                   </Menu.Item>
                 </Menu.Popup>
               </Menu.Positioner>
