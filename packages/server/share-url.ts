@@ -1,15 +1,14 @@
 /**
- * Server-side share URL generation for remote sessions
+ * Server-side share URL generation for remote sessions.
  *
- * Generates a share.plannotator.ai URL from plan content so remote users
- * can open the review in their local browser without port forwarding.
+ * This fork ships no external share/paste service (no upload to anyone's
+ * cloud): both endpoints must be a self-hosted one, named by the caller
+ * (PLANNOTATOR_SHARE_URL / PLANNOTATOR_PASTE_URL reach here as
+ * `shareBaseUrl` / `pasteApiUrl`). Nothing is generated without them.
  */
 
 import { compress } from "@plannotator/shared/compress";
 import { encrypt } from "@plannotator/shared/crypto";
-
-const DEFAULT_SHARE_BASE = "https://share.plannotator.ai";
-const DEFAULT_PASTE_API = "https://plannotator-paste.plannotator.workers.dev";
 
 export interface RemoteShareOptions {
   rawHtml?: string;
@@ -20,35 +19,36 @@ export interface RemoteShareOptions {
 /**
  * Generate a share URL from plan markdown content.
  *
- * Returns the full hash-based URL. For remote sessions, this lets the
- * user open the plan in their local browser without any backend needed.
+ * Returns the full hash-based URL, or null when no self-hosted share portal
+ * is configured (this fork's default — sharing stays local).
  */
 export async function generateRemoteShareUrl(
   plan: string,
   shareBaseUrl?: string,
   options: RemoteShareOptions = {},
-): Promise<string> {
-  const base = shareBaseUrl || DEFAULT_SHARE_BASE;
+): Promise<string | null> {
+  if (!shareBaseUrl) return null;
   if (options.rawHtml) {
     // Callers that start from a local file should pass self-contained HTML
     // so sibling assets keep working after the payload leaves the machine.
     return generateRemotePasteShareUrl(
       { p: plan, a: [], h: options.rawHtml, r: "html" },
-      base,
+      shareBaseUrl,
       options.pasteApiUrl,
       options.fetchImpl,
     );
   }
   const hash = await compress({ p: plan, a: [] });
-  return `${base}/#${hash}`;
+  return `${shareBaseUrl}/#${hash}`;
 }
 
 async function generateRemotePasteShareUrl(
   payload: unknown,
   shareBaseUrl: string,
-  pasteApiUrl = DEFAULT_PASTE_API,
+  pasteApiUrl?: string,
   fetchImpl: typeof fetch = fetch,
-): Promise<string> {
+): Promise<string | null> {
+  if (!pasteApiUrl) return null;
   const compressed = await compress(payload);
   const { ciphertext, key } = await encrypt(compressed);
 
@@ -68,11 +68,8 @@ async function generateRemotePasteShareUrl(
     throw new Error("Paste service response missing id");
   }
 
-  const pasteParam =
-    pasteApiUrl !== DEFAULT_PASTE_API
-      ? `&paste=${base64UrlEncode(pasteApiUrl)}`
-      : "";
-  return `${shareBaseUrl}/p/${result.id}#key=${key}${pasteParam}`;
+  // The link always names its paste service: there is no default one any more.
+  return `${shareBaseUrl}/p/${result.id}#key=${key}&paste=${base64UrlEncode(pasteApiUrl)}`;
 }
 
 function base64UrlEncode(value: string): string {
@@ -109,8 +106,15 @@ export async function writeRemoteShareLink(
   noun: string,
   options: RemoteShareOptions = {},
 ): Promise<void> {
+  if (!shareBaseUrl && !options.rawHtml) return; // sharing off: nothing to say
   try {
     const shareUrl = await generateRemoteShareUrl(content, shareBaseUrl, options);
+    if (!shareUrl) {
+      // A paste upload was wanted (rawHtml) but no self-hosted paste service is
+      // configured. Say so once, quietly — the local page still works.
+      process.stderr.write(`\n  (Sharing is off: no self-hosted paste service configured for ${noun}.)\n\n`);
+      return;
+    }
     const size = formatSize(new TextEncoder().encode(shareUrl).length);
     process.stderr.write(
       `\n  Open this link on your local machine to ${verb}:\n` +

@@ -1102,11 +1102,14 @@ describe("resolveGuideShareUrl", () => {
 });
 
 describe("resolveSharingEnabled", () => {
-  test("env wins over config; default enabled", () => {
-    expect(resolveSharingEnabled({}, {})).toBe(true);
-    expect(resolveSharingEnabled({ share: "disabled" }, {})).toBe(false);
+  test("env wins over config; this fork defaults off until a self-hosted share/paste URL is named", () => {
+    expect(resolveSharingEnabled({}, {})).toBe(false);
+    expect(resolveSharingEnabled({}, { PLANNOTATOR_SHARE_URL: "https://share.internal" })).toBe(true);
+    expect(resolveSharingEnabled({}, { PLANNOTATOR_PASTE_URL: "https://paste.internal" })).toBe(true);
+    expect(resolveSharingEnabled({ share: "disabled" }, { PLANNOTATOR_SHARE_URL: "https://share.internal" })).toBe(false);
     expect(resolveSharingEnabled({ share: "disabled" }, { PLANNOTATOR_SHARE: "enabled" })).toBe(true);
     expect(resolveSharingEnabled({}, { PLANNOTATOR_SHARE: "disabled" })).toBe(false);
+    expect(resolveSharingEnabled({}, { PLANNOTATOR_SHARE: "enabled" })).toBe(true);
   });
 });
 

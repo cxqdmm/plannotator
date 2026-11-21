@@ -2395,7 +2395,9 @@ export function resolveSharingEnabled(config: PlannotatorConfig, env: NodeJS.Pro
   const envVal = env.PLANNOTATOR_SHARE;
   if (envVal !== undefined) return envVal !== "disabled";
   if (config.share !== undefined) return config.share !== "disabled";
-  return true;
+  // This fork ships no external share/paste service: sharing stays off until a
+  // self-hosted one is named (PLANNOTATOR_SHARE_URL / PLANNOTATOR_PASTE_URL).
+  return !!(env.PLANNOTATOR_SHARE_URL || env.PLANNOTATOR_PASTE_URL);
 }
 
 /** Where shared Guided Reviews are uploaded by default (guide share hosting contract, §7). */

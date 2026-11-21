@@ -9,7 +9,9 @@ interface LandingProps {
 }
 
 export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
-  const demoUrl = shareBaseUrl || "https://share.plannotator.ai";
+  // This fork ships no external share portal: the demo link only appears when
+  // a self-hosted one is configured.
+  const demoUrl = shareBaseUrl;
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Nav */}
@@ -113,7 +115,7 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
                       />
                     </svg>
                   </button>
-                ) : (
+                ) : demoUrl ? (
                   <a
                     href={demoUrl}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
@@ -133,7 +135,7 @@ export const Landing: React.FC<LandingProps> = ({ onEnter, shareBaseUrl }) => {
                       />
                     </svg>
                   </a>
-                )}
+                ) : null}
               </div>
 
               {/* OpenCode video link */}

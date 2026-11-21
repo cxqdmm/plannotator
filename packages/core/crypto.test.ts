@@ -30,7 +30,9 @@ function decompress(b64: string): unknown {
   return JSON.parse(new TextDecoder().decode(decompressed));
 }
 
-const PASTE_API = "https://plannotator-paste.plannotator.workers.dev";
+// This fork uploads to no one's cloud: the paste E2E below runs only against a
+// self-hosted paste service named by PLANNOTATOR_PASTE_URL.
+const PASTE_API = process.env.PLANNOTATOR_PASTE_URL;
 
 // Realistic plan payload matching SharePayload shape
 const SAMPLE_PAYLOAD = {
@@ -107,9 +109,9 @@ describe("full pipeline: compress → encrypt → decrypt → decompress", () =>
   });
 });
 
-// --- Integration tests (hit live paste service) ---
+// --- Integration tests (self-hosted paste service, opt-in via PLANNOTATOR_PASTE_URL) ---
 
-describe("live paste service E2E", () => {
+describe.skipIf(!PASTE_API)("self-hosted paste service E2E", () => {
   test("encrypt → POST → GET → decrypt → decompress", async () => {
     // 1. Compress
     const compressed = await compress(SAMPLE_PAYLOAD);

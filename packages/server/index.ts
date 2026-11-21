@@ -116,7 +116,7 @@ export interface ServerOptions {
   permissionMode?: string;
   /** Whether URL sharing is enabled (default: true) */
   sharingEnabled?: boolean;
-  /** Custom base URL for share links (default: https://share.plannotator.ai) */
+  /** Self-hosted share portal base URL for share links (this fork has no default: unset = sharing off) */
   shareBaseUrl?: string;
   /** Base URL of the paste service API for short URL sharing */
   pasteApiUrl?: string;

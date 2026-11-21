@@ -192,18 +192,23 @@ function buildSourceArray(annotations: Annotation[]): (string | undefined)[] | n
 }
 
 /**
- * Generate a full shareable URL from plan and annotations
+ * Generate a full shareable URL from plan and annotations.
+ *
+ * This fork has no external share portal: `baseUrl` must name a self-hosted
+ * one (the server passes PLANNOTATOR_SHARE_URL through). Nothing is
+ * generated without it — sharing stays local.
  */
 export async function generateShareUrl(
   markdown: string,
   annotations: Annotation[],
   globalAttachments?: ImageAttachment[],
-  baseUrl: string = DEFAULT_SHARE_BASE,
+  baseUrl?: string,
   rawHtml?: string,
   renderAs?: DocumentRenderAs,
 ): Promise<string | null> {
   // HTML content is too large for URL hashes — force paste service path
   if (rawHtml) return null;
+  if (!baseUrl) return null;
   const diffContexts = buildDiffContextArray(annotations);
   const sources = buildSourceArray(annotations);
   const payload: SharePayload = {
@@ -252,10 +257,12 @@ export function formatUrlSize(url: string): string {
 
 // ---------------------------------------------------------------------------
 // Short URL support (paste-service backed)
+//
+// This fork uploads to NO ONE by default: `pasteApiUrl`/`shareBaseUrl` must
+// name a self-hosted paste service and share portal (PLANNOTATOR_PASTE_URL /
+// PLANNOTATOR_SHARE_URL reach here from the server config). Unconfigured →
+// null, with no network request at all.
 // ---------------------------------------------------------------------------
-
-const DEFAULT_PASTE_API = 'https://plannotator-paste.plannotator.workers.dev';
-const DEFAULT_SHARE_BASE = 'https://share.plannotator.ai';
 
 export class ShortShareUrlError extends Error {
   constructor(message: string) {
@@ -267,8 +274,8 @@ export class ShortShareUrlError extends Error {
 /**
  * Create a short share URL by posting compressed plan data to the paste service.
  *
- * Returns `{ shortUrl, id }` on success, or `null` when the paste service is
- * unavailable (e.g. self-hosted environments without a paste backend). Callers
+ * Returns `{ shortUrl, id }` on success, or `null` when no self-hosted paste
+ * service is configured (this fork's default) or it is unreachable. Callers
  * should fall back to the hash-based URL in that case.
  *
  * The request has a 5-second timeout so UI responsiveness is not affected.
@@ -278,16 +285,17 @@ export async function createShortShareUrl(
   annotations: Annotation[],
   globalAttachments?: ImageAttachment[],
   options?: {
-    /** Override the paste API base URL (default: https://plannotator-paste.plannotator.workers.dev) */
+    /** The self-hosted paste API base URL; no request is made without it. */
     pasteApiUrl?: string;
-    /** Override the share site base URL used in the returned short link */
+    /** The self-hosted share site base URL used in the returned short link. */
     shareBaseUrl?: string;
   },
   rawHtml?: string,
   renderAs?: DocumentRenderAs,
 ): Promise<{ shortUrl: string; id: string } | null> {
-  const pasteApi = options?.pasteApiUrl ?? DEFAULT_PASTE_API;
-  const shareBase = options?.shareBaseUrl ?? DEFAULT_SHARE_BASE;
+  const pasteApi = options?.pasteApiUrl;
+  const shareBase = options?.shareBaseUrl;
+  if (!pasteApi || !shareBase) return null;
 
   try {
     const diffContexts = buildDiffContextArray(annotations);
@@ -303,7 +311,7 @@ export async function createShortShareUrl(
 
     const compressed = await compress(payload);
 
-    // Encrypt before uploading — server only sees ciphertext
+    // Encrypt before uploading — the service only sees ciphertext
     const { ciphertext, key } = await encrypt(compressed);
 
     const response = await fetch(`${pasteApi}/api/paste`, {
@@ -322,11 +330,8 @@ export async function createShortShareUrl(
     }
 
     const result = (await response.json()) as { id: string };
-    // Embed paste origin in fragment when non-default so the share portal can
-    // fetch from the right service without a server.
-    const pasteParam = pasteApi !== DEFAULT_PASTE_API
-      ? `&paste=${btoa(pasteApi).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')}`
-      : '';
+    // The link always names its paste service: there is no default one any more.
+    const pasteParam = `&paste=${btoa(pasteApi).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')}`;
     const shortUrl = `${shareBase}/p/${result.id}#key=${key}${pasteParam}`;
 
     return { shortUrl, id: result.id };
@@ -334,8 +339,8 @@ export async function createShortShareUrl(
     if (e instanceof ShortShareUrlError) {
       throw e;
     }
-    // Service unavailable — expected for self-hosted setups without a paste backend.
-    // The caller is responsible for falling back to hash-based sharing silently.
+    // Service unavailable — the caller is responsible for falling back to
+    // hash-based sharing silently.
     return null;
   }
 }
@@ -353,13 +358,16 @@ async function readPasteError(response: Response, fallback: string): Promise<str
  * Load plan data from a paste service using the paste ID embedded in a short URL.
  *
  * Fetches the compressed payload from `<pasteApiUrl>/api/paste/<pasteId>` and
- * decompresses it into a `SharePayload`. Returns `null` on any failure.
+ * decompresses it into a `SharePayload`. Returns `null` on any failure —
+ * including no paste URL at all (short links name their own service in the
+ * fragment, so a self-hosted link still loads without configuration).
  */
 export async function loadFromPasteId(
   pasteId: string,
-  pasteApiUrl: string = DEFAULT_PASTE_API,
+  pasteApiUrl?: string,
   encryptionKey?: string
 ): Promise<SharePayload | null> {
+  if (!pasteApiUrl) return null;
   try {
     const response = await fetch(`${pasteApiUrl}/api/paste/${pasteId}`, {
       signal: AbortSignal.timeout(10_000),

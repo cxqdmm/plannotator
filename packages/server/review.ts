@@ -317,7 +317,7 @@ export interface ReviewServerOptions {
    * approve-carrying items, exactly the pre-PR5 behavior.
    */
   approvalNotesSupported?: boolean;
-  /** Custom base URL for share links (default: https://share.plannotator.ai) */
+  /** Self-hosted share portal base URL for share links (this fork has no default: unset = sharing off) */
   shareBaseUrl?: string;
   /** Called when server starts with the URL, remote status, and port */
   onReady?: (url: string, isRemote: boolean, port: number) => void | Promise<void>;
