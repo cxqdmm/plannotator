@@ -588,7 +588,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
   let verdictWatcher: { close(): void } | null = null;
   try {
     verdictWatcher = watch(options.dataDir, { recursive: false }, (event, filename) => {
-      if (filename == null || String(filename).replaceAll( + BS + BS + , "/").endsWith("review-verdicts.jsonl")) readNewVerdicts();
+      if (filename == null || String(filename).replaceAll("\\", "/").endsWith("review-verdicts.jsonl")) readNewVerdicts();
     });
     verdictWatcher.unref?.();
   } catch {
