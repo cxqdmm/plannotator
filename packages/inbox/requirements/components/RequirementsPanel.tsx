@@ -246,9 +246,13 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
                     ev.stopPropagation();
                     void startSessionCodeReview(r.id, tid).then((outcome) => {
                       if (!outcome.ok) { onToast({ icon: 'excl', lead: `代码评审没能打开：${outcome.error}`, wrap: true }); return; }
-                      onToast(outcome.answer.state === 'already'
-                        ? { icon: 'clock', lead: '这个会话的评审已在进行中——回到已打开的那个评审页继续。' }
-                        : { icon: 'check', lead: '评审页已打开；结论将送达本会话并记入需求历史。' });
+                      if (outcome.answer.state === 'already') {
+                        // 标签被手动关掉不会杀门控子进程：评审其实还活着——把同一个链接重新打开（同设计评审的复用路径）。
+                        if (outcome.answer.url) window.open(outcome.answer.url, '_blank', 'noreferrer');
+                        onToast({ icon: 'clock', lead: outcome.answer.url ? '这个会话的评审还在进行中——已重新打开那个评审页。' : '这个会话的评审已在进行中，评审页即将弹出。' });
+                        return;
+                      }
+                      onToast({ icon: 'check', lead: '评审页已打开；结论将送达本会话并记入需求历史。' });
                     });
                   }}
                 >

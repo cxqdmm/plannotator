@@ -213,7 +213,7 @@ import { bitbucketRefReader, createRefCards, readSignedInHosts, refCliRunner, ty
 import { closePull, reopenAllowed, reopenPull, PULL_REOPEN_WINDOW_MS } from "@plannotator/shared/inbox-pull-close";
 import { mergePull } from "@plannotator/shared/inbox-pull-merge";
 import { createInboxProjectRoots, folderHoldsOtherWork, guessableProjects, isHomeOrRootFolder, nearestProjectHolding, type InboxGitRunner } from "./inbox-project-root";
-import { handleFavicon } from "./shared-handlers";
+import { handleFavicon, SESSION_READY_LINE_PREFIX } from "./shared-handlers";
 import { createInboxAttachmentRoutes } from "./inbox-attachments";
 import { createInboxLiveSites, type InboxLiveBridgeSources, type InboxLiveSites } from "./inbox-live";
 import type { WebFraming } from "./inbox-web-prototypes";
@@ -4492,7 +4492,7 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
   // 手动代码评审的两个幂等登记簿（同设计评审 aliveAnnotateOf 的规矩：重复点击复用，不重开）：
   // 常驻评审页按项目根复用地址；门控评审一个会话同时只跑一个。
   const standingReviews = new Map<string, { url: string; stop: () => void }>();
-  const gatedReviews = new Map<string, Bun.Subprocess>();
+  const gatedReviews = new Map<string, { child: Bun.Subprocess; url: string | null }>();
   const requirements = createBunRequirementRoutes({
     dataDir,
     spawnAnnotate: (file) => {
@@ -4535,12 +4535,32 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     // The gated code review a session row starts (会话行入口): one thread's own project root.
     threadProjectRootOf: (threadId) => store.thread(threadId)?.project.root ?? null,
     // 门控代码评审（会话行入口）：门控子进程（页面自开、带 关闭/通过），结论落需求历史并送达该会话。
-    // 幂等：一个会话同时只有一个评审在跑——重复点击不再起新进程，返回 already。
-    startGatedCodeReview: (projectRoot, requirementId, threadId): "started" | "already" => {
+    // 幂等：一个会话同时只有一个评审在跑——重复点击不再起新进程，返回 already 连同仍在进行的评审页地址
+    // （手动关掉浏览器标签不杀子进程：把同一个链接还给点击处重新打开，同设计评审的复用路径）。
+    startGatedCodeReview: (projectRoot, requirementId, threadId): { state: "started" | "already"; url: string | null } => {
       const running = gatedReviews.get(threadId);
-      if (running && running.exitCode === null) return "already";
-      const child = Bun.spawn([...selfCommand, "review", "--json"], { cwd: projectRoot, stdout: "pipe", stderr: "ignore", stdin: "ignore", windowsHide: true });
-      gatedReviews.set(threadId, child);
+      if (running && running.child.exitCode === null) return { state: "already", url: running.url };
+      const child = Bun.spawn([...selfCommand, "review", "--json"], { cwd: projectRoot, stdout: "pipe", stderr: "pipe", stdin: "ignore", windowsHide: true });
+      const entry: { child: Bun.Subprocess; url: string | null } = { child, url: null };
+      gatedReviews.set(threadId, entry);
+      // 子进程把自己的评审页地址打进 stderr（「Plannotator session ready: <url>」）——接住它，
+      // 重复点击时才有同一个链接可回。不读 stderr 管道会积满卡住子进程，所以必须一直读到完。
+      void (async () => {
+        const reader = (child.stderr as ReadableStream<Uint8Array>).getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith(SESSION_READY_LINE_PREFIX)) entry.url = trimmed.slice(SESSION_READY_LINE_PREFIX.length).trim();
+          }
+        }
+      })();
       void Promise.all([new Response(child.stdout).text(), child.exited]).then(([stdout]) => {
         gatedReviews.delete(threadId);
         let verdict: { decision?: unknown; message?: unknown } = {};
@@ -4561,7 +4581,7 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
         const last = thread ? [...thread.messages].reverse().find((message) => message.author.kind === "agent") : null;
         if (last && label !== "关闭（无结论）") store.sendReply(last.id, { words: `【代码评审·${label}】\n${words}`, questions: [], idempotency_key: `workshop-review-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
       });
-      return "started";
+      return { state: "started", url: null };
     },
     // The stage-change notifier (stage-auto-design §1): a person-voiced reply to the thread's newest agent
     // message — the same channel the window's reply box uses, so the session wakes and reads it.
