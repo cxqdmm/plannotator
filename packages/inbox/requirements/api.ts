@@ -87,6 +87,10 @@ export function annotateDeliverable(id: string, deliverableId: string): Promise<
 }
 
 /** 归档需求：退场并释放全部会话（线程解除挂载，回到收件箱本身）。 */
+/** 手动代码评审（工坊入口）：按该需求会话的项目起一个常驻评审页。 */
+export async function startCodeReview(id: string): Promise<WriteOutcome<{ url: string }>> {
+  return write('POST', `/api/requirements/${encodeURIComponent(id)}/code-review`, {});
+}
 export function archiveRequirement(id: string): Promise<WriteOutcome<{ ok: boolean; released: number }>> {
   return write('POST', `/api/requirements/${encodeURIComponent(id)}/archive`, {});
 }

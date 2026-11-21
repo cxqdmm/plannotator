@@ -381,7 +381,7 @@ async function reportDebugNeedsStart(dataDir: string): Promise<void> {
 }
 
 /** Run the Inbox server in this process until a signal or the stop route ends it. */
-async function serveInbox(dataDir: string, open: boolean, htmlContent: string | undefined, tailscale: boolean, connect: boolean): Promise<never> {
+async function serveInbox(dataDir: string, open: boolean, htmlContent: string | undefined, tailscale: boolean, connect: boolean, reviewHtml?: () => string): Promise<never> {
   // A detached Inbox runs under its starter's lock; anyone else takes it, so
   // two people (or a person and an agent) never start two writers on one store.
   const lockHeldByStarter = process.env[LOCK_HELD_ENV] === "1";
@@ -427,6 +427,7 @@ async function serveInbox(dataDir: string, open: boolean, htmlContent: string | 
       dataDir,
       version: getCliVersion() ?? "dev",
       htmlContent,
+      reviewHtml,
       // Live sites (packages/server/inbox-live.ts): the live bridge's sources, as annotate's live sessions get them.
       liveBridge: { bridgeScript: BRIDGE_SCRIPT, bridgeBootstrap: LIVE_BRIDGE_BOOTSTRAP, annotationCss: ANNOTATION_HIGHLIGHT_CSS },
       selfCommand: selfCommand(),
@@ -742,6 +743,12 @@ export interface InboxCommandAssets {
    * only serving needs the page, and every agent session keeps an `inbox mcp` process running.
    */
   htmlContent?: () => string;
+  /**
+   * Reads the built code-review page (`apps/hook/dist/review.html`): the
+   * workshop's 手动代码评审 starts standing review servers from the Inbox
+   * process, which needs the page. A function like htmlContent.
+   */
+  reviewHtml?: () => string;
   /** The global `--json` flag (index.ts takes it out of the arguments first); `status` reads it, `stop` and `restart` refuse it. */
   json?: boolean;
 }
@@ -914,7 +921,7 @@ export async function runInboxCommand(args: readonly string[], assets: InboxComm
     if (connect) await connectRunningInbox(entry);
     process.exit(0);
   }
-  return serveInbox(dataDir, !noOpen, assets.htmlContent?.(), tailscale, connect);
+  return serveInbox(dataDir, !noOpen, assets.htmlContent?.(), tailscale, connect, assets.reviewHtml);
 }
 
 /**

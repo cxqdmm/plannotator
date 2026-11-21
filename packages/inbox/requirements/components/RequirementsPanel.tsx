@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { HostMark, Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
-import { addContext, annotateDeliverable, archiveRequirement, readRequirement, removeContext, reviewDeliverable } from '../api';
+import { addContext, annotateDeliverable, archiveRequirement, readRequirement, removeContext, reviewDeliverable, startCodeReview } from '../api';
 import { inboxApi } from '../../api';
 import { EmbeddedThread } from '../EmbeddedThread';
 import { putThread } from '../../data/queries/thread';
@@ -179,6 +179,10 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
                 <Menu.Popup className="ib-pm" aria-label={`需求「${r.title}」的操作`}>
                   <Menu.Item className="ib-pmi" label="上下文" onClick={onContexts} data-req-menu="contexts">
                     <Icon name="book" size={15} /> 上下文（{r.contexts.length}）
+                  </Menu.Item>
+                  {/* 手动代码评审（v1）：按本需求会话的项目起常驻评审页；比较对象在页面里随时切。 */}
+                  <Menu.Item className="ib-pmi" label="代码评审" data-req-menu="code-review" onClick={() => { void startCodeReview(r.id).then((outcome) => { if (outcome.ok) window.open(outcome.answer.url, '_blank', 'noreferrer'); else onToast({ icon: 'excl', lead: `代码评审没能打开：${outcome.error}`, wrap: true }); }); }}>
+                    <Icon name="gitBranch" size={15} /> 代码评审
                   </Menu.Item>
                   <Menu.Separator className="ib-pm-sep" />
                   <Menu.Item className="ib-pmi" label="归档需求" onClick={() => { void archiveRequirement(r.id).then((o) => { if (!o.ok) onToast({ icon: 'excl', lead: `归档失败：${o.error}`, wrap: true }); }); }} data-req-menu="archive">

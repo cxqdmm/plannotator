@@ -24,6 +24,7 @@ import {
   type DiagramEngineSource,
 } from "@plannotator/shared/diagram-engine-assets";
 import { isRemoteSession, getServerHostname, startBunServerOnAvailablePort, buildAdvertisedUrl, getLocalUrlHostname } from "./remote";
+import { createLanDoor } from "./lan-door";
 import { isSshTunnelRequest, notePeer } from "./this-machine";
 import { createRequestHostGuard } from "./request-host-guard";
 import { withPlannotatorServerHeader } from "./plannotator-server-marker";
@@ -2329,6 +2330,8 @@ export async function startReviewServer(
   });
 
   const requestHostGuard = createRequestHostGuard();
+  /** 局域网门（lan-door.ts）：主人按需开关的令牌直达入口。 */
+  let lanDoor: ReturnType<typeof createLanDoor> | null = null;
   const server = await startBunServerOnAvailablePort((port) =>
     Bun.serve(withPlannotatorServerHeader({
         hostname: getServerHostname(),
@@ -2362,6 +2365,24 @@ export async function startReviewServer(
             ...(options.tailnetPublished === true ? { fromThisMachine: (r: Request) => sessionTailnetAudience(r) === "local" } : {}),
           });
           if (hostControlResponse) return hostControlResponse;
+
+          // 局域网门（方案 B）：主人开/关一个带令牌的二次监听，内网同事浏览器直达本评审；
+          // 门内只读（写接口在门口就挡了），GET 状态 + POST 开关。门转发的请求到不了这里。
+          if (url.pathname === "/api/lan-share" && (req.method === "GET" || req.method === "POST")) {
+            if (req.method === "GET") return Response.json(lanDoor?.state() ?? { on: false, url: null }, { headers: { "Cache-Control": "no-store" } });
+            const lanBody = await req.json().catch(() => ({})) as { on?: unknown };
+            if (lanBody.on === true) {
+              lanDoor ??= createLanDoor({
+                forward: (doorReq) => {
+                  const from = new URL(doorReq.url);
+                  return fetch(new Request(`http://127.0.0.1:${boundPort}${from.pathname}${from.search}`, doorReq));
+                },
+              });
+              return Response.json(lanDoor.start(), { headers: { "Cache-Control": "no-store" } });
+            }
+            lanDoor?.stop();
+            return Response.json({ on: false, url: null }, { headers: { "Cache-Control": "no-store" } });
+          }
 
           // API: Get tour result
           if (url.pathname.match(/^\/api\/tour\/[^/]+$/) && req.method === "GET") {

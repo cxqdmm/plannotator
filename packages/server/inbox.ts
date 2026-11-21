@@ -363,6 +363,9 @@ import { shapeCodeRoot } from "@plannotator/shared/shape/store";
 import { shapeEventFrame } from "@plannotator/shared/shape/routes";
 import { shapeAgentName, unlocked as unlockedShape } from "@plannotator/shared/shape/routes";
 import { SHAPE_SWITCH_NOT_SAVED, setShapeSwitch, shapeSwitchOn } from "@plannotator/shared/shape/switch";
+import { startReviewServer } from "./review";
+import { prepareLocalReviewDiff } from "./vcs";
+import { detectProjectName } from "./project";
 import { answerInboxCapabilities, capabilitiesWire, checkInboxCapabilities, inboxCapabilities, namesInboxCapability, routeInboxCapabilities, startInboxCapabilities } from "./inbox-capability";
 import {
   agentSpec,
@@ -521,6 +524,13 @@ export interface InboxServerOptions {
    * saying so.
    */
   htmlContent?: string;
+  /**
+   * The code-review page (apps/hook dist review.html), read lazily: the
+   * workshop's 手动代码评审 (POST /api/requirements/:id/code-review) starts a
+   * standing review server for the requirement's project and hands the URL
+   * back. Absent: that route answers 501.
+   */
+  reviewHtml?: () => string;
   /** The live bridge's sources for live sites (`inbox-live.ts`), passed by the CLI as annotate's are, so the server never imports ui. Absent: sites are listed but do not open. */
   liveBridge?: InboxLiveBridgeSources;
   /** Tests: how long a live site's proxy lives with no open or ping (default `INBOX_LIVE_IDLE_MS`, 10 minutes). */
@@ -4485,6 +4495,26 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
       const child = Bun.spawn([...selfCommand, "annotate", file, "--gate", "--json"], { stdout: "pipe", stderr: "ignore", stdin: "ignore", windowsHide: true });
       return Promise.all([new Response(child.stdout).text(), child.exited]).then(([stdout, code]) => ({ stdout, code }));
     },
+    // 手动代码评审（工坊入口）：项目根 → 常驻评审页。比较对象（未提交/分支/提交…）页面里随时切。
+    startCodeReview: options.reviewHtml
+      ? async (projectRoot) => {
+          try {
+            const prepared = await prepareLocalReviewDiff({ cwd: projectRoot, configuredDiffType: "uncommitted", requestedDiffType: "uncommitted" });
+            const server = await startReviewServer({
+              htmlContent: options.reviewHtml!(),
+              rawPatch: prepared.rawPatch,
+              gitRef: prepared.gitRef,
+              error: prepared.error,
+              gitContext: prepared.gitContext,
+              diffType: prepared.diffType,
+              title: `${await detectProjectName(projectRoot) ?? "项目"} · 代码评审`,
+            });
+            return { url: server.url };
+          } catch (cause) {
+            return { error: cause instanceof Error ? cause.message : String(cause) };
+          }
+        }
+      : undefined,
     // An agent delivers from its working folder: its relative paths resolve against the project root of the
     // requirement's first linked thread.
     projectRootOf: (requirementId) => {
