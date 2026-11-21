@@ -36,6 +36,28 @@ function lanAddress(): string {
   return found[0]?.address ?? "127.0.0.1";
 }
 
+/**
+ * 门 → 主服务的转发：以主服务自己的回环主机名发（Host: 127.0.0.1:<port>），同事的
+ * 原始主机名保进 X-Forwarded-Host。会话有主机名准入（request-host.ts：只认回环和
+ * PLANNOTATOR_ALLOWED_HOSTS），把同事浏览器带进来的 Host（192.168.x.x:门端口）原样
+ * 转过去会被主服务 403 拒掉——页面壳能进（入口分支另造请求），子资源 /assets/* 全挂。
+ * 三个服务面（index/annotate/review）共用这一个转发。
+ */
+export function forwardToSession(req: Request, port: number | undefined): Promise<Response> {
+  // 主服务还没绑上端口（理论到不了：路由活着就意味着已绑定）——诚实回 503 而不是转发到废地址。
+  if (port === undefined) return Promise.resolve(new Response("会话端口还没就绪，稍后再试。", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }));
+  const from = new URL(req.url);
+  const headers = new Headers(req.headers);
+  headers.set("x-forwarded-host", from.host);
+  headers.set("host", `127.0.0.1:${port}`);
+  return fetch(new Request(`http://127.0.0.1:${port}${from.pathname}${from.search}`, {
+    method: req.method,
+    headers,
+    body: req.body,
+    ...(req.body ? { duplex: "half" as const } : {}),
+  }));
+}
+
 export function createLanDoor(options: { forward: (req: Request) => Promise<Response> | Response }) {
   const doorRequests = new WeakSet<Request>();
   let server: ReturnType<typeof Bun.serve> | null = null;

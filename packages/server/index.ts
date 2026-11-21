@@ -20,7 +20,7 @@ import type { Origin } from "@plannotator/shared/agents";
 import { isAbsolute, resolve } from "path";
 import { statSync } from "node:fs";
 import { isRemoteSession, getServerHostname, startBunServerOnAvailablePort, buildAdvertisedUrl, getLocalUrlHostname } from "./remote";
-import { createLanDoor } from "./lan-door";
+import { createLanDoor, forwardToSession } from "./lan-door";
 import { createRequestHostGuard } from "./request-host-guard";
 import { withPlannotatorServerHeader } from "./plannotator-server-marker";
 import { isSameOriginRequest, refuseCrossOriginWrite } from "./request-origin-guard";
@@ -531,10 +531,7 @@ export async function startPlannotatorServer(
             const body = await req.json().catch(() => ({})) as { on?: unknown };
             if (body.on === true) {
               lanDoor ??= createLanDoor({
-                forward: (doorReq) => {
-                  const from = new URL(doorReq.url);
-                  return fetch(new Request(`http://127.0.0.1:${boundPort}${from.pathname}${from.search}`, doorReq));
-                },
+                forward: (doorReq) => forwardToSession(doorReq, boundPort),
               });
               return Response.json(lanDoor.start(), { headers: { "Cache-Control": "no-store" } });
             }

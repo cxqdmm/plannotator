@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createLanDoor } from "./lan-door";
+import { createLanDoor, forwardToSession } from "./lan-door";
 
 /** 起一个假主服务（回环），门转发到它。 */
 async function withMain(serve: (req: Request, path: string) => Response | Promise<Response>, run: (mainPort: number) => Promise<void>) {
@@ -46,6 +46,20 @@ describe("lan-door", () => {
         door.stop();
         expect(door.state()).toEqual({ on: false, url: null });
         await expect(fetch(`http://127.0.0.1:${door.port}/api/plan`, { headers: { cookie } })).rejects.toThrow();
+      },
+    );
+  });
+
+  test("转发以主服务自己的回环主机名发：上游看到 Host 127.0.0.1:<port>，同事原主机名在 X-Forwarded-Host", async () => {
+    await withMain(
+      (req) => Response.json({ host: req.headers.get("host"), xfh: req.headers.get("x-forwarded-host") }),
+      async (mainPort) => {
+        // 同事浏览器带进来的 Host 是内网 IP + 门端口——原样转发会被主服务的主机名准入 403。
+        const seen = await forwardToSession(new Request("http://192.168.1.11:59999/assets/index-abc.js", { headers: { host: "192.168.1.11:59999" } }), mainPort);
+        expect(seen.status).toBe(200);
+        const echoed = (await seen.json()) as { host: string | null; xfh: string | null };
+        expect(echoed.host).toBe(`127.0.0.1:${mainPort}`);
+        expect(echoed.xfh).toBe("192.168.1.11:59999");
       },
     );
   });
