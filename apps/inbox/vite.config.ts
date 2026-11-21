@@ -18,6 +18,14 @@ export const sharedConfig = defineConfig({
   server: {
     port: 3003,
     host: '127.0.0.1',
+    // 开发直连：窗口的 API 全部转发给本机常驻的 Inbox（开发基建——UI 迭代不再需要
+    // 每轮 27MB 整包构建）。端口取 PLANNOTATOR_INBOX_PORT，默认注册表常用的 65455。
+    proxy: {
+      '/api': {
+        target: process.env.PLANNOTATOR_INBOX_PORT ? `http://127.0.0.1:${process.env.PLANNOTATOR_INBOX_PORT}` : 'http://127.0.0.1:65455',
+        changeOrigin: true,
+      },
+    },
   },
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
