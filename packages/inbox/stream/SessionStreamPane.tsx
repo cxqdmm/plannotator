@@ -214,7 +214,8 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
     const last = [...messages].reverse().find((message) => message.author?.kind === 'agent');
     if (!last) throw new Error('这个线程里还没有会话消息可回复。');
     const sent = await inboxApi.reply(last.id, { idempotency_key: crypto.randomUUID(), words: question, questions: [] });
-    return sent.message?.id ?? null;
+    // 服务器把发出的消息放在 reply（held 路径为 null）；ReplyResult 把它标成 unknown，这里只取 id 做 Send now。
+    return (sent.reply as { id?: string } | null | undefined)?.id ?? null;
   };
 
   // 首次进入：历史一大段时 ChatTranscript 的贴底跑在内容撑开高度之前，会停在顶部。

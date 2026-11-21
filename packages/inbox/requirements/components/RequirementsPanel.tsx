@@ -6,7 +6,6 @@
  * beside the list; the list narrows, the panel fills the rest.
  */
 import { useEffect, useRef, useState } from 'react';
-import { ChatMarkdown } from '@plannotator/ui/components/chat';
 import { HostMark, Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
@@ -58,13 +57,11 @@ type Panel =
 export function RequirementsPanel({
   on,
   openThreadId = null,
-  onOpenThread,
   onCompose,
   onToast,
 }: {
   on: boolean;
   openThreadId?: string | null;
-  onOpenThread: (threadId: string) => void;
   onCompose: (requirementId: string, requirementTitle: string, contexts: { id: string; kind: string; name: string; image?: boolean }[]) => void;
   onToast: (toast: unknown, ms?: number) => void;
 }) {
@@ -122,7 +119,7 @@ export function RequirementsPanel({
           <EmbeddedThread threadId={panel.threadId} fileId={panel.fileId ?? null} artifacts={panel.artifacts ?? false} onToast={onToast} onClose={() => setPanel(null)} onChanged={() => { void inboxApi.thread(panel.threadId).then((r) => putThread(queryClient, panel.threadId, r)); }} />
         ) : (
           <div className="ib-req-wp-panel">
-            <PanelContent panel={panel} requirements={requirements ?? []} rowsByThread={rowsByThread} onClose={() => setPanel(null)} onOpenThread={onOpenThread} queryClient={queryClient} onOpenSessionFile={(threadId, fileId) => setPanel({ k: 'session', threadId, fileId })} onToast={onToast} onReview={(reqId, dlvId) => {
+            <PanelContent panel={panel} requirements={requirements ?? []} onClose={() => setPanel(null)} onToast={onToast} onReview={(reqId, dlvId) => {
                   // 评审现在总是自起门控会话（子进程自己开浏览器）；只有复用路径带 url 才在这里导航。
                   void reviewDeliverable(reqId, dlvId).then((o) => {
                     if (!o.ok) { onToast({ icon: 'excl', lead: `审阅没能打开：${o.error}`, wrap: true }); return; }
@@ -373,19 +370,15 @@ function ContextsBody({ requirementId, contexts, onChanged, onError }: {
 }
 
 /* ── The right panel's content ── */
-function PanelContent({ panel, requirements, rowsByThread, onClose, onOpenThread, queryClient, onOpenSessionFile, onReview, onToast }: {
+function PanelContent({ panel, requirements, onClose, onReview, onToast }: {
   panel: NonNullable<Panel>;
   requirements: Requirement[];
-  rowsByThread: Map<string, unknown>;
   onClose: () => void;
-  onOpenThread: (threadId: string) => void;
-  queryClient: import('@tanstack/react-query').QueryClient;
-  onOpenSessionFile: (threadId: string, fileId: string | null) => void;
   onReview: (reqId: string, deliverableId: string) => void;
   onToast: (toast: unknown, ms?: number) => void;
 }) {
   const [error, setError] = useState<string | null>(null);
-  const [annotating, setAnnotating] = useState<string | null>(null);
+  const [, setAnnotating] = useState<string | null>(null);
   /** 上下文增删后 +1，重读详情。 */
   const [bump, setBump] = useState(0);
   const [detail, setDetail] = useState<{ requirement: Requirement; events: RequirementEvent[] } | null>(null);

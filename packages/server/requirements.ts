@@ -704,7 +704,8 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         if (reviewsInFlight.has(`review:${id}`)) {
           // 关掉了浏览器标签不会杀门控子进程：锁还在，评审页其实活着——按同一文档找回它，
           // 把地址还给点击处（重新贴上标签页），而不是把人关在门外。
-          const target = fileTargetOf(id, deliverableAt(id, decodeURIComponent(reviewMatch[1]!)).deliverable.ref);
+          const at = deliverableAt(id, decodeURIComponent(reviewMatch[1]!));
+          const target = "error" in at ? null : fileTargetOf(id, at.deliverable.ref);
           const reopen = target && "file" in target ? aliveAnnotateOf(target.file) : target && "url" in target ? target.url : null;
           if (reopen) return json({ ok: true, url: reopen, reopened: true });
           return json({ error: "This requirement's review is already open.", code: "review_in_flight" }, 409);
@@ -714,13 +715,14 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         // 评审不复用：裁决必须由本次 spawn 的 stdout 捕获（复用别人的会话 = 没人读它的 verdict，
         // 批准后阶段不动）。批注端点才复用。pn- 解出文档路径后照常自起门控评审。
         const reviewTarget = fileTargetOf(id, found.deliverable.ref);
-        if (!reviewTarget || !/\.(md|markdown|txt|html?)$/i.test(reviewTarget.file)) return json({ error: "Only documents open for review.", code: "not_reviewable" }, 415);
-        if (!existsSync(reviewTarget.file)) return json({ error: `设计文档不在磁盘上：${reviewTarget.file}（会话的工作区可能已删除或移动）`, code: "doc_missing" }, 404);
+        const reviewFile = reviewTarget && "file" in reviewTarget ? reviewTarget.file : null;
+        if (!reviewFile || !/\.(md|markdown|txt|html?)$/i.test(reviewFile)) return json({ error: "Only documents open for review.", code: "not_reviewable" }, 415);
+        if (!existsSync(reviewFile)) return json({ error: `设计文档不在磁盘上：${reviewFile}（会话的工作区可能已删除或移动）`, code: "doc_missing" }, 404);
         const key = `review:${id}`;
         reviewsInFlight.add(key);
         const doc = found.deliverable;
         void options
-          .spawnAnnotate(reviewTarget.file)
+          .spawnAnnotate(reviewFile)
           .then(({ stdout }) => {
             let outcome: { decision?: unknown; feedback?: unknown; annotationCount?: unknown } = {};
             try {

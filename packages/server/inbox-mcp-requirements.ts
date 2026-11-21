@@ -15,7 +15,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod";
-import { DELIVERABLE_KINDS, DELIVERABLE_KIND_LABELS, REQUIREMENT_STAGES, requirementStageLabel, type DeliverableKind, type Requirement } from "@plannotator/core/requirements-types";
+import { DELIVERABLE_KINDS, DELIVERABLE_KIND_LABELS, REQUIREMENT_STAGES, isRequirementStage, requirementStageLabel, type DeliverableKind, type Requirement, type RequirementStage } from "@plannotator/core/requirements-types";
 import type { RequirementStore } from "./requirements";
 import { guarded, okComplete } from "./inbox-mcp-result";
 
@@ -85,7 +85,7 @@ async function runRequirementCall(context: { requirements?: RequirementStore }, 
   }
   if (op === "stage") {
     const to = typeof input.stage === "string" ? (input.stage as RequirementStage) : null;
-    if (!to || !isRequirementStage(to)) return { text: `stage: one of ${STAGE_WORDS.join(", ")}.` };
+    if (!to || !isRequirementStage(to)) return { text: `stage: one of ${REQUIREMENT_STAGES.map((stage) => stage.label).join(", ")}.` };
     const before = found.requirement.stage;
     if (before === to) return { text: `Already ${requirementStageLabel(to)}.` };
     const moved = store.patch(requirementId, { stage: to });
