@@ -223,16 +223,16 @@ export const PlanHeaderMenu: React.FC<PlanHeaderMenuProps> = ({
               label="复制分享链接"
             />
           )}
-          {sharingEnabled && (
-            <ActionMenuItem
-              onClick={() => {
-                closeMenu();
-                onOpenImport();
-              }}
-              icon={<ImportIcon />}
-              label="导入评审"
-            />
-          )}
+          {/* 导入是纯本地动作（合并意见/队友批注），不随链接分享的开关走：
+              本 fork 链接分享默认关，导入必须常在。 */}
+          <ActionMenuItem
+            onClick={() => {
+              closeMenu();
+              onOpenImport();
+            }}
+            icon={<ImportIcon />}
+            label="导入评审"
+          />
 
           {anyNotesAppConfigured && (
             <>
