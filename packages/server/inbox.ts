@@ -4507,6 +4507,8 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
               error: prepared.error,
               gitContext: prepared.gitContext,
               diffType: prepared.diffType,
+              // 临时端口：常驻服务可多开，不占 PLANNOTATOR_PORT/远程固定端口。
+              portEphemeral: true,
               title: `${await detectProjectName(projectRoot) ?? "项目"} · 代码评审`,
             });
             return { url: server.url };
@@ -4521,6 +4523,31 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
       const record = requirements.store.list(false).requirements.find((entry) => entry.id === requirementId);
       const threadId = record?.threads[0];
       return threadId ? store.thread(threadId)?.project.root ?? null : null;
+    },
+    // The gated code review a session row starts (会话行入口): one thread's own project root.
+    threadProjectRootOf: (threadId) => store.thread(threadId)?.project.root ?? null,
+    // 门控代码评审（会话行入口）：门控子进程（页面自开、带 关闭/通过），结论落需求历史并送达该会话。
+    startGatedCodeReview: (projectRoot, requirementId, threadId) => {
+      const child = Bun.spawn([...selfCommand, "review", "--json"], { cwd: projectRoot, stdout: "pipe", stderr: "ignore", stdin: "ignore", windowsHide: true });
+      void Promise.all([new Response(child.stdout).text(), child.exited]).then(([stdout]) => {
+        let verdict: { decision?: unknown; message?: unknown } = {};
+        try {
+          verdict = JSON.parse(stdout.trim().split("\n").at(-1) ?? "{}") as { decision?: unknown; message?: unknown };
+        } catch {
+          return; // 子进程没给出结论（启动失败等）：stderr 已忽略，不写空记录。
+        }
+        const label = verdict.decision === "approved" ? "通过" : verdict.decision === "annotated" ? "请求修改" : verdict.decision === "dismissed" ? "关闭（无结论）" : null;
+        if (!label) return;
+        const words = typeof verdict.message === "string" ? verdict.message : "";
+        try {
+          requirements.store.say(requirementId, `代码评审：${label}${words ? `。反馈：${words.slice(0, 400)}` : ""}`, "代码评审");
+        } catch {
+          // 评审期间需求被删：无处落档，意见仍送达会话。
+        }
+        const thread = store.thread(threadId);
+        const last = thread ? [...thread.messages].reverse().find((message) => message.author.kind === "agent") : null;
+        if (last && label !== "关闭（无结论）") store.sendReply(last.id, { words: `【代码评审·${label}】\n${words}`, questions: [], idempotency_key: `workshop-review-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
+      });
     },
     // The stage-change notifier (stage-auto-design §1): a person-voiced reply to the thread's newest agent
     // message — the same channel the window's reply box uses, so the session wakes and reads it.

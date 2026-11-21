@@ -145,7 +145,12 @@ export function getServerPort(): number {
  */
 export async function startBunServerOnAvailablePort<TServer>(
   startServer: (port: number) => TServer,
+  options: { ephemeral?: boolean } = {},
 ): Promise<TServer> {
+  // 临时端口（工坊的常驻评审页等"长命又可多开"的服务）：不受 PLANNOTATOR_PORT
+  // 与远程模式固定端口的约束——固定端口是给"本机约定地址"的会话用的，长命服务
+  // 占住它会饿死后来者。
+  if (options.ephemeral) return startServer(0);
   const { ports: configuredPorts, isRange } = getServerPortConfiguration();
   const fromEnv = Boolean(process.env.PLANNOTATOR_PORT && parsePortSelection(process.env.PLANNOTATOR_PORT));
   const portsToTry = isRange

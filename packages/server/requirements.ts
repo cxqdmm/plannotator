@@ -153,7 +153,7 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
   } as Requirement;
 }
 
-export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null; /** Whether a thread's row waits on the person (the Board's You-line idea), for the reads' computed flag. */ waitingOf?: (threadId: string) => boolean; /** The stage-change notifier (stage-auto-design §1): a person-voiced reply into the requirement's newest session. */ notifyThread?: (threadId: string, words: string) => void; /** Stop the launched session a thread owns (the workshop's archive releases Inbox-spawned agents). */ stopLaunchOf?: (threadId: string) => Promise<unknown>; /** 手动起一个该项目的代码评审（工坊入口）：返回评审页地址。 */ startCodeReview?: (projectRoot: string) => Promise<{ url: string } | { error: string }> }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
+export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null; /** Whether a thread's row waits on the person (the Board's You-line idea), for the reads' computed flag. */ waitingOf?: (threadId: string) => boolean; /** The stage-change notifier (stage-auto-design §1): a person-voiced reply into the requirement's newest session. */ notifyThread?: (threadId: string, words: string) => void; /** Stop the launched session a thread owns (the workshop's archive releases Inbox-spawned agents). */ stopLaunchOf?: (threadId: string) => Promise<unknown>; /** 手动起一个该项目的代码评审（工坊入口）：返回评审页地址。 */ startCodeReview?: (projectRoot: string) => Promise<{ url: string } | { error: string }>; /** The project root of one thread, for the gated code review a session row starts. */ threadProjectRootOf?: (threadId: string) => string | null; /** 门控代码评审（会话行入口）：起评审子进程（页面自开、带 关闭/通过），结论由实现方落历史并送达会话；不等待，立即返回。 */ startGatedCodeReview?: (projectRoot: string, requirementId: string, threadId: string) => void }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
   /** waiting, computed on reads: any linked session's thread waits on the person. */
   const withWaiting = (record: Requirement): Requirement => {
     const waitingThread = record.threads.find((threadId) => options.waitingOf?.(threadId) === true);
@@ -675,10 +675,21 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         store.say(id, `需求已归档，${released.length} 个会话已释放${stopped > 0 ? `，其中 ${stopped} 个 Inbox 启动的会话已停止` : ""}`, "归档");
         return json({ ok: true, released: released.length, stopped });
       }
-      // 手动代码评审（工坊入口）：按该需求会话所在项目起一个常驻评审页，比较对象在页面里随时切。
+      // 手动代码评审（工坊入口）。两种形态：
+      //  · 无 thread_id：常驻评审页（不下结论，比较对象页面里随时切）；
+      //  · 带 thread_id：门控评审——页面自动弹出、带 关闭/通过，结论落需求历史并送达该会话。
       const codeReviewMatch = deeper === "code-review" && req.method === "POST";
       if (codeReviewMatch) {
-        if (!options.startCodeReview) return json({ error: "This Inbox cannot start a code review here.", code: "no_runtime" }, 501);
+        const input = await body(req);
+        const threadId = typeof input.thread_id === "string" && input.thread_id ? input.thread_id : null;
+        if (threadId) {
+          if (!options.startGatedCodeReview) return json({ error: "这个收件箱无法在这里发起代码评审。", code: "no_runtime" }, 501);
+          const root = options.threadProjectRootOf?.(threadId) ?? null;
+          if (!root) return json({ error: "该会话没有可评审的项目目录。", code: "no_project" }, 409);
+          options.startGatedCodeReview(root, id, threadId);
+          return json({ ok: true, opened: true });
+        }
+        if (!options.startCodeReview) return json({ error: "这个收件箱无法在这里发起代码评审。", code: "no_runtime" }, 501);
         const root = options.projectRootOf?.(id) ?? null;
         if (!root) return json({ error: "该需求还没有会话，无法确定要评审的项目；先开启一个会话再发起代码评审。", code: "no_project" }, 409);
         const started = await options.startCodeReview(root);

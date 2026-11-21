@@ -253,6 +253,8 @@ export interface ReviewServerOptions {
   refRunner?: RefRunner;
   /** Raw git diff patch string */
   rawPatch: string;
+  /** Bind an ephemeral port (the workshop's standing code-review pages): no PLANNOTATOR_PORT, no remote fixed port. */
+  portEphemeral?: boolean;
   /** Git ref used for the diff (e.g., "HEAD", "main..HEAD", "--staged") */
   gitRef: string;
   /** Error message if git diff failed */
@@ -2332,8 +2334,9 @@ export async function startReviewServer(
   const requestHostGuard = createRequestHostGuard();
   /** 局域网门（lan-door.ts）：主人按需开关的令牌直达入口。 */
   let lanDoor: ReturnType<typeof createLanDoor> | null = null;
-  const server = await startBunServerOnAvailablePort((port) =>
-    Bun.serve(withPlannotatorServerHeader({
+  const server = await startBunServerOnAvailablePort(
+    (port) =>
+      Bun.serve(withPlannotatorServerHeader({
         hostname: getServerHostname(),
         port,
         // Bun's default 10s idleTimeout kills requests that legitimately park:
@@ -4683,6 +4686,8 @@ export async function startReviewServer(
           );
         },
     })),
+    // 工坊常驻评审页：临时端口（不受 PLANNOTATOR_PORT/远程固定端口约束，可多开不互占）。
+    ...(options.portEphemeral === true ? [{ ephemeral: true }] : []),
   );
 
   const port = server.port!;

@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { HostMark, Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
-import { addContext, annotateDeliverable, archiveRequirement, readRequirement, removeContext, reviewDeliverable, startCodeReview } from '../api';
+import { addContext, annotateDeliverable, archiveRequirement, readRequirement, removeContext, reviewDeliverable, startCodeReview, startSessionCodeReview } from '../api';
 import { inboxApi } from '../../api';
 import { EmbeddedThread } from '../EmbeddedThread';
 import { putThread } from '../../data/queries/thread';
@@ -180,9 +180,16 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
                   <Menu.Item className="ib-pmi" label="上下文" onClick={onContexts} data-req-menu="contexts">
                     <Icon name="book" size={15} /> 上下文（{r.contexts.length}）
                   </Menu.Item>
-                  {/* 手动代码评审（v1）：按本需求会话的项目起常驻评审页；比较对象在页面里随时切。 */}
-                  <Menu.Item className="ib-pmi" label="代码评审" data-req-menu="code-review" onClick={() => { void startCodeReview(r.id).then((outcome) => { if (outcome.ok) window.open(outcome.answer.url, '_blank', 'noreferrer'); else onToast({ icon: 'excl', lead: `代码评审没能打开：${outcome.error}`, wrap: true }); }); }}>
-                    <Icon name="gitBranch" size={15} /> 代码评审
+                  {/* 手动代码评审（v1）：按本需求会话的项目起常驻评审页；比较对象在页面里随时切。
+                      占位标签同步开（保留用户手势），成功后定向——异步 window.open 会被弹窗拦截静默吞掉。 */}
+                  <Menu.Item className="ib-pmi" label="代码评审" data-req-menu="code-review" onClick={() => {
+                    const tab = window.open('', '_blank');
+                    void startCodeReview(r.id).then((outcome) => {
+                      if (outcome.ok) { if (tab) tab.location.href = outcome.answer.url; else window.open(outcome.answer.url, '_blank', 'noreferrer'); }
+                      else { tab?.close(); onToast({ icon: 'excl', lead: `代码评审没能打开：${outcome.error}`, wrap: true }); }
+                    });
+                  }}>
+                    <Icon name="gitBranch" size={15} /> 代码评审（常驻查看）
                   </Menu.Item>
                   <Menu.Separator className="ib-pm-sep" />
                   <Menu.Item className="ib-pmi" label="归档需求" onClick={() => { void archiveRequirement(r.id).then((o) => { if (!o.ok) onToast({ icon: 'excl', lead: `归档失败：${o.error}`, wrap: true }); }); }} data-req-menu="archive">
@@ -228,6 +235,23 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
                   </span>
                 </>
               )}
+              {/* 门控代码评审（挂会话）：页面自开、带 关闭/通过，结论落需求历史并送达本会话。 */}
+              <Tip content="代码评审 · 结论送达本会话">
+                <button
+                  type="button"
+                  className="ib-req-wcard-sess-codereview"
+                  aria-label={`对 ${subject} 的项目发起代码评审`}
+                  data-req-code-review=""
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    void startSessionCodeReview(r.id, tid).then((outcome) => {
+                      onToast(outcome.ok ? { icon: 'check', lead: '评审页已打开；结论将送达本会话并记入需求历史。' } : { icon: 'excl', lead: `代码评审没能打开：${outcome.error}`, wrap: true });
+                    });
+                  }}
+                >
+                  <Icon name="gitBranch" size={13} />
+                </button>
+              </Tip>
               {(() => {
                 // 审阅融合进会话：待审的设计文档挂在最新会话上（产出它的那个），按类型选图标。
                 if (r.stage !== 'design-review' || tid !== r.threads[r.threads.length - 1]) return null;
