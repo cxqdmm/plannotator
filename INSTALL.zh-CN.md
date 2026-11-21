@@ -175,5 +175,7 @@ plugin/
 ## 常见问题
 
 - **界面上看不到工坊**：工坊在收件箱窗口的侧栏；若侧栏没有，确认装的是本 fork 的二进制（`plannotator --version` 出的版本对应 fork 的 Release），而不是官方版。
+- **新建会话里没有某个 agent（比如 OpenCode）**：收件箱按**自己进程的 PATH** 判断能启动哪些 agent——先装 agent、后开收件箱就天然没问题；**收件箱运行期间新装了 agent，要重启收件箱**（`plannotator inbox restart`）它才认得。
+- **完全无外网的机器**：plannotator 自身离线可用；但 Claude Code / OpenCode 这些 agent 要跑，机器必须能连到各自的模型 API（内网没有这条通路的话 agent 本身起不来，与 plannotator 无关）。收件箱的自动更新检查在内网会安静失败（“无法检查更新”的小字），不影响使用，版本更新由发版人重新发包。
 - **mac 首次运行被拦**（“无法验证开发者”或文件被隔离）：见第 2 步的 `xattr` 命令；二进制每次更新后都要再执行一次。
 - **数据在哪**：全部在本机用户目录下（plans、需求、设置各归其位），不联网、不上传；卸载用 `plannotator uninstall`（默认保留你的数据）。
