@@ -250,6 +250,8 @@ import type { DiffFile, AnnotationScrollTarget } from './types';
 import { annotationMatchesPrScope, proseAnnotationMatchesPr } from './utils/annotationScope';
 import { annotationNavigation, reanchorCodeAnnotations, restorableViewedFiles } from '@plannotator/ui/utils/codeAnnotationAnchor';
 import { localReviewDraftTransport, withLocalReviewTarget } from './utils/localReviewDraft';
+import { isLanReviewFeedback, type LanReviewFeedback } from './utils/lanReviewFeedback';
+import { compress, decompress } from '@plannotator/core/compress';
 import type { DiffOption, WorktreeInfo, GitContext, SinceBaseSections, CommitDiffInfo, ReviewSourceKind } from '@plannotator/shared/types';
 import { SectionsPanel } from './components/SectionsPanel';
 import type { ReviewPanelHeaderModel } from './components/ReviewPanelHeader';
@@ -588,6 +590,10 @@ const ReviewApp: React.FC = () => {
       return lanShare.url;
     }
   }, [lanShare.url]);
+  /** 导入评审（门链接）：把同事交回的批注快照取回本页（可重复导入，去重）。 */
+  const [lanImportUrl, setLanImportUrl] = useState('');
+  const [lanImportBusy, setLanImportBusy] = useState(false);
+  const [lanImportResult, setLanImportResult] = useState<{ ok: boolean; text: string } | null>(null);
   // 打开导出弹窗时读一次门的现状（门开着换个标签回来，弹窗里该直接是开着的）。
   useEffect(() => {
     if (!showExportModal) return;
@@ -1373,6 +1379,63 @@ const ReviewApp: React.FC = () => {
     const count = merged.length + items.descriptionAnnotations.length + items.commentAnnotations.length;
     toast.success(`已为${prMetadata ? `这个 ${mrLabel}` : '这次评审'}恢复 ${count} 条未发送的评论`);
   };
+
+  // 门内批注自动交回（局域网分享，同事侧）：批注一变（防抖 800ms）就把三路批注的快照
+  // 压串 POST 给门，随链接保存——评审主人在本页「导出与分享」的导入区粘门链接取回。
+  // 快照内容寻址（无时间戳）：同一状态压出同一串，门端去重只存一份；首次交回提示一次。
+  const lanFeedbackToastedRef = useRef(false);
+  useEffect(() => {
+    if (!lanReadOnly) return;
+    if (allAnnotations.length + descriptionAnnotations.length + commentAnnotations.length === 0) return;
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          const hash = await compress({ review: true, annotations: allAnnotations, descriptionAnnotations, commentAnnotations } satisfies LanReviewFeedback);
+          const res = await fetch('/api/lan-feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hash }) });
+          if (!res.ok || lanFeedbackToastedRef.current) return;
+          lanFeedbackToastedRef.current = true;
+          toast.success('批注已自动交回评审主人');
+        } catch { /* 静默：下次批注变化随防抖再试 */ }
+      })();
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [lanReadOnly, allAnnotations, descriptionAnnotations, commentAnnotations]);
+
+  // 导入评审（你侧）：粘门链接 → 拉门上快照 → 只认代码评审形状 → 去重后走草稿恢复
+  // 同一条锚定管线（reanchorCodeAnnotations 按当前 diff 重挂，挂不上标过期不丢）。
+  const importLanFeedback = useCallback(async () => {
+    const doorMatch = lanImportUrl.trim().match(/^(https?:\/\/[^/]+)\/t\/([0-9a-f]{16,64})\/?$/);
+    if (!doorMatch) { setLanImportResult({ ok: false, text: '不是局域网分享链接——应形如 http://内网IP:端口/t/令牌' }); return; }
+    setLanImportBusy(true);
+    try {
+      const res = await fetch(`${doorMatch[1]}/api/lan-feedback?token=${doorMatch[2]}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const items = (await res.json()) as { items?: unknown };
+      const hashes = Array.isArray(items.items) ? items.items.filter((h): h is string => typeof h === 'string') : [];
+      if (hashes.length === 0) { setLanImportResult({ ok: false, text: '链接上还没有交回的批注——让同事在分享页面添加批注后重试' }); return; }
+      const payloads = (await Promise.all(hashes.map((h) => decompress(h)))).filter(isLanReviewFeedback);
+      if (payloads.length === 0) { setLanImportResult({ ok: false, text: '链接上没有代码评审页的批注（可能只有设计评审页的）' }); return; }
+      const annotationKey = (a: CodeAnnotation) => `${a.filePath}|${a.lineStart}|${a.lineEnd}|${a.side}|${a.type}|${a.text ?? ''}`;
+      const existing = new Set(allAnnotations.map(annotationKey));
+      const freshSeen = new Set<string>();
+      const fresh = payloads.flatMap((p) => p.annotations).filter((a) => {
+        const key = annotationKey(a);
+        if (existing.has(key) || freshSeen.has(key)) return false;
+        freshSeen.add(key);
+        return true;
+      });
+      const freshDescription = payloads.flatMap((p) => p.descriptionAnnotations).filter((d) => !descriptionAnnotations.some((e) => e.originalText === d.originalText && e.text === d.text));
+      const freshComment = payloads.flatMap((p) => p.commentAnnotations).filter((c) => !commentAnnotations.some((e) => e.text === c.text));
+      const count = fresh.length + freshDescription.length + freshComment.length;
+      if (count === 0) { setLanImportResult({ ok: true, text: '没有可导入的新批注（全部已存在）' }); return; }
+      draftTargetMergeRef.current({ annotations: fresh, descriptionAnnotations: freshDescription, commentAnnotations: freshComment, patchChanged: false });
+      setLanImportResult({ ok: true, text: `已导入 ${count} 条批注（已按当前 diff 重新锚定）` });
+    } catch (e) {
+      setLanImportResult({ ok: false, text: `导入失败：${e instanceof Error ? e.message : String(e)}——评审会话可能已关闭` });
+    } finally {
+      setLanImportBusy(false);
+    }
+  }, [lanImportUrl, allAnnotations, descriptionAnnotations, commentAnnotations]);
 
   const handleRestoreDraft = useCallback(() => {
     reviewHistory.clear();
@@ -6934,6 +6997,38 @@ const ReviewApp: React.FC = () => {
               <div className="flex-1 overflow-auto p-4">
                 {/* 分享到局域网：与导出弹窗（annotate/plan 面）共用同一张卡。 */}
                 <LanShareCard lanShareUrl={lanShare.url} onToggle={toggleLanShare} />
+                {/* 导入评审：粘门链接取回同事批注（同设计评审页的导入，认局域网链接）。 */}
+                <div className="border border-border rounded-lg p-4 bg-muted/40 mt-4" data-lan-import="">
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                    导入评审
+                  </label>
+                  <p className="text-[11px] text-muted-foreground mb-3">
+                    把分享出去的局域网链接粘进来，取回同事在分享页面添加的批注——行级批注按当前 diff 重新锚定，可重复导入，已存在的自动跳过。
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={lanImportUrl}
+                      onChange={(e) => setLanImportUrl(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !lanImportBusy && lanImportUrl.trim()) void importLanFeedback(); }}
+                      placeholder="http://192.168.x.x:端口/t/令牌"
+                      className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-xs font-mono focus:outline-none"
+                      data-lan-import-url=""
+                    />
+                    <button
+                      onClick={() => void importLanFeedback()}
+                      disabled={lanImportBusy || !lanImportUrl.trim()}
+                      className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                      data-lan-import-button=""
+                    >
+                      {lanImportBusy ? '导入中…' : '导入'}
+                    </button>
+                  </div>
+                  {lanImportResult && (
+                    <p className={`mt-2 text-[11px] ${lanImportResult.ok ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                      {lanImportResult.text}
+                    </p>
+                  )}
+                </div>
                 <div className="text-xs text-muted-foreground mb-2 mt-4">
                   {allAnnotations.length} 条标注
                 </div>

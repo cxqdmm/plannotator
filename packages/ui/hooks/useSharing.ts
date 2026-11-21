@@ -485,7 +485,12 @@ export function useSharing(
         if (hashes.length === 0) {
           return { success: true, count: 0, planTitle: '局域网评审', error: '这个链接上还没有交回的批注 —— 让同事在分享页面添加批注后重试' };
         }
-        payloads = await Promise.all(hashes.map((hash) => decompress(hash) as Promise<SharePayload>));
+        const all = await Promise.all(hashes.map((hash) => decompress(hash) as Promise<SharePayload>));
+        // 门不挑形状：代码评审页交回的快照这里不认（也解不出标注），跳过而不是报错。
+        payloads = all.filter((p) => !(p && typeof p === 'object' && (p as { review?: unknown }).review === true));
+        if (payloads.length === 0) {
+          return { success: false, count: 0, planTitle: '', error: '这个链接上是代码评审页的批注——请到代码评审页的「导出与分享」里导入' };
+        }
       } else {
         // Check for short URL pattern: /p/<id> with optional #key=<key> fragment
         const shortMatch = url.match(/\/p\/([A-Za-z0-9]{6,16})(?:#(.*))?(?:\?|$)/);
