@@ -114,13 +114,10 @@ export function RequirementsPanel({
         <div className="ib-req-wp-cards">
           {(requirements ?? []).map((r) => (
             <ReqCard key={r.id} requirement={r} rowsByThread={rowsByThread} threadBusy={threadBusy} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
-                  // 同步开空窗保住手势；复用成功带 url 就导航，spawn 成功由子进程开浏览器，失败关窗报错。
-                  const win = window.open('about:blank', '_blank');
+                  // 评审现在总是自起门控会话（子进程自己开浏览器）；只有复用路径带 url 才在这里导航。
                   void reviewDeliverable(reqId, dlvId).then((o) => {
-                    const url = o.ok ? o.answer.url : undefined;
-                    if (url && win) win.location.href = url;
-                    else if (!o.ok) { win?.close(); onToast({ icon: 'excl', lead: `审阅没能打开：${o.error}`, wrap: true }); }
-                    else win?.close();
+                    if (!o.ok) { onToast({ icon: 'excl', lead: `审阅没能打开：${o.error}`, wrap: true }); return; }
+                    if (o.answer.url) window.open(o.answer.url, '_blank', 'noreferrer');
                   });
                 }} />
           ))}
@@ -135,13 +132,10 @@ export function RequirementsPanel({
         ) : (
           <div className="ib-req-wp-panel">
             <PanelContent panel={panel} requirements={requirements ?? []} rowsByThread={rowsByThread} onClose={() => setPanel(null)} onOpenThread={onOpenThread} queryClient={queryClient} onOpenSessionFile={(threadId, fileId) => setPanel({ k: 'session', threadId, fileId })} onToast={onToast} onReview={(reqId, dlvId) => {
-                  // 同步开空窗保住手势；复用成功带 url 就导航，spawn 成功由子进程开浏览器，失败关窗报错。
-                  const win = window.open('about:blank', '_blank');
+                  // 评审现在总是自起门控会话（子进程自己开浏览器）；只有复用路径带 url 才在这里导航。
                   void reviewDeliverable(reqId, dlvId).then((o) => {
-                    const url = o.ok ? o.answer.url : undefined;
-                    if (url && win) win.location.href = url;
-                    else if (!o.ok) { win?.close(); onToast({ icon: 'excl', lead: `审阅没能打开：${o.error}`, wrap: true }); }
-                    else win?.close();
+                    if (!o.ok) { onToast({ icon: 'excl', lead: `审阅没能打开：${o.error}`, wrap: true }); return; }
+                    if (o.answer.url) window.open(o.answer.url, '_blank', 'noreferrer');
                   });
                 }} />
           </div>
@@ -468,18 +462,11 @@ function PanelContent({ panel, requirements, rowsByThread, onClose, onOpenThread
                         if (underReview) { onReview(reqId, dlvId); return; }
                         if (/^https?:/.test(ref)) { window.open(ref, '_blank', 'noreferrer'); return; }
                         {
-                          // 同步开空窗保住用户手势（异步回调里的 window.open 会被弹窗拦截吞掉），拿到地址再导航。
-                          const win = window.open('about:blank', '_blank');
                           setAnnotating(e.id ?? ref);
                           void annotateDeliverable(reqId, dlvId).then((o) => {
                             setAnnotating(null);
-                            const url = o.ok ? o.answer.url : undefined;
-                            if (url && win) win.location.href = url;
-                            else {
-                              win?.close();
-                              setError(o.ok ? '没有可打开的地址。' : o.error);
-                              onToast({ icon: 'excl', lead: o.ok ? '没有可打开的地址。' : `预览没能打开：${o.error}`, wrap: true });
-                            }
+                            if (!o.ok) { setError(o.error); onToast({ icon: 'excl', lead: `预览没能打开：${o.error}`, wrap: true }); return; }
+                            if (o.answer.url) window.open(o.answer.url, '_blank', 'noreferrer');
                           });
                         }
                       }}

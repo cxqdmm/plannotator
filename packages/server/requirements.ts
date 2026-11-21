@@ -757,6 +757,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         // 批准后阶段不动）。批注端点才复用。pn- 解出文档路径后照常自起门控评审。
         const reviewTarget = fileTargetOf(id, found.deliverable.ref);
         if (!reviewTarget || !/\.(md|markdown|txt|html?)$/i.test(reviewTarget.file)) return json({ error: "Only documents open for review.", code: "not_reviewable" }, 415);
+        if (!existsSync(reviewTarget.file)) return json({ error: `设计文档不在磁盘上：${reviewTarget.file}（会话的工作区可能已删除或移动）`, code: "doc_missing" }, 404);
         const key = `review:${id}`;
         reviewsInFlight.add(key);
         const doc = found.deliverable;
