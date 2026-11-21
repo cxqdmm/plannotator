@@ -58,6 +58,8 @@
    竖线只在"等你"存在时出现在它左侧。 */
 .ib-req-wcard-live { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; background: color-mix(in oklab, var(--primary) 14%, transparent); color: var(--primary); font-size: 10.5px; font-weight: 650; }
 .ib-req-wcard-hold { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; background: var(--ib-badge-hold-bg); color: var(--ib-badge-hold-fg, currentcolor); font-size: 10.5px; font-weight: 650; }
+/* 已归档：灰调徽章——展示照旧，只多这个字样 */
+.ib-req-wcard-arch { flex: none; display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; background: var(--muted); color: var(--muted-foreground); font-size: 10.5px; font-weight: 650; }
 .ib-req-wcard-sep { flex: none; width: 1px; height: 12px; border-radius: 1px; background: var(--ib-hair, var(--border)); margin: 0 2px; }
 
 /* ── The right panel ── */

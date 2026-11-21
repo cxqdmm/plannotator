@@ -21,6 +21,7 @@ import { Tip } from '../../components/Tip';
 import { Menu } from '@base-ui/react/menu';
 import { useRequirements } from '../useRequirements';
 import { DELIVERABLE_KIND_LABELS, requirementStageLabel, type Requirement, type RequirementEvent } from '@plannotator/core/requirements-types';
+import { inboxRowArchived } from '@plannotator/core/inbox-types';
 
 const EVENT_WORDS: Readonly<Record<RequirementEvent['kind'], string>> = {
   created: '创建', stage: '阶段', field: '修改', deleted: '删除', say: '动态', deliverable: '产物', suggestion: '建议', context: '上下文',
@@ -29,6 +30,22 @@ const EVENT_WORDS: Readonly<Record<RequirementEvent['kind'], string>> = {
 function timeOf(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+/** 卡片上不在活跃列表里的会话（已归档）：从归档列表（GET /threads/archived，收件箱设置页那同一份）
+ *  读回它们的行——图标、标题都还在，展示不因归档而变形，只多一个「已归档」字样。缺谁读谁变。 */
+function useArchivedRows(on: boolean, missing: readonly string[]): Map<string, unknown> {
+  const [rows, setRows] = useState<Map<string, unknown>>(() => new Map());
+  const key = missing.join(',');
+  useEffect(() => {
+    if (!on || key === '') return;
+    let alive = true;
+    void inboxApi.archived({ limit: 200 })
+      .then((model) => { if (alive) setRows(new Map(model.threads.map((row) => [row.thread_id, row as unknown]))); })
+      .catch(() => { /* 读不到就保持素显示 */ });
+    return () => { alive = false; };
+  }, [key, on]);
+  return rows;
 }
 
 /** What the right panel shows. */
@@ -64,6 +81,12 @@ export function RequirementsPanel({
     [...(list?.sections ?? []).flatMap((s) => s.threads), ...(list?.snoozed ?? []), ...(list?.pins ?? [])].map((row) => [row.thread_id, row]),
   );
 
+  // 已归档的会话不在活跃列表里：把它们的行从归档列表补进来（活跃的优先），
+  // 卡片上依旧画原本的图标与标题，只多「已归档」。
+  const missing = [...new Set((requirements ?? []).flatMap((r) => r.threads))].filter((tid) => !rowsByThread.has(tid));
+  const archivedByThread = useArchivedRows(on, missing);
+  const rowsForCards = new Map([...archivedByThread, ...rowsByThread]);
+
   const submitNew = () => {
     const title = draft.trim();
     if (!title) { newDialog.current?.close(); return; }
@@ -81,7 +104,7 @@ export function RequirementsPanel({
         </div>
         <div className="ib-req-wp-cards">
           {(requirements ?? []).map((r) => (
-            <ReqCard key={r.id} requirement={r} rowsByThread={rowsByThread} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
+            <ReqCard key={r.id} requirement={r} rowsByThread={rowsForCards} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
                   // 评审现在总是自起门控会话（子进程自己开浏览器）；只有复用路径带 url 才在这里导航。
                   void reviewDeliverable(reqId, dlvId).then((o) => {
                     if (!o.ok) { onToast({ icon: 'excl', lead: `审阅没能打开：${o.error}`, wrap: true }); return; }
@@ -174,18 +197,23 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
       {/* 会话就在卡片里：agent 侧栏的行模式 */}
       <div className="ib-req-wcard-sessions">
         {r.threads.map((tid) => {
-          const row = rowsByThread.get(tid) as { subject?: string | null; section?: string; run?: 'starting' | 'working' | 'cloning' | null } | undefined;
+          const row = rowsByThread.get(tid) as { subject?: string | null; section?: string; run?: 'starting' | 'working' | 'cloning' | null; resolved_at: string | null; back_from_archive?: boolean } | undefined;
           const agent = row ? rowAgent(row as never) : null;
-          const waiting = row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting';
+          // 已归档：行从归档列表来（活跃列表不收），展示照旧（图标、标题都是原来的），
+          // 只加「已归档」——与收件箱的字序一致，它顶掉工作状态与等你回复。
+          const archived = row ? inboxRowArchived(row) : false;
+          const waiting = !archived && (row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting');
           const subject = (row?.subject?.trim() ? row.subject : null) ?? '会话';
           // 工作状态＝收件箱会话行自己的方案：行上的 run 字（启动的会话才有，launch 的 run line 决定），
           // 同一个字表（InboxList 的 countWords）；event: deliveries 挪动它，这里不自己轮询。
-          // 已归档的会话不在活跃列表里，没有行，也就永远不会显示工作状态。
-          const runWord = row?.run === 'starting' ? '启动中' : row?.run === 'cloning' ? '克隆中' : row?.run === 'working' ? '工作中' : null;
+          const runWord = archived ? null : row?.run === 'starting' ? '启动中' : row?.run === 'cloning' ? '克隆中' : row?.run === 'working' ? '工作中' : null;
           return (
             <div key={tid} role="button" tabIndex={0} className="ib-req-wcard-sess" onClick={() => onSession(tid)} onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onSession(tid); } }}>
               <span className={`ib-req-wcard-sess-mk${runWord !== null ? ' running' : ''}`}>{agent?.kind === 'agent' ? <HostMark host={agent.host} /> : <Icon name="comment" size={14} />}</span>
               <span className="ib-req-wcard-sess-t" dir="auto">{subject}</span>
+              {archived && (
+                <span className="ib-req-wcard-arch">已归档</span>
+              )}
               {runWord !== null && (
                 <span className="ib-req-wcard-live">
                   <span className="ib-spin" aria-hidden="true" /> {runWord}
