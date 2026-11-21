@@ -1,3 +1,5 @@
+> **本 fork（汉化 + 工坊）**：中文安装说明见 **[INSTALL.zh-CN.md](INSTALL.zh-CN.md)**；发版走本仓库的 Releases，请勿使用上游官方安装脚本。
+
 <p align="center">
   <img src=".github/assets/banner.webp" alt="Plannotator" width="640" />
 </p>

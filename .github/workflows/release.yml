@@ -28,9 +28,11 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # A release tag must identify a commit already contained in main. This runs
-  # independently of the build graph so an invalid tag cannot attest, publish,
-  # or create a GitHub release even if the build itself succeeds.
+  # A release tag must identify a commit already contained in the release
+  # branch. Upstream gates on main; this fork releases from chinese-fork (its
+  # main mirrors upstream). This runs independently of the build graph so an
+  # invalid tag cannot attest, publish, or create a GitHub release even if the
+  # build itself succeeds.
   release-eligibility:
     if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs['dry-run'] == 'false'))
     runs-on: ubuntu-24.04
@@ -42,13 +44,13 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Require release commit to be on main
+      - name: Require release commit to be on the release branch
         shell: bash
         run: |
-          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          git fetch --no-tags origin +refs/heads/chinese-fork:refs/remotes/origin/chinese-fork
           release_commit="$(git rev-parse "${GITHUB_REF}^{commit}")"
-          if ! git merge-base --is-ancestor "$release_commit" refs/remotes/origin/main; then
-            echo "Release tag ${GITHUB_REF_NAME} points to ${release_commit}, which is not contained in main." >&2
+          if ! git merge-base --is-ancestor "$release_commit" refs/remotes/origin/chinese-fork; then
+            echo "Release tag ${GITHUB_REF_NAME} points to ${release_commit}, which is not contained in chinese-fork." >&2
             exit 1
           fi
 
@@ -978,6 +980,8 @@ jobs:
 
   install-script-smoke:
     needs: build
+    # Upstream only (tests plannotator.ai's installer); a fork has no installer.
+    if: github.repository == 'backnotprop/plannotator'
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -1149,7 +1153,7 @@ jobs:
       - smoke-binaries
       - install-script-smoke
       - release-security
-    if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs['dry-run'] == 'false'))
+    if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs['dry-run'] == 'false')) && github.repository == 'backnotprop/plannotator'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -1228,12 +1232,14 @@ jobs:
           sbom-path: release-sbom/${{ needs.release-security.outputs.sbom-name }}
 
   release:
-    # Depends on `attest` so the signed provenance and SBOM attestation exist before the
-    # GitHub Release is published — otherwise there'd be a window where
-    # users could pull the binary and `gh attestation verify` would
-    # race-fail. `needs: attest` implicitly requires `build` too.
+    # Upstream depends on `attest` so the signed provenance and SBOM attestation
+    # exist before the GitHub Release is published. This fork skips attest (and
+    # the npm/scanner/installer legs), so it waits on the build and the binary
+    # smokes directly.
     needs:
-      - attest
+      - release-eligibility
+      - build
+      - smoke-binaries
     if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs['dry-run'] == 'false'))
     runs-on: ubuntu-24.04
     permissions:
@@ -1301,6 +1307,8 @@ jobs:
   npm-package:
     needs:
       - build
+    # Upstream only (packs the npm tarball); a fork does not publish to npm.
+    if: github.repository == 'backnotprop/plannotator'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -1370,6 +1378,8 @@ jobs:
     needs:
       - build
       - npm-package
+    # Upstream only (its private scanner evidence); a fork has no scanner.
+    if: github.repository == 'backnotprop/plannotator'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -1461,7 +1471,7 @@ jobs:
       - release-security
       - smoke-binaries
       - install-script-smoke
-    if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs['dry-run'] == 'false'))
+    if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs['dry-run'] == 'false')) && github.repository == 'backnotprop/plannotator'
     runs-on: ubuntu-24.04
     environment: npm-publish
     permissions:
