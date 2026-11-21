@@ -65,10 +65,6 @@ interface ExportModalProps {
   isReviewPacket?: boolean;
   /** 分享到局域网（方案 B）：门开着的地址；null = 关。 */
   lanShareUrl?: string | null;
-  /** 局域网门开着的取回按钮（主任侧手动拉同事批注）。 */
-  lanPullFeedback?: () => void | Promise<unknown>;
-  lanPullBusy?: boolean;
-  lanPullResult?: string | null;
   /** 开/关局域网门；返回开着的地址（null = 关）。 */
   onToggleLanShare?: (on: boolean) => Promise<string | null> | string | null;
   annotationsOutput: string;
@@ -107,9 +103,6 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onExportVerdict,
   isReviewPacket = false,
   lanShareUrl,
-  lanPullFeedback,
-  lanPullBusy,
-  lanPullResult,
   onToggleLanShare,
   annotationsOutput,
   annotationCount,
@@ -366,7 +359,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               ) : null}
               {/* 分享到局域网（方案 B）：内网同事浏览器直达本会话；门内只读，拍板在主人。
                   卡片本体与代码评审页共用（LanShareCard）。 */}
-              {lanAvailable && <LanShareCard lanShareUrl={lanShareUrl ?? null} onToggle={onToggleLanShare!} onPullFeedback={lanPullFeedback} pulling={lanPullBusy} pullResult={lanPullResult} />}
+              {lanAvailable && <LanShareCard lanShareUrl={lanShareUrl ?? null} onToggle={onToggleLanShare!} />}
               {/* Short URL — primary copy target when available */}
               {shortShareUrl ? (
                 <div>

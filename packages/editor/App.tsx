@@ -2730,19 +2730,18 @@ const App: React.FC = () => {
   }, [lanReadOnly, allAnnotations, submitLanFeedback]);
 
   // 门开着的主任侧：页面加载完成后自动取回一次同事批注（刷新页面即重取；每个门地址
-  // 只自动取一次，防批注变化引发循环），中途再取走分享卡的「取回同事批注」按钮。
+  // 只自动取一次，防批注变化引发循环），中途再取走顶栏「同步批注」按钮。
   const lanPulledUrlRef = useRef<string | null>(null);
   const [lanPullBusy, setLanPullBusy] = useState(false);
-  const [lanPullResult, setLanPullResult] = useState<string | null>(null);
   const pullLanFeedback = useCallback(async () => {
     if (!lanShare.url) return;
     setLanPullBusy(true);
     try {
       const r = await importFromShareUrl(lanShare.url);
-      setLanPullResult(r.count > 0 ? `已取回 ${r.count} 条批注` : (r.error ?? '没有新批注'));
-      if (r.count > 0) toast.success(`已从局域网链接取回 ${r.count} 条同事批注`);
+      if (r.count > 0) toast.success(`已同步 ${r.count} 条批注`);
+      else if (r.error) toast(r.error);
     } catch {
-      setLanPullResult('取回失败，稍后再试');
+      toast.error('同步批注失败，稍后再试');
     } finally {
       setLanPullBusy(false);
     }
@@ -7636,6 +7635,8 @@ const App: React.FC = () => {
         <AppHeader
           sticky={!usesDocumentScroll}
           lanReadOnly={lanReadOnly}
+          onLanPullFeedback={lanShare.url ? pullLanFeedback : undefined}
+          lanPullBusy={lanPullBusy}
           htmlSurface={isHtmlSurface}
           htmlAnnotateArmed={htmlAnnotateArmed}
           onToggleHtmlAnnotate={isHtmlSurface && !documentReadOnly ? handleHtmlAnnotateToggle : undefined}
@@ -8365,9 +8366,6 @@ const App: React.FC = () => {
           shortUrlError={shortUrlError}
           onGenerateShortUrl={generateShortUrl}
           lanShareUrl={lanShare.url}
-          lanPullFeedback={pullLanFeedback}
-          lanPullBusy={lanPullBusy}
-          lanPullResult={lanPullResult}
           onToggleLanShare={toggleLanShare}
           annotationsOutput={
             // Computed only while the modal is open: composeFeedback runs a

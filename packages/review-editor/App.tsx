@@ -590,9 +590,8 @@ const ReviewApp: React.FC = () => {
       return lanShare.url;
     }
   }, [lanShare.url]);
-  /** 取回同事批注（主任侧）：拉门上的快照合并进本页（busy/result 给分享卡的按钮用）。 */
+  /** 同步批注（主任侧，门开着时顶栏按钮）：拉门上的快照合并进本页。 */
   const [lanPullBusy, setLanPullBusy] = useState(false);
-  const [lanPullResult, setLanPullResult] = useState<string | null>(null);
   // 挂载时也读一次门的现状——门开着的话，加载完成后自动取回一次同事批注（files 就绪后，见取回 effect）。
   useEffect(() => {
     void fetch('/api/lan-share').then(res => (res.ok ? res.json() : null)).then((state) => {
@@ -1406,9 +1405,9 @@ const ReviewApp: React.FC = () => {
     return () => clearTimeout(timer);
   }, [lanReadOnly, allAnnotations, descriptionAnnotations, commentAnnotations]);
 
-  // 取回同事批注（主任侧）：拉门上的快照 → 只认代码评审形状 → 去重后走草稿恢复同一条
+  // 同步批注（主任侧）：拉门上的快照 → 只认代码评审形状 → 去重后走草稿恢复同一条
   // 锚定管线（reanchorCodeAnnotations 按当前 diff 重挂，挂不上标过期不丢）。页面加载后
-  // 自动取一次（files 就绪后）；中途再取走分享卡的「取回同事批注」按钮。
+  // 自动取一次（files 就绪后）；中途再取走顶栏「同步批注」按钮（门开着才显示）。
   const lanPulledUrlRef = useRef<string | null>(null);
   const pullLanFeedback = useCallback(async (): Promise<{ count: number }> => {
     if (!lanShare.url) return { count: 0 };
@@ -1420,9 +1419,9 @@ const ReviewApp: React.FC = () => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const items = (await res.json()) as { items?: unknown };
       const hashes = Array.isArray(items.items) ? items.items.filter((h): h is string => typeof h === 'string') : [];
-      if (hashes.length === 0) { setLanPullResult('链接上还没有交回的批注——让同事在分享页面添加批注'); return { count: 0 }; }
+      if (hashes.length === 0) { toast('链接上还没有保存的批注——对方在分享页面添加后会自动存上来'); return { count: 0 }; }
       const payloads = (await Promise.all(hashes.map((h) => decompress(h)))).filter(isLanReviewFeedback);
-      if (payloads.length === 0) { setLanPullResult('链接上没有代码评审页的批注（可能只有设计评审页的）'); return { count: 0 }; }
+      if (payloads.length === 0) { toast('链接上没有代码评审页的批注（可能只有设计评审页的）'); return { count: 0 }; }
       const annotationKey = (a: CodeAnnotation) => `${a.filePath}|${a.lineStart}|${a.lineEnd}|${a.side}|${a.type}|${a.text ?? ''}`;
       const existing = new Set(allAnnotations.map(annotationKey));
       const freshSeen = new Set<string>();
@@ -1435,12 +1434,12 @@ const ReviewApp: React.FC = () => {
       const freshDescription = payloads.flatMap((p) => p.descriptionAnnotations).filter((d) => !descriptionAnnotations.some((e) => e.originalText === d.originalText && e.text === d.text));
       const freshComment = payloads.flatMap((p) => p.commentAnnotations).filter((c) => !commentAnnotations.some((e) => e.text === c.text));
       const count = fresh.length + freshDescription.length + freshComment.length;
-      if (count === 0) { setLanPullResult('没有新批注（全部已存在）'); return { count: 0 }; }
+      if (count === 0) { toast('没有新批注（全部已存在）'); return { count: 0 }; }
       draftTargetMergeRef.current({ annotations: fresh, descriptionAnnotations: freshDescription, commentAnnotations: freshComment, patchChanged: false });
-      setLanPullResult(`已取回 ${count} 条批注（已按当前 diff 重新锚定）`);
+      toast.success(`已同步 ${count} 条批注（已按当前 diff 重新锚定）`);
       return { count };
     } catch (e) {
-      setLanPullResult(`取回失败：${e instanceof Error ? e.message : String(e)}——评审会话可能已关闭`);
+      toast.error(`同步批注失败：${e instanceof Error ? e.message : String(e)}`);
       return { count: 0 };
     } finally {
       setLanPullBusy(false);
@@ -1450,9 +1449,7 @@ const ReviewApp: React.FC = () => {
     if (!lanShare.url || isLoading || files.length === 0) return;
     if (lanPulledUrlRef.current === lanShare.url) return;
     lanPulledUrlRef.current = lanShare.url;
-    void pullLanFeedback().then(({ count }) => {
-      if (count > 0) toast.success(`已从局域网链接取回 ${count} 条同事批注`);
-    });
+    void pullLanFeedback();
   }, [lanShare.url, isLoading, files.length, pullLanFeedback]);
 
   const handleRestoreDraft = useCallback(() => {
@@ -6416,6 +6413,21 @@ const ReviewApp: React.FC = () => {
                     />
                   </>
                 )}
+
+                {/* 门开着的主任侧：拍板件后面放「同步批注」——拉分享链接上保存的批注
+                    （页面加载时也会自动同步一次，这里是评审中途手动拉）。 */}
+                {!lanReadOnly && lanShare.url && (
+                  <button
+                    type="button"
+                    onClick={() => void pullLanFeedback()}
+                    disabled={lanPullBusy}
+                    className="px-2 py-1 md:px-2.5 rounded-md text-xs font-medium bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
+                    title="拉取分享链接上保存的批注（页面加载时也会自动同步一次）"
+                    data-lan-pull-feedback=""
+                  >
+                    {lanPullBusy ? '同步中…' : '同步批注'}
+                  </button>
+                )}
               </>
             ) : (
               <button
@@ -7013,9 +7025,9 @@ const ReviewApp: React.FC = () => {
                 </button>
               </div>
               <div className="flex-1 overflow-auto p-4">
-                {/* 分享到局域网：与导出弹窗（annotate/plan 面）共用同一张卡；
-                    门开着时卡上带「取回同事批注」按钮（页面加载后也会自动取一次）。 */}
-                <LanShareCard lanShareUrl={lanShare.url} onToggle={toggleLanShare} onPullFeedback={pullLanFeedback} pulling={lanPullBusy} pullResult={lanPullResult} />
+                {/* 分享到局域网：与导出弹窗（annotate/plan 面）共用同一张卡。
+                    门开着时顶栏拍板件后面有「同步批注」按钮（页面加载后也会自动同步一次）。 */}
+                <LanShareCard lanShareUrl={lanShare.url} onToggle={toggleLanShare} />
                 <div className="text-xs text-muted-foreground mb-2 mt-4">
                   {allAnnotations.length} 条标注
                 </div>

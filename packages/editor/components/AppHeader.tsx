@@ -117,6 +117,10 @@ interface AppHeaderProps {
   /** 局域网门内视图（同事只读）：拍板件（通过/发送反馈/关闭）整体换成只读徽标——
    *  同事点了也只是被门 403 挡下，看得见点不动徒增困惑。 */
   lanReadOnly?: boolean;
+  /** 门开着的主任侧：拍板件后面的「同步批注」按钮（拉分享链接上保存的批注）。传入即显示。 */
+  onLanPullFeedback?: () => void | Promise<unknown>;
+  /** 同步进行中。 */
+  lanPullBusy?: boolean;
 
   // Callback config (null when no bot callback)
   callbackConfig: CallbackConfig | null;
@@ -228,6 +232,8 @@ export const AppHeader = React.memo<AppHeaderProps>(({
   planDecision,
   decisionNoteRequest,
   lanReadOnly,
+  onLanPullFeedback,
+  lanPullBusy,
   callbackConfig,
   taterMode,
   mobileSettingsOpen,
@@ -424,6 +430,21 @@ export const AppHeader = React.memo<AppHeaderProps>(({
                 openNoteRequest={decisionNoteRequest}
               />
             ) : null}
+
+            {/* 门开着的主任侧：拍板件后面放「同步批注」——拉分享链接上保存的批注
+                （页面加载时也会自动同步一次，这里是评审中途手动拉）。 */}
+            {!lanReadOnly && onLanPullFeedback && (
+              <button
+                type="button"
+                onClick={() => void onLanPullFeedback()}
+                disabled={lanPullBusy}
+                className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
+                title="拉取分享链接上保存的批注（页面加载时也会自动同步一次）"
+                data-lan-pull-feedback=""
+              >
+                {lanPullBusy ? '同步中…' : '同步批注'}
+              </button>
+            )}
 
             <div className="w-px h-5 bg-border/50 mx-1 hidden md:block" />
           </>
