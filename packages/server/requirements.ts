@@ -16,7 +16,7 @@
  * then rename), this process the single writer — the inbox/*.json pattern.
  * The whole set is held in memory (personal scale, the design doc's §9.3).
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, watch, writeFileSync } from "node:fs";
 import { isAbsolute, join, basename } from "node:path";
 import { ulid } from "@plannotator/core/inbox-types";
 import { loadConfig } from "@plannotator/shared/config";
@@ -574,16 +574,27 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       }
     } catch { /* 坏行跳过 */ }
   };
-  const verdictTimer = setInterval(() => {
+  const readNewVerdicts = () => {
     try {
       if (!existsSync(verdictPath())) return;
       const text = readFileSync(verdictPath(), "utf8");
       if (text.length <= verdictOffset) return;
       for (const line of text.slice(verdictOffset).split("\n")) if (line.trim()) onVerdictLine(line);
       verdictOffset = text.length;
-    } catch { /* 读失败下轮再试 */ }
-  }, 2000);
-  verdictTimer.unref?.();
+    } catch { /* 读失败下次事件再读 */ }
+  };
+  // 文件系统事件（Windows ReadDirectoryChangesW / macOS FSEvents / Linux inotify）：
+  // 裁决落盘的瞬间读到，无轮询空转；watch 不可用的文件系统退化为 2s 兜底。
+  let verdictWatcher: { close(): void } | null = null;
+  try {
+    verdictWatcher = watch(options.dataDir, { recursive: false }, (event, filename) => {
+      if (filename == null || String(filename).replaceAll( + BS + BS + , "/").endsWith("review-verdicts.jsonl")) readNewVerdicts();
+    });
+    verdictWatcher.unref?.();
+  } catch {
+    const fallback = setInterval(readNewVerdicts, 2000);
+    fallback.unref?.();
+  }
 
   /** pn- 会话 id 的解析：注册表（sessions/*.json 的 reviewId）命中后，活的给 URL，
    *  死的给它的 target——那次会话打开的原始文档路径，可重新 annotate。 */
