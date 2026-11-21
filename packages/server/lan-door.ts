@@ -69,7 +69,7 @@ export function createLanDoor(options: { forward: (req: Request) => Promise<Resp
    * 只存内存：门的生死跟会话一致，链接失效数据自然作废。
    */
   const feedbackHashes: string[] = [];
-  const MAX_FEEDBACK = 50;
+  const MAX_FEEDBACK = 200;
   const MAX_HASH_CHARS = 2_000_000;
 
   const state = (): LanDoorState => (server && token ? { on: true, url: `http://${lanAddress()}:${server.port}/t/${token}` } : { on: false, url: null });
@@ -131,7 +131,12 @@ export function createLanDoor(options: { forward: (req: Request) => Promise<Resp
           const body = await req.json().catch(() => null) as { hash?: unknown } | null;
           const hash = typeof body?.hash === "string" ? body.hash : null;
           if (!hash || hash.length > MAX_HASH_CHARS) return Response.json({ error: "批注快照无效或过大。", code: "lan_feedback_invalid" }, { status: 400, headers: { "Cache-Control": "no-store" } });
-          if (!feedbackHashes.includes(hash) && feedbackHashes.length < MAX_FEEDBACK) feedbackHashes.push(hash);
+          // 满了挤掉最旧：快照按人累积（新版包含旧版内容），丢新等于丢人最新的评论，
+          // 丢旧几乎无损失——多同事高频交回也兜得住。
+          if (!feedbackHashes.includes(hash)) {
+            if (feedbackHashes.length >= MAX_FEEDBACK) feedbackHashes.shift();
+            feedbackHashes.push(hash);
+          }
           return Response.json({ ok: true, count: feedbackHashes.length }, { headers: { "Cache-Control": "no-store" } });
         }
         // 同事只读：写接口不进主处理器（由调用方的 guard 拒绝也行，这里先挡在门口）。

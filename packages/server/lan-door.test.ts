@@ -63,6 +63,17 @@ describe("lan-door", () => {
         const pulledNoToken = await fetch(`http://127.0.0.1:${door.port}/api/lan-feedback`);
         expect(pulledNoToken.status).toBe(403); // 无 Cookie 无 token 不给
 
+        // 6b) 上限挤旧留新：快照按人累积，满了必须丢最旧——丢新等于丢人最新的评论。
+        // 灌满上限再多几份，断言留下的是最新的、最旧的（含前面的 hash-a/b）被挤出。
+        for (let i = 0; i < 201; i += 1) await post(`h${String(i).padStart(3, "0")}`);
+        const capped = await fetch(`http://127.0.0.1:${door.port}/api/lan-feedback?token=${state.url!.split("/t/")[1]}`);
+        const cappedItems = ((await capped.json()) as { items: string[] }).items;
+        expect(cappedItems.length).toBe(200);
+        expect(cappedItems.includes("hash-a")).toBe(false);
+        expect(cappedItems.includes("h000")).toBe(false);
+        expect(cappedItems[0]).toBe("h001");
+        expect(cappedItems[199]).toBe("h200");
+
         // 7) 关门后端口不再服务（交回快照随之作废——门的生死跟会话一致）
         door.stop();
         expect(door.state()).toEqual({ on: false, url: null });
