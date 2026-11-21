@@ -381,7 +381,7 @@ export const AppHeader = React.memo<AppHeaderProps>(({
               <div
                 className="flex items-center gap-1.5 text-xs text-muted-foreground px-2 py-1 rounded border border-border bg-muted/40"
                 data-lan-readonly-badge=""
-                title="只读评审视图：可以看和批注（存在你的浏览器里），通过/关闭由评审主人决定"
+                title="只读评审视图：可以看和批注，批注会自动交回评审主人（随本链接保存）；通过/关闭由评审主人决定"
               >
                 只读评审 · 由评审主人拍板
               </div>

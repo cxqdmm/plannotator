@@ -99,7 +99,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            粘贴队友的分享链接，即可将其标注导入当前计划评审。
+            粘贴队友的分享链接（局域网链接也行——同事在分享页面添加的批注会自动存在链接上），即可将其标注导入当前计划评审。
           </p>
 
           {/* Result feedback */}

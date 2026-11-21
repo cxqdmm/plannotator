@@ -71,6 +71,8 @@ interface UseSharingResult {
 
   /** Import annotations from a teammate's share URL */
   importFromShareUrl: (url: string) => Promise<ImportResult>;
+  /** 门内批注交回（局域网分享，同事侧）：POST 当前批注快照给门，随链接保存。 */
+  submitLanFeedback: () => Promise<{ ok: boolean; error?: string }>;
 
   /** This session was opened from an exported review-packet .html file (offline intranet sharing). */
   isReviewPacket: boolean;
@@ -447,51 +449,86 @@ export function useSharing(
     }
   }, [markdown, annotations, globalAttachments, renderAs]);
 
-  // Import annotations from a teammate's share URL (supports both hash-based and short /p/<id> URLs)
+  /**
+   * 门内批注交回（局域网分享，同事侧）：把当前批注快照压成与分享链接同款的压缩串，
+   * POST 给门（/api/lan-feedback）存下——随链接保存，评审主人在自己页面「导入评审」
+   * 粘门链接即取回。同 exportVerdict 的构建，只是交给门而不是下载 .txt。
+   */
+  const submitLanFeedback = useCallback(async (): Promise<{ ok: boolean; error?: string }> => {
+    try {
+      const payload = buildSharePayload(markdown, annotations, globalAttachments, undefined, renderAs === 'html' ? undefined : renderAs);
+      const hash = await compress(payload);
+      const res = await fetch('/api/lan-feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hash }) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  }, [markdown, annotations, globalAttachments, renderAs]);
+
+  // Import annotations from a teammate's share URL. Three forms: the LAN door link
+  // (http://<内网IP>:<端口>/t/<令牌> — 同事批注快照存在门上，可能多份，合并取并集)、
+  // a short /p/<id> paste URL、或带 #hash 的分享链接。
   const importFromShareUrl = useCallback(async (url: string): Promise<ImportResult> => {
     try {
-      let payload: SharePayload | undefined;
+      let payloads: SharePayload[] = [];
 
-      // Check for short URL pattern: /p/<id> with optional #key=<key> fragment
-      const shortMatch = url.match(/\/p\/([A-Za-z0-9]{6,16})(?:#(.*))?(?:\?|$)/);
-      if (shortMatch) {
-        const pasteId = shortMatch[1];
-        const fragParams = new URLSearchParams(shortMatch[2] ?? '');
-        const encryptionKey = fragParams.get('key') ?? undefined;
-        const pasteFromFragment = fragParams.get('paste')
-          ? atob(fragParams.get('paste')!.replace(/-/g, '+').replace(/_/g, '/'))
-          : undefined;
-        const loaded = await loadFromPasteId(pasteId, pasteFromFragment ?? pasteApiUrl, encryptionKey);
-        if (!loaded) {
-          return { success: false, count: 0, planTitle: '', error: '无法从短链接加载 —— 粘贴内容可能已过期' };
+      // 局域网门链接：拉门上保存的全部批注快照（跨源 GET，门带 token 免 Cookie 放行）。
+      const doorMatch = url.match(/^(https?:\/\/[^/]+)\/t\/([0-9a-f]{16,64})\/?$/);
+      if (doorMatch) {
+        const res = await fetch(`${doorMatch[1]}/api/lan-feedback?token=${doorMatch[2]}`);
+        if (!res.ok) {
+          return { success: false, count: 0, planTitle: '', error: `无法从局域网链接加载（HTTP ${res.status}）—— 评审会话可能已关闭，或链接不完整` };
         }
-        payload = loaded;
+        const items = (await res.json()) as { items?: unknown };
+        const hashes = Array.isArray(items.items) ? items.items.filter((h): h is string => typeof h === 'string') : [];
+        if (hashes.length === 0) {
+          return { success: true, count: 0, planTitle: '局域网评审', error: '这个链接上还没有交回的批注 —— 让同事在分享页面添加批注后重试' };
+        }
+        payloads = await Promise.all(hashes.map((hash) => decompress(hash) as Promise<SharePayload>));
       } else {
-        // Fall back to hash-based URL
-        const hashIndex = url.indexOf('#');
-        if (hashIndex === -1) {
-          return { success: false, count: 0, planTitle: '', error: '无效的分享 URL：未找到 hash 片段或短链接' };
-        }
-        const hash = url.slice(hashIndex + 1);
-        if (!hash) {
-          return { success: false, count: 0, planTitle: '', error: '无效的分享 URL：hash 为空' };
-        }
+        // Check for short URL pattern: /p/<id> with optional #key=<key> fragment
+        const shortMatch = url.match(/\/p\/([A-Za-z0-9]{6,16})(?:#(.*))?(?:\?|$)/);
+        if (shortMatch) {
+          const pasteId = shortMatch[1];
+          const fragParams = new URLSearchParams(shortMatch[2] ?? '');
+          const encryptionKey = fragParams.get('key') ?? undefined;
+          const pasteFromFragment = fragParams.get('paste')
+            ? atob(fragParams.get('paste')!.replace(/-/g, '+').replace(/_/g, '/'))
+            : undefined;
+          const loaded = await loadFromPasteId(pasteId, pasteFromFragment ?? pasteApiUrl, encryptionKey);
+          if (!loaded) {
+            return { success: false, count: 0, planTitle: '', error: '无法从短链接加载 —— 粘贴内容可能已过期' };
+          }
+          payloads = [loaded];
+        } else {
+          // Fall back to hash-based URL
+          const hashIndex = url.indexOf('#');
+          if (hashIndex === -1) {
+            return { success: false, count: 0, planTitle: '', error: '无效的分享 URL：未找到 hash 片段或短链接' };
+          }
+          const hash = url.slice(hashIndex + 1);
+          if (!hash) {
+            return { success: false, count: 0, planTitle: '', error: '无效的分享 URL：hash 为空' };
+          }
 
-        payload = (await decompress(hash)) as SharePayload;
+          payloads = [(await decompress(hash)) as SharePayload];
+        }
       }
 
       // Extract plan title from embedded plan text (or HTML <title>)
       let planTitle = '未知计划';
-      if (payload.p) {
-        const titleLine = payload.p.trim().split('\n').find(l => l.startsWith('#'));
+      const titled = payloads.find(p => p.p || p.h);
+      if (titled?.p) {
+        const titleLine = titled.p.trim().split('\n').find(l => l.startsWith('#'));
         if (titleLine) planTitle = titleLine.replace(/^#+\s*/, '').trim();
-      } else if (payload.h) {
-        const titleMatch = payload.h.match(/<title[^>]*>([^<]+)<\/title>/i);
+      } else if (titled?.h) {
+        const titleMatch = titled.h.match(/<title[^>]*>([^<]+)<\/title>/i);
         if (titleMatch) planTitle = titleMatch[1].trim();
       }
 
-      // Convert to full annotations
-      const importedAnnotations = fromShareable(payload.a, payload.d, payload.s);
+      // Convert to full annotations（多份快照取并集，同一批注在重复导入时仍被下方去重挡掉）
+      const importedAnnotations = payloads.flatMap((payload) => fromShareable(payload.a, payload.d, payload.s));
 
       if (importedAnnotations.length === 0) {
         return { success: true, count: 0, planTitle, error: '分享链接中没有标注' };
@@ -524,8 +561,9 @@ export function useSharing(
           return merged;
         });
 
-        // Handle global attachments (deduplicate by path)
-        if (payload.g?.length) {
+        // Handle global attachments (deduplicate by path)——门链接可能带回多份快照，逐份合并
+        for (const payload of payloads) {
+          if (!payload.g?.length) continue;
           const parsed = parseShareableImages(payload.g) ?? [];
           setGlobalAttachments(prev => {
             const existingPaths = new Set(prev.map(g => g.path));
@@ -558,6 +596,7 @@ export function useSharing(
     refreshShareUrl,
     generateShortUrl,
     importFromShareUrl,
+    submitLanFeedback,
     exportReviewPacket,
     exportVerdict,
     shareLoadError,

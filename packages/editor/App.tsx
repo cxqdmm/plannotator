@@ -2676,6 +2676,7 @@ const App: React.FC = () => {
     clearPendingSharedAnnotations,
     generateShortUrl,
     importFromShareUrl,
+    submitLanFeedback,
     exportReviewPacket,
     exportVerdict,
     shareLoadError,
@@ -2703,6 +2704,24 @@ const App: React.FC = () => {
     htmlRefresh.reloadGeneration,
     renderAs,
   );
+
+  // 门内批注自动交回（局域网分享，同事侧）：批注一变（防抖 800ms）就把快照 POST 给门，
+  // 随链接保存——评审主人在自己页面「导入评审」粘门链接即取回。重复快照门自己去重；
+  // 首次交回成功提示一次，之后静默（改了就交，不刷屏）。
+  const lanFeedbackToastedRef = useRef(false);
+  useEffect(() => {
+    if (!lanReadOnly) return;
+    if (allAnnotations.length === 0) return;
+    const timer = setTimeout(() => {
+      void submitLanFeedback().then((outcome) => {
+        if (!outcome.ok) return;
+        if (lanFeedbackToastedRef.current) return;
+        lanFeedbackToastedRef.current = true;
+        toast.success('批注已自动交回评审主人');
+      });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [lanReadOnly, allAnnotations, submitLanFeedback]);
 
   useEffect(() => {
     if (initialSidebarPreferenceAppliedRef.current) return;

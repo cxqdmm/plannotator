@@ -49,7 +49,21 @@ describe("lan-door", () => {
         const viewNoCookie = await fetch(`http://127.0.0.1:${door.port}/api/lan-view`);
         expect(viewNoCookie.status).toBe(200);
 
-        // 6) 关门后端口不再服务
+        // 6) 批注交回：带 Cookie 的 POST 存快照（重复去重）；主任拿 ?token= 跨源拉走（CORS 放行）
+        const post = async (hash: string) => fetch(`http://127.0.0.1:${door.port}/api/lan-feedback`, { method: "POST", headers: { cookie, "Content-Type": "application/json" }, body: JSON.stringify({ hash }) });
+        expect(((await (await post("hash-a")).json()) as { ok: boolean; count: number })).toEqual({ ok: true, count: 1 });
+        await post("hash-a"); // 重复快照：不重复存
+        await post("hash-b");
+        const badPost = await fetch(`http://127.0.0.1:${door.port}/api/lan-feedback`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hash: "x" }) });
+        expect(badPost.status).toBe(403); // 没 Cookie 的 POST 不收
+        const pulled = await fetch(`http://127.0.0.1:${door.port}/api/lan-feedback?token=${state.url!.split("/t/")[1]}`);
+        expect(pulled.status).toBe(200);
+        expect(pulled.headers.get("access-control-allow-origin")).toBe("*");
+        expect(((await pulled.json()) as { items: string[] }).items.sort()).toEqual(["hash-a", "hash-b"]);
+        const pulledNoToken = await fetch(`http://127.0.0.1:${door.port}/api/lan-feedback`);
+        expect(pulledNoToken.status).toBe(403); // 无 Cookie 无 token 不给
+
+        // 7) 关门后端口不再服务（交回快照随之作废——门的生死跟会话一致）
         door.stop();
         expect(door.state()).toEqual({ on: false, url: null });
         await expect(fetch(`http://127.0.0.1:${door.port}/api/plan`, { headers: { cookie } })).rejects.toThrow();

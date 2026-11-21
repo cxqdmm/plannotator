@@ -62,6 +62,15 @@ export function createLanDoor(options: { forward: (req: Request) => Promise<Resp
   const doorRequests = new WeakSet<Request>();
   let server: ReturnType<typeof Bun.serve> | null = null;
   let token: string | null = null;
+  /**
+   * 门内批注交回（随链接保存）：同事页把自己批注快照的压缩串（#hash，同评审件
+   * 「导出意见」那套 buildSharePayload+compress）自动 POST 进来；主任在自己页面
+   * 「导入评审」粘门链接，GET 拉走全部串（去重存，多份快照合并取并集，谁也不覆盖谁）。
+   * 只存内存：门的生死跟会话一致，链接失效数据自然作废。
+   */
+  const feedbackHashes: string[] = [];
+  const MAX_FEEDBACK = 50;
+  const MAX_HASH_CHARS = 2_000_000;
 
   const state = (): LanDoorState => (server && token ? { on: true, url: `http://${lanAddress()}:${server.port}/t/${token}` } : { on: false, url: null });
 
@@ -69,6 +78,7 @@ export function createLanDoor(options: { forward: (req: Request) => Promise<Resp
     server?.stop(true);
     server = null;
     token = null;
+    feedbackHashes.length = 0;
   };
 
   const start = (): LanDoorState => {
@@ -84,6 +94,11 @@ export function createLanDoor(options: { forward: (req: Request) => Promise<Resp
         // 主任自己的页面不走门 → 会话没有这个路径 → 404 → 页面知道自己不是门内视图。
         if (path === "/api/lan-view" && req.method === "GET") {
           return Response.json({ lan: true }, { headers: { "Cache-Control": "no-store" } });
+        }
+        // 主任「导入评审」拉批注：跨源（主任页面在 localhost 会话源上），带 token 免 Cookie，
+        // CORS 放行读取。这是门上唯一免 Cookie 的读，串里只有批注内容、令牌本身就是凭据。
+        if (path === "/api/lan-feedback" && req.method === "GET" && url.searchParams.get("token") === token) {
+          return Response.json({ items: feedbackHashes }, { headers: { "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*" } });
         }
         // 入口：验令牌、种 Cookie、回页面。主服务可能把 / 重定向到带会话令牌的
         // 路径（annotate 的 /s/<token>），重定向不能出本门——这里手动跟到最终页面。
@@ -111,6 +126,14 @@ export function createLanDoor(options: { forward: (req: Request) => Promise<Resp
           return new Response("这个评审链接需要从完整入口打开（含 /t/ 令牌路径）。", { status: 403, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
         }
         doorRequests.add(req);
+        // 同事批注交回：门上唯一放行的写（验过 Cookie 的门内访客），存快照串、去重、限量。
+        if (path === "/api/lan-feedback" && req.method === "POST") {
+          const body = await req.json().catch(() => null) as { hash?: unknown } | null;
+          const hash = typeof body?.hash === "string" ? body.hash : null;
+          if (!hash || hash.length > MAX_HASH_CHARS) return Response.json({ error: "批注快照无效或过大。", code: "lan_feedback_invalid" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+          if (!feedbackHashes.includes(hash) && feedbackHashes.length < MAX_FEEDBACK) feedbackHashes.push(hash);
+          return Response.json({ ok: true, count: feedbackHashes.length }, { headers: { "Cache-Control": "no-store" } });
+        }
         // 同事只读：写接口不进主处理器（由调用方的 guard 拒绝也行，这里先挡在门口）。
         if (path.startsWith("/api/") && req.method !== "GET" && req.method !== "HEAD") {
           return Response.json({ error: "同事视图是只读的：可以看和批注（批注在你的浏览器里），决定与反馈由评审主人做出。", code: "lan_readonly" }, { status: 403, headers: { "Cache-Control": "no-store" } });
