@@ -6,11 +6,17 @@ import { copyTextToClipboard } from '../utils/clipboard';
  * 看的是同一个会话，始终最新；对方只读（批注存他自己的浏览器），拍板留在主人手里。
  * 导出弹窗（ExportModal）与代码评审页共用这一张卡，改文案/行为只改这里。
  */
-export function LanShareCard({ lanShareUrl, onToggle }: {
+export function LanShareCard({ lanShareUrl, onToggle, onPullFeedback, pulling = false, pullResult = null }: {
   /** 门开着的完整入口地址；null = 门关着。 */
   lanShareUrl: string | null;
   /** 开/关门（会话服务的 /api/lan-share）。 */
   onToggle: (on: boolean) => Promise<string | null> | string | null;
+  /** 主任侧手动取回同事批注（页面加载时已自动拉过一次，这是中途再拉）。 */
+  onPullFeedback?: () => void | Promise<unknown>;
+  /** 取回进行中。 */
+  pulling?: boolean;
+  /** 最近一次取回的结果文案。 */
+  pullResult?: string | null;
 }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
@@ -26,7 +32,7 @@ export function LanShareCard({ lanShareUrl, onToggle }: {
       </label>
       <p className="text-[11px] text-muted-foreground mb-3">
         开一个带令牌的内网入口，把链接发给同网段的同事，对方浏览器直接打开本评审——看的是同一个会话，始终最新。
-        对方是只读视图：可以自行批注（存在他自己的浏览器里），批准/否决/发送反馈仍只有你能做。
+        对方是只读视图：可以自行批注，批注会自动存在链接上；你刷新页面（或点下方按钮）即取回。批准/否决仍只有你能做。
       </p>
       {lanShareUrl ? (
         <>
@@ -44,6 +50,19 @@ export function LanShareCard({ lanShareUrl, onToggle }: {
             >
               {copied ? '已复制' : '复制链接'}
             </button>
+          </div>
+          <div className="flex items-center gap-2 mb-2">
+            {onPullFeedback && (
+              <button
+                onClick={() => void onPullFeedback()}
+                disabled={pulling}
+                className="px-3 py-1.5 rounded-lg bg-background border border-border text-xs font-medium hover:bg-muted transition-colors disabled:opacity-50"
+                data-lan-pull-feedback=""
+              >
+                {pulling ? '取回中…' : '取回同事批注'}
+              </button>
+            )}
+            {pullResult && <span className="text-[11px] text-muted-foreground" data-lan-pull-result="">{pullResult}</span>}
           </div>
           <button
             onClick={() => void onToggle(false)}

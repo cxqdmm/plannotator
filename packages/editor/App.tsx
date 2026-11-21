@@ -609,6 +609,12 @@ const App: React.FC = () => {
       return lanShare.url;
     }
   }, [lanShare.url]);
+  // 挂载时也读一次门的现状——门开着的话，加载完成后自动取回一次同事批注（取回 effect 在 useSharing 之后）。
+  useEffect(() => {
+    void fetch('/api/lan-share').then(res => (res.ok ? res.json() : null)).then((state) => {
+      if (state && typeof state.on === 'boolean') setLanShare(state as { on: boolean; url: string | null });
+    }).catch(() => {});
+  }, []);
   useEffect(() => {
     if (!showExport) return;
     void fetch('/api/lan-share').then(res => (res.ok ? res.json() : null)).then((state) => {
@@ -2722,6 +2728,31 @@ const App: React.FC = () => {
     }, 800);
     return () => clearTimeout(timer);
   }, [lanReadOnly, allAnnotations, submitLanFeedback]);
+
+  // 门开着的主任侧：页面加载完成后自动取回一次同事批注（刷新页面即重取；每个门地址
+  // 只自动取一次，防批注变化引发循环），中途再取走分享卡的「取回同事批注」按钮。
+  const lanPulledUrlRef = useRef<string | null>(null);
+  const [lanPullBusy, setLanPullBusy] = useState(false);
+  const [lanPullResult, setLanPullResult] = useState<string | null>(null);
+  const pullLanFeedback = useCallback(async () => {
+    if (!lanShare.url) return;
+    setLanPullBusy(true);
+    try {
+      const r = await importFromShareUrl(lanShare.url);
+      setLanPullResult(r.count > 0 ? `已取回 ${r.count} 条批注` : (r.error ?? '没有新批注'));
+      if (r.count > 0) toast.success(`已从局域网链接取回 ${r.count} 条同事批注`);
+    } catch {
+      setLanPullResult('取回失败，稍后再试');
+    } finally {
+      setLanPullBusy(false);
+    }
+  }, [lanShare.url, importFromShareUrl]);
+  useEffect(() => {
+    if (!lanShare.url || isLoading) return;
+    if (lanPulledUrlRef.current === lanShare.url) return;
+    lanPulledUrlRef.current = lanShare.url;
+    void pullLanFeedback();
+  }, [lanShare.url, isLoading, pullLanFeedback]);
 
   useEffect(() => {
     if (initialSidebarPreferenceAppliedRef.current) return;
@@ -8334,6 +8365,9 @@ const App: React.FC = () => {
           shortUrlError={shortUrlError}
           onGenerateShortUrl={generateShortUrl}
           lanShareUrl={lanShare.url}
+          lanPullFeedback={pullLanFeedback}
+          lanPullBusy={lanPullBusy}
+          lanPullResult={lanPullResult}
           onToggleLanShare={toggleLanShare}
           annotationsOutput={
             // Computed only while the modal is open: composeFeedback runs a
