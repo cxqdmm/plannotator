@@ -20,6 +20,9 @@ import { gzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+/** 真 bun 可执行文件（脚本正跑在它里面）：Windows 上 PATH 里的 "bun" 可能是 .cmd 垫片，
+ *  它无法安全接收带引号的 --define 参数（cmd.exe 特殊字符限制），必须直呼真身。 */
+const BUN = process.execPath;
 const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { cwd: root, windowsHide: true, stdio: "inherit", ...opts });
 
 const mainRepoRoot = () => {
@@ -49,8 +52,8 @@ const TARGETS = [
 // 1. UI（hook 在部分平台要 --bun 才不落给系统 Node——见仓库 CLAUDE/记忆的构建坑）
 if (!skipBuild) {
   console.log(`[1/3] 构建 UI（review → hook）…`);
-  run("bun", ["run", "build:review"]);
-  run("bun", ["--bun", "run", "build:hook"]);
+  run(BUN, ["run", "build:review"]);
+  run(BUN, ["--bun", "run", "build:hook"]);
 } else {
   if (!existsSync(join(root, "apps", "hook", "dist", "inbox.html"))) throw new Error("--no-build：但 apps/hook/dist 不存在，先去掉该参数完整跑一次。");
   console.log(`[1/3] 跳过构建（--no-build），使用现成 dist。`);
@@ -61,7 +64,7 @@ console.log(`[2/3] 交叉编译 v${version} 的 4 个目标（Windows ×2 + macO
 for (const [file, target] of TARGETS) {
   const started = Date.now();
   process.stdout.write(`  ${file} … `);
-  execFileSync("bun", [
+  execFileSync(BUN, [
     "build", "apps/hook/server/index.ts", "--compile", "--no-compile-autoload-bunfig",
     `--target=${target}`,
     `--define`, `__CLI_VERSION__="${version}"`,
