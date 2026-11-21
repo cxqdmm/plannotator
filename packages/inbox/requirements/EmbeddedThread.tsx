@@ -12,7 +12,7 @@ import { keepSavedQuestions } from '../pickQueue';
 import { inboxApi } from '../api';
 import { useEmbeddedThread } from './embeddedHook';
 
-export function EmbeddedThread({ threadId, fileId = null, artifacts: artifactsFirst = false, onClose, onChanged }: { threadId: string; fileId?: string | null; artifacts?: boolean; onClose: () => void; onChanged: () => void }) {
+export function EmbeddedThread({ threadId, fileId = null, artifacts: artifactsFirst = false, onToast, onClose, onChanged }: { threadId: string; fileId?: string | null; artifacts?: boolean; onToast?: (toast: unknown, ms?: number) => void; onClose: () => void; onChanged: () => void }) {
   const client = useQueryClient();
   /** The thread's own Artifacts view (the inbox thread's button, same place, same look). */
   const [artifactsOn, setArtifactsOn] = useState(artifactsFirst);
@@ -46,6 +46,7 @@ export function EmbeddedThread({ threadId, fileId = null, artifacts: artifactsFi
       }}
       run={held.run ?? null}
       attachCommand={held.attach_command ?? null}
+      onToast={onToast as never}
       onRunChanged={() => {
         void inboxApi.thread(threadId).then((read) => putThread(client, threadId, read));
       }}
