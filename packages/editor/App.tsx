@@ -8291,6 +8291,8 @@ const App: React.FC = () => {
         )}
 
         {/* Export Modal */}
+        {/* 评审件（方案 A）暂收：评审页是分块构建（/assets 由会话服务端供），拷走的单 HTML 打不开；
+            待单文件构建变体（照 shape.html 的配方）再启用 isReviewPacket/onExportReviewPacket/onExportVerdict。 */}
         <ExportModal
           isOpen={showExport}
           onClose={() => { setShowExport(false); setInitialExportTab(undefined); }}
@@ -8302,11 +8304,6 @@ const App: React.FC = () => {
           onGenerateShortUrl={generateShortUrl}
           lanShareUrl={lanShare.url}
           onToggleLanShare={toggleLanShare}
-          {/* 评审件（方案 A）暂收：评审页是分块构建（/assets 由会话服务端供），
-              拷走的单 HTML 打不开；待单文件构建变体（照 shape.html 的配方）再启用。
-              isReviewPacket={isReviewPacket}
-              onExportReviewPacket={…exportReviewPacket…}
-              onExportVerdict={…exportVerdict…} */}
           annotationsOutput={
             // Computed only while the modal is open: composeFeedback runs a
             // unified diff when edits exist — not per-render work.
