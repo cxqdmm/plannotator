@@ -750,7 +750,14 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       const reviewMatch = /^deliverables\/([^/]+)\/review$/.exec(deeper);
       if (reviewMatch && req.method === "POST") {
         if (!options.spawnAnnotate) return json({ error: "This Inbox cannot open a review here (no annotate runtime).", code: "no_runtime" }, 501);
-        if (reviewsInFlight.has(`review:${id}`)) return json({ error: "This requirement's review is already open.", code: "review_in_flight" }, 409);
+        if (reviewsInFlight.has(`review:${id}`)) {
+          // 关掉了浏览器标签不会杀门控子进程：锁还在，评审页其实活着——按同一文档找回它，
+          // 把地址还给点击处（重新贴上标签页），而不是把人关在门外。
+          const target = fileTargetOf(id, deliverableAt(id, decodeURIComponent(reviewMatch[1]!)).deliverable.ref);
+          const reopen = target && "file" in target ? aliveAnnotateOf(target.file) : target && "url" in target ? target.url : null;
+          if (reopen) return json({ ok: true, url: reopen, reopened: true });
+          return json({ error: "This requirement's review is already open.", code: "review_in_flight" }, 409);
+        }
         const found = deliverableAt(id, decodeURIComponent(reviewMatch[1]!));
         if ("error" in found) return found.error;
         // 评审不复用：裁决必须由本次 spawn 的 stdout 捕获（复用别人的会话 = 没人读它的 verdict，
