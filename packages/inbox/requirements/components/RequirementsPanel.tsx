@@ -100,15 +100,54 @@ export function RequirementsPanel({
   const counts = { active: activeList.length, done: doneList.length, archived: archivedList.length };
   const shown = view === 'active' ? activeList : view === 'done' ? doneList : archivedList;
   const emptyText = view === 'active' ? '还没有需求，点右上角「＋」开工。' : view === 'done' ? '还没有完成的需求；阶段走到「完成」的需求会落在这里。' : '归档的需求会落在这里，⋯ 菜单里可以恢复。';
+  /** 工坊头部的弹层挂到 .pn-inbox 门内（svg 描边样式依赖它，同卡片 ⋯ 菜单的做法）。 */
+  const rootRef = useRef<HTMLElement | null>(null);
+  const [portal, setPortal] = useState<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    const root = rootRef.current?.closest<HTMLElement>('.pn-inbox');
+    if (root) setPortal(root);
+  }, []);
+  /** 归档会话默认从卡片上隐藏（approval "workshop-hide-archived-sessions"）：本浏览器记忆，缺省为隐藏。 */
+  const [hideArchivedSessions, setHideArchivedSessions] = useState(() => {
+    try {
+      return localStorage.getItem('plannotator-workshop-hide-archived-sessions') !== '0';
+    } catch {
+      return true;
+    }
+  });
+  const setHideArchivedSessionsPersisted = (on: boolean) => {
+    setHideArchivedSessions(on);
+    try {
+      localStorage.setItem('plannotator-workshop-hide-archived-sessions', on ? '1' : '0');
+    } catch { /* 无存储就不记：本次会话内仍生效 */ }
+  };
 
   return (
-    <section className="ib-req-wp" data-requirements-page="" data-panel={panel !== null ? '' : undefined} aria-label="工坊">
+    <section ref={rootRef} className="ib-req-wp" data-requirements-page="" data-panel={panel !== null ? '' : undefined} aria-label="工坊">
       {/* The list panel */}
       <div className="ib-req-wp-list" data-requirements-list="">
         <div className="ib-req-wp-head">
           <SidebarTrigger />
           <h1>工坊</h1>
           <button type="button" className="ib-req-wp-new" title="新建需求" aria-label="新建需求" onClick={() => { setDraft(''); newDialog.current?.showModal(); }}><Icon name="plus" size={15} /></button>
+          {/* 显示选项（三点）：与收件箱三点菜单同款 Menu 风格（ib-pm/ib-pmi，竖排）。 */}
+          <Menu.Root modal={false}>
+            <Menu.Trigger className="ib-req-wp-new ib-req-wp-more" aria-label="工坊显示选项" data-req-more="">
+              <Icon name="dots" size={15} />
+            </Menu.Trigger>
+            <Menu.Portal container={portal ?? undefined}>
+              <Menu.Positioner className="ib-pm-pos" side="bottom" align="end" sideOffset={4}>
+                <Menu.Popup className="ib-pm" aria-label="工坊显示选项">
+                  <Menu.CheckboxItem className="ib-pmi" label="隐藏归档会话" checked={hideArchivedSessions} onCheckedChange={(on: boolean) => setHideArchivedSessionsPersisted(on)} closeOnClick={false} data-req-menu="hide-archived">
+                    <span className="ib-pmi-box" aria-hidden="true" data-on={hideArchivedSessions ? '' : undefined}>
+                      {hideArchivedSessions && <Icon name="check" size={11} />}
+                    </span>
+                    <span className="ib-pmi-l">隐藏归档会话</span>
+                  </Menu.CheckboxItem>
+                </Menu.Popup>
+              </Menu.Positioner>
+            </Menu.Portal>
+          </Menu.Root>
         </div>
         <div className="ib-req-wp-views" role="tablist" aria-label="需求视图">
           {([['active', '进行中'], ['done', '已完成'], ['archived', '已归档']] as const).map(([key, label]) => (
@@ -119,7 +158,7 @@ export function RequirementsPanel({
         </div>
         <div className="ib-req-wp-cards">
           {shown.map((r) => (
-            <ReqCard key={r.id} requirement={r} rowsByThread={rowsForCards} patch={patch} selectedThreadId={panel !== null && panel.k === 'session' ? panel.threadId : null} onSession={(tid) => setPanel((current) => (current !== null && current.k === 'session' && current.threadId === tid ? null : { k: 'session', threadId: tid }))} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
+            <ReqCard key={r.id} requirement={r} rowsByThread={rowsForCards} patch={patch} hideArchivedSessions={hideArchivedSessions} selectedThreadId={panel !== null && panel.k === 'session' ? panel.threadId : null} onSession={(tid) => setPanel((current) => (current !== null && current.k === 'session' && current.threadId === tid ? null : { k: 'session', threadId: tid }))} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
                   // 评审由守护进程自起门控会话；路由等会话起好从登记簿拿地址返回，窗口统一打开（首击即达）。
                   onToast({ icon: 'clock', lead: '正在打开评审页…' });
                   void reviewDeliverable(reqId, dlvId).then((o) => {
@@ -165,11 +204,13 @@ export function RequirementsPanel({
 
 /* ── A requirement card: icon + wrapping title, hover actions (out of flow), created
  * time pinned right on row 1, and its sessions as rows INSIDE the card. ── */
-function ReqCard({ requirement: r, rowsByThread, patch, selectedThreadId, onSession, onContexts, onHistory, onNewSession, onToast, onReview }: {
+function ReqCard({ requirement: r, rowsByThread, patch, hideArchivedSessions, selectedThreadId, onSession, onContexts, onHistory, onNewSession, onToast, onReview }: {
   requirement: Requirement;
   rowsByThread: Map<string, unknown>;
   /** 乐观写（useRequirements 的 patch）：归档/恢复/重新开启都走它，卡片在视图间流动。 */
   patch: (id: string, patch: { stage?: RequirementStage; archived?: boolean }) => Promise<boolean>;
+  /** 显示选项「隐藏归档会话」（本浏览器记忆，缺省隐藏）：true 时卡片不再画已归档的会话行。 */
+  hideArchivedSessions: boolean;
   /** 右侧详情正开着的那条会话（工坊反查选中态）：null = 详情没开或开的是别的面板。 */
   selectedThreadId: string | null;
   onSession: (threadId: string) => void;
@@ -246,6 +287,8 @@ function ReqCard({ requirement: r, rowsByThread, patch, selectedThreadId, onSess
           // 已归档：行从归档列表来（活跃列表不收），展示照旧（图标、标题都是原来的），
           // 只加「已归档」——与收件箱的字序一致，它顶掉工作状态与等你回复。
           const archived = row ? inboxRowArchived(row) : false;
+          // 显示选项「隐藏归档会话」（缺省开）：勾着时卡片不画已归档的会话行。
+          if (hideArchivedSessions && archived) return null;
           const waiting = !archived && (row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting');
           const subject = (row?.subject?.trim() ? row.subject : null) ?? '会话';
           // 工作状态＝收件箱会话行自己的方案：行上的 run 字（启动的会话才有，launch 的 run line 决定），

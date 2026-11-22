@@ -14,6 +14,8 @@
 .ib-req-wp-head h1 { font-size: 18px; font-weight: 650; letter-spacing: -0.01em; margin: 0; }
 .ib-req-wp-new { margin-left: auto; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 0; background: none; border-radius: 7px; font: inherit; color: var(--muted-foreground); cursor: pointer; transition: background-color 120ms ease-out, color 120ms ease-out; }
 .ib-req-wp-new:hover { background: color-mix(in oklch, var(--muted) 55%, transparent); color: var(--foreground); }
+/* 显示选项的三点（加号右侧）：同加号的按钮样子，去掉 margin-left:auto 才能紧挨着排。 */
+.ib-req-wp-new.ib-req-wp-more { margin-left: 0; }
 /* ── 需求视图分段控件（进行中/已完成/已归档，带计数；审批"工坊-视图切换设计稿"） ── */
 .ib-req-wp-views { display: flex; gap: 4px; padding: 10px 16px 0; }
 .ib-req-wp-view { display: inline-flex; align-items: center; gap: 6px; padding: 5px 13px; border-radius: 999px; border: 1px solid transparent; background: none; font: inherit; font-size: 12.5px; font-weight: 550; color: var(--muted-foreground); cursor: pointer; transition: background-color 120ms ease-out, color 120ms ease-out; }
