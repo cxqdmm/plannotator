@@ -792,8 +792,12 @@ export class InboxWake {
       if (commands === null) {
         // No registry, a stopped Inbox, an older one without the route, a
         // rotated token: wait and try again, longer each time, never for good.
+        const firstFailure = this.backoffMs === 0;
         this.backoffMs = this.backoffMs ? Math.min(this.backoffMs * 2, INBOX_RETRY_MS.max) : INBOX_RETRY_MS.first;
         this.retryAt = Date.now() + this.backoffMs;
+        // 诊断（approval "workshop-interrupt" 排查）：轮询一断，会话在收件箱里就读成未连接、
+        // 回复送不进去——让宿主终端留一行现场（首次失败说一声，退避加长不再刷屏）。
+        if (firstFailure) this.target.notify(`[Plannotator] 收件箱轮询失败，${Math.round(this.backoffMs / 1000)}s 后重试；期间会话显示未连接、回复暂停送达。`);
         return;
       }
       this.backoffMs = 0;

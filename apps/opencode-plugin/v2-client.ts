@@ -12,6 +12,8 @@ import type { OpenCodeBridgeAgent } from "./cli-bridge";
 /** The subset of the V2 session domain this plugin touches. */
 export interface V2SessionDomain {
   get?: (input: { sessionID: string }) => Promise<{ location?: { directory?: string }; title?: string }>;
+  /** 全量会话列表（envelope 或裸数组）：会话唤醒扫描用（每条含 id 与 time_updated）。 */
+  list?: (input?: unknown) => Promise<unknown>;
   prompt?: (input: {
     sessionID: string;
     text: string;
@@ -157,7 +159,7 @@ export interface V2BridgeClient {
   dispose: () => void;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object";
 }
 
@@ -169,7 +171,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * on anything else and the throw lands in a caller's catch, where it degrades
  * silently rather than loudly, so both shapes are accepted here instead.
  */
-function readEntries(response: unknown): unknown[] {
+export function readEntries(response: unknown): unknown[] {
   if (Array.isArray(response)) return response;
   if (isRecord(response) && Array.isArray(response.data)) return response.data;
   return [];

@@ -45,9 +45,14 @@ import {
 } from "@plannotator/shared/inbox/agent-link";
 import { INBOX_REMINDER_TEXT, INBOX_REMINDER_TEXT_NO_WAKE, INBOX_TOOL_NAME, inboxAgentTool } from "@plannotator/shared/inbox/connection";
 import { createOpenCodeMessageId, isAskTurnActive } from "./opencode-session-bridge";
-import type { V2ContextLike } from "./v2-client";
+import { isRecord, readEntries, type V2ContextLike } from "./v2-client";
 
 export const OPENCODE_INBOX_HOST = "opencode";
+
+/** 唤醒扫描的周期（毫秒）：每分钟为最近活跃的会话补建 wake（approval "workshop-interrupt"）。 */
+const WAKE_SWEEP_EVERY_MS = 60_000;
+/** 扫描只认「最近活跃」的会话（其 time_updated 落在窗口内），不无限为陈年旧会话建轮询。 */
+const WAKE_SWEEP_SESSION_WINDOW_MS = 24 * 60 * 60_000;
 
 /** The plugin's package.json: beside the source (a checkout), or one level up from the built `dist/server.js`. */
 function findPluginPackageJson(from: string): string | null {
@@ -395,6 +400,8 @@ type SteerOutcome = boolean | "abandoned";
 class OpenCode2Wakes {
   private readonly wakes = new Map<string, InboxWake>();
   private readonly states = new Map<string, SessionState>();
+  /** The wake sweep's timer (null until the service starts). */
+  private sweepTimer: ReturnType<typeof setInterval> | null = null;
   /** Session ids already looked up (root or child), so each is resolved once. */
   private readonly seen = new Set<string>();
   private readonly controller = new AbortController();
@@ -426,6 +433,16 @@ class OpenCode2Wakes {
         this.eventsAvailable = false;
       }
     })();
+    // 唤醒扫描（approval "workshop-interrupt" 排查的根治）：会话唤醒此前是懒启动（调用工具/跑起来才建），
+    // 空闲会话——重启后的、被打断后的——没有 wake，排队的回复送不进去。每分钟为「最近活跃」的会话
+    // 补建 wake（v2.session.list），排队的回复与打断指令随之送达；悄悄停摆的 wake 也在一分钟内自愈。
+    const sweep = () => {
+      if (this.controller.signal.aborted) return;
+      void this.sweepWakes().catch(() => undefined);
+    };
+    sweep();
+    this.sweepTimer = setInterval(sweep, WAKE_SWEEP_EVERY_MS);
+    (this.sweepTimer as { unref?: () => void }).unref?.();
   }
 
   /**
@@ -511,6 +528,8 @@ class OpenCode2Wakes {
     // Shutting down: no fallback is sent; the reply stays undelivered and is picked up at the next start.
     for (const entry of [...this.steering.values()]) entry.settle("abandoned");
     this.controller.abort();
+    if (this.sweepTimer) clearInterval(this.sweepTimer);
+    this.sweepTimer = null;
     for (const wake of this.wakes.values()) wake.dispose();
     this.wakes.clear();
   }
@@ -537,6 +556,27 @@ class OpenCode2Wakes {
       this.states.set(sessionID, state);
     }
     return state;
+  }
+
+  /**
+   * 唤醒扫描（approval "workshop-interrupt" 排查的根治）：会话唤醒此前是懒启动（调用工具/跑起来
+   * 才建），空闲会话——重启后的、被打断后的——没有 wake，排队的回复送不进去。每分钟为「最近活跃」
+   * 的会话补建 wake（v2.session.list，24h 内动过的），排队的回复与打断指令随之送达；悄悄停摆的
+   * wake 也在一分钟内被扫描重建（自愈）。已 watch 的跳过，不重复建。
+   */
+  private async sweepWakes(): Promise<void> {
+    const list = this.v2.session?.list;
+    if (typeof list !== "function") return;
+    const sessions = readEntries(await list.call(this.v2.session, {}));
+    const cutoff = Date.now() - WAKE_SWEEP_SESSION_WINDOW_MS;
+    for (const entry of sessions) {
+      if (!isRecord(entry)) continue;
+      const sessionID = typeof entry.id === "string" ? entry.id : null;
+      if (!sessionID || this.wakes.has(sessionID)) continue;
+      const updated = typeof entry.time_updated === "number" ? entry.time_updated : 0;
+      if (updated > 0 && updated < cutoff) continue;
+      this.watch(sessionID);
+    }
   }
 
   private onEvent(event: unknown): void {
