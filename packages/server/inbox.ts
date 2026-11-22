@@ -261,7 +261,7 @@ import { createInboxReplyDrafts } from "./inbox-reply-drafts";
 import { createInboxCommentDrafts } from "./inbox-comment-drafts";
 import { createInboxTakeBack } from "./inbox-take-back";
 import { createInboxAsk } from "./inbox-ask";
-import { claudeStreamFileOf, createInboxStreamRoute } from "./inbox-stream";
+import { createInboxStreamRoute, streamSourceOf } from "./inbox-stream";
 import type { InboxAskTimes } from "./inbox-ask-live";
 import { createInboxPins } from "./inbox-pins";
 import { createInboxPriority } from "./inbox-priority";
@@ -5364,15 +5364,15 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     // `run` (additive, launch only): the launched thread's run line; null while the agent rests.
     // `attach_command` (with `run`): the host's attach command, there while the agent rests too.
     const run = await launch.runOf(thread.thread_id, true);
-    // `stream` (additive): the thread's owner is a Claude Code session whose transcript this machine has, so the
-    // pane's 「对话流」 entry shows. A cheap stat, never a read (inbox-stream.ts).
-    const streamOwner = claudeStreamFileOf(thread.thread_id, store, agentEnvironment);
+    // `stream` (additive): the thread's owner is a session whose stream this machine can read (claude-code's
+    // transcript, opencode's v2 库), so the pane's 「对话流」 entry shows. A cheap stat, never a read (inbox-stream.ts).
+    const streamOwner = streamSourceOf(thread.thread_id, store, agentEnvironment);
     const listed = store.listRow(thread.thread_id);
     // Its `tags` too, as the list's rows have them: an archived thread's header line reads them (approval "inbox-thread-tags").
     const tags = listed ? store.allThreadTags().get(thread.thread_id) : undefined;
     const row = listed && tags ? { ...listed, tags } : listed;
     // `row` (additive): the thread's list row, also for an archived thread, which the window's list leaves out.
-    return { serverSession, cursor, thread: { ...withRepo, ...("file" in streamOwner ? { stream: true as const } : {}) }, row: row ? withSnooze(launch.rowDecorator()(row)) : row, ...(run === undefined ? {} : { run, attach_command: launch.attachOf(thread.thread_id) }) };
+    return { serverSession, cursor, thread: { ...withRepo, ...(!("none" in streamOwner) ? { stream: true as const } : {}) }, row: row ? withSnooze(launch.rowDecorator()(row)) : row, ...(run === undefined ? {} : { run, attach_command: launch.attachOf(thread.thread_id) }) };
   };
 
   const handle = async (req: Request, via: RequestVia): Promise<Response> => {
@@ -5627,8 +5627,16 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
           return json({ error: "会话未连接（没有在轮询收件箱），打断送不到。", code: "session_not_connected" }, 409);
         }
         // 连着但没自报会打断（旧插件：这个会话启动得比这功能早）：明说，别让它静默作废。
+        // 文案按宿主区分：/reload-plugins 是 Claude Code 的命令，opencode 的插件要走自己的更新+重开。
         if (!live.interruptCapable(recipient.session)) {
-          return json({ error: "这个会话的 Plannotator 插件是旧版（会话启动早于打断功能），不认识打断。重开该会话，或在会话里跑一次 /reload-plugins 后再试。", code: "session_too_old" }, 409);
+          const ownerHost = store.recipientOf(root)?.host ?? "";
+          const fix =
+            ownerHost === "opencode"
+              ? "更新 opencode 的 plannotator 插件（opencode2 reload 或重启 opencode）后重开该会话再试。"
+              : ownerHost === "claude-code"
+                ? "重开该会话，或在会话里跑一次 /reload-plugins 后再试。"
+                : "更新该会话的 plannotator 插件后重开会话再试。";
+          return json({ error: `这个会话的 plannotator 插件不支持打断（启动早于打断功能）。${fix}`, code: "session_too_old" }, 409);
         }
         pendingInterrupt.set(recipient.session, { id: crypto.randomUUID(), at: Date.now() });
         // A poll held open right now answers at once, instead of at its timer (up to 20 s later): 打断要像 Esc 一样即时。

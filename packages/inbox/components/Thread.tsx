@@ -407,6 +407,11 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
   const boxSeen = useRef({ open: false, thread: thread.thread_id });
   // 会话「对话流」: the pane over the thread (packages/inbox/stream/SessionStreamPane.tsx).
   const [streamOpen, setStreamOpen] = useState(false);
+  /** 对话流按钮的宿主标：线程根的收件宿主（opencode 会话 → opencode 的标），退回 Claude Code。 */
+  const streamHost = (() => {
+    const root = thread.messages.find((message) => message.id === thread.thread_id);
+    return root?.to?.host ?? (root?.author.kind === "agent" ? root.author.host ?? "claude-code" : "claude-code");
+  })();
   /** The thread whose draft was put back already (once per visit). */
   const restoredFor = useRef<string | null>(null);
   // A paste is said in the thread's polite live region ("Attached pasted-image-….png").
@@ -4728,7 +4733,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
           </span>
         </div>
       )}
-      {streamOpen && <SessionStreamPane threadId={thread.thread_id} onClose={() => setStreamOpen(false)} />}
+      {streamOpen && <SessionStreamPane threadId={thread.thread_id} agentName={streamHost === "opencode" ? "OpenCode" : "Claude"} onClose={() => setStreamOpen(false)} />}
       <div className="ib-phead" ref={headRef} data-artifacts-on={artifactsOn ? '' : undefined}>
         {/* A phone leads with the way back to the list; the ⋯ menu (with Archive) sits at the right, where the close was. */}
         {phone && artifactsOn ? (
@@ -4826,9 +4831,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
               />
             )}
             {/* 会话「对话流」 (packages/inbox/stream/): the thread's own agent session working, as a pane over the
-                thread. Offered only when the read says a transcript is there (`stream`, windowThreadRead), and drawn
-                with the host's own mark — Claude Code's today (the only transcript the stream reads), the session's
-                own host when another one lands — so the icon names whose work the pane shows. */}
+                thread. Offered only when the read says a stream is there (`stream`: claude-code's transcript,
+                opencode's v2 库), and drawn with the session's own host mark — the icon names whose work the pane shows. */}
             {!artifactsOn && thread.stream === true && (
               <button
                 type="button"
@@ -4839,7 +4843,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                 data-stream-button=""
                 onClick={() => setStreamOpen((open) => !open)}
               >
-                <HostMark host="claude-code" />
+                <HostMark host={streamHost} />
               </button>
             )}
             {artifactsButton && (

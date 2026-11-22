@@ -29,7 +29,9 @@
  */
 
 import { readdirSync, statSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
+import { Database } from "bun:sqlite";
 import { InboxError } from "@plannotator/shared/inbox/schema";
 import type { InboxStore } from "@plannotator/shared/inbox/store";
 import type { AgentEnvironment } from "./inbox-agents";
@@ -170,6 +172,110 @@ export function claudeStreamFileOf(threadId: string, store: InboxStore, environm
 /** The mtime guard: an unchanged transcript answers with no read (the pane polls every second or two). */
 const unchanged = new Map<string, { size: number; mtime: number }>();
 
+/* ── opencode（v2 存储，设计 req_01M81EZN9 内交付的 design-doc-opencode-stream）：只读镜像它的 sqlite ── */
+
+interface OpenCodePart {
+  type?: string;
+  text?: string;
+  name?: string;
+  state?: { status?: string; input?: unknown; content?: { type?: string; text?: string }[] };
+}
+interface OpenCodeMessage {
+  type?: string;
+  content?: OpenCodePart[];
+  time?: { created?: number };
+}
+
+/** opencode 的数据目录（它自身的规则：`XDG_DATA_HOME` 优先，否则 `~/.local/share` 下）。不存在：null。 */
+export function openCodeDataDir(): string | null {
+  const base = process.env.XDG_DATA_HOME?.trim() || join(homedir(), ".local", "share");
+  const dir = join(base, "opencode");
+  try {
+    statSync(dir);
+    return dir;
+  } catch {
+    return null;
+  }
+}
+
+/** opencode 会话（v2 sqlite）的流来源：库文件在就有流（会话没写过 → 空流）；库不在 → 无流。 */
+export function openCodeStreamSource(session: string): { host: "opencode"; db: string; session: string } | { none: "dir" | "db" } {
+  const dir = openCodeDataDir();
+  if (!dir) return { none: "dir" };
+  const db = join(dir, "opencode.db");
+  try {
+    statSync(db);
+  } catch {
+    return { none: "db" };
+  }
+  return { host: "opencode", db, session };
+}
+
+/** opencode v2 库里该会话的全部条目，最旧在前（`i` 为全局序）。只读连接，绝不写它的库。 */
+export function openCodeStreamEntries(dbPath: string, session: string): StreamEntry[] {
+  const db = new Database(dbPath, { readonly: true });
+  try {
+    const rows = db.query("SELECT type, data FROM session_message WHERE session_id = ? ORDER BY seq").all(session) as { type: string; data: string }[];
+    const entries: StreamEntry[] = [];
+    for (const row of rows) {
+      let data: OpenCodeMessage;
+      try {
+        data = JSON.parse(row.data ?? "{}") as OpenCodeMessage;
+      } catch {
+        continue;
+      }
+      const at = data.time?.created;
+      const when = typeof at === "number" && Number.isFinite(at) ? { t: at } : {};
+      if (row.type === "user") {
+        for (const part of data.content ?? []) {
+          if (part.type === "text" && part.text?.trim()) entries.push({ i: entries.length, kind: "you", ...when, text: clip(part.text, CLAUDE_STREAM_TEXT_MAX) });
+        }
+        continue;
+      }
+      // assistant 以外的行（idle、model-switched、synthetic）不是对话内容。
+      if (row.type !== "assistant") continue;
+      for (const part of data.content ?? []) {
+        if (part.type === "text" && part.text?.trim()) entries.push({ i: entries.length, kind: "text", ...when, text: clip(part.text, CLAUDE_STREAM_TEXT_MAX) });
+        else if (part.type === "reasoning" && part.text?.trim()) entries.push({ i: entries.length, kind: "think", ...when, text: clip(part.text, CLAUDE_STREAM_TEXT_MAX) });
+        else if (part.type === "tool") {
+          const state = part.state ?? {};
+          const done = state.status === "completed" || state.status === "error";
+          const output = (state.content ?? []).map((piece) => piece.text ?? "").join("\n").trim();
+          entries.push({
+            i: entries.length,
+            kind: "tool",
+            ...when,
+            tool: part.name ?? "",
+            brief: toolBriefOf(part.name ?? "", state.input),
+            input: clip(JSON.stringify(state.input ?? {}, null, 1), 800),
+            ...(done ? { result: clip(output, CLAUDE_STREAM_RESULT_MAX) + (state.status === "error" ? " ⚠" : "") } : {}),
+          });
+        }
+      }
+    }
+    return entries;
+  } finally {
+    db.close();
+  }
+}
+
+/** 线程的流来源，按宿主分发：claude-code 的 transcript、opencode 的 v2 库，其余宿主无流。 */
+export function streamSourceOf(
+  threadId: string,
+  store: InboxStore,
+  environment: AgentEnvironment,
+): { host: "claude-code"; file: string; session: string; folder: string } | { host: "opencode"; db: string; session: string } | { none: "thread" | "host" | "session" | "file" | "dir" | "db" } {
+  const thread = store.thread(threadId);
+  const owner = thread ? store.threadOwner(threadId) : null;
+  if (!thread || !owner) return { none: "thread" };
+  if (owner.host === "opencode") {
+    const source = openCodeStreamSource(owner.session);
+    return "none" in source ? { none: source.none } : { host: "opencode", db: source.db, session: source.session };
+  }
+  const claude = claudeStreamFileOf(threadId, store, environment);
+  return "none" in claude ? claude : { host: "claude-code", file: claude.file, session: claude.session, folder: claude.folder };
+}
+
 export function createInboxStreamRoute(options: { store: InboxStore; environment: () => AgentEnvironment; json: (body: unknown, status?: number) => Response }): { route: (req: Request, url: URL) => Promise<Response | null> } {
   const fromWindow = (req: Request): boolean => req.headers.get("sec-fetch-site")?.trim().toLowerCase() === "same-origin";
   return {
@@ -178,10 +284,38 @@ export function createInboxStreamRoute(options: { store: InboxStore; environment
       if (!match) return null;
       if (req.method !== "GET") return options.json({ error: "Use GET.", code: "method" }, 405);
       if (!fromWindow(req)) throw new InboxError("window_only", "The stream answers only the Inbox window.");
-      const resolved = claudeStreamFileOf(match[1]!, options.store, options.environment());
+      const resolved = streamSourceOf(match[1]!, options.store, options.environment());
       if ("none" in resolved) {
         const code = resolved.none === "thread" || resolved.none === "host" ? "no_session" : "no_transcript";
-        return options.json({ error: code === "no_session" ? "This thread's owner is not a Claude Code session." : "This session has no transcript on this machine.", code }, 404);
+        return options.json({ error: code === "no_session" ? "This thread's owner is not a session with a stream." : "This session has no transcript on this machine.", code }, 404);
+      }
+      if (resolved.host === "opencode") {
+        // opencode（v2 sqlite）：库文件做变更守卫；条目按 seq 全量排出后窗口分页（一条消息可产多条）。
+        let size = 0;
+        let mtime = 0;
+        try {
+          const stat = statSync(resolved.db);
+          size = stat.size;
+          mtime = stat.mtimeMs;
+        } catch {
+          return options.json({ error: "This session has no transcript on this machine.", code: "no_transcript" }, 404);
+        }
+        const after = Number(url.searchParams.get("after") ?? Number.NaN);
+        const before = Number(url.searchParams.get("before") ?? Number.NaN);
+        const seen = unchanged.get(resolved.db);
+        if (seen && seen.size === size && seen.mtime === mtime && Number.isSafeInteger(after) && after > 0) {
+          return options.json({ entries: [], cursor: after, more: after > 0, session: { id: resolved.session, host: "opencode" } });
+        }
+        const entries = openCodeStreamEntries(resolved.db, resolved.session);
+        unchanged.set(resolved.db, { size, mtime });
+        const total = entries.length;
+        const window = Number.isSafeInteger(before) && before > 0 ? { from: Math.max(0, before - CLAUDE_STREAM_PAGE), to: before } : { from: Math.max(0, total - CLAUDE_STREAM_PAGE), to: total };
+        return options.json({
+          entries: entries.slice(window.from, window.to),
+          cursor: total,
+          more: window.from > 0,
+          session: { id: resolved.session, host: "opencode" },
+        });
       }
       // The mtime guard: the file was not written since the last read, so nothing grew.
       let size = 0;

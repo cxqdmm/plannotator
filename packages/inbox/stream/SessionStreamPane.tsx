@@ -59,7 +59,7 @@ function wordsOf(cause: unknown): string {
   return cause instanceof Error ? cause.message : String(cause);
 }
 
-export function SessionStreamPane({ threadId, onClose }: { threadId: string; onClose: () => void }) {
+export function SessionStreamPane({ threadId, agentName = "Claude", onClose }: { threadId: string; /** 工作流是谁的（宿主名，如 Claude / OpenCode）：transcript 里的署名。 */ agentName?: string; onClose: () => void }) {
   const [entries, setEntries] = useState<InboxStreamEntry[]>([]);
   const [more, setMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -354,7 +354,7 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
         <ChatTranscript
           messages={messages}
           status={status}
-          agentName="Claude"
+          agentName={agentName}
           userName="你"
           label="会话对话流"
           scrollRef={list}

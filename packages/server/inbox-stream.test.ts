@@ -9,6 +9,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Database } from "bun:sqlite";
 import type { InboxAuthor } from "@plannotator/core/inbox-types";
 import { InboxStore } from "@plannotator/shared/inbox/store";
 import { createAgentEnvironmentFor } from "./inbox-agents";
@@ -137,5 +138,86 @@ describe("the stream route", () => {
     const answer = await call(route, `/api/inbox/threads/${threadId}/stream`);
     expect(answer.status).toBe(404);
     expect(answer.data.code).toBe("no_transcript");
+  });
+});
+
+describe("the opencode stream (v2 sqlite)", () => {
+  const OC: Extract<InboxAuthor, { kind: "agent" }> = { kind: "agent", host: "opencode", session: "ses_open1", name: null };
+
+  /** 一条 opencode owner 的线程 + 临时 v2 库（建表 + 该会话的消息）。返回 route、threadId 与库路径。 */
+  function ocSetup(rows: { type: string; data: unknown }[]): { route: ReturnType<typeof createInboxStreamRoute>["route"]; threadId: string; db: string; restoreEnv: () => void } {
+    const root = scratch();
+    const previousXdg = process.env.XDG_DATA_HOME;
+    process.env.XDG_DATA_HOME = root;
+    const dir = join(root, "opencode");
+    mkdirSync(dir, { recursive: true });
+    const db = join(dir, "opencode.db");
+    const store = InboxStore.open(join(root, "data"));
+    const project = store.ensureProject({ name: "api", root: "/work/api" });
+    const thread = store.sendMessage({ project_id: project.id, author: OC, body: "opencode 开工。" }).message;
+    const sql = new Database(db);
+    sql.exec("CREATE TABLE session_message (id TEXT PRIMARY KEY, session_id TEXT, type TEXT, seq INTEGER, data TEXT)");
+    rows.forEach((row, index) => sql.query("INSERT INTO session_message (id, session_id, type, seq, data) VALUES (?, ?, ?, ?, ?)").run(`msg_${index}`, "ses_open1", row.type, index, JSON.stringify(row.data)));
+    sql.close();
+    const stream = createInboxStreamRoute({ store, environment: () => createAgentEnvironmentFor({ platform: process.platform, homeDir: root, env: {} }), json: (body, status) => new Response(JSON.stringify(body ?? null), { status: status ?? 200 }) });
+    return { route: stream.route, threadId: thread.id, db, restoreEnv: () => { if (previousXdg === undefined) delete process.env.XDG_DATA_HOME; else process.env.XDG_DATA_HOME = previousXdg; } };
+  }
+
+  test("条目按 seq 排出：user/reasoning/text/tool（完成带结果）各就各位，cursor 与 more 如实", async () => {
+    const { route, threadId, restoreEnv } = ocSetup([
+      { type: "user", data: { content: [{ type: "text", text: "改一下配色" }], time: { created: 1000 } } },
+      { type: "assistant", data: { content: [{ type: "reasoning", text: "想想" }, { type: "tool", name: "read", state: { status: "completed", input: { path: "a.css" }, content: [{ type: "text", text: "color: red" }] } }, { type: "text", text: "改好了" }], time: { created: 2000 } } },
+      { type: "idle", data: {} },
+    ]);
+    try {
+      const answer = await call(route, `/api/inbox/threads/${threadId}/stream`);
+      expect(answer.status).toBe(200);
+      const entries = answer.data.entries as { kind: string; text?: string; tool?: string; result?: string }[];
+      expect(entries.map((entry) => entry.kind)).toEqual(["you", "think", "tool", "text"]);
+      expect(entries[2]!.tool).toBe("read");
+      expect(entries[2]!.result).toBe("color: red");
+      expect(answer.data.cursor).toBe(4);
+      expect(answer.data.more).toBe(false);
+      expect((answer.data.session as { host: string }).host).toBe("opencode");
+    } finally {
+      restoreEnv();
+    }
+  });
+
+  test("未完成的 tool 没有结果（运行中）；变更守卫让 after 轮询零读", async () => {
+    const { route, threadId, db, restoreEnv } = ocSetup([
+      { type: "assistant", data: { content: [{ type: "tool", name: "bash", state: { status: "running", input: { command: "sleep 1" } } }] } },
+    ]);
+    try {
+      const first = await call(route, `/api/inbox/threads/${threadId}/stream`);
+      const entries = first.data.entries as { kind: string; result?: string }[];
+      expect(entries[0]!.kind).toBe("tool");
+      expect(entries[0]!.result).toBeUndefined();
+      // 变更守卫：库没变、带 after 的轮询零读（空 entries，cursor 原地）。
+      const poll = await call(route, `/api/inbox/threads/${threadId}/stream?after=1`);
+      expect(poll.data.entries).toEqual([]);
+    } finally {
+      rmSync(db, { force: true });
+      restoreEnv();
+    }
+  });
+
+  test("库不存在（旧版目录缺失）→ 无流不抛错", async () => {
+    const root = scratch();
+    const previousXdg = process.env.XDG_DATA_HOME;
+    process.env.XDG_DATA_HOME = join(root, "empty");
+    mkdirSync(join(root, "empty"), { recursive: true });
+    try {
+      const store = InboxStore.open(join(root, "data"));
+      const project = store.ensureProject({ name: "api", root: "/work/api" });
+      const thread = store.sendMessage({ project_id: project.id, author: OC, body: "hi" }).message;
+      const stream = createInboxStreamRoute({ store, environment: () => createAgentEnvironmentFor({ platform: process.platform, homeDir: root, env: {} }), json: (body, status) => new Response(JSON.stringify(body ?? null), { status: status ?? 200 }) });
+      const answer = await call(stream.route, `/api/inbox/threads/${thread.id}/stream`);
+      expect(answer.status).toBe(404);
+      expect(answer.data.code).toBe("no_transcript");
+    } finally {
+      if (previousXdg === undefined) delete process.env.XDG_DATA_HOME;
+      else process.env.XDG_DATA_HOME = previousXdg;
+    }
   });
 });
