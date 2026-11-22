@@ -188,6 +188,28 @@ describe("the requirements routes", () => {
     expect(events.some((event) => event.kind === "stage" && event.from === "design" && event.to === "design-review")).toBe(true);
   });
 
+  test("审阅裁决落账不改阶段：approved/annotated 写 审阅裁决 事件，读侧算成 deliverable.verdict（后写的赢）", async () => {
+    const made = await createOne();
+    const delivered = await call("POST", `/api/requirements/${made.id}/deliverables`, { kind: "design-doc", ref: "docs/plan.md", title: "方案一" });
+    const docId = (delivered.data.deliverable as { id: string }).id;
+    await call("PATCH", `/api/requirements/${made.id}`, { stage: "design-review" });
+    routes().store.reviewVerdict(made.id, docId, "annotated", 3);
+    let detail = (await call("GET", `/api/requirements/${made.id}`)).data as { requirement: { stage: string; deliverables: { id: string; verdict?: string }[] }; events: { kind: string; field?: string; from?: string; to?: string; note?: string }[] };
+    // 阶段不动（350d4537a 的拍板），裁决进历史，读侧带 verdict。
+    expect(detail.requirement.stage).toBe("design-review");
+    expect(detail.requirement.deliverables.find((d) => d.id === docId)?.verdict).toBe("annotated");
+    const verdictEvent = detail.events.find((event) => event.field === "审阅裁决");
+    expect(verdictEvent?.from).toBe(docId);
+    expect(verdictEvent?.to).toBe("annotated");
+    expect(verdictEvent?.note).toContain("退回");
+    expect(verdictEvent?.note).toContain("3");
+    // 同一文档再审、改判：后写的裁决赢。
+    routes().store.reviewVerdict(made.id, docId, "approved", null);
+    detail = (await call("GET", `/api/requirements/${made.id}`)).data as typeof detail;
+    expect(detail.requirement.deliverables.find((d) => d.id === docId)?.verdict).toBe("approved");
+    expect(detail.events.filter((event) => event.field === "审阅裁决")).toHaveLength(2);
+  });
+
   test("a delete removes the record and writes history; an unknown id is 404; an unknown subpath is not this module's", async () => {
     const made = await createOne();
     expect((await call("DELETE", `/api/requirements/${made.id}`)).status).toBe(200);

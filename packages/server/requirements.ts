@@ -84,6 +84,9 @@ export interface RequirementStore {
   deliver(id: string, input: { kind: DeliverableKind; ref: string; title?: string; by?: string | null }): Deliverable;
   undeliver(id: string, deliverableId: string): void;
   say(id: string, note: string, by?: string | null): void;
+  /** 设计评审的裁决落账（350d4537a 后阶段不再自动流转）：一条 审阅裁决 事件（from=交付物 id、to=approved/annotated），
+   *  读侧把它算成 deliverable.verdict，窗口据此显示 已批准/已退回；不挪阶段、不送达会话。 */
+  reviewVerdict(id: string, deliverableId: string, decision: "approved" | "annotated", annotationCount: number | null): void;
   addContext(id: string, input: { kind: "link" | "file"; name: string; ref: string; image?: boolean; by?: string | null }): RequirementContext;
   patchContext(id: string, contextId: string, patch: { name?: string; ref?: string }): RequirementContext;
   removeContext(id: string, contextId: string): void;
@@ -154,10 +157,19 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
 }
 
 export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null; /** Whether a thread's row waits on the person (the Board's You-line idea), for the reads' computed flag. */ waitingOf?: (threadId: string) => boolean; /** The stage-change notifier (stage-auto-design §1): a person-voiced reply into the requirement's newest session. */ notifyThread?: (threadId: string, words: string) => void; /** Stop the launched session a thread owns (the workshop's archive releases Inbox-spawned agents). */ stopLaunchOf?: (threadId: string) => Promise<unknown>; /** 手动起一个该项目的代码评审（工坊入口）：返回评审页地址。 */ startCodeReview?: (projectRoot: string) => Promise<{ url: string } | { error: string }>; /** The project root of one thread, for the gated code review a session row starts. */ threadProjectRootOf?: (threadId: string) => string | null; /** 门控代码评审（会话行入口）：起评审子进程（页面自开、带 关闭/通过），结论由实现方落历史并送达会话；不等待，立即返回 already 表示该会话已有评审在跑（幂等）——url 是那个仍在进行的评审页地址（标签被手动关掉时拿它重新打开），子进程刚起可能还没打印出来（null）。 */ startGatedCodeReview?: (projectRoot: string, requirementId: string, threadId: string) => { state: "started" | "already"; url: string | null } }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
-  /** waiting, computed on reads: any linked session's thread waits on the person. */
+  /** waiting + 审阅裁决, computed on reads (never stored): any linked session's thread waits on the person;
+   *  each deliverable carries its LATEST verdict (events are append-ordered — later ones overwrite earlier). */
   const withWaiting = (record: Requirement): Requirement => {
     const waitingThread = record.threads.find((threadId) => options.waitingOf?.(threadId) === true);
-    return waitingThread === undefined ? record : { ...record, waiting: true, waiting_thread: waitingThread };
+    const verdictOf = new Map<string, "approved" | "annotated">();
+    for (const event of events.events) {
+      if (event.req !== record.id || event.kind !== "say" || event.field !== "审阅裁决") continue;
+      if ((event.to === "approved" || event.to === "annotated") && typeof event.from === "string") verdictOf.set(event.from, event.to);
+    }
+    const deliverables = verdictOf.size === 0 ? record.deliverables : record.deliverables.map((d) => (verdictOf.has(d.id) ? { ...d, verdict: verdictOf.get(d.id) } : d));
+    return waitingThread === undefined
+      ? (deliverables === record.deliverables ? record : { ...record, deliverables })
+      : { ...record, waiting: true, waiting_thread: waitingThread, deliverables };
   };
   const dir = join(options.dataDir, "requirements");
   const requirementsPath = join(dir, "requirements.json");
@@ -334,6 +346,17 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       if (typeof note !== "string" || !note.trim()) throw new RequirementStoreError("validation_error", "note: a non-empty line.", "note");
       if (note.length > WHY_MAX) throw new RequirementStoreError("validation_error", `note: at most ${WHY_MAX} characters.`, "note");
       recordEvent(id, "say", { note: `${by ? `${by}: ` : ""}${note.trim()}` });
+    },
+    reviewVerdict(id: string, deliverableId: string, decision: "approved" | "annotated", annotationCount: number | null) {
+      const record = at(id);
+      const doc = record.deliverables.find((entry) => entry.id === deliverableId);
+      const title = doc?.title ?? doc?.ref ?? "设计文档";
+      const note = decision === "approved"
+        ? `设计文档「${title}」已批准`
+        : `设计文档「${title}」被退回${annotationCount !== null ? `（批注 ${annotationCount} 条）` : ""}`;
+      recordEvent(id, "say", { field: "审阅裁决", from: deliverableId, to: decision, note });
+      touch(record);
+      save([id]);
     },
     /** 需求上下文: the requirement's background material. `file` is the absolute path of a file already written
      *  into the requirement's context folder (the routes below do the writing); the store only records. */
@@ -750,7 +773,15 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
             } catch {
               outcome = {};
             }
-            // dismissed: no verdict, no move, no message.
+            // 裁决落账（approved → 已批准 / annotated → 已退回），阶段不动（350d4537a 的拍板）：
+            // 读侧算成 deliverable.verdict，工坊的 去审阅 换成 已批准/已退回。dismissed: nothing.
+            if (outcome.decision === "approved" || outcome.decision === "annotated") {
+              try {
+                store.reviewVerdict(id, doc.id, outcome.decision, typeof outcome.annotationCount === "number" ? outcome.annotationCount : null);
+              } catch {
+                // 需求在评审期间没了：无处落账。
+              }
+            }
           })
           .catch(() => {})
           .finally(() => {
@@ -833,7 +864,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         }
       }
       if (deeper === "suggestions" || deeper.startsWith("suggestions/")) {
-        return json({ error: "suggest is retired: stages move themselves — deliver a design doc to enter review; its verdict moves the stage.", code: "suggest_retired" }, 410);
+        return json({ error: "suggest is retired: stages move only by hand (PATCH) or the requirement tool's stage op; a review verdict is recorded in the history, it does not move the stage.", code: "suggest_retired" }, 410);
       }
       return null;
     } catch (error) {

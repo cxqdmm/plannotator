@@ -86,6 +86,9 @@ export interface Deliverable {
   /** Who attached it (an agent's name, or null for the person). */
   by?: string | null;
   created_at: string;
+  /** Computed on reads (never stored): this deliverable's latest review verdict — the design review's
+   *  通过/退回 lands as a 审阅裁决 event; the window shows 已批准/已退回 from it. Absent: not reviewed yet. */
+  verdict?: 'approved' | 'annotated';
 }
 
 /** An agent's (or an event bridge's) proposal to move the stage: the person adopts or dismisses it (D1: only the person moves). */

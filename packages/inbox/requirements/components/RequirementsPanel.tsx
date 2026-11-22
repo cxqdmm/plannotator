@@ -234,9 +234,14 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
               )}
               {(() => {
                 // 审阅融合进会话：待审的设计文档挂在最新会话上（产出它的那个）。
+                // 已有裁决（deliverable.verdict，读侧从 审阅裁决 事件算来）就不再喊「去审阅」：
+                // 已批准/已退回 是结果状态，点了评审也只是复用旧页——安静展示即可。
                 if (r.stage !== 'design-review' || tid !== r.threads[r.threads.length - 1]) return null;
                 const doc = r.deliverables.find((d) => d.kind === 'design-doc' || /\.(md|markdown|html?)$/i.test(d.ref));
                 if (!doc) return null;
+                if (doc.verdict === 'approved' || doc.verdict === 'annotated') {
+                  return <span className={`ib-req-wcard-verdict${doc.verdict === 'approved' ? ' ok' : ' back'}`} title={`设计文档「${doc.title ?? doc.ref}」${doc.verdict === 'approved' ? '已批准' : '已退回'}`}>{doc.verdict === 'approved' ? '已批准' : '已退回'}</span>;
+                }
                 return (
                   <Tip content={`去审阅 · ${doc.title ?? doc.ref}`}>
                     <button
@@ -477,7 +482,9 @@ function PanelContent({ panel, requirements, onClose, onReview, onToast }: {
                       const older = (detail?.requirement.deliverables ?? []).find((d) => (d.title ?? d.ref) === note) ?? null;
                       const ref = e.field ?? older?.ref ?? '';
                       const dlvId = e.from ?? older?.id ?? '';
-                      return (detail?.requirement.stage ?? req?.stage) === 'design-review' && e.to === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref) && dlvId && reqId ? '' : undefined;
+                      // 评审中的高亮只在「还没结论」时保留；已批准/已退回后这行回归普通交付行。
+                      const verdict = dlvId ? (detail?.requirement.deliverables ?? []).find((d) => d.id === dlvId)?.verdict : undefined;
+                      return verdict === undefined && (detail?.requirement.stage ?? req?.stage) === 'design-review' && e.to === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref) && dlvId && reqId ? '' : undefined;
                     })()}>
                     <button
                       type="button"
@@ -489,7 +496,9 @@ function PanelContent({ panel, requirements, onClose, onReview, onToast }: {
                         const ref = e.field ?? older?.ref ?? '';
                         const dlvId = e.from ?? older?.id ?? ''; // 事件携带的交付物 id（recordEvent 的 from）
                         if (!dlvId || !reqId) return;
-                        const underReview = (detail?.requirement.stage ?? req?.stage) === 'design-review' && e.to === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref);
+                        // 已有裁决就不再按「评审中」处理——落回普通预览，别把人带回旧评审页。
+                        const verdict = (detail?.requirement.deliverables ?? req?.deliverables ?? []).find((d) => d.id === dlvId)?.verdict;
+                        const underReview = verdict === undefined && (detail?.requirement.stage ?? req?.stage) === 'design-review' && e.to === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref);
                         if (underReview) { onReview(reqId, dlvId); return; }
                         if (/^https?:/.test(ref)) { window.open(ref, '_blank', 'noreferrer'); return; }
                         {
@@ -509,9 +518,13 @@ function PanelContent({ panel, requirements, onClose, onReview, onToast }: {
                       const ref = e.field ?? older?.ref ?? '';
                       const dlvId = e.from ?? older?.id ?? '';
                       const reviewable = (detail?.requirement.stage ?? req?.stage) === 'design-review' && e.to === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref) && dlvId && reqId;
-                      return reviewable ? (
-                        <button type="button" className="ib-req-hist-review" onClick={() => reqId && onReview(reqId, dlvId)}>去审阅</button>
-                      ) : null;
+                      if (!reviewable) return null;
+                      // 有裁决就不是「去审阅」了：已批准/已退回（deliverable.verdict，读侧算来的结果状态）。
+                      const verdict = (detail?.requirement.deliverables ?? req?.deliverables ?? []).find((d) => d.id === dlvId)?.verdict;
+                      if (verdict === 'approved' || verdict === 'annotated') {
+                        return <span className={`ib-req-hist-verdict${verdict === 'approved' ? ' ok' : ' back'}`}>{verdict === 'approved' ? '已批准' : '已退回'}</span>;
+                      }
+                      return <button type="button" className="ib-req-hist-review" onClick={() => reqId && onReview(reqId, dlvId)}>去审阅</button>;
                     })()}
                     </div>
                   ) : (
