@@ -281,7 +281,8 @@ function ReqCard({ requirement: r, rowsByThread, patch, onSession, onContexts, o
                 // 无裁决），与 stage 无关——阶段由 progress（MCP）流转，两边互不拖累。
                 // 多份待审 → 点击弹下拉（只列待审的）；单份 → 直接触发审阅。
                 // 全部裁决完 → 不显示（结果态在历史页看）。
-                const pending = r.deliverables.filter((d) => d.thread === tid && d.kind === 'design-doc' && d.verdict === undefined);
+                // 待审 = 没裁决过，或被退回后已修订待重审（新裁决覆盖旧裁决）：退回不是终点，是「改完再提」。
+                const pending = r.deliverables.filter((d) => d.thread === tid && d.kind === 'design-doc' && (d.verdict === undefined || d.verdict === 'annotated'));
                 if (pending.length === 0) return null;
                 if (pending.length === 1) {
                   const doc = pending[0]!;
@@ -619,9 +620,9 @@ function PanelContent({ panel, requirements, rowsByThread, onClose, onOpenThread
                       const older = (detail?.requirement.deliverables ?? []).find((d) => (d.title ?? d.ref) === note) ?? null;
                       const ref = e.field ?? older?.ref ?? '';
                       const dlvId = e.from ?? older?.id ?? '';
-                      // 待审高亮只看交付物本身（design-doc 且无裁决），与 stage 无关。
+                      // 待审/重审高亮：design-doc 且无裁决或已退回（修订后待重审，新裁决覆盖旧裁决）。
                       const verdict = dlvId ? (detail?.requirement.deliverables ?? []).find((d) => d.id === dlvId)?.verdict : undefined;
-                      return verdict === undefined && e.to === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref) && dlvId && reqId ? '' : undefined;
+                      return (verdict === undefined || verdict === 'annotated') && e.to === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref) && dlvId && reqId ? '' : undefined;
                     })()}>
                     <button
                       type="button"
@@ -633,10 +634,10 @@ function PanelContent({ panel, requirements, rowsByThread, onClose, onOpenThread
                         const ref = e.field ?? older?.ref ?? '';
                         const dlvId = e.from ?? older?.id ?? ''; // 事件携带的交付物 id（recordEvent 的 from）
                         if (!dlvId || !reqId) return;
-                        // 待审的设计文档点了进评审；已有裁决或非文档落回普通预览。
+                        // 待审/退回待重审的设计文档点了进评审（新裁决覆盖旧裁决）；已批准或非文档落回普通预览。
                         const doc = (detail?.requirement.deliverables ?? req?.deliverables ?? []).find((d) => d.id === dlvId);
                         const verdict = doc?.verdict;
-                        const underReview = verdict === undefined && (doc?.kind ?? e.to) === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref);
+                        const underReview = (verdict === undefined || verdict === 'annotated') && (doc?.kind ?? e.to) === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref);
                         if (underReview) { onReview(reqId, dlvId); return; }
                         if (/^https?:/.test(ref)) { window.open(ref, '_blank', 'noreferrer'); return; }
                         {
