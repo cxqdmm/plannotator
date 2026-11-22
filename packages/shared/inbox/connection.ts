@@ -1583,7 +1583,7 @@ export function inboxHandedAwayLine(to: string): string {
  * Every name in core's INBOX_HOST_NAMES must be here (this contract may not
  * import it); `connection-tags.test.ts` fails when one is missing.
  */
-export const INBOX_WAKE_AGENT_NAMES: readonly string[] = ['Claude Code', 'Pi', 'OpenCode', 'Codex', 'Cursor', 'Grok Build', 'Qwen Code', 'DeepSeek Harness', 'Antigravity', 'Cline', 'Muse Code', 'OpenClaw', 'Hermes Agent', 'Cloud agent', 'Claude Code routine', 'Grok Bot', 'Muse by Meta', 'Hermes Agent server', 'OpenClaw server']
+export const INBOX_WAKE_AGENT_NAMES: readonly string[] = ['Claude Code', 'Pi', 'OpenCode', 'Codex', 'Cursor', 'Grok Build', 'Qwen Code', 'DeepSeek Harness', 'T3 Code', 'Antigravity', 'Cline', 'Muse Code', 'OpenClaw', 'Hermes Agent', 'Cloud agent', 'Claude Code routine', 'Grok Bot', 'Muse by Meta', 'Hermes Agent server', 'OpenClaw server']
 
 /** An agent name a wake line carries: one of INBOX_WAKE_AGENT_NAMES (spacing folded), else '' (the caller says "another agent"). */
 function wakeName(value: unknown): string {
@@ -1610,6 +1610,32 @@ export const INBOX_SEND_NOW_POLL_FIELD = 'send_now'
  * An older Inbox ignores it; an older connection never sends it.
  */
 export const INBOX_HELD_POLL_FIELD = 'held'
+
+/**
+ * The poll answer field naming one pending interrupt (the person pressed 打断
+ * on the session's row): the connection that reads it aborts its running turn
+ * inside the session (`$.turn.abort`, the Ask bridge's guards) and reports on
+ * a later poll (`INBOX_INTERRUPTED_FIELD`). Handout is by session, so a
+ * session started by hand interrupts like one the Inbox started. It repeats on
+ * polls until the receipt or until it expires; an older connection ignores it.
+ */
+export const INBOX_INTERRUPT_FIELD = 'interrupt'
+
+/**
+ * The poll field by which a connection reports what such an interrupt did:
+ * `{ id, ok, message? }`. The Inbox clears its pending interrupt for that
+ * session on any receipt. An older Inbox ignores it; an older connection
+ * never sends it.
+ */
+export const INBOX_INTERRUPTED_FIELD = 'interrupted'
+
+/**
+ * The poll field (`true`) by which a connection says it can take an interrupt
+ * (`INBOX_INTERRUPT_FIELD`): a window refuses 打断 for a session that polls but
+ * never said so (an older plugin), in words that name the fix. An older Inbox
+ * ignores it; an older connection never sends it.
+ */
+export const INBOX_INTERRUPT_CAPABLE_POLL_FIELD = 'can_interrupt'
 
 /**
  * The poll field by which a connection says which session ids its
@@ -1699,6 +1725,19 @@ export function parseInboxReloadOffer(text: string): InboxReloadOffer | null {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null
     const installed = (value as Record<string, unknown>).installed
     return { installed: typeof installed === 'string' && installed.trim() && installed.length <= 64 ? installed.trim() : null }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * A poll answer's pending interrupt (`INBOX_INTERRUPT_FIELD`): its id, or null
+ * when there is none (the common case, and any malformed wording).
+ */
+export function parseInboxInterrupt(text: string): string | null {
+  try {
+    const value = (JSON.parse(text) as Record<string, unknown>)[INBOX_INTERRUPT_FIELD]
+    return typeof value === 'string' && value.trim() ? value.trim() : null
   } catch {
     return null
   }

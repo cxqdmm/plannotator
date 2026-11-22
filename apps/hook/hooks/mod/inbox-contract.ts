@@ -511,6 +511,7 @@ export const INBOX_AGENT_ACTION_LEADS: Readonly<Record<string, string>> = {
   search: 'Find messages by words, older ones too (read-only).',
   get_guide_brief: "How to write a guided review, with a worked submit_guide call.",
   card: "A Board card for work that outlasts this reply: create it, then move it and say where it is as the work moves.",
+  requirement: "The person's requirement this work belongs to: tie the thread to it, attach what you finish, and propose the next stage (they move it).",
   steps: INBOX_STEPS_ACTION_LINE,
 }
 
@@ -1566,6 +1567,32 @@ export const INBOX_SEND_NOW_POLL_FIELD = 'send_now'
 export const INBOX_HELD_POLL_FIELD = 'held'
 
 /**
+ * The poll answer field naming one pending interrupt (the person pressed 打断
+ * on the session's row): the connection that reads it aborts its running turn
+ * inside the session (`$.turn.abort`, the Ask bridge's guards) and reports on
+ * a later poll (`INBOX_INTERRUPTED_FIELD`). Handout is by session, so a
+ * session started by hand interrupts like one the Inbox started. It repeats on
+ * polls until the receipt or until it expires; an older connection ignores it.
+ */
+export const INBOX_INTERRUPT_FIELD = 'interrupt'
+
+/**
+ * The poll field by which a connection reports what such an interrupt did:
+ * `{ id, ok, message? }`. The Inbox clears its pending interrupt for that
+ * session on any receipt. An older Inbox ignores it; an older connection
+ * never sends it.
+ */
+export const INBOX_INTERRUPTED_FIELD = 'interrupted'
+
+/**
+ * The poll field (`true`) by which a connection says it can take an interrupt
+ * (`INBOX_INTERRUPT_FIELD`): a window refuses 打断 for a session that polls but
+ * never said so (an older plugin), in words that name the fix. An older Inbox
+ * ignores it; an older connection never sends it.
+ */
+export const INBOX_INTERRUPT_CAPABLE_POLL_FIELD = 'can_interrupt'
+
+/**
  * The poll field by which a connection says which session ids its
  * conversation continues, nearest first (a string, or a list of at most 8):
  * the host gave the conversation a new session id (Claude Code's branch of a
@@ -1653,6 +1680,19 @@ export function parseInboxReloadOffer(text: string): InboxReloadOffer | null {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null
     const installed = (value as Record<string, unknown>).installed
     return { installed: typeof installed === 'string' && installed.trim() && installed.length <= 64 ? installed.trim() : null }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * A poll answer's pending interrupt (`INBOX_INTERRUPT_FIELD`): its id, or null
+ * when there is none (the common case, and any malformed wording).
+ */
+export function parseInboxInterrupt(text: string): string | null {
+  try {
+    const value = (JSON.parse(text) as Record<string, unknown>)[INBOX_INTERRUPT_FIELD]
+    return typeof value === 'string' && value.trim() ? value.trim() : null
   } catch {
     return null
   }

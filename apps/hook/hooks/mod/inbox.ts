@@ -75,6 +75,9 @@ import {
   inboxToolResultText,
   inboxToolsWithoutBro,
   INBOX_HELD_POLL_FIELD,
+  INBOX_INTERRUPT_CAPABLE_POLL_FIELD,
+  INBOX_INTERRUPTED_FIELD,
+  INBOX_INTERRUPT_FIELD,
   INBOX_SEND_NOW_POLL_FIELD,
   INBOX_STEER_POLLS_POLL_FIELD,
   INBOX_TAGS_POLL_FIELD,
@@ -88,6 +91,7 @@ import {
   mcpAnswerOfResponse,
   parseInboxAskWaits,
   parseInboxBridgeCommands,
+  parseInboxInterrupt,
   parseInboxReloadOffer,
   parseInboxRegistry,
   parseInboxToolList,
@@ -1231,6 +1235,12 @@ export class InboxLink {
   private lastLabel = ''
   private busy: boolean | null = null
   private idleSince = 0
+  /** The poll answer's pending interrupt (`INBOX_INTERRUPT_FIELD`), consumed by the next `poll`. */
+  private pendingInterrupt: string | null = null
+  /** Interrupt ids this process already acted on (the answer repeats until the receipt lands). */
+  private readonly interruptSeen = new Set<string>()
+  /** What the handled interrupt did (`INBOX_INTERRUPTED_FIELD`); it rides the next poll once. */
+  private interruptReceipt: { id: string; ok: boolean; message?: string } | null = null
   /**
    * A reply Send now put into the running turn (`appendUserRow`), until that
    * turn ends: `stepped` once a main-loop model request went out after it
@@ -1750,11 +1760,19 @@ export class InboxLink {
       ...(folder ? { session_folder: folder } : {}),
       // Ask AI: a question for this session can run here, and `ask_waits` will be read.
       ...(this.options.turns ? { [INBOX_ASK_POLL_FIELD]: true } : {}),
+      // 打断：这个引擎能在会话内中止回合（turns 在，abortTurn 在），就叫得出打断。旧引擎不说，窗口会拒。
+      ...(this.options.turns ? { [INBOX_INTERRUPT_CAPABLE_POLL_FIELD]: true } : {}),
       // Auto reload: this connection reloads Plannotator itself when the answer says a reload loads a newer one.
       ...(this.options.reload ? { [INBOX_AUTO_RELOAD_POLL_FIELD]: true } : {}),
+      // 打断的回执（处理完的那次）：随这一次 poll 上行；只在应答真被读过（200）时才当送达——非 200 留到
+      // 下一拍，丢了由 Inbox 侧过期兜底。
+      ...(this.interruptReceipt ? { [INBOX_INTERRUPTED_FIELD]: this.interruptReceipt } : {}),
     })
+    if (response?.status === 200) this.interruptReceipt = null
     if (!response || response.status !== 200) return null
     if (parseInboxAskWaits(response.text)) void this.startAskClient()
+    // 打断（窗口按会话下达）搭应答下来；poll 在返回后消费它（见 poll）。
+    this.pendingInterrupt = parseInboxInterrupt(response.text)
     if (this.options.reload) {
       this.options.reload.setOffer(parseInboxReloadOffer(response.text))
       void this.options.reload.notePolled().catch(() => undefined)
@@ -1811,6 +1829,14 @@ export class InboxLink {
       }
       this.backoffMs = 0
       this.retryAt = 0
+      // 打断（窗口按会话下达）：应答里的 interrupt 领走即办。守卫同 Ask 链路——亲自打字的回合是本人的，
+      // 别的插件的回合可能有人在等；没有回合在跑就是已经停了，照样算成功。
+      const interrupt = this.pendingInterrupt
+      this.pendingInterrupt = null
+      if (interrupt !== null && !this.interruptSeen.has(interrupt)) {
+        this.interruptSeen.add(interrupt)
+        void this.runInterrupt(interrupt)
+      }
       // What the Inbox stopped handing out is done with here: handed out again (the reply moved back), it is new.
       const handedOut = new Set(commands.map((command) => command.id))
       for (const id of this.settled) if (!handedOut.has(id)) this.settled.delete(id)
@@ -1831,6 +1857,48 @@ export class InboxLink {
     this.pending.delete(id)
     this.settled.add(id)
     this.held.delete(id)
+  }
+
+  /**
+   * The Inbox pressed 打断: abort the running turn here (`$.turn.abort`), with
+   * the Ask bridge's guards — a turn the person typed into is theirs, another
+   * plugin's prompt may be waited on, and no turn at all is a quiet success.
+   * What happened rides the next poll as the receipt (`INBOX_INTERRUPTED_FIELD`);
+   * a refusal also toasts in the engine, where the person asking can see why.
+   */
+  private async runInterrupt(interruptId: string): Promise<void> {
+    this.host.debug(`inbox: interrupt ${interruptId} received`)
+    const turns = this.options.turns
+    if (!turns) {
+      this.refuseInterrupt(interruptId, '此会话的 Plannotator 插件不支持打断。')
+      return
+    }
+    const running = turns.runningTurnId
+    if (!running) {
+      this.interruptReceipt = { id: interruptId, ok: true }
+      return
+    }
+    if (turns.isTakenOver(running)) {
+      this.refuseInterrupt(interruptId, '你正在这个会话里输入，Plannotator 不会替你停。')
+      return
+    }
+    if (turns.isOtherPluginTurn(running)) {
+      this.refuseInterrupt(interruptId, '这个回合由另一个插件发起，Plannotator 不停它。')
+      return
+    }
+    try {
+      await this.host.abortTurn(running)
+      this.interruptReceipt = { id: interruptId, ok: true }
+    } catch (error) {
+      this.refuseInterrupt(interruptId, error instanceof Error ? error.message : String(error))
+    }
+    this.host.debug(`inbox: interrupt ${interruptId} handled`)
+  }
+
+  /** A refused interrupt: the reason toasts in the engine (the window's own toast already said 「已请求打断」). */
+  private refuseInterrupt(interruptId: string, message: string): void {
+    this.host.toast(`打断没有执行：${message}`)
+    this.interruptReceipt = { id: interruptId, ok: false, message }
   }
 
   /**

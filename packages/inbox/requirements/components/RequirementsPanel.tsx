@@ -239,7 +239,7 @@ function ReqCard({ requirement: r, rowsByThread, patch, onSession, onContexts, o
       {/* 会话就在卡片里：agent 侧栏的行模式 */}
       <div className="ib-req-wcard-sessions">
         {r.threads.map((tid) => {
-          const row = rowsByThread.get(tid) as { subject?: string | null; section?: string; run?: 'starting' | 'working' | 'cloning' | null; resolved_at: string | null; back_from_archive?: boolean; unread?: boolean } | undefined;
+          const row = rowsByThread.get(tid) as { subject?: string | null; section?: string; run?: 'starting' | 'working' | 'cloning' | null; launch_id?: string | null; busy?: boolean | null; resolved_at: string | null; back_from_archive?: boolean; unread?: boolean } | undefined;
           const agent = row ? rowAgent(row as never) : null;
           // 已归档：行从归档列表来（活跃列表不收），展示照旧（图标、标题都是原来的），
           // 只加「已归档」——与收件箱的字序一致，它顶掉工作状态与等你回复。
@@ -247,8 +247,11 @@ function ReqCard({ requirement: r, rowsByThread, patch, onSession, onContexts, o
           const waiting = !archived && (row?.section === 'stopped' || row?.section === 'holding' || row?.section === 'waiting');
           const subject = (row?.subject?.trim() ? row.subject : null) ?? '会话';
           // 工作状态＝收件箱会话行自己的方案：行上的 run 字（启动的会话才有，launch 的 run line 决定），
-          // 同一个字表（InboxList 的 countWords）；event: deliveries 挪动它，这里不自己轮询。
-          const runWord = archived ? null : row?.run === 'starting' ? '启动中' : row?.run === 'cloning' ? '克隆中' : row?.run === 'working' ? '工作中' : null;
+          // 同一个字表（InboxList 的 countWords）；手动起的会话没有 run 字，读行上装饰的 busy（连接的 poll
+          // 说有回合在跑）；event: deliveries 挪动它们，这里不自己轮询。
+          const runWord = archived ? null : row?.run === 'starting' ? '启动中' : row?.run === 'cloning' ? '克隆中' : row?.run === 'working' || row?.busy === true ? '工作中' : null;
+          // 打断（v2，会话级）：回合正在跑（run 字「工作中」，或行上的 busy——手动起的会话没有 run 字）就可
+          // 打断——按会话下达，手动终端起的会话和工坊启动的一视同仁。
           return (
             <div key={tid} role="button" tabIndex={0} className="ib-req-wcard-sess" onClick={() => onSession(tid)} onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onSession(tid); } }}>
               <span className={`ib-req-wcard-sess-mk${runWord !== null ? ' running' : ''}`}>{agent?.kind === 'agent' ? <HostMark host={agent.host} /> : <Icon name="comment" size={14} />}</span>
@@ -352,6 +355,19 @@ function ReqCard({ requirement: r, rowsByThread, patch, onSession, onContexts, o
                       }}>
                         <Icon name="gitBranch" size={15} /> 代码评审 · 结论送达本会话
                       </Menu.Item>
+                      {!archived && (row?.run === 'working' || row?.busy === true) && (
+                        <>
+                          <Menu.Separator className="ib-pm-sep" />
+                          <Menu.Item className="ib-pmi" label="打断" data-sess-menu="interrupt" onClick={() => {
+                            void inboxApi.interruptThread(tid).then(
+                              () => onToast({ icon: 'check', lead: '已请求打断，正在停止当前回合…' }),
+                              (cause: unknown) => onToast({ icon: 'excl', lead: cause instanceof Error && cause.message ? `打断没能送达：${cause.message}` : '打断没能送达，请重试。', wrap: true }),
+                            );
+                          }}>
+                            <Icon name="xCircle" size={15} /> 打断 · 停止当前回合
+                          </Menu.Item>
+                        </>
+                      )}
                     </Menu.Popup>
                   </Menu.Positioner>
                 </Menu.Portal>

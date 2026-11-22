@@ -1907,6 +1907,20 @@ export interface InboxListRow extends InboxThreadSummary {
    */
   run?: "starting" | "working" | "cloning" | null;
   /**
+   * On a launched thread (the window's list only): the launch behind the row's
+   * session, so a row-anchored menu can Stop it (the workshop's session row;
+   * Stop itself stays the launch route's). Absent otherwise and from an older
+   * Inbox.
+   */
+  launch_id?: string | null;
+  /**
+   * The thread's session runs a turn now (`busy`, additive, 打断 v2): its
+   * connection's poll said so — also for a session started by hand, which has
+   * no launch run word. The workshop row menu's 打断 and the row's 工作中 word
+   * read it. Absent while idle, unknown, or from an older Inbox.
+   */
+  busy?: true;
+  /**
    * The window's own drawing (approval "inbox-multi-select"): the thread is in a Combine still waiting for its new
    * thread, so the row says "Combining…". No server sends it.
    */

@@ -38,7 +38,7 @@ import { homedir } from "node:os";
 import { basename } from "node:path";
 import { INBOX_AUTO_SEND_AFTER_MS, type InboxHostSessions, type InboxMessage, type InboxOpenSession, type InboxProject, type InboxRestartAgents, type InboxSessionOutdated, type InboxTag, type InboxToolHostId } from "@plannotator/core/inbox-types";
 import { checkServerSession, INBOX_SERVER_SESSION_MISMATCH_ERROR, serverSessionMismatchBody } from "@plannotator/core/server-session";
-import { INBOX_ASK_POLL_FIELD, INBOX_AUTO_RELOAD_POLL_FIELD, INBOX_CONTINUES_POLL_FIELD, INBOX_FIRST_STARTED_POLL_FIELD, INBOX_HELD_POLL_FIELD, INBOX_RELOAD_FIELD, INBOX_SEND_NOW_POLL_FIELD, INBOX_SESSION_LABEL_INPUT_MAX, INBOX_SESSION_LIVE_MS, INBOX_TAGS_POLL_FIELD, INBOX_TITLE_POLL_FIELD } from "@plannotator/shared/inbox/connection";
+import { INBOX_ASK_POLL_FIELD, INBOX_AUTO_RELOAD_POLL_FIELD, INBOX_CONTINUES_POLL_FIELD, INBOX_FIRST_STARTED_POLL_FIELD, INBOX_HELD_POLL_FIELD, INBOX_INTERRUPT_CAPABLE_POLL_FIELD, INBOX_RELOAD_FIELD, INBOX_SEND_NOW_POLL_FIELD, INBOX_SESSION_LABEL_INPUT_MAX, INBOX_SESSION_LIVE_MS, INBOX_TAGS_POLL_FIELD, INBOX_TITLE_POLL_FIELD } from "@plannotator/shared/inbox/connection";
 import { InboxError } from "@plannotator/shared/inbox/schema";
 import { graphemesOf, inboxStoredAgentName } from "@plannotator/core/inbox-format";
 import type { InboxStore } from "@plannotator/shared/inbox/store";
@@ -181,6 +181,8 @@ interface SeenSession {
   title?: string | null;
   /** Its poll said it can answer Ask AI live (`ask`). */
   ask?: boolean;
+  /** Its poll said it can take an interrupt (`can_interrupt`; an older connection never sends it). */
+  canInterrupt?: boolean;
   /** The working folder its poll named (`project_path`), as sent; null when it sent none. */
   cwd: string | null;
   /**
@@ -567,6 +569,7 @@ export function createInboxLiveSessions(options: {
     if ((entry.title ?? null) !== title) labelChanges += 1;
     entry.title = title;
     entry.ask = body[INBOX_ASK_POLL_FIELD] === true;
+    entry.canInterrupt = body[INBOX_INTERRUPT_CAPABLE_POLL_FIELD] === true;
     // What the session loaded (additive poll fields; an older connection sends neither).
     entry.plugin = parseLoadedPlugin(body.plugin);
     entry.engine = parseEngine(body.engine);
@@ -1040,6 +1043,12 @@ export function createInboxLiveSessions(options: {
     return entry?.ask === true && isLive(entry) ? entry.host : null;
   };
 
+  /** Whether a session's connection can take an interrupt (its poll said `can_interrupt`; an older one never does). */
+  const interruptCapable = (session: string): boolean => {
+    const entry = sessions.get(session);
+    return entry?.canInterrupt === true;
+  };
+
   /** How a session is connected now (live, no grace), or null when its connection does not poll. */
   const connectionOf = (asked: string): InboxRecipientConnection | null => {
     // A session whose conversation goes on under another id is connected as that one is.
@@ -1430,6 +1439,7 @@ export function createInboxLiveSessions(options: {
     runStateOf,
     pollsNow,
     holdsPollNow,
+    interruptCapable,
     composeTarget,
     connectionOf,
     askHostOf,

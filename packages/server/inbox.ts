@@ -178,6 +178,8 @@ import {
   INBOX_REMOVED_ACTION,
   INBOX_REMOVED_ACTION_TEXT,
   INBOX_SEND_NOW_POLL_FIELD,
+  INBOX_INTERRUPTED_FIELD,
+  INBOX_INTERRUPT_FIELD,
   INBOX_STEER_POLLS_POLL_FIELD,
   INBOX_TAGS_POLL_FIELD,
   inboxStopNoticeId,
@@ -1779,6 +1781,14 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     // Resolved once per list: off, it is the identity and no row costs anything. Only this Inbox's own rows: a linked
     // machine's launches are that machine's to decorate.
     const decorate = launch.rowDecorator();
+    // `busy` (additive, 打断 v2): the thread's session runs a turn now (its connection's poll said so), also for a
+    // session started by hand, which has no launch run word — the workshop row menu's 打断 and the row's 工作中 word
+    // read it. Only this Inbox's own rows: a linked machine's sessions are that machine's to decorate.
+    const withBusy = (row: InboxListRow): InboxListRow => {
+      const root = store.message(row.thread_id);
+      const recipient = root ? store.recipientOf(root) : null;
+      return recipient !== null && live.deliveryConnectionOf(recipient.session)?.busy === true ? { ...row, busy: true } : row;
+    };
     // Snoozes, by this reader's clock now (core inbox-snooze.ts): a row past its time stands as a return, in every mode.
     // Applied after the launch decoration, so a launched row keeps its run word and section under a snooze.
     const now = new Date();
@@ -1811,7 +1821,7 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     };
     const own = store
       .listRows()
-      .map((row) => withTags(withPriority(withPulls(withSnooze(withStepsWaiting(decorate(pinnedAt.has(row.thread_id) ? { ...row, pinned_at: pinnedAt.get(row.thread_id)! } : row)), byThread, now)))));
+      .map((row) => withBusy(withTags(withPriority(withPulls(withSnooze(withStepsWaiting(decorate(pinnedAt.has(row.thread_id) ? { ...row, pinned_at: pinnedAt.get(row.thread_id)! } : row)), byThread, now))))));
     if (pullsByThread.size > 0) {
       const onView = own.filter((row) => row.pulls && !inboxRowArchived(row)).flatMap((row) => pullsByThread.get(row.thread_id) ?? []);
       if (onView.length > 0) void threadPullStates.refresh(onView);
@@ -4245,10 +4255,37 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     return session;
   };
 
+  /**
+   * 打断（会话级，工坊与手动启动一视同仁）：一个窗口按会话下达一次打断，这里按 session 记一笔，
+   * 该会话的下一次 poll 应答把它带走（`INBOX_INTERRUPT_FIELD`）；会话内 mod 中止当前回合并随
+   * 后续 poll 的请求体带回执（`INBOX_INTERRUPTED_FIELD`），收到即清。没人领取（会话已退出、
+   * 插件断线）两分钟后作废。与 launch 无关——只要它在 poll，就够得着。
+   */
+  const pendingInterrupt = new Map<string, { id: string; at: number }>();
+  const INTERRUPT_TTL_MS = 120_000;
+  /** A held poll registers here, so a fresh interrupt reaches its session at once (ask.onWaits, for interrupts). */
+  const interruptListeners = new Set<(session: string) => void>();
+  const onInterrupt = (listener: (session: string) => void): (() => void) => {
+    interruptListeners.add(listener);
+    return () => interruptListeners.delete(listener);
+  };
+  const interruptAnswer = (session: string): Record<string, unknown> => {
+    const pending = pendingInterrupt.get(session);
+    if (!pending) return {};
+    if (Date.now() - pending.at > INTERRUPT_TTL_MS) {
+      pendingInterrupt.delete(session);
+      return {};
+    }
+    return { [INBOX_INTERRUPT_FIELD]: pending.id };
+  };
+
   /** `{ session, waitMs? }`: answers at once when a reply waits, else holds up to 25 s for one. */
   const bridgePoll = async (req: Request): Promise<Response> => {
     const body = await readBody(req);
     const session = bridgeSession(body);
+    // 打断的回执（id 齐全就算数）：那一笔待发清掉。重复回执无妨——没有可清的。
+    const receipt = body[INBOX_INTERRUPTED_FIELD];
+    if (receipt && typeof receipt === "object" && !Array.isArray(receipt) && typeof (receipt as { id?: unknown }).id === "string") pendingInterrupt.delete(session);
     const requested = typeof body.waitMs === "number" && Number.isFinite(body.waitMs) ? body.waitMs : 0;
     const waitMs = Math.min(Math.max(requested, 0), INBOX_BRIDGE_POLL_MAX_MS);
     // Step 8: a polling session is live (New message can reach it) while its poll is held.
@@ -4280,7 +4317,7 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     if (requested === 0) store.handover.asked(items.map((item) => item.message), session);
     if (now.length > 0 || waitMs === 0 || ask.waits(session)) {
       answered();
-      return json({ commands: now, ...askWaits(), ...reloadOffer() });
+      return json({ commands: now, ...askWaits(), ...reloadOffer(), ...interruptAnswer(session) });
     }
     return new Promise<Response>((resolve) => {
       let done = false;
@@ -4290,15 +4327,19 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
         clearTimeout(timer);
         unsubscribe();
         stopAskWaits();
+        stopInterrupt();
         req.signal.removeEventListener("abort", finish);
         answered();
-        resolve(json({ commands: commands(), ...askWaits(), ...reloadOffer() }));
+        resolve(json({ commands: commands(), ...askWaits(), ...reloadOffer(), ...interruptAnswer(session) }));
       };
       const timer = setTimeout(finish, waitMs);
       const unsubscribe = store.subscribe((line) => {
         if (line.kind === "message" && line.record.author.kind === "person" && live.pendingOf(session, { tags }).length > 0) finish();
       });
       const stopAskWaits = ask.onWaits((waiting) => {
+        if (waiting === session) finish();
+      });
+      const stopInterrupt = onInterrupt((waiting) => {
         if (waiting === session) finish();
       });
       req.signal.addEventListener("abort", finish);
@@ -5563,6 +5604,35 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
         if (answer) return answer;
       }
       if (path === "/api/inbox/threads/archived" && req.method === "GET") return json(url.searchParams.get("machines") === "1" ? await mergedArchivedModel(url) : archivedModel(url));
+      // 打断（v2，会话级）：按线程找到它的会话，记一笔待发，该会话的下一次 poll 应答带下去，
+      // 会话内 mod 中止当前回合（守卫同 Ask：本人打字的回合、别的插件的回合不打）。与 launch 无关——
+      // 手动终端起的会话和工坊启动的一视同仁，只要它还在 poll。见 bridgePoll 的 interruptAnswer。
+      if (path.startsWith("/api/inbox/threads/") && path.endsWith("/interrupt")) {
+        if (req.method !== "POST") return json({ error: "Use POST." }, 405);
+        const body = await readBody(req);
+        if (checkServerSession(body, serverSession) === "mismatch") return json(serverSessionMismatchBody(INBOX_SERVER_SESSION_MISMATCH_ERROR), 409);
+        let threadId = "";
+        try {
+          threadId = decodeURIComponent(path.slice("/api/inbox/threads/".length, -"/interrupt".length));
+        } catch {
+          threadId = path.slice("/api/inbox/threads/".length, -"/interrupt".length);
+        }
+        const root = threadId ? store.message(threadId) : null;
+        if (!root || root.thread_id !== threadId) return json({ error: `这个收件箱里没有线程 ${threadId || "（未命名）"}。`, code: "thread_unknown" }, 404);
+        const recipient = store.recipientOf(root);
+        if (!recipient) return json({ error: "这个线程没有对应的会话，无从打断。", code: "session_unknown" }, 409);
+        if (!live.pollsNow(recipient.host ?? "", recipient.session)) {
+          return json({ error: "会话未连接（没有在轮询收件箱），打断送不到。", code: "session_not_connected" }, 409);
+        }
+        // 连着但没自报会打断（旧插件：这个会话启动得比这功能早）：明说，别让它静默作废。
+        if (!live.interruptCapable(recipient.session)) {
+          return json({ error: "这个会话的 Plannotator 插件是旧版（会话启动早于打断功能），不认识打断。重开该会话，或在会话里跑一次 /reload-plugins 后再试。", code: "session_too_old" }, 409);
+        }
+        pendingInterrupt.set(recipient.session, { id: crypto.randomUUID(), at: Date.now() });
+        // A poll held open right now answers at once, instead of at its timer (up to 20 s later): 打断要像 Esc 一样即时。
+        for (const listener of interruptListeners) listener(recipient.session);
+        return json({ ok: true });
+      }
       // Decision mode (experimental, approval "inbox-decision-mode"): a read-only projection of every
       // decision waiting on the person. Off (the default), the route does not exist.
       if (path === "/api/inbox/decisions") {

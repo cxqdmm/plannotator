@@ -1098,9 +1098,11 @@ ${result.text}`);
   const decorate = <T extends InboxListRow>(row: T, root: InboxMessage | null): T => {
     if (!root?.launch) return row;
     const runLine = runOfRoot(root);
-    if (runLine?.state === "waiting_terminal" && row.resolved_at === null) return { ...row, section: "stopped", unread: true, run: null };
+    // The launch id rides every decorated shape, so a row menu can Stop (the workshop's session row).
+    const withLaunch = { ...row, launch_id: root.launch.id };
+    if (runLine?.state === "waiting_terminal" && row.resolved_at === null) return { ...withLaunch, section: "stopped", unread: true, run: null };
     // A permission question waits on the person: the session is blocked on them (screen 09).
-    if (runLine?.state === "waiting_answer" && row.resolved_at === null) return { ...row, section: "stopped", unread: true, run: null };
+    if (runLine?.state === "waiting_answer" && row.resolved_at === null) return { ...withLaunch, section: "stopped", unread: true, run: null };
     const word = runLine?.state === "starting" || runLine?.state === "working" || runLine?.state === "cloning" ? runLine.state : null;
     // The person's item waits on the start, not on a session that ended: the row says "Starting", no tick.
     // A start that failed, or an agent that is gone, uses the existing "not delivered" tick (screens 14, 15).
@@ -1112,7 +1114,7 @@ ${result.text}`);
         : runLine?.state === "failed" || runLine?.state === "missing"
           ? { ...pending, state: "undelivered" as const, reason: "undelivered" as const, send_now: false }
           : row.delivery;
-    return { ...row, run: word, delivery };
+    return { ...withLaunch, run: word, delivery };
   };
 
   /** Stop: the host's stop (or Cancel during a clone). The line it leaves. */
