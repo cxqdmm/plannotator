@@ -4577,6 +4577,8 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     },
     // The gated code review a session row starts (会话行入口): one thread's own project root.
     threadProjectRootOf: (threadId) => store.thread(threadId)?.project.root ?? null,
+    // 会话归属的换算：agent 的 agent_session 是引擎会话 id，需求事件的 thread 记收件箱线程 id。
+    threadOfSession: (session) => store.threadOwnedBy(session),
     // 门控代码评审（会话行入口）：门控子进程（页面自开、带 关闭/通过），结论落需求历史并送达该会话。
     // 幂等：一个会话同时只有一个评审在跑——重复点击不再起新进程，返回 already 连同仍在进行的评审页地址
     // （手动关掉浏览器标签不杀子进程：把同一个链接还给点击处重新打开，同设计评审的复用路径）。

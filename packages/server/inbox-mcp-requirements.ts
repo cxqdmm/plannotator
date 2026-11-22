@@ -30,7 +30,7 @@ export type InboxRequirementOp = (typeof INBOX_REQUIREMENT_OPS)[number];
 
 /** For raw MCP clients; the agent tool words its action line itself (INBOX_AGENT_ACTION_LEADS.requirement). */
 export const REQUIREMENT_DESCRIPTION =
-  'Work the person\'s requirements (the workshop board). Requirements are created and tied to threads by the person in the workshop — never by you. op: mine (the requirements of a thread you are in: thread_id; without one, every active requirement), get (one requirement: requirement — its stage, deliverables and their review verdicts), deliver (attach what you just finished: kind one of design-doc, test-report, link, file, and ref — a path, URL or PR; a link ref is a full http(s) URL; a design-doc ref is the document itself, a .md/.markdown/.txt/.html path or URL you saved, NEVER a session id like pn-…: the review opens the document, so anything else is refused), progress (record a line of progress and your judgment of the stage: note and/or stage — a changed stage lands as a stage event, an unchanged one just the note; call it whenever a stretch of work is done). Stages: design, design-review, dev, qa, code-review, done. They move by progress here or by the person in the workshop — a review verdict (已批准/已退回) is recorded but never moves one.';
+  'Work the person\'s requirements (the workshop board). Requirements are created and tied to threads by the person in the workshop — never by you. A feature the person asks for in a requirement\'s session stacks onto THAT requirement: deliver there, never ask for a new one. op: mine (the requirements of a thread you are in: thread_id; without one, every active requirement), get (one requirement: requirement — its stage, deliverables and their review verdicts), deliver (attach what you just finished to the requirement you are working — the one tied to this thread; mine with your thread_id lists it: kind one of design-doc, test-report, link, file, and ref — a path, URL or PR; a link ref is a full http(s) URL; a design-doc ref is the document itself, a .md/.markdown/.txt/.html path or URL you saved, NEVER a session id like pn-…: the review opens the document, so anything else is refused), progress (record a line of progress and your judgment of the stage: note and/or stage — a changed stage lands as a stage event, an unchanged one just the note; call it whenever a stretch of work is done). Stages: design, design-review, dev, qa, code-review, done. They move by progress here or by the person in the workshop — a review verdict (已批准/已退回) is recorded but never moves one.';
 
 
 /** One requirement as one line of text: every fact an agent acts on. */
@@ -75,32 +75,43 @@ async function runRequirementCall(context: { requirements?: RequirementStore }, 
   const found = store.get(requirementId);
   if (!found) return { text: `No such requirement: ${requirementId}` };
 
+  /** 会话归属：agent 上报的 agent_session 是引擎会话 id，事件记收件箱线程 id（工坊按线程挂会话行）；
+   *  从未在收件箱露面的会话解析不到，落「无归属」。 */
+  const resolveThread = (): string | null => {
+    const session = typeof input.agent_session === "string" && input.agent_session.trim() ? input.agent_session.trim() : null;
+    return session ? (store.threadOfSession?.(session) ?? null) : null;
+  };
+  /** 归档即终结：归档需求不再收 agent 的交付与进展（读不受限，人的恢复后再来）。 */
+  const archivedGuard = (): { text: string } | null =>
+    found.requirement.archived_at ? { text: "已归档的需求不再收交付与进展；人在工坊「恢复」后再来。" } : null;
+
   if (op === "get") return { text: requirementFullText(found.requirement) };
   if (op === "deliver") {
-    // 产出会话：shim/连接填的 agent_session（会话内 agent 交付时都有）记进交付物——
-    // 工坊会话条的去审阅 只挂产出它的那条会话。
-    const session = typeof input.agent_session === "string" && input.agent_session.trim() ? input.agent_session.trim() : null;
+    const stopped = archivedGuard();
+    if (stopped) return stopped;
+    // 产出会话：解析出的收件箱线程 id 记进交付物——工坊会话条的去审阅 只挂产出它的那条会话。
     const deliverable = store.deliver(requirementId, {
       kind: input.kind as DeliverableKind,
       ref: input.ref as string,
       ...(typeof input.title === "string" ? { title: input.title } : {}),
       by: authorOf(input),
-      thread: session,
+      thread: resolveThread(),
     });
     return { text: `Attached ${DELIVERABLE_KIND_LABELS[deliverable.kind]}: ${deliverable.title ?? deliverable.ref}` };
   }
   if (op === "progress") {
+    const stopped = archivedGuard();
+    if (stopped) return stopped;
     const note = typeof input.note === "string" ? input.note.trim() : "";
     const to = typeof input.stage === "string" ? (input.stage as RequirementStage) : null;
     if (!note && to === null) return { text: "progress: a note and/or the stage you judge the work is at — one of them." };
     if (to !== null && !isRequirementStage(to)) return { text: `stage: one of ${REQUIREMENT_STAGES.map((stage) => stage.label).join(", ")}.` };
-    // 调用会话（连接填的 agent_session）：进展与阶段事件记它，历史里才有会话归属。
-    const session = typeof input.agent_session === "string" && input.agent_session.trim() ? input.agent_session.trim() : null;
+    const thread = resolveThread();
     const from = found.requirement.stage;
     const moving: RequirementStage | null = to !== null && to !== from ? to : null;
-    const moved = moving !== null ? store.patch(requirementId, { stage: moving }, { thread: session }) : null;
-    if (moving !== null) store.say(requirementId, `阶段：${requirementStageLabel(from)} → ${requirementStageLabel(moving)}`, "阶段", session);
-    if (note) store.say(requirementId, note, authorOf(input), session);
+    const moved = moving !== null ? store.patch(requirementId, { stage: moving }, { thread }) : null;
+    if (moving !== null) store.say(requirementId, `阶段：${requirementStageLabel(from)} → ${requirementStageLabel(moving)}`, "阶段", thread);
+    if (note) store.say(requirementId, note, authorOf(input), thread);
     const stageLine = moving !== null ? `Stage: ${requirementStageLabel(from)} → ${requirementStageLabel(moving)}.` : `Stage unchanged (${requirementStageLabel(from)}).`;
     return { text: `${note ? "Noted. " : ""}${stageLine} ${requirementLineText(moved ?? found.requirement)}` };
   }

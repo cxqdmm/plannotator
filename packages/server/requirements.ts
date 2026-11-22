@@ -91,6 +91,9 @@ export interface RequirementStore {
   patchContext(id: string, contextId: string, patch: { name?: string; ref?: string }): RequirementContext;
   removeContext(id: string, contextId: string): void;
   watch: { subscribe(listener: (ids: string[]) => void): () => void };
+  /** agent 的引擎会话 id → 收件箱线程 id（会话归属落账前的换算）；解析不到返回 null（落「无归属」）。
+   *  由工厂返回的包装对象提供（挂 options.threadOfSession），裸字面量 store 上不存在。 */
+  threadOfSession?(session: string): string | null;
 }
 
 export class RequirementStoreError extends Error {
@@ -156,7 +159,7 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
   } as Requirement;
 }
 
-export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null; /** Whether a thread's row waits on the person (the Board's You-line idea), for the reads' computed flag. */ waitingOf?: (threadId: string) => boolean; /** The stage-change notifier (stage-auto-design §1): a person-voiced reply into the requirement's newest session. */ notifyThread?: (threadId: string, words: string) => void; /** Stop the launched session a thread owns (the workshop's archive releases Inbox-spawned agents). */ stopLaunchOf?: (threadId: string) => Promise<unknown>; /** 手动起一个该项目的代码评审（工坊入口）：返回评审页地址。 */ startCodeReview?: (projectRoot: string) => Promise<{ url: string } | { error: string }>; /** The project root of one thread, for the gated code review a session row starts. */ threadProjectRootOf?: (threadId: string) => string | null; /** 门控代码评审（会话行入口）：起评审子进程（页面自开、带 关闭/通过），结论由实现方落历史并送达会话；不等待，立即返回 already 表示该会话已有评审在跑（幂等）——url 是那个仍在进行的评审页地址（标签被手动关掉时拿它重新打开），子进程刚起可能还没打印出来（null）。 */ startGatedCodeReview?: (projectRoot: string, requirementId: string, threadId: string) => { state: "started" | "already"; url: string | null } }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
+export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null; /** Whether a thread's row waits on the person (the Board's You-line idea), for the reads' computed flag. */ waitingOf?: (threadId: string) => boolean; /** The stage-change notifier (stage-auto-design §1): a person-voiced reply into the requirement's newest session. */ notifyThread?: (threadId: string, words: string) => void; /** Stop the launched session a thread owns (the workshop's archive releases Inbox-spawned agents). */ stopLaunchOf?: (threadId: string) => Promise<unknown>; /** 手动起一个该项目的代码评审（工坊入口）：返回评审页地址。 */ startCodeReview?: (projectRoot: string) => Promise<{ url: string } | { error: string }>; /** The project root of one thread, for the gated code review a session row starts. */ threadProjectRootOf?: (threadId: string) => string | null; /** 门控代码评审（会话行入口）：起评审子进程（页面自开、带 关闭/通过），结论由实现方落历史并送达会话；不等待，立即返回 already 表示该会话已有评审在跑（幂等）——url 是那个仍在进行的评审页地址（标签被手动关掉时拿它重新打开），子进程刚起可能还没打印出来（null）。 */ startGatedCodeReview?: (projectRoot: string, requirementId: string, threadId: string) => { state: "started" | "already"; url: string | null }; /** 会话归属的换算：agent 上报的 agent_session 是引擎会话 id，事件的 thread 要记收件箱线程 id（工坊卡片按线程挂会话行、历史 chip 按线程解析）——解析不到（会话从未在收件箱露面）返回 null，事件落「无归属」。 */ threadOfSession?: (session: string) => string | null }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
   /** waiting + 审阅裁决, computed on reads (never stored): any linked session's thread waits on the person;
    *  each deliverable carries its LATEST verdict (events are append-ordered — later ones overwrite earlier). */
   const withWaiting = (record: Requirement): Requirement => {
@@ -782,7 +785,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
           const target = "error" in at ? null : fileTargetOf(id, at.deliverable.ref);
           const reopen = target && "file" in target ? aliveAnnotateOf(target.file) : target && "url" in target ? target.url : null;
           if (reopen) return json({ ok: true, url: reopen, reopened: true });
-          return json({ error: "This requirement's review is already open.", code: "review_in_flight" }, 409);
+          return json({ error: "同一需求一次只跑一份设计评审——先完成在跑的那份（提交裁决或放弃），这份再点就能打开。", code: "review_in_flight" }, 409);
         }
         const found = deliverableAt(id, decodeURIComponent(reviewMatch[1]!));
         if ("error" in found) return found.error;
@@ -812,6 +815,19 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
                 store.reviewVerdict(id, doc.id, outcome.decision, typeof outcome.annotationCount === "number" ? outcome.annotationCount : null);
               } catch {
                 // 需求在评审期间没了：无处落账。
+              }
+              // 裁决送达产出会话（与门控代码评审对齐，②④看齐）：交付物记的 thread 是会话归属换算后的
+              // 收件箱线程 id——notifyThread 走回复框同款通道，agent 像收到任何回复一样被唤醒按结论开工。
+              // dismissed（放弃批注）不发。无归属（旧数据/会话未挂）跳过。
+              const thread = typeof doc.thread === "string" && doc.thread.trim() ? doc.thread : null;
+              if (thread && options.notifyThread) {
+                const label = outcome.decision === "approved" ? "已批准" : "已退回";
+                const count = typeof outcome.annotationCount === "number" && outcome.annotationCount > 0 ? `（批注 ${outcome.annotationCount} 条）` : "";
+                const title = (doc.title ?? doc.ref).trim() || "设计文档";
+                const feedback = typeof outcome.feedback === "string" && outcome.feedback.trim() ? `\n反馈：${outcome.feedback.trim().slice(0, 400)}` : "";
+                try {
+                  options.notifyThread(thread, `【设计评审·${label}】${count}「${title}」${feedback}`);
+                } catch { /* best effort：历史已落账，送达失败不回头 */ }
               }
             }
           })
@@ -907,7 +923,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
     }
   }
 
-  return { route, watch, store };
+  return { route, watch, store: { ...store, threadOfSession: (session: string) => options.threadOfSession?.(session) ?? null } };
 }
 
 /** The `event: requirements` frame the window stream sends (ids: what changed; empty: read everything again). */

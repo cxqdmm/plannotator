@@ -6583,6 +6583,26 @@ export class InboxStore {
   // ──────────── agent connections (step 6: the reply wake) ────────────
 
   /**
+   * The id of the newest thread whose owner session is `session` — the thread's
+   * root names it in `to`, or as the agent that started the thread — or null
+   * when the session never surfaced here. The requirement store's 会话归属
+   * resolves an agent's `agent_session` (an engine session id) to this before
+   * it records one: cards tie session rows by thread id, so an event's `thread`
+   * must be one to be found again.
+   */
+  threadOwnedBy(session: string): string | null {
+    if (!session) return null;
+    let best: { id: string; at: string } | null = null;
+    for (const message of this.messages.values()) {
+      if (message.thread_id !== message.id) continue;
+      const owner = message.to?.session ?? (message.author.kind === "agent" ? message.author.session : null);
+      if (owner !== session) continue;
+      if (best === null || message.created_at > best.at) best = { id: message.id, at: message.created_at };
+    }
+    return best?.id ?? null;
+  }
+
+  /**
    * The person's replies waiting for an agent connection's `session`: replies
    * to a message that session sent, and New messages and replies addressed to
    * it (`to`; settled only by their delivery), not yet delivered, and not yet read by an

@@ -137,6 +137,8 @@
 .ib-req-hist-fchip .subj { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ib-req-hist-fchip .n { font-variant-numeric: tabular-nums; opacity: 0.75; font-weight: 400; }
 .ib-req-hist-sess { flex: none; display: inline-flex; align-items: center; gap: 4px; max-width: 190px; padding: 1.5px 9px; border-radius: 999px; border: 1px solid var(--ib-hair, var(--border)); color: var(--muted-foreground); font-size: 10.5px; font-weight: 550; background: color-mix(in oklch, var(--foreground) 3%, transparent); white-space: nowrap; overflow: hidden; }
+button.ib-req-hist-sess { cursor: pointer; font: inherit; font-size: 10.5px; font-weight: 550; color: var(--muted-foreground); transition: color 120ms ease-out, border-color 120ms ease-out; }
+button.ib-req-hist-sess:hover { color: var(--foreground); border-color: color-mix(in oklch, var(--primary) 40%, transparent); }
 .ib-req-hist-sess svg { flex: none; opacity: 0.8; }
 .ib-req-hist-sess .tail { opacity: 0.6; font-variant-numeric: tabular-nums; }
 .ib-req-hist-sess.none { border-style: dashed; background: none; }

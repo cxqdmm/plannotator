@@ -113,4 +113,51 @@ describe("the requirement tool without create and link", () => {
     expect(op.enum).toEqual(["mine", "get", "deliver", "progress"]);
     await client.close().catch(() => {});
   });
+
+  test("an archived requirement refuses agent deliver and progress, and gains no events", async () => {
+    const { call, text, person, personCreate } = await world();
+    const made = await personCreate("登录页改版");
+    const patched = await person("PATCH", `/api/requirements/${encodeURIComponent(made.id)}`, { archived: true });
+    expect(patched.status).toBe(200);
+    const afterArchive = (await (await person("GET", `/api/requirements/${encodeURIComponent(made.id)}`)).json()) as { requirement: { archived_at: string | null } };
+    expect(afterArchive.requirement.archived_at).not.toBeNull();
+    const progress = await call({ op: "progress", requirement: made.id, note: "做完了", stage: "dev" });
+    // 本工具的拒绝惯例是普通文本应答（schema 错误才是 isError），文案点名「已归档」。
+    expect(text(progress)).toContain("已归档");
+    expect(text(progress)).not.toContain("Stage:");
+    const deliver = await call({ op: "deliver", requirement: made.id, kind: "design-doc", ref: "docs/x.md" });
+    expect(text(deliver)).toContain("已归档");
+    expect(text(deliver)).not.toContain("Attached");
+    // The history ends at the archive line: no stage, no note, no deliverable landed after it.
+    const detail = (await (await person("GET", `/api/requirements/${encodeURIComponent(made.id)}`)).json()) as { events: { kind: string }[] };
+    expect(detail.events[detail.events.length - 1]!.kind).toBe("field");
+    expect(detail.events.some((e) => e.kind === "stage")).toBe(false);
+    // Reading an archived requirement still works: the guard is on writes, not on the agent's view.
+    const got = await call({ op: "get", requirement: made.id });
+    expect(got.isError).toBeUndefined();
+  });
+
+  test("progress attributes the events to the agent's inbox thread, not the engine session id", async () => {
+    const { root, server, call, person, personCreate } = await world();
+    // A thread whose owner session is the calling agent: the resolution must land on its thread id.
+    const project = server.store.ensureProject({ name: "web", root: join(root, "web") });
+    const thread = server.store.startPersonThread({ project_id: project.id, body: "开工。", to: { host: "claude-code", session: "ses_r" }, idempotency_key: "k-req-own" }).message;
+    const made = await personCreate("登录页改版");
+    await call({ op: "progress", requirement: made.id, note: "开工了。", stage: "dev" });
+    const detail = (await (await person("GET", `/api/requirements/${encodeURIComponent(made.id)}`)).json()) as { events: { kind: string; thread?: string | null }[] };
+    const attributed = detail.events.filter((e) => e.kind === "stage" || (e.kind === "say" && e.thread !== undefined));
+    expect(attributed.length).toBeGreaterThan(0);
+    for (const e of attributed) expect(e.thread).toBe(thread.id);
+    expect(attributed.some((e) => e.thread === "ses_r")).toBe(false);
+  });
+
+  test("a session the inbox never saw leaves the events unattributed (no dead thread ids)", async () => {
+    const { call, person, personCreate } = await world();
+    const made = await personCreate("登录页改版");
+    await call({ op: "progress", requirement: made.id, note: "幽灵会话的进展", stage: "qa", agent_session: "ses_ghost" });
+    const detail = (await (await person("GET", `/api/requirements/${encodeURIComponent(made.id)}`)).json()) as { events: { kind: string; thread?: string | null }[] };
+    const says = detail.events.filter((e) => e.kind === "say");
+    expect(says.length).toBeGreaterThan(0);
+    for (const e of says) expect(e.thread ?? null).toBeNull();
+  });
 });

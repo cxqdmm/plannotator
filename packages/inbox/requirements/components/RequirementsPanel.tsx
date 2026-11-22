@@ -138,7 +138,7 @@ export function RequirementsPanel({
           <EmbeddedThread threadId={panel.threadId} fileId={panel.fileId ?? null} artifacts={panel.artifacts ?? false} onToast={onToast} onClose={() => setPanel(null)} onChanged={() => { void inboxApi.thread(panel.threadId).then((r) => putThread(queryClient, panel.threadId, r)); }} />
         ) : (
           <div className="ib-req-wp-panel">
-            <PanelContent panel={panel} requirements={requirements ?? []} rowsByThread={rowsForCards} onClose={() => setPanel(null)} onToast={onToast} onReview={(reqId, dlvId) => {
+            <PanelContent panel={panel} requirements={requirements ?? []} rowsByThread={rowsForCards} onClose={() => setPanel(null)} onOpenThread={(tid) => setPanel({ k: 'session', threadId: tid })} onToast={onToast} onReview={(reqId, dlvId) => {
                   // 评审由守护进程自起门控会话；路由等会话起好从登记簿拿地址返回，窗口统一打开（首击即达）。
                   onToast({ icon: 'clock', lead: '正在打开评审页…' });
                   void reviewDeliverable(reqId, dlvId).then((o) => {
@@ -496,12 +496,14 @@ function ContextsBody({ requirementId, contexts, onChanged, onError }: {
 }
 
 /* ── The right panel's content ── */
-function PanelContent({ panel, requirements, rowsByThread, onClose, onReview, onToast }: {
+function PanelContent({ panel, requirements, rowsByThread, onClose, onOpenThread, onReview, onToast }: {
   panel: NonNullable<Panel>;
   requirements: Requirement[];
   /** 会话行（subject 等），历史里给事件标会话归属用。 */
   rowsByThread: Map<string, unknown>;
   onClose: () => void;
+  /** 历史里的会话归属点开该会话（事件的 thread 是收件箱线程 id 才可点）。 */
+  onOpenThread: (threadId: string) => void;
   onReview: (reqId: string, deliverableId: string) => void;
   onToast: (toast: unknown, ms?: number) => void;
 }) {
@@ -588,13 +590,18 @@ function PanelContent({ panel, requirements, rowsByThread, onClose, onReview, on
             const owner = threadOf(e);
             const isVerdict = e.kind === 'say' && e.field === '审阅裁决';
             const dataK = isVerdict ? (e.to === 'approved' ? 'verdict-ok' : 'verdict-back') : e.kind;
-            const ownerChip = owner === null
-              ? <span className="ib-req-hist-sess none" title="工坊手动操作或旧事件，不属于任何会话">无归属</span>
+            // 归属只在收件箱里真有这个线程时才算数（旧数据存过引擎会话 id，解析不出线程 → 无归属）。
+            const ownerRow = owner !== null ? (rowsByThread.get(owner) as { subject?: string | null } | undefined) : undefined;
+            const ownerChip = owner === null || ownerRow === undefined
+              ? <span className="ib-req-hist-sess none" title="工坊手动操作、旧事件，或产出会话不在收件箱里">无归属</span>
               : (() => {
-                  const row = rowsByThread.get(owner) as { subject?: string | null } | undefined;
-                  const subject = row?.subject?.trim() || '会话';
+                  const subject = ownerRow?.subject?.trim() || '会话';
                   const dup = histSessions.filter((s) => s.subject === subject).length > 1;
-                  return <span className="ib-req-hist-sess" title={`会话 ${owner}`}><Icon name="chatPlus" size={11} /> {subject}{dup ? <span className="tail">…{owner.slice(-4)}</span> : null}</span>;
+                  return (
+                    <button type="button" className="ib-req-hist-sess" title={`打开会话 ${subject}`} onClick={() => onOpenThread(owner)}>
+                      <Icon name="chatPlus" size={11} /> {subject}{dup ? <span className="tail">…{owner.slice(-4)}</span> : null}
+                    </button>
+                  );
                 })();
             return (
               <li key={e.id} className="ib-req-hist-item" data-k={dataK}>
