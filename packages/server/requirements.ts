@@ -83,7 +83,7 @@ export interface RequirementStore {
   link(id: string, threadId: string, by?: string | null): Requirement;
   deliver(id: string, input: { kind: DeliverableKind; ref: string; title?: string; by?: string | null; thread?: string | null }): Deliverable;
   undeliver(id: string, deliverableId: string): void;
-  say(id: string, note: string, by?: string | null, thread?: string | null): void;
+  say(id: string, note: string, by?: string | null, thread?: string | null, from?: string | null): void;
   /** 设计评审的裁决落账（350d4537a 后阶段不再自动流转）：一条 审阅裁决 事件（from=交付物 id、to=approved/annotated），
    *  读侧把它算成 deliverable.verdict，窗口据此显示 已批准/已退回；不挪阶段、不送达会话。 */
   reviewVerdict(id: string, deliverableId: string, decision: "approved" | "annotated", annotationCount: number | null): void;
@@ -349,12 +349,12 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       touch(record);
       save([id]);
     },
-    say(id: string, note: string, by?: string | null, thread?: string | null) {
+    say(id: string, note: string, by?: string | null, thread?: string | null, from?: string | null) {
       const record = at(id);
       if (typeof note !== "string" || !note.trim()) throw new RequirementStoreError("validation_error", "note: a non-empty line.", "note");
       if (note.length > WHY_MAX) throw new RequirementStoreError("validation_error", `note: at most ${WHY_MAX} characters.`, "note");
       const owner = typeof thread === "string" && thread.trim() ? thread.trim() : null;
-      recordEvent(id, "say", { note: `${by ? `${by}: ` : ""}${note.trim()}`, ...(owner ? { thread: owner } : {}) });
+      recordEvent(id, "say", { note: `${by ? `${by}: ` : ""}${note.trim()}`, ...(owner ? { thread: owner } : {}), ...(typeof from === "string" && from.trim() ? { from } : {}) });
     },
     reviewVerdict(id: string, deliverableId: string, decision: "approved" | "annotated", annotationCount: number | null) {
       const record = at(id);
@@ -637,7 +637,8 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         const count = typeof outcome.annotationCount === "number" ? `，带回批注 ${outcome.annotationCount} 条` : "";
         const words = outcome.decision === "dismissed" ? `「${found.deliverable.title ?? basename(found.deliverable.ref)}」的批注被关闭，未给结论` : `「${found.deliverable.title ?? basename(found.deliverable.ref)}」批注完成${count}`;
         try {
-          store.say(id, words, "批注");
+          // from=交付物 id：历史面板按交付物回查会话归属（同审阅裁决的路子），批注完成不再无归属。
+          store.say(id, words, "批注", null, found.deliverable.id);
         } catch {
           // The requirement went away while its document was open: nothing to write back to.
         }

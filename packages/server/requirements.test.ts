@@ -224,20 +224,6 @@ describe("the requirements routes", () => {
     expect(events.at(-1)?.thread).toBe("msg_smoke-thread");
   });
 
-  test("progress 的 stage/say 事件带 thread（会话归属），手动 PATCH 不带", async () => {
-    const made = await createOne();
-    // 手动 PATCH：阶段事件无归属。
-    await call("PATCH", `/api/requirements/${made.id}`, { stage: "design-review" });
-    const first = (await call("GET", `/api/requirements/${made.id}`)).data.events as { kind: string; thread?: string }[];
-    expect(first.find((e) => e.kind === "stage")?.thread).toBeUndefined();
-    // progress 路径（store 直调，同 MCP op 形状）：stage 事件带调用会话。
-    routes().store.patch(made.id, { stage: "dev" }, { thread: "msg_smoke-thread" });
-    routes().store.say(made.id, "一段进展", "Claude Code", "msg_smoke-thread");
-    const events = (await call("GET", `/api/requirements/${made.id}`)).data.events as { kind: string; thread?: string }[];
-    expect(events.find((e) => e.kind === "stage" && e.to === "dev")?.thread).toBe("msg_smoke-thread");
-    expect(events.at(-1)?.thread).toBe("msg_smoke-thread");
-  });
-
   test("设计评审裁决送达产出会话的线程（notifyThread），无归属或放弃不送达", async () => {
     // 评审文档要在磁盘上（路由校验 existsSync），放测试数据目录里。
     const docPath = join(dataDir, "docs", "plan.md");
@@ -280,6 +266,29 @@ describe("the requirements routes", () => {
     expect(approved.status).toBe(200);
     await new Promise((resolve) => setTimeout(resolve, 30));
     expect(notes.length).toBe(notesBefore);
+  });
+
+  test("批注完成的 say 带 from=交付物 id（面板按交付物回查会话归属，不再无归属）", async () => {
+    const docPath = join(dataDir, "docs", "note.md");
+    mkdirSync(join(dataDir, "docs"), { recursive: true });
+    writeFileSync(docPath, "# 便签\n");
+    module = createBunRequirementRoutes({
+      dataDir,
+      spawnAnnotate: () => {
+        mkdirSync(join(dataDir, "sessions"), { recursive: true });
+        writeFileSync(join(dataDir, "sessions", "fake-annotate-note.json"), JSON.stringify({ pid: process.pid, url: "http://localhost:65112", mode: "annotate", target: docPath }));
+        return Promise.resolve({ stdout: `${JSON.stringify({ decision: "annotated", annotationCount: 1 })}\n`, code: 0 });
+      },
+    });
+    const made = await createOne();
+    const delivered = await call("POST", `/api/requirements/${made.id}/deliverables`, { kind: "design-doc", ref: docPath, title: "带归属的批注", thread: "msg_thread_2" });
+    const docId = (delivered.data.deliverable as { id: string }).id;
+    const opened = await call("POST", `/api/requirements/${made.id}/deliverables/${docId}/annotate`);
+    expect(opened.status).toBe(200);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const events = (await call("GET", `/api/requirements/${made.id}`)).data.events as { kind: string; from?: string; note?: string }[];
+    const done = events.find((e) => e.note?.includes("批注完成"));
+    expect(done?.from).toBe(docId);
   });
 
   test("a delete removes the record and writes history; an unknown id is 404; an unknown subpath is not this module's", async () => {
