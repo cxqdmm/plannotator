@@ -9,7 +9,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { HostMark, Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
-import { addContext, annotateDeliverable, archiveRequirement, readRequirement, removeContext, reviewDeliverable, startSessionCodeReview } from '../api';
+import { addContext, annotateDeliverable, readRequirement, removeContext, reviewDeliverable, startSessionCodeReview } from '../api';
 import { inboxApi } from '../../api';
 import { EmbeddedThread } from '../EmbeddedThread';
 import { putThread } from '../../data/queries/thread';
@@ -19,7 +19,7 @@ import { rowAgent } from '../../components/InboxList';
 import { Tip } from '../../components/Tip';
 import { Menu } from '@base-ui/react/menu';
 import { useRequirements } from '../useRequirements';
-import { DELIVERABLE_KIND_LABELS, requirementStageLabel, type Requirement, type RequirementEvent } from '@plannotator/core/requirements-types';
+import { DELIVERABLE_KIND_LABELS, requirementStageLabel, type Requirement, type RequirementEvent, type RequirementStage } from '@plannotator/core/requirements-types';
 import { inboxRowArchived } from '@plannotator/core/inbox-types';
 
 const EVENT_WORDS: Readonly<Record<RequirementEvent['kind'], string>> = {
@@ -65,8 +65,10 @@ export function RequirementsPanel({
   onCompose: (requirementId: string, requirementTitle: string, contexts: { id: string; kind: string; name: string; image?: boolean }[]) => void;
   onToast: (toast: unknown, ms?: number) => void;
 }) {
-  const { requirements, create, refresh } = useRequirements(on, subscribeRequirementFrames);
+  const { requirements, archived, create, patch, refresh } = useRequirements(on, subscribeRequirementFrames);
   const [draft, setDraft] = useState('');
+  /** 工坊的视图：进行中（默认）/ 已完成（阶段到 done 且未归档）/ 已归档。 */
+  const [view, setView] = useState<'active' | 'done' | 'archived'>('active');
   const [panel, setPanel] = useState<Panel>(openThreadId !== null ? { k: 'session', threadId: openThreadId } : null);
   const newDialog = useRef<HTMLDialogElement | null>(null);
   const queryClient = useQueryClient();
@@ -90,6 +92,15 @@ export function RequirementsPanel({
     setDraft(''); newDialog.current?.close(); void create({ title });
   };
 
+  // 三个视图：进行中（未归档且阶段未到 done）、已完成（阶段到 done 且未归档）、已归档。
+  // 数据全在 useRequirements 手里（active 页 + archived 页，帧实时刷新），这里只分组。
+  const activeList = (requirements ?? []).filter((r) => r.stage !== 'done');
+  const doneList = (requirements ?? []).filter((r) => r.stage === 'done');
+  const archivedList = archived ?? [];
+  const counts = { active: activeList.length, done: doneList.length, archived: archivedList.length };
+  const shown = view === 'active' ? activeList : view === 'done' ? doneList : archivedList;
+  const emptyText = view === 'active' ? '还没有需求，点右上角「＋」开工。' : view === 'done' ? '还没有完成的需求；阶段走到「完成」的需求会落在这里。' : '归档的需求会落在这里，⋯ 菜单里可以恢复。';
+
   return (
     <section className="ib-req-wp" data-requirements-page="" data-panel={panel !== null ? '' : undefined} aria-label="工坊">
       {/* The list panel */}
@@ -97,11 +108,18 @@ export function RequirementsPanel({
         <div className="ib-req-wp-head">
           <SidebarTrigger />
           <h1>工坊</h1>
-          <button type="button" className="ib-req-wp-new" onClick={() => { setDraft(''); newDialog.current?.showModal(); }}><Icon name="plus" size={14} /> 新建</button>
+          <button type="button" className="ib-req-wp-new" title="新建需求" aria-label="新建需求" onClick={() => { setDraft(''); newDialog.current?.showModal(); }}><Icon name="plus" size={15} /></button>
+        </div>
+        <div className="ib-req-wp-views" role="tablist" aria-label="需求视图">
+          {([['active', '进行中'], ['done', '已完成'], ['archived', '已归档']] as const).map(([key, label]) => (
+            <button key={key} type="button" role="tab" aria-selected={view === key} className={`ib-req-wp-view${view === key ? ' on' : ''}`} onClick={() => setView(key)}>
+              {label} <span className="n">{counts[key]}</span>
+            </button>
+          ))}
         </div>
         <div className="ib-req-wp-cards">
-          {(requirements ?? []).map((r) => (
-            <ReqCard key={r.id} requirement={r} rowsByThread={rowsForCards} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
+          {shown.map((r) => (
+            <ReqCard key={r.id} requirement={r} rowsByThread={rowsForCards} patch={patch} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
                   // 评审由守护进程自起门控会话；路由等会话起好从登记簿拿地址返回，窗口统一打开（首击即达）。
                   onToast({ icon: 'clock', lead: '正在打开评审页…' });
                   void reviewDeliverable(reqId, dlvId).then((o) => {
@@ -110,7 +128,7 @@ export function RequirementsPanel({
                   });
                 }} />
           ))}
-          {(requirements ?? []).length === 0 && <p className="ib-req-wp-empty">还没有需求。</p>}
+          {shown.length === 0 && <p className="ib-req-wp-empty">{emptyText}</p>}
         </div>
       </div>
 
@@ -147,9 +165,11 @@ export function RequirementsPanel({
 
 /* ── A requirement card: icon + wrapping title, hover actions (out of flow), created
  * time pinned right on row 1, and its sessions as rows INSIDE the card. ── */
-function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistory, onNewSession, onToast, onReview }: {
+function ReqCard({ requirement: r, rowsByThread, patch, onSession, onContexts, onHistory, onNewSession, onToast, onReview }: {
   requirement: Requirement;
   rowsByThread: Map<string, unknown>;
+  /** 乐观写（useRequirements 的 patch）：归档/恢复/重新开启都走它，卡片在视图间流动。 */
+  patch: (id: string, patch: { stage?: RequirementStage; archived?: boolean }) => Promise<boolean>;
   onSession: (threadId: string) => void;
   onContexts: () => void;
   onHistory: () => void;
@@ -165,10 +185,12 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
     const root = cardRef.current?.closest<HTMLElement>('.pn-inbox');
     if (root) setPortal(root);
   });
+  const dead = r.archived_at != null;
   return (
-    <div ref={cardRef} className="ib-req-wcard" data-requirement-id={r.id}>
+    <div ref={cardRef} className="ib-req-wcard" data-requirement-id={r.id} data-dead={dead ? '' : undefined}>
       <div className="ib-req-wcard-head">
         <b className="ib-req-wcard-title" dir="auto">{r.title}</b>
+        {r.stage === 'done' && !dead && <span className="ib-req-wcard-done" title="阶段已到完成">✓ 已完成</span>}
         {/* 常驻图标操作（气泡提示名字与数量）；窄面板下随标题换行、右对齐 */}
         <div className="ib-req-wcard-acts">
           <Tip content={`开启新会话${r.threads.length > 0 ? `（已有 ${r.threads.length} 个）` : ''}`}>
@@ -190,10 +212,23 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
                   <Menu.Item className="ib-pmi" label="上下文" onClick={onContexts} data-req-menu="contexts">
                     <Icon name="book" size={15} /> 上下文（{r.contexts.length}）
                   </Menu.Item>
-                  <Menu.Separator className="ib-pm-sep" />
-                  <Menu.Item className="ib-pmi" label="归档需求" onClick={() => { void archiveRequirement(r.id).then((o) => { if (!o.ok) onToast({ icon: 'excl', lead: `归档失败：${o.error}`, wrap: true }); }); }} data-req-menu="archive">
-                    <Icon name="archive" size={15} /> 归档（释放全部会话）
-                  </Menu.Item>
+                  {dead ? (
+                    <Menu.Item className="ib-pmi" label="恢复" onClick={() => { void patch(r.id, { archived: false }).then((ok) => { if (!ok) onToast({ icon: 'excl', lead: '恢复失败', wrap: true }); }); }} data-req-menu="restore">
+                      <Icon name="restart" size={15} /> 恢复（回到进行中）
+                    </Menu.Item>
+                  ) : (
+                    <>
+                      {r.stage === 'done' && (
+                        <Menu.Item className="ib-pmi" label="重新开启" onClick={() => { void patch(r.id, { stage: 'design' }).then((ok) => { if (!ok) onToast({ icon: 'excl', lead: '重新开启失败', wrap: true }); }); }} data-req-menu="reopen">
+                          <Icon name="restart" size={15} /> 重新开启（回到需求设计）
+                        </Menu.Item>
+                      )}
+                      <Menu.Separator className="ib-pm-sep" />
+                      <Menu.Item className="ib-pmi" label="归档需求" onClick={() => { void patch(r.id, { archived: true }).then((ok) => { if (!ok) onToast({ icon: 'excl', lead: '归档失败', wrap: true }); }); }} data-req-menu="archive">
+                        <Icon name="archive" size={15} /> 归档（释放全部会话）
+                      </Menu.Item>
+                    </>
+                  )}
                 </Menu.Popup>
               </Menu.Positioner>
             </Menu.Portal>
