@@ -177,7 +177,7 @@ describe("the requirements routes", () => {
     expect((read.data.requirement as { stage: string }).stage).toBe("design");
   });
 
-  test("stage moves only through the stage op / PATCH: a delivered design doc does NOT auto-move it", async () => {
+  test("stage moves only through the progress op / PATCH: a delivered design doc does NOT auto-move it", async () => {
     const made = await createOne();
     await call("POST", `/api/requirements/${made.id}/deliverables`, { kind: "design-doc", ref: "docs/plan.md", by: null });
     const afterDeliver = await call("GET", `/api/requirements/${made.id}`);

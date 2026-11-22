@@ -24,7 +24,7 @@ import { inboxHostSessionFromEnv } from "./inbox-mcp-shim";
 
 export { REQUIREMENT_COMMAND_USAGE };
 
-type Op = "mine" | "get" | "link" | "deliver" | "say" | "stage";
+type Op = "mine" | "get" | "create" | "link" | "deliver" | "progress";
 
 /** A parsed command: the tool's arguments (without the filled ones), or why it is not one. */
 export type ParsedRequirementCommand = { ok: true; op: Op; args: Record<string, unknown>; json: boolean } | { ok: false; error: string };
@@ -35,24 +35,24 @@ const VALUE_FLAGS: Record<string, string> = {
   "--kind": "kind",
   "--ref": "ref",
   "--title": "title",
+  "--notes": "notes",
   "--note": "note",
   "--stage": "stage",
-  "--why": "why",
 };
 
 /** The positional arguments each command takes, by the tool field they fill. */
 const POSITIONAL: Record<Op, { names: readonly string[]; required: number }> = {
   mine: { names: ["thread_id"], required: 0 },
   get: { names: ["requirement"], required: 1 },
+  create: { names: ["title"], required: 1 },
   link: { names: ["requirement", "thread_id"], required: 2 },
   deliver: { names: ["requirement", "kind", "ref"], required: 3 },
-  say: { names: ["requirement", "note"], required: 2 },
-  stage: { names: ["requirement", "stage"], required: 2 },
+  progress: { names: ["requirement", "note"], required: 1 },
 };
 
 export function parseRequirementCommand(argv: readonly string[]): ParsedRequirementCommand {
   const op = argv[0] as Op | undefined;
-  if (!op || !Object.hasOwn(POSITIONAL, op)) return { ok: false, error: op ? `Unknown requirement command: ${op}` : "A requirement command: mine, get, link, deliver, say or stage." };
+  if (!op || !Object.hasOwn(POSITIONAL, op)) return { ok: false, error: op ? `Unknown requirement command: ${op}` : "A requirement command: mine, get, create, link, deliver or progress." };
   const args: Record<string, unknown> = { op };
   const positional: string[] = [];
   let json = false;

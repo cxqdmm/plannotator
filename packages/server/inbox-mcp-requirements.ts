@@ -1,11 +1,13 @@
 /**
  * The workshop (需求) panel's `requirement` tool: the one-line calls an agent working a
- * requirement uses to keep it current — see what it is (get/mine), tie the
- * work to it (link thread), attach what it just finished (deliver), leave a
- * word (say); stages move themselves (a delivered design doc enters review; the verdict moves it on) —
- * D1 of the approved lifecycle design). The rules live once, in the store
- * (packages/server/requirements.ts); this module maps the tool onto them, as
- * inbox-mcp-cards.ts maps `card`.
+ * requirement uses to keep it current — see what it is (get/mine), make one (create,
+ * for sessions the workshop did not start), tie the work to it (link thread, for
+ * sessions not started from the card), attach what it just finished (deliver),
+ * and record progress with the agent's own judgment of the stage (progress —
+ * one call replaces the old say + stage pair, so a natural "report when a
+ * stretch is done" also keeps the stage honest). Stages otherwise move only by
+ * the person's hand (the workshop's PATCH); a review verdict is recorded
+ * (已批准/已退回) but never moves one.
  *
  * Reached by the `plannotator_inbox` tool's action "requirement" (the Claude
  * Code mod, Pi, OpenCode), the stdio shim, and `plannotator requirement …`
@@ -19,12 +21,12 @@ import { DELIVERABLE_KINDS, DELIVERABLE_KIND_LABELS, REQUIREMENT_STAGES, isRequi
 import type { RequirementStore } from "./requirements";
 import { guarded, okComplete } from "./inbox-mcp-result";
 
-export const INBOX_REQUIREMENT_OPS = ["mine", "get", "link", "deliver", "say", "stage"] as const;
+export const INBOX_REQUIREMENT_OPS = ["mine", "get", "create", "link", "deliver", "progress"] as const;
 export type InboxRequirementOp = (typeof INBOX_REQUIREMENT_OPS)[number];
 
 /** For raw MCP clients; the agent tool words its action line itself (INBOX_AGENT_ACTION_LEADS.requirement). */
 export const REQUIREMENT_DESCRIPTION =
-  'Work the person\'s requirements (the workshop board). op: mine (the requirements of a thread you are in: thread_id; without one, every active requirement), get (one requirement: requirement), link (tie this thread\'s work to it: thread_id), deliver (attach what you just finished: kind one of design-doc, test-report, link, file, and ref — a path, URL or PR; a link ref is a full http(s) URL; a design-doc ref is the document itself, a .md/.markdown/.txt/.html path or URL you saved, NEVER a session id like pn-…: the review opens the document, so anything else is refused), say (one line of progress, shown in its history), stage (move the requirement to a stage: requirement + stage; the one way a stage changes — design, design-review, dev, qa, code-review, done). Stages move themselves: deliver a design doc (kind design-doc, or an .md/.html file) and the requirement enters review on its own; the person\'s verdict there moves it on — never propose or move a stage yourself.';
+  'Work the person\'s requirements (the workshop board). op: mine (the requirements of a thread you are in: thread_id; without one, every active requirement), get (one requirement: requirement — its stage, deliverables and their review verdicts), create (a new requirement: title, notes optional; the history says who made it), link (tie this thread\'s work to a requirement: thread_id — for a session NOT started from the requirement\'s card; card-started sessions are tied on send), deliver (attach what you just finished: kind one of design-doc, test-report, link, file, and ref — a path, URL or PR; a link ref is a full http(s) URL; a design-doc ref is the document itself, a .md/.markdown/.txt/.html path or URL you saved, NEVER a session id like pn-…: the review opens the document, so anything else is refused), progress (record a line of progress and your judgment of the stage: note and/or stage — a changed stage lands as a stage event, an unchanged one just the note; call it whenever a stretch of work is done). Stages: design, design-review, dev, qa, code-review, done. They move by progress here or by the person in the workshop — a review verdict (已批准/已退回) is recorded but never moves one.';
 
 
 /** One requirement as one line of text: every fact an agent acts on. */
@@ -35,11 +37,12 @@ export function requirementLineText(requirement: Requirement): string {
   return parts.join(" ");
 }
 
-/** One requirement as its full text answer: stage, threads, deliverables, notes. */
+/** One requirement as its full text answer: stage, threads, deliverables (with verdicts), notes. */
 function requirementFullText(requirement: Requirement): string {
   const lines = [requirementLineText(requirement)];
   for (const deliverable of requirement.deliverables) {
-    lines.push(`- ${DELIVERABLE_KIND_LABELS[deliverable.kind]}: ${deliverable.title ?? deliverable.ref}${deliverable.title ? ` (${deliverable.ref})` : ""}${deliverable.by ? ` by ${deliverable.by}` : ""}`);
+    const verdict = deliverable.verdict === "approved" ? "（已批准）" : deliverable.verdict === "annotated" ? "（已退回）" : "";
+    lines.push(`- ${DELIVERABLE_KIND_LABELS[deliverable.kind]}: ${deliverable.title ?? deliverable.ref}${deliverable.title ? ` (${deliverable.ref})` : ""}${deliverable.by ? ` by ${deliverable.by}` : ""}${verdict}`);
   }
   if (requirement.notes.trim()) lines.push(`备注: ${requirement.notes.length > 300 ? `${requirement.notes.slice(0, 300)}…` : requirement.notes}`);
   return lines.join("\n");
@@ -63,7 +66,15 @@ async function runRequirementCall(context: { requirements?: RequirementStore }, 
     if (mine.length === 0) return { text: threadId ? "No requirement is tied to that thread." : "No active requirements." };
     return { text: mine.slice(0, 20).map(requirementLineText).join("\n") + (mine.length > 20 ? `\n… and ${mine.length - 20} more` : "") };
   }
-  if (!requirementId) return { text: "requirement: the requirement's id (req_…), for every op but mine." };
+  if (op === "create") {
+    const title = typeof input.title === "string" ? input.title.trim() : "";
+    if (!title) return { text: "title: the requirement, a few words." };
+    const made = store.create({ title, ...(typeof input.notes === "string" && input.notes.trim() ? { notes: input.notes } : {}) });
+    const by = authorOf(input);
+    if (by) store.say(made.id, `由 ${by} 创建`, null);
+    return { text: `Created. ${requirementLineText(made)}` };
+  }
+  if (!requirementId) return { text: "requirement: the requirement's id (req_…), for every op but mine and create." };
   const found = store.get(requirementId);
   if (!found) return { text: `No such requirement: ${requirementId}` };
 
@@ -83,18 +94,18 @@ async function runRequirementCall(context: { requirements?: RequirementStore }, 
     });
     return { text: `Attached ${DELIVERABLE_KIND_LABELS[deliverable.kind]}: ${deliverable.title ?? deliverable.ref}` };
   }
-  if (op === "stage") {
+  if (op === "progress") {
+    const note = typeof input.note === "string" ? input.note.trim() : "";
     const to = typeof input.stage === "string" ? (input.stage as RequirementStage) : null;
-    if (!to || !isRequirementStage(to)) return { text: `stage: one of ${REQUIREMENT_STAGES.map((stage) => stage.label).join(", ")}.` };
-    const before = found.requirement.stage;
-    if (before === to) return { text: `Already ${requirementStageLabel(to)}.` };
-    const moved = store.patch(requirementId, { stage: to });
-    store.say(requirementId, `阶段：${requirementStageLabel(before)} → ${requirementStageLabel(to)}`, "阶段");
-    return { text: `Stage: ${requirementStageLabel(before)} → ${requirementStageLabel(to)}. ${requirementLineText(moved)}` };
-  }
-  if (op === "say") {
-    store.say(requirementId, input.note as string, authorOf(input));
-    return { text: "Noted on the requirement's history." };
+    if (!note && to === null) return { text: "progress: a note and/or the stage you judge the work is at — one of them." };
+    if (to !== null && !isRequirementStage(to)) return { text: `stage: one of ${REQUIREMENT_STAGES.map((stage) => stage.label).join(", ")}.` };
+    const from = found.requirement.stage;
+    const moving: RequirementStage | null = to !== null && to !== from ? to : null;
+    const moved = moving !== null ? store.patch(requirementId, { stage: moving }) : null;
+    if (moving !== null) store.say(requirementId, `阶段：${requirementStageLabel(from)} → ${requirementStageLabel(moving)}`, "阶段");
+    if (note) store.say(requirementId, note, authorOf(input));
+    const stageLine = moving !== null ? `Stage: ${requirementStageLabel(from)} → ${requirementStageLabel(moving)}.` : `Stage unchanged (${requirementStageLabel(from)}).`;
+    return { text: `${note ? "Noted. " : ""}${stageLine} ${requirementLineText(moved ?? found.requirement)}` };
   }
   return { text: `op: one of ${INBOX_REQUIREMENT_OPS.join(", ")}.` };
 }
@@ -108,13 +119,14 @@ export function registerInboxRequirementTool(server: McpServer, context: { requi
       inputSchema: z
         .object({
           op: z.enum(INBOX_REQUIREMENT_OPS),
-          requirement: z.string().optional().describe("The requirement (req_…); every op but mine."),
+          requirement: z.string().optional().describe("The requirement (req_…); every op but mine and create."),
           thread_id: z.string().optional().describe("mine: the thread you are in. link: the thread to tie to the requirement."),
           kind: z.enum(DELIVERABLE_KINDS).optional().describe("deliver: design-doc | review | code-review | test-report | link | file."),
           ref: z.string().optional().describe("deliver: what it points at — a session id, owner/repo#123, a URL or a path."),
-          title: z.string().optional().describe("deliver: the deliverable's name, a few words."),
-          note: z.string().optional().describe("say: one line of progress."),
-          stage: z.string().optional().describe("stage: the stage to move to (design, design-review, dev, qa, code-review, done)."),
+          title: z.string().optional().describe("create: the requirement, a few words. deliver: the deliverable's name."),
+          notes: z.string().optional().describe("create: the requirement's notes, markdown."),
+          note: z.string().optional().describe("progress: one line of progress."),
+          stage: z.string().optional().describe("progress: the stage you judge the work is at (design, design-review, dev, qa, code-review, done); a changed one lands as a stage event."),
           agent_name: z.string().optional().describe("How the person sees you, e.g. \"Claude Code\"."),
           agent_host: z.string().optional().describe("Your agent host, e.g. claude-code, codex, cursor."),
           agent_session: z.string().optional().describe("Your session id; the `plannotator inbox mcp` shim fills it."),

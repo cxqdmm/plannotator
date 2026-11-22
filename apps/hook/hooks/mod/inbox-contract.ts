@@ -25,6 +25,7 @@ export const INBOX_TOOL_ACTIONS = [
   'submit_guide',
   'get_guide_brief',
   'card',
+  'requirement',
   'steps',
   'routine',
 ] as const
