@@ -17,7 +17,7 @@ import { useEmbeddedThread } from './embeddedHook';
 type FileAddress = NonNullable<ThreadPaneProps['file']>;
 type NamedRef = NonNullable<ThreadPaneProps['namedFile']>;
 
-export function EmbeddedThread({ threadId, fileId = null, artifacts: artifactsFirst = false, onToast, onClose, onChanged }: { threadId: string; fileId?: string | null; artifacts?: boolean; onToast?: (toast: unknown, ms?: number) => void; onClose: () => void; onChanged: () => void }) {
+export function EmbeddedThread({ threadId, fileId = null, artifacts: artifactsFirst = false, requirement = null, onToast, onClose, onChanged }: { threadId: string; fileId?: string | null; artifacts?: boolean; /** 会话所属需求（工坊反查传入）：其上下文出现在回复框的「上下文」里（approval "session-reply-contexts"）。 */ requirement?: { id: string; title: string; contexts?: readonly { id: string; kind: string; name: string; ref?: string; image?: boolean }[] } | null; onToast?: (toast: unknown, ms?: number) => void; onClose: () => void; onChanged: () => void }) {
   const client = useQueryClient();
   /** The thread's own Artifacts view (the inbox thread's button, same place, same look). */
   const [artifactsOn, setArtifactsOn] = useState(artifactsFirst);
@@ -70,6 +70,8 @@ export function EmbeddedThread({ threadId, fileId = null, artifacts: artifactsFi
       onArtifacts={setArtifactsOn}
       links={linksOn}
       onLinks={setLinksOn}
+      replyContexts={requirement?.contexts as ThreadPaneProps['replyContexts']}
+      replyContextsTitle={requirement?.title}
       onOpenFile={(file) => {
         if (!file) { setNamedRef(null); setOpenFile(null); return; }
         // 不带 view 的调用（版本/步骤/关联）沿用当前 view，同收件箱 fileOpener 的 keepView 语义。

@@ -108,4 +108,12 @@ export interface ThreadPaneProps {
   attachCommand?: string | null;
   onRunChanged?: () => void;
   openedWith?: ReadonlySet<string> | null;
+  /**
+   * 附加需求上下文（approval "session-reply-contexts"，工坊会话详情专属）：the session's
+   * requirement and its contexts. Passed, the reply box grows a 「上下文」 button and the
+   * picked contexts ride the reply as the workshop compose template's 上下文材料 list.
+   * Absent (the Inbox's own reply box), nothing shows and nothing changes.
+   */
+  replyContexts?: { id: string; kind: string; name: string; ref?: string; image?: boolean }[];
+  replyContextsTitle?: string;
 }

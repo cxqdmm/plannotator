@@ -135,7 +135,7 @@ export function RequirementsPanel({
       {/* The right panel: a session is the product's own ThreadPane (ib-pane) alone — no wrapper, no double chrome. */}
       {panel !== null &&
         (panel.k === 'session' ? (
-          <EmbeddedThread threadId={panel.threadId} fileId={panel.fileId ?? null} artifacts={panel.artifacts ?? false} onToast={onToast} onClose={() => setPanel(null)} onChanged={() => { void inboxApi.thread(panel.threadId).then((r) => putThread(queryClient, panel.threadId, r)); }} />
+          <EmbeddedThread threadId={panel.threadId} fileId={panel.fileId ?? null} artifacts={panel.artifacts ?? false} requirement={(requirements ?? []).find((r) => r.threads.includes(panel.threadId)) ?? null} onToast={onToast} onClose={() => setPanel(null)} onChanged={() => { void inboxApi.thread(panel.threadId).then((r) => putThread(queryClient, panel.threadId, r)); }} />
         ) : (
           <div className="ib-req-wp-panel">
             <PanelContent panel={panel} requirements={requirements ?? []} rowsByThread={rowsForCards} onClose={() => setPanel(null)} onOpenThread={(tid) => setPanel({ k: 'session', threadId: tid })} onToast={onToast} onReview={(reqId, dlvId) => {

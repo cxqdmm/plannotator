@@ -23,6 +23,7 @@ export function ReplyRow({
   send,
   clip,
   skills,
+  contexts = null,
   mic,
   status,
   files,
@@ -41,6 +42,8 @@ export function ReplyRow({
   send: ReactNode;
   clip: ReactNode;
   skills: ReactNode;
+  /** 附加需求上下文（工坊会话详情专属，approval "session-reply-contexts"）：按钮 + 勾选弹层。缺省不渲染。 */
+  contexts?: ReactNode;
   mic: ReactNode;
   /** The voice status, nothing while idle (`VoiceStatusLine`). */
   status: ReactNode;
@@ -119,6 +122,7 @@ export function ReplyRow({
           <div className="ib-rlayer">
             {clip}
             {skills}
+            {contexts}
             {pill}
             {files}
             {hint && (
@@ -140,6 +144,7 @@ export function ReplyRow({
         {send}
         {clip}
         {skills}
+        {contexts}
         {mic}
       </div>
       <div className="ib-rmid" ref={midRef} data-fold={fold ? '' : undefined} data-hint={hint ? '' : undefined}>
