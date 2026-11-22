@@ -102,7 +102,8 @@ export function RequirementsPanel({
         <div className="ib-req-wp-cards">
           {(requirements ?? []).map((r) => (
             <ReqCard key={r.id} requirement={r} rowsByThread={rowsForCards} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
-                  // 评审现在总是自起门控会话（子进程自己开浏览器）；只有复用路径带 url 才在这里导航。
+                  // 评审由守护进程自起门控会话；路由等会话起好从登记簿拿地址返回，窗口统一打开（首击即达）。
+                  onToast({ icon: 'clock', lead: '正在打开评审页…' });
                   void reviewDeliverable(reqId, dlvId).then((o) => {
                     if (!o.ok) { onToast({ icon: 'excl', lead: `审阅没能打开：${o.error}`, wrap: true }); return; }
                     if (o.answer.url) window.open(o.answer.url, '_blank', 'noreferrer');
@@ -120,7 +121,8 @@ export function RequirementsPanel({
         ) : (
           <div className="ib-req-wp-panel">
             <PanelContent panel={panel} requirements={requirements ?? []} rowsByThread={rowsForCards} onClose={() => setPanel(null)} onToast={onToast} onReview={(reqId, dlvId) => {
-                  // 评审现在总是自起门控会话（子进程自己开浏览器）；只有复用路径带 url 才在这里导航。
+                  // 评审由守护进程自起门控会话；路由等会话起好从登记簿拿地址返回，窗口统一打开（首击即达）。
+                  onToast({ icon: 'clock', lead: '正在打开评审页…' });
                   void reviewDeliverable(reqId, dlvId).then((o) => {
                     if (!o.ok) { onToast({ icon: 'excl', lead: `审阅没能打开：${o.error}`, wrap: true }); return; }
                     if (o.answer.url) window.open(o.answer.url, '_blank', 'noreferrer');
@@ -581,6 +583,7 @@ function PanelContent({ panel, requirements, rowsByThread, onClose, onReview, on
                         if (/^https?:/.test(ref)) { window.open(ref, '_blank', 'noreferrer'); return; }
                         {
                           setAnnotating(e.id ?? ref);
+                          onToast({ icon: 'clock', lead: '正在打开批注页…' });
                           void annotateDeliverable(reqId, dlvId).then((o) => {
                             setAnnotating(null);
                             if (!o.ok) { setError(o.error); onToast({ icon: 'excl', lead: `预览没能打开：${o.error}`, wrap: true }); return; }

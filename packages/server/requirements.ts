@@ -584,12 +584,29 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
     return null;
   };
 
-  const annotateDeliverable = (id: string, deliverableId: string): { ok: true; url?: string } | { ok: false; status: number; error: string; code: string } => {
+  /** 子进程起好后从登记簿拿地址：轮询到注册成功或子进程退出为止（15 秒兜底）。null = 没能起来。 */
+  const waitForAliveUrl = (file: string, spawned: Promise<{ stdout: string; code: number }>): Promise<string | null> => {
+    let done = false;
+    void spawned.then(() => { done = true; }, () => { done = true; });
+    return (async () => {
+      const deadline = Date.now() + 15_000;
+      while (Date.now() < deadline) {
+        const alive = aliveAnnotateOf(file);
+        if (alive) return alive;
+        if (done) return aliveAnnotateOf(file);
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+      return null;
+    })();
+  };
+
+  const annotateDeliverable = async (id: string, deliverableId: string): Promise<{ ok: true; url?: string } | { ok: false; status: number; error: string; code: string }> => {
     if (!options.spawnAnnotate) return { ok: false, status: 501, error: "This Inbox cannot annotate here (no annotate runtime).", code: "no_runtime" };
-    if (reviewsInFlight.has(`${id}:${deliverableId}`)) return { ok: false, status: 409, error: "This deliverable is already open for annotation.", code: "annotate_in_flight" };
     const found = deliverableAt(id, deliverableId);
     if ("error" in found) return { ok: false, status: 404, error: "No such deliverable.", code: "not_found" };
     const target = fileTargetOf(id, found.deliverable.ref);
+    // 幂等打开（同评审路径的规矩）先于一切锁检查：这份文档的批注页还活着（关掉标签不杀子进程），
+    // 就把同一个地址还给点击处——重复点击绝不 409 死路。
     if (target && "url" in target) return { ok: true, url: target.url };
     if (target && "file" in target) {
       const alive = aliveAnnotateOf(target.file);
@@ -598,10 +615,15 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
     if (!target || !ANNOTATABLE_SUFFIXES.some((suffix) => target.file.toLowerCase().endsWith(suffix))) {
       return { ok: false, status: 415, error: "只有文档（markdown/文本/HTML）能打开批注；这个交付物解析不出可打开的文档。", code: "not_annotatable" };
     }
+    // 文件不在磁盘上（会话的工作区被删/移）：明说，而不是静默失败——同评审路径的 404。
+    if (!existsSync(target.file)) return { ok: false, status: 404, error: `文档不在磁盘上：${target.file}（会话的工作区可能已删除或移动）`, code: "doc_missing" };
     const key = `${id}:${deliverableId}`;
+    // 走到这里锁还占着 = 上一次 spawn 还在进行（子进程刚起、地址还没打印）：罕见且几秒内自解。
+    if (reviewsInFlight.has(key)) return { ok: false, status: 409, error: "这份交付物的批注页正在打开，马上就会弹出。", code: "annotate_in_flight" };
     reviewsInFlight.add(key);
-    void options
-      .spawnAnnotate(target.file)
+    const spawned = options
+      .spawnAnnotate(target.file);
+    void spawned
       .then(({ stdout }) => {
         let outcome: { decision?: unknown; annotationCount?: unknown } = {};
         try {
@@ -621,7 +643,10 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       .finally(() => {
         reviewsInFlight.delete(key);
       });
-    return { ok: true };
+    // 第一击就有回应：等会话起好从登记簿拿地址返回，窗口立刻打开同一个页（子进程不再自己开浏览器）。
+    const url = await waitForAliveUrl(target.file, spawned);
+    if (!url) return { ok: false, status: 500, error: "批注页没能启动，稍后再试。", code: "annotate_failed" };
+    return { ok: true, url };
   };
 
   /**
@@ -744,7 +769,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       }
       const annotateMatch = /^deliverables\/([^/]+)\/annotate$/.exec(deeper);
       if (annotateMatch && req.method === "POST") {
-        const started = annotateDeliverable(id, decodeURIComponent(annotateMatch[1]!));
+        const started = await annotateDeliverable(id, decodeURIComponent(annotateMatch[1]!));
         return started.ok ? json(started) : json({ error: started.error, code: started.code }, started.status);
       }
       const reviewMatch = /^deliverables\/([^/]+)\/review$/.exec(deeper);
@@ -770,8 +795,9 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         const key = `review:${id}`;
         reviewsInFlight.add(key);
         const doc = found.deliverable;
-        void options
-          .spawnAnnotate(reviewFile)
+        const spawned = options
+          .spawnAnnotate(reviewFile);
+        void spawned
           .then(({ stdout }) => {
             let outcome: { decision?: unknown; feedback?: unknown; annotationCount?: unknown } = {};
             try {
@@ -793,7 +819,10 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
           .finally(() => {
             reviewsInFlight.delete(key);
           });
-        return json({ ok: true, doc: doc.ref });
+        // 首击即达：等会话起好从登记簿拿地址返回（子进程不再自己开浏览器，窗口统一开）。
+        const url = await waitForAliveUrl(reviewFile, spawned);
+        if (!url) return json({ error: "评审页没能启动，稍后再试。", code: "annotate_failed" }, 500);
+        return json({ ok: true, doc: doc.ref, url });
       }
       // 需求上下文 (contexts): the person adds a link, pasted text (which becomes a file in the requirement's
       // context folder), or an uploaded file (base64 in the JSON body, so the window's session check holds).

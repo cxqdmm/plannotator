@@ -4496,7 +4496,9 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
   const requirements = createBunRequirementRoutes({
     dataDir,
     spawnAnnotate: (file) => {
-      const child = Bun.spawn([...selfCommand, "annotate", file, "--gate", "--json"], { stdout: "pipe", stderr: "ignore", stdin: "ignore", windowsHide: true });
+      // 子进程不自己开浏览器（单弹窗原则）：路由轮询登记簿拿到地址后返回，由窗口统一打开——
+      // 首击即达，也不受守护进程环境变量（SKIP_BROWSER_OPEN 等）影响。
+      const child = Bun.spawn([...selfCommand, "annotate", file, "--gate", "--json"], { stdout: "pipe", stderr: "ignore", stdin: "ignore", windowsHide: true, env: { ...process.env, PLANNOTATOR_SKIP_BROWSER_OPEN: "1" } });
       return Promise.all([new Response(child.stdout).text(), child.exited]).then(([stdout, code]) => ({ stdout, code }));
     },
     // 手动代码评审（工坊入口）：项目根 → 常驻评审页。比较对象（未提交/分支/提交…）页面里随时切。
