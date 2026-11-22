@@ -63,6 +63,9 @@
 @keyframes ib-req-heartbeat-turn { 0% { transform: rotate(0deg); } 42% { transform: rotate(360deg); } 100% { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .ib-req-wcard-sess-mk.running { animation: none; } }
 .ib-req-wcard-sess-t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+/* 有新消息：标题粗体（同收件箱 .ib-row.ib-u 的 600），加「新消息」标 */
+.ib-req-wcard-sess-t.is-unread { font-weight: 600; }
+.ib-req-wcard-new { flex: none; display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; background: color-mix(in oklch, var(--foreground) 12%, transparent); color: var(--foreground); font-size: 10.5px; font-weight: 650; }
 /* 等你回复：hold 徽章（--ib-badge-hold-* 与收件箱一致） */
 /* 运行中（主色系：活动）与 等你回复（土黄系：全产品"等你"家族色）分家；
    竖线只在"等你"存在时出现在它左侧。 */

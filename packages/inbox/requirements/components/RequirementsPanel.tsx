@@ -202,7 +202,7 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
       {/* 会话就在卡片里：agent 侧栏的行模式 */}
       <div className="ib-req-wcard-sessions">
         {r.threads.map((tid) => {
-          const row = rowsByThread.get(tid) as { subject?: string | null; section?: string; run?: 'starting' | 'working' | 'cloning' | null; resolved_at: string | null; back_from_archive?: boolean } | undefined;
+          const row = rowsByThread.get(tid) as { subject?: string | null; section?: string; run?: 'starting' | 'working' | 'cloning' | null; resolved_at: string | null; back_from_archive?: boolean; unread?: boolean } | undefined;
           const agent = row ? rowAgent(row as never) : null;
           // 已归档：行从归档列表来（活跃列表不收），展示照旧（图标、标题都是原来的），
           // 只加「已归档」——与收件箱的字序一致，它顶掉工作状态与等你回复。
@@ -215,7 +215,7 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
           return (
             <div key={tid} role="button" tabIndex={0} className="ib-req-wcard-sess" onClick={() => onSession(tid)} onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onSession(tid); } }}>
               <span className={`ib-req-wcard-sess-mk${runWord !== null ? ' running' : ''}`}>{agent?.kind === 'agent' ? <HostMark host={agent.host} /> : <Icon name="comment" size={14} />}</span>
-              <span className="ib-req-wcard-sess-t" dir="auto">{subject}</span>
+              <span className={`ib-req-wcard-sess-t${row?.unread && !archived ? ' is-unread' : ''}`} dir="auto">{subject}</span>
               {archived && (
                 <span className="ib-req-wcard-arch">已归档</span>
               )}
@@ -231,6 +231,10 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
                     <Icon name="clock" size={11} /> 等你回复
                   </span>
                 </>
+              )}
+              {/* 有新消息（send_message 落下未看）：与收件箱行同一个 row.unread 数据源，粗体 + 「新消息」标。 */}
+              {!archived && row?.unread && (
+                <span className="ib-req-wcard-new">新消息</span>
               )}
               {(() => {
                 // 去审阅跟会话走：只看这条会话有没有「待审」的设计文档（交付时记的 thread 匹配 +
