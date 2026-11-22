@@ -7,10 +7,15 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ThreadPane } from '../components/Thread';
+import type { ThreadPaneProps } from '../components/Thread';
 import { putThread } from '../data/queries/thread';
 import { keepSavedQuestions } from '../pickQueue';
 import { inboxApi } from '../api';
 import { useEmbeddedThread } from './embeddedHook';
+
+/** 文件地址（paneProps 的 file 形状）与消息里关联文件引用。 */
+type FileAddress = NonNullable<ThreadPaneProps['file']>;
+type NamedRef = NonNullable<ThreadPaneProps['namedFile']>;
 
 export function EmbeddedThread({ threadId, fileId = null, artifacts: artifactsFirst = false, onToast, onClose, onChanged }: { threadId: string; fileId?: string | null; artifacts?: boolean; onToast?: (toast: unknown, ms?: number) => void; onClose: () => void; onChanged: () => void }) {
   const client = useQueryClient();
@@ -19,6 +24,11 @@ export function EmbeddedThread({ threadId, fileId = null, artifacts: artifactsFi
   const [linksOn, setLinksOn] = useState(false);
   // 受控同步：面板已打开时点产物图标，prop 变化也要切视图（useState 初值只在挂载时取一次）。
   useEffect(() => { setArtifactsOn(artifactsFirst); }, [artifactsFirst]);
+  // 打开的文件/关联文件引用：工坊面板没有路由器（收件箱那套 hash/history 帧不搬），
+  // 本地 state 就是地址——onOpenFile 写它、file 吃它，查看器由 ThreadPane 自己按 file 渲染。
+  // 版本/步骤/关联附件导航只是更新同一块地址；onOpenFile(null) 关闭回到会话。
+  const [openFile, setOpenFile] = useState<FileAddress | null>(fileId ? { id: fileId, version: 'current' as const, focus: null } : null);
+  const [namedRef, setNamedRef] = useState<NamedRef | null>(null);
   const held = useEmbeddedThread(threadId);
 
   if (held === null) {
@@ -50,12 +60,18 @@ export function EmbeddedThread({ threadId, fileId = null, artifacts: artifactsFi
       onRunChanged={() => {
         void inboxApi.thread(threadId).then((read) => putThread(client, threadId, read));
       }}
-      file={fileId ? { id: fileId, version: 'current' as const, focus: null } : null}
+      file={openFile}
+      namedFile={namedRef}
+      onOpenNamedFile={(ref) => { if (!ref) setOpenFile(null); setNamedRef(ref); }}
       artifacts={artifactsOn}
       onArtifacts={setArtifactsOn}
       links={linksOn}
       onLinks={setLinksOn}
-      onOpenFile={() => undefined}
+      onOpenFile={(file) => {
+        if (!file) { setNamedRef(null); setOpenFile(null); return; }
+        // 不带 view 的调用（版本/步骤/关联）沿用当前 view，同收件箱 fileOpener 的 keepView 语义。
+        setOpenFile((current) => ({ ...file, view: file.view === undefined ? current?.view ?? null : file.view }) as FileAddress);
+      }}
       onOpenGuide={() => undefined}
     />
   );
