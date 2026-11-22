@@ -671,6 +671,13 @@ class OpenCode2Wakes {
             },
           }
         : {}),
+      // 打断（工坊的「打断会话」，approval "workshop-interrupt"）：停掉这个会话正在跑的执行——
+      // OpenCode 自己的中断原语（Ask 会话的取消同款）。执行没在跑时调用是空操作，无害。
+      interrupt: async () => {
+        const interrupt = this.v2.session?.interrupt;
+        if (typeof interrupt !== "function") throw new Error("this OpenCode cannot interrupt a session from a plugin");
+        await interrupt({ sessionID });
+      },
       notify: (message) => {
         console.error(`[Plannotator] ${message}`);
       },

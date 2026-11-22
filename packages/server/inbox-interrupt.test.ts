@@ -63,8 +63,21 @@ test("a session that is not polling is refused, not silently parked", async () =
 test("a session that polls but predates the feature (no can_interrupt) is named as the cause", async () => {
   const { server, thread } = await setup();
   await poll(server, { session: "sess_i", host: "claude-code", waitMs: 0 });
-  const answer = (await (await interrupt(server, thread.id)).json()) as { code?: string };
+  const answer = (await (await interrupt(server, thread.id)).json()) as { code?: string; error?: string };
   expect(answer.code).toBe("session_too_old");
+  // 文案按宿主区分：Claude Code 给 /reload-plugins 的修法。
+  expect(answer.error).toContain("/reload-plugins");
+});
+
+test("an opencode session's refusal words the opencode fix, not /reload-plugins", async () => {
+  const { server } = await setup();
+  const project = server.store.ensureProject({ name: "oc", root: join(tmpdir(), "oc-interrupt") });
+  const thread = server.store.startPersonThread({ project_id: project.id, body: "开工。", to: { host: "opencode", session: "ses_oc" }, idempotency_key: "k-oc-interrupt" }).message;
+  await poll(server, { session: "ses_oc", host: "opencode", waitMs: 0 });
+  const answer = (await (await interrupt(server, thread.id)).json()) as { code?: string; error?: string };
+  expect(answer.code).toBe("session_too_old");
+  expect(answer.error).toContain("opencode");
+  expect(answer.error).not.toContain("/reload-plugins");
 });
 
 test("an unknown thread is 404", async () => {

@@ -38,6 +38,9 @@ import { isAbsolute, join, resolve } from "node:path";
 import {
   INBOX_BRIDGE_EVENT_PATH,
   INBOX_BRIDGE_POLL_PATH,
+  INBOX_INTERRUPT_CAPABLE_POLL_FIELD,
+  INBOX_INTERRUPTED_FIELD,
+  INBOX_INTERRUPT_FIELD,
   INBOX_SEND_NOW_POLL_FIELD,
   INBOX_STEER_POLLS_POLL_FIELD,
   inboxClaimName,
@@ -467,6 +470,13 @@ export interface InboxWakeTarget {
    * now. Absent: as long as `steer` exists.
    */
   canSteer?(): boolean;
+  /**
+   * 打断会话（approval "workshop-interrupt"）：stop the running execution through
+   * the host's own primitive (OpenCode 2: `session.interrupt`). Optional: a host
+   * without it never declares `can_interrupt` and the workshop's 打断 refuses its
+   * sessions in words.
+   */
+  interrupt?(): void | Promise<void>;
   /** A line for the person, outside the model's context (a toast, a notice). */
   notify(message: string): void;
   /**
@@ -564,6 +574,16 @@ export class InboxWake {
   private stateCheckedAt = Number.NEGATIVE_INFINITY;
   /** Whether Send now could go in, as last told to the Inbox. */
   private lastSteerable: boolean | null = null;
+  /** 打断（approval "workshop-interrupt"）：host 能停执行（target.interrupt 在）才声明 can_interrupt。 */
+  private get canInterrupt(): boolean {
+    return typeof this.target.interrupt === "function";
+  }
+  /** The poll answer's pending interrupt, consumed right after the poll (the answer repeats it until the receipt). */
+  private pendingInterruptId: string | null = null;
+  /** 打断 ids already acted on (a repeated answer must not run it twice). */
+  private readonly interruptsSeen = new Set<string>();
+  /** What the handled interrupt did; it rides the next poll's body once (a failed Send keeps it, as the Claude mod does). */
+  private interruptReceipt: { id: string; ok: boolean; message?: string } | null = null;
 
   constructor(
     private readonly connection: InboxAgentConnection,
@@ -741,12 +761,27 @@ export class InboxWake {
         [INBOX_STEER_POLLS_POLL_FIELD]: true,
         // Tags (approval "inbox-tag-agents"): this connection words a reply it was tagged in truthfully.
         [INBOX_TAGS_POLL_FIELD]: true,
+        // 打断（approval "workshop-interrupt"）：host 能停执行才声明，工坊据此给出打断入口。
+        ...(this.canInterrupt ? { [INBOX_INTERRUPT_CAPABLE_POLL_FIELD]: true } : {}),
+        // 打断的回执（处理完的那次）：随这一次 poll 上行；非 200 应答不清（留到下一拍）。
+        ...(this.interruptReceipt ? { [INBOX_INTERRUPTED_FIELD]: this.interruptReceipt } : {}),
         // What this process loaded (additive): the Inbox says when the session runs an older one.
         ...(plugin?.version ? { plugin } : {}),
       },
       signal,
     );
-    return response && response.status === 200 ? parseInboxBridgeCommands(response.text) : null;
+    if (!response || response.status !== 200) return null;
+    // 打断（窗口按会话下达）搭应答下来；消费在 poll 的调用方。
+    try {
+      const parsed = JSON.parse(response.text) as { interrupt?: unknown };
+      const id = typeof parsed.interrupt === "string" && parsed.interrupt.trim() ? parsed.interrupt.trim() : null;
+      this.pendingInterruptId = id;
+    } catch {
+      this.pendingInterruptId = null;
+    }
+    // 应答真被读过（200）才当送达：回执清掉。
+    this.interruptReceipt = null;
+    return parseInboxBridgeCommands(response.text);
   }
 
   private async poll(): Promise<void> {
@@ -763,6 +798,13 @@ export class InboxWake {
       }
       this.backoffMs = 0;
       this.retryAt = 0;
+      // 打断（窗口按会话下达）：应答里的 interrupt 领走即办（幂等；工坊的裁决通知同款收发惯例）。
+      const interruptId = this.pendingInterruptId;
+      this.pendingInterruptId = null;
+      if (interruptId !== null && !this.interruptsSeen.has(interruptId)) {
+        this.interruptsSeen.add(interruptId);
+        void this.runInterrupt(interruptId);
+      }
       // What the Inbox stopped handing out is done with here: handed out again (the reply moved back), it is new.
       const handedOut = new Set(commands.map((command) => command.id));
       for (const id of this.settled) if (!handedOut.has(id)) this.settled.delete(id);
@@ -772,6 +814,22 @@ export class InboxWake {
       }
     } finally {
       this.polling = false;
+    }
+  }
+
+  /** 打断执行：host 的原语（OpenCode 2: `session.interrupt`）；结果作回执随下一次 poll 上行。 */
+  private async runInterrupt(interruptId: string): Promise<void> {
+    const interrupt = this.target.interrupt;
+    if (typeof interrupt !== "function") {
+      this.interruptReceipt = { id: interruptId, ok: false, message: "this host cannot interrupt a session" };
+      return;
+    }
+    try {
+      await interrupt();
+      this.interruptReceipt = { id: interruptId, ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.interruptReceipt = { id: interruptId, ok: false, message };
     }
   }
 
