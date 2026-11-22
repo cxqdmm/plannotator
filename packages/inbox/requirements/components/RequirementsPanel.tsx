@@ -119,7 +119,7 @@ export function RequirementsPanel({
           <EmbeddedThread threadId={panel.threadId} fileId={panel.fileId ?? null} artifacts={panel.artifacts ?? false} onToast={onToast} onClose={() => setPanel(null)} onChanged={() => { void inboxApi.thread(panel.threadId).then((r) => putThread(queryClient, panel.threadId, r)); }} />
         ) : (
           <div className="ib-req-wp-panel">
-            <PanelContent panel={panel} requirements={requirements ?? []} onClose={() => setPanel(null)} onToast={onToast} onReview={(reqId, dlvId) => {
+            <PanelContent panel={panel} requirements={requirements ?? []} rowsByThread={rowsForCards} onClose={() => setPanel(null)} onToast={onToast} onReview={(reqId, dlvId) => {
                   // 评审现在总是自起门控会话（子进程自己开浏览器）；只有复用路径带 url 才在这里导航。
                   void reviewDeliverable(reqId, dlvId).then((o) => {
                     if (!o.ok) { onToast({ icon: 'excl', lead: `审阅没能打开：${o.error}`, wrap: true }); return; }
@@ -439,9 +439,11 @@ function ContextsBody({ requirementId, contexts, onChanged, onError }: {
 }
 
 /* ── The right panel's content ── */
-function PanelContent({ panel, requirements, onClose, onReview, onToast }: {
+function PanelContent({ panel, requirements, rowsByThread, onClose, onReview, onToast }: {
   panel: NonNullable<Panel>;
   requirements: Requirement[];
+  /** 会话行（subject 等），历史里给事件标会话归属用。 */
+  rowsByThread: Map<string, unknown>;
   onClose: () => void;
   onReview: (reqId: string, deliverableId: string) => void;
   onToast: (toast: unknown, ms?: number) => void;
@@ -451,6 +453,8 @@ function PanelContent({ panel, requirements, onClose, onReview, onToast }: {
   /** 上下文增删后 +1，重读详情。 */
   const [bump, setBump] = useState(0);
   const [detail, setDetail] = useState<{ requirement: Requirement; events: RequirementEvent[] } | null>(null);
+  /** 历史的会话过滤：'all' | thread id | 'none'（工坊手动操作/旧事件）。 */
+  const [histFilter, setHistFilter] = useState<string>('all');
   const reload = useRef<AbortController | null>(null);
 
   const reqId = panel.k === 'session' ? null : panel.requirementId;
@@ -481,26 +485,70 @@ function PanelContent({ panel, requirements, onClose, onReview, onToast }: {
     );
   }
 
+  // history —— 事件的会话归属：事件自带 thread（progress 记的），交付/裁决从交付物的 thread 回查；
+  // 其余（创建/挂会话/归档/旧事件）无归属。过滤条按会话切，含「无归属」。
+  const events = detail?.events ?? [];
+  const dlvById = new Map((detail?.requirement.deliverables ?? req?.deliverables ?? []).map((d) => [d.id, d]));
+  const threadOf = (e: RequirementEvent): string | null => {
+    if (e.thread) return e.thread;
+    if (e.from && dlvById.has(e.from)) return dlvById.get(e.from)!.thread ?? null;
+    return null;
+  };
+  const histSessions = (detail?.requirement.threads ?? req?.threads ?? []).map((tid) => {
+    const row = rowsByThread.get(tid) as { subject?: string | null } | undefined;
+    return { id: tid, subject: row?.subject?.trim() || '会话' };
+  });
+  // 同名会话（subject 相同的多条）在 chip 上带 id 尾缀区分。
+  const dupSubjects = new Set(histSessions.map((s) => s.subject).filter((subject, i, all) => all.indexOf(subject) !== i));
+  const sessLabel = (tid: string) => {
+    const s = histSessions.find((x) => x.id === tid);
+    return s ? (dupSubjects.has(s.subject) ? `${s.subject} …${s.id.slice(-4)}` : s.subject) : '会话';
+  };
+  const filterOf = (e: RequirementEvent) => threadOf(e) ?? 'none';
+  const shown = histFilter === 'all' ? events : events.filter((e) => filterOf(e) === histFilter);
+
   // history
   return (
     <>
       {top(`历史 · ${req?.title ?? ''}`)}
+      <div className="ib-req-hist-fbar" role="group" aria-label="按会话过滤历史">
+        <span className="ib-req-hist-fbar-label">会话</span>
+        <button type="button" className={`ib-req-hist-fchip${histFilter === 'all' ? ' on' : ''}`} onClick={() => setHistFilter('all')}>全部 <span className="n">{events.length}</span></button>
+        {histSessions.map((s) => (
+          <button key={s.id} type="button" className={`ib-req-hist-fchip${histFilter === s.id ? ' on' : ''}`} title={s.id} onClick={() => setHistFilter(s.id)}>
+            <Icon name="chatPlus" size={11} /> <span className="subj">{sessLabel(s.id)}</span> <span className="n">{events.filter((e) => filterOf(e) === s.id).length}</span>
+          </button>
+        ))}
+        <button type="button" className={`ib-req-hist-fchip none${histFilter === 'none' ? ' on' : ''}`} onClick={() => setHistFilter('none')}>无归属 <span className="n">{events.filter((e) => filterOf(e) === 'none').length}</span></button>
+      </div>
       <div className="ib-req-wp-panel-body ib-req-hist-body">
         <ol className="ib-req-hist">
-          {[...(detail?.events ?? [])].reverse().map((e) => {
+          {[...shown].reverse().map((e) => {
             const stageLine = e.kind === 'stage' && (e.from || e.to)
               ? `${e.from ? requirementStageLabel(e.from as never) : '?'} → ${e.to ? requirementStageLabel(e.to as never) : '?'}`
               : null;
             const note = e.note ?? '';
+            const owner = threadOf(e);
+            const isVerdict = e.kind === 'say' && e.field === '审阅裁决';
+            const dataK = isVerdict ? (e.to === 'approved' ? 'verdict-ok' : 'verdict-back') : e.kind;
+            const ownerChip = owner === null
+              ? <span className="ib-req-hist-sess none" title="工坊手动操作或旧事件，不属于任何会话">无归属</span>
+              : (() => {
+                  const row = rowsByThread.get(owner) as { subject?: string | null } | undefined;
+                  const subject = row?.subject?.trim() || '会话';
+                  const dup = histSessions.filter((s) => s.subject === subject).length > 1;
+                  return <span className="ib-req-hist-sess" title={`会话 ${owner}`}><Icon name="chatPlus" size={11} /> {subject}{dup ? <span className="tail">…{owner.slice(-4)}</span> : null}</span>;
+                })();
             return (
-              <li key={e.id} className="ib-req-hist-item" data-k={e.kind}>
+              <li key={e.id} className="ib-req-hist-item" data-k={dataK}>
                 <span className="ib-req-hist-time">{timeOf(e.at)}</span>
                 <span className="ib-req-hist-dot" aria-hidden="true" />
                 <div className="ib-req-hist-main">
                   <div className="ib-req-hist-head">
-                    <span className="ib-req-hist-kind">{e.kind === 'deliverable' ? DELIVERABLE_KIND_LABELS[(e.to ?? '') as never] ?? '交付' : EVENT_WORDS[e.kind] ?? e.kind}</span>
+                    <span className="ib-req-hist-kind">{isVerdict ? '审阅裁决' : e.kind === 'deliverable' ? DELIVERABLE_KIND_LABELS[(e.to ?? '') as never] ?? '交付' : EVENT_WORDS[e.kind] ?? e.kind}</span>
                     {stageLine && <span className="ib-req-hist-sub" dir="auto">{stageLine}</span>}
-                    {!stageLine && e.kind !== 'deliverable' && e.field && <span className="ib-req-hist-sub" dir="auto">{e.field}</span>}
+                    {!stageLine && !isVerdict && e.kind !== 'deliverable' && e.field && <span className="ib-req-hist-sub" dir="auto">{e.field}</span>}
+                    {ownerChip}
                   </div>
                   {note.trim() && (e.kind === 'deliverable' && e.field ? (
                     <div className="ib-req-hist-dlv" data-review={(() => {
@@ -562,6 +610,7 @@ function PanelContent({ panel, requirements, onClose, onReview, onToast }: {
             );
           })}
           {(detail?.events ?? []).length === 0 && <p className="ib-req-hist-none">还没有事件。</p>}
+          {events.length > 0 && shown.length === 0 && <p className="ib-req-hist-none">这个会话还没有事件。</p>}
         </ol>
       </div>
       {error && <p className="ib-error" role="alert">{error}</p>}

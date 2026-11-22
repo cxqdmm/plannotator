@@ -104,11 +104,13 @@ async function runRequirementCall(context: { requirements?: RequirementStore }, 
     const to = typeof input.stage === "string" ? (input.stage as RequirementStage) : null;
     if (!note && to === null) return { text: "progress: a note and/or the stage you judge the work is at — one of them." };
     if (to !== null && !isRequirementStage(to)) return { text: `stage: one of ${REQUIREMENT_STAGES.map((stage) => stage.label).join(", ")}.` };
+    // 调用会话（连接填的 agent_session）：进展与阶段事件记它，历史里才有会话归属。
+    const session = typeof input.agent_session === "string" && input.agent_session.trim() ? input.agent_session.trim() : null;
     const from = found.requirement.stage;
     const moving: RequirementStage | null = to !== null && to !== from ? to : null;
-    const moved = moving !== null ? store.patch(requirementId, { stage: moving }) : null;
-    if (moving !== null) store.say(requirementId, `阶段：${requirementStageLabel(from)} → ${requirementStageLabel(moving)}`, "阶段");
-    if (note) store.say(requirementId, note, authorOf(input));
+    const moved = moving !== null ? store.patch(requirementId, { stage: moving }, { thread: session }) : null;
+    if (moving !== null) store.say(requirementId, `阶段：${requirementStageLabel(from)} → ${requirementStageLabel(moving)}`, "阶段", session);
+    if (note) store.say(requirementId, note, authorOf(input), session);
     const stageLine = moving !== null ? `Stage: ${requirementStageLabel(from)} → ${requirementStageLabel(moving)}.` : `Stage unchanged (${requirementStageLabel(from)}).`;
     return { text: `${note ? "Noted. " : ""}${stageLine} ${requirementLineText(moved ?? found.requirement)}` };
   }

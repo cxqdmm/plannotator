@@ -78,12 +78,12 @@ export interface RequirementStore {
   list(archived: boolean): { requirements: Requirement[]; archived: number };
   get(id: string): { requirement: Requirement; events: RequirementEvent[] } | null;
   create(input: { title: string; priority?: RequirementPriority; notes?: string }): Requirement;
-  patch(id: string, patch: RequirementPatch): Requirement;
+  patch(id: string, patch: RequirementPatch, opts?: { thread?: string | null }): Requirement;
   remove(id: string): void;
   link(id: string, threadId: string, by?: string | null): Requirement;
   deliver(id: string, input: { kind: DeliverableKind; ref: string; title?: string; by?: string | null; thread?: string | null }): Deliverable;
   undeliver(id: string, deliverableId: string): void;
-  say(id: string, note: string, by?: string | null): void;
+  say(id: string, note: string, by?: string | null, thread?: string | null): void;
   /** 设计评审的裁决落账（350d4537a 后阶段不再自动流转）：一条 审阅裁决 事件（from=交付物 id、to=approved/annotated），
    *  读侧把它算成 deliverable.verdict，窗口据此显示 已批准/已退回；不挪阶段、不送达会话。 */
   reviewVerdict(id: string, deliverableId: string, decision: "approved" | "annotated", annotationCount: number | null): void;
@@ -255,8 +255,9 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       recordEvent(record.id, "created");
       return record;
     },
-    patch(id: string, patch: RequirementPatch) {
+    patch(id: string, patch: RequirementPatch, opts?: { thread?: string | null }) {
       const record = at(id);
+      const thread = typeof opts?.thread === "string" && opts.thread.trim() ? opts.thread.trim() : null;
       if (patch.title !== undefined) {
         if (typeof patch.title !== "string" || !patch.title.trim()) throw new RequirementStoreError("validation_error", "title: a non-empty string.", "title");
         if (patch.title.length > TITLE_MAX) throw new RequirementStoreError("validation_error", `title: at most ${TITLE_MAX} characters.`, "title");
@@ -268,7 +269,8 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         if (!Array.isArray(patch.threads) || patch.threads.length > THREADS_MAX || !patch.threads.every((id) => typeof id === "string" && id.length > 0)) throw new RequirementStoreError("validation_error", `threads: a list of at most ${THREADS_MAX} thread ids.`, "threads");
       }
       if (patch.stage !== undefined && patch.stage !== record.stage) {
-        recordEvent(id, "stage", { from: record.stage, to: patch.stage });
+        // thread：progress（MCP）带来的阶段事件归到调用会话；手动 PATCH 无 thread，无归属。
+        recordEvent(id, "stage", { from: record.stage, to: patch.stage, ...(thread ? { thread } : {}) });
         // A stage the person moved to settles every proposal naming it.
         record.suggestions = record.suggestions.filter((suggestion) => suggestion.stage !== patch.stage);
       }
@@ -344,11 +346,12 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       touch(record);
       save([id]);
     },
-    say(id: string, note: string, by?: string | null) {
+    say(id: string, note: string, by?: string | null, thread?: string | null) {
       const record = at(id);
       if (typeof note !== "string" || !note.trim()) throw new RequirementStoreError("validation_error", "note: a non-empty line.", "note");
       if (note.length > WHY_MAX) throw new RequirementStoreError("validation_error", `note: at most ${WHY_MAX} characters.`, "note");
-      recordEvent(id, "say", { note: `${by ? `${by}: ` : ""}${note.trim()}` });
+      const owner = typeof thread === "string" && thread.trim() ? thread.trim() : null;
+      recordEvent(id, "say", { note: `${by ? `${by}: ` : ""}${note.trim()}`, ...(owner ? { thread: owner } : {}) });
     },
     reviewVerdict(id: string, deliverableId: string, decision: "approved" | "annotated", annotationCount: number | null) {
       const record = at(id);

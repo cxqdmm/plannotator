@@ -161,4 +161,7 @@ export interface RequirementEvent {
   to?: string;
   /** `say`: the note; `deliverable`: its title or ref; `suggestion`: its why. */
   note?: string;
+  /** The session the event belongs to ('msg_' id), recorded when the acting call carries one
+   *  (progress 的 stage/say；交付与裁决由读侧从交付物的 thread 回查). Absent: 工坊手动操作或旧事件，无归属. */
+  thread?: string;
 }

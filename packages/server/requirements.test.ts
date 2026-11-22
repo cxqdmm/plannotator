@@ -210,6 +210,20 @@ describe("the requirements routes", () => {
     expect(detail.events.filter((event) => event.field === "审阅裁决")).toHaveLength(2);
   });
 
+  test("progress 的 stage/say 事件带 thread（会话归属），手动 PATCH 不带", async () => {
+    const made = await createOne();
+    // 手动 PATCH：阶段事件无归属。
+    await call("PATCH", `/api/requirements/${made.id}`, { stage: "design-review" });
+    const first = (await call("GET", `/api/requirements/${made.id}`)).data.events as { kind: string; thread?: string }[];
+    expect(first.find((e) => e.kind === "stage")?.thread).toBeUndefined();
+    // progress 路径（store 直调，同 MCP op 形状）：stage 事件带调用会话。
+    routes().store.patch(made.id, { stage: "dev" }, { thread: "msg_smoke-thread" });
+    routes().store.say(made.id, "一段进展", "Claude Code", "msg_smoke-thread");
+    const events = (await call("GET", `/api/requirements/${made.id}`)).data.events as { kind: string; thread?: string }[];
+    expect(events.find((e) => e.kind === "stage" && e.to === "dev")?.thread).toBe("msg_smoke-thread");
+    expect(events.at(-1)?.thread).toBe("msg_smoke-thread");
+  });
+
   test("a delete removes the record and writes history; an unknown id is 404; an unknown subpath is not this module's", async () => {
     const made = await createOne();
     expect((await call("DELETE", `/api/requirements/${made.id}`)).status).toBe(200);
