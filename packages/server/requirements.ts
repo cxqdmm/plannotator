@@ -81,7 +81,7 @@ export interface RequirementStore {
   patch(id: string, patch: RequirementPatch): Requirement;
   remove(id: string): void;
   link(id: string, threadId: string, by?: string | null): Requirement;
-  deliver(id: string, input: { kind: DeliverableKind; ref: string; title?: string; by?: string | null }): Deliverable;
+  deliver(id: string, input: { kind: DeliverableKind; ref: string; title?: string; by?: string | null; thread?: string | null }): Deliverable;
   undeliver(id: string, deliverableId: string): void;
   say(id: string, note: string, by?: string | null): void;
   /** 设计评审的裁决落账（350d4537a 后阶段不再自动流转）：一条 审阅裁决 事件（from=交付物 id、to=approved/annotated），
@@ -305,7 +305,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       save([id]);
       return record;
     },
-    deliver(id: string, input: { kind: DeliverableKind; ref: string; title?: string; by?: string | null }) {
+    deliver(id: string, input: { kind: DeliverableKind; ref: string; title?: string; by?: string | null; thread?: string | null }) {
       const record = at(id);
       if (!isDeliverableKind(input.kind)) throw new RequirementStoreError("validation_error", `kind: one of ${DELIVERABLE_KINDS.join(", ")}.`, "kind");
       if (typeof input.ref !== "string" || !input.ref.trim()) throw new RequirementStoreError("validation_error", "ref: what the deliverable points at.", "ref");
@@ -318,12 +318,15 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         throw new RequirementStoreError("validation_error", "link 的 ref 必须是完整 URL（http:// 或 https:// 开头），不是会话 id 或路径。给能直接打开的地址。", "ref");
       if (input.ref.length > REF_MAX) throw new RequirementStoreError("validation_error", `ref: at most ${REF_MAX} characters.`, "ref");
       if (input.title !== undefined && (typeof input.title !== "string" || input.title.length > TITLE_MAX)) throw new RequirementStoreError("validation_error", `title: at most ${TITLE_MAX} characters.`, "title");
+      const thread = typeof input.thread === "string" && input.thread.trim() ? input.thread.trim() : null;
       const deliverable: Deliverable = {
         id: `dlv_${ulid()}`,
         kind: input.kind,
         ref: input.ref.trim(),
         ...(input.title ? { title: input.title } : {}),
         by: input.by ?? null,
+        // 产出会话：agent 在会话里交付时带上的（session-row 去审阅 只挂自己的会话）；没有就不记。
+        ...(thread ? { thread } : {}),
         created_at: new Date().toISOString(),
       };
       record.deliverables.unshift(deliverable);
@@ -722,7 +725,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       if (deliverableMatch) {
         if (req.method === "POST" && deliverableMatch[1] === undefined) {
           const input = await body(req);
-          const deliverable = store.deliver(id, { kind: input.kind as DeliverableKind, ref: input.ref as string, ...(typeof input.title === "string" ? { title: input.title } : {}), by: typeof input.by === "string" ? input.by : null });
+          const deliverable = store.deliver(id, { kind: input.kind as DeliverableKind, ref: input.ref as string, ...(typeof input.title === "string" ? { title: input.title } : {}), by: typeof input.by === "string" ? input.by : null, ...(typeof input.thread === "string" ? { thread: input.thread } : {}) });
           return json({ deliverable }, 201);
         }
         if (req.method === "DELETE" && deliverableMatch[1] !== undefined) {

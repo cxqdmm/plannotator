@@ -233,27 +233,52 @@ function ReqCard({ requirement: r, rowsByThread, onSession, onContexts, onHistor
                 </>
               )}
               {(() => {
-                // 审阅融合进会话：待审的设计文档挂在最新会话上（产出它的那个）。
-                // 已有裁决（deliverable.verdict，读侧从 审阅裁决 事件算来）就不再喊「去审阅」：
-                // 已批准/已退回 是结果状态，点了评审也只是复用旧页——安静展示即可。
-                if (r.stage !== 'design-review' || tid !== r.threads[r.threads.length - 1]) return null;
-                const doc = r.deliverables.find((d) => d.kind === 'design-doc' || /\.(md|markdown|html?)$/i.test(d.ref));
-                if (!doc) return null;
-                if (doc.verdict === 'approved' || doc.verdict === 'annotated') {
-                  return <span className={`ib-req-wcard-verdict${doc.verdict === 'approved' ? ' ok' : ' back'}`} title={`设计文档「${doc.title ?? doc.ref}」${doc.verdict === 'approved' ? '已批准' : '已退回'}`}>{doc.verdict === 'approved' ? '已批准' : '已退回'}</span>;
+                // 去审阅跟会话走：只看这条会话有没有「待审」的设计文档（交付时记的 thread 匹配 +
+                // 无裁决），与 stage 无关——阶段由 progress（MCP）流转，两边互不拖累。
+                // 多份待审 → 点击弹下拉（只列待审的）；单份 → 直接触发审阅。
+                // 全部裁决完 → 不显示（结果态在历史页看）。
+                const pending = r.deliverables.filter((d) => d.thread === tid && d.kind === 'design-doc' && d.verdict === undefined);
+                if (pending.length === 0) return null;
+                if (pending.length === 1) {
+                  const doc = pending[0]!;
+                  return (
+                    <Tip content={`去审阅 · ${doc.title ?? doc.ref}`}>
+                      <button
+                        type="button"
+                        className="ib-req-wcard-sess-review"
+                        aria-label={`去审阅 ${doc.title ?? doc.ref}`}
+                        onClick={(ev) => { ev.stopPropagation(); onReview(r.id, doc.id); }}
+                      >
+                        <Icon name="search" size={11} />
+                        <span>去审阅</span>
+                      </button>
+                    </Tip>
+                  );
                 }
                 return (
-                  <Tip content={`去审阅 · ${doc.title ?? doc.ref}`}>
-                    <button
-                      type="button"
+                  <Menu.Root modal={false}>
+                    <Menu.Trigger
                       className="ib-req-wcard-sess-review"
-                      aria-label={`去审阅 ${doc.title ?? doc.ref}`}
-                      onClick={(ev) => { ev.stopPropagation(); onReview(r.id, doc.id); }}
+                      aria-label={`去审阅：本会话有 ${pending.length} 份待审设计文档`}
+                      data-sess-review-menu=""
+                      onClick={(ev) => ev.stopPropagation()}
+                      onKeyDown={(ev) => ev.stopPropagation()}
                     >
                       <Icon name="search" size={11} />
                       <span>去审阅</span>
-                    </button>
-                  </Tip>
+                    </Menu.Trigger>
+                    <Menu.Portal container={portal ?? undefined}>
+                      <Menu.Positioner className="ib-pm-pos" side="bottom" align="end" sideOffset={4}>
+                        <Menu.Popup className="ib-pm" aria-label={`待审设计文档（${pending.length}）`}>
+                          {pending.map((doc) => (
+                            <Menu.Item key={doc.id} className="ib-pmi" label={doc.title ?? doc.ref} onClick={() => onReview(r.id, doc.id)} data-sess-review-doc={doc.id}>
+                              <Icon name="doc" size={15} /> {doc.title ?? doc.ref}
+                            </Menu.Item>
+                          ))}
+                        </Menu.Popup>
+                      </Menu.Positioner>
+                    </Menu.Portal>
+                  </Menu.Root>
                 );
               })()}
               <span className="ib-req-wcard-stage">{requirementStageLabel(r.stage)}</span>
@@ -482,9 +507,9 @@ function PanelContent({ panel, requirements, onClose, onReview, onToast }: {
                       const older = (detail?.requirement.deliverables ?? []).find((d) => (d.title ?? d.ref) === note) ?? null;
                       const ref = e.field ?? older?.ref ?? '';
                       const dlvId = e.from ?? older?.id ?? '';
-                      // 评审中的高亮只在「还没结论」时保留；已批准/已退回后这行回归普通交付行。
+                      // 待审高亮只看交付物本身（design-doc 且无裁决），与 stage 无关。
                       const verdict = dlvId ? (detail?.requirement.deliverables ?? []).find((d) => d.id === dlvId)?.verdict : undefined;
-                      return verdict === undefined && (detail?.requirement.stage ?? req?.stage) === 'design-review' && e.to === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref) && dlvId && reqId ? '' : undefined;
+                      return verdict === undefined && e.to === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref) && dlvId && reqId ? '' : undefined;
                     })()}>
                     <button
                       type="button"
@@ -496,9 +521,10 @@ function PanelContent({ panel, requirements, onClose, onReview, onToast }: {
                         const ref = e.field ?? older?.ref ?? '';
                         const dlvId = e.from ?? older?.id ?? ''; // 事件携带的交付物 id（recordEvent 的 from）
                         if (!dlvId || !reqId) return;
-                        // 已有裁决就不再按「评审中」处理——落回普通预览，别把人带回旧评审页。
-                        const verdict = (detail?.requirement.deliverables ?? req?.deliverables ?? []).find((d) => d.id === dlvId)?.verdict;
-                        const underReview = verdict === undefined && (detail?.requirement.stage ?? req?.stage) === 'design-review' && e.to === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref);
+                        // 待审的设计文档点了进评审；已有裁决或非文档落回普通预览。
+                        const doc = (detail?.requirement.deliverables ?? req?.deliverables ?? []).find((d) => d.id === dlvId);
+                        const verdict = doc?.verdict;
+                        const underReview = verdict === undefined && (doc?.kind ?? e.to) === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref);
                         if (underReview) { onReview(reqId, dlvId); return; }
                         if (/^https?:/.test(ref)) { window.open(ref, '_blank', 'noreferrer'); return; }
                         {
@@ -517,10 +543,11 @@ function PanelContent({ panel, requirements, onClose, onReview, onToast }: {
                       const older = (detail?.requirement.deliverables ?? []).find((d) => (d.title ?? d.ref) === note) ?? null;
                       const ref = e.field ?? older?.ref ?? '';
                       const dlvId = e.from ?? older?.id ?? '';
-                      const reviewable = (detail?.requirement.stage ?? req?.stage) === 'design-review' && e.to === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref) && dlvId && reqId;
+                      const doc = (detail?.requirement.deliverables ?? req?.deliverables ?? []).find((d) => d.id === dlvId);
+                      const reviewable = (doc?.kind ?? e.to) === 'design-doc' && /\.(md|markdown|txt|html?)$/i.test(ref) && dlvId && reqId;
                       if (!reviewable) return null;
                       // 有裁决就不是「去审阅」了：已批准/已退回（deliverable.verdict，读侧算来的结果状态）。
-                      const verdict = (detail?.requirement.deliverables ?? req?.deliverables ?? []).find((d) => d.id === dlvId)?.verdict;
+                      const verdict = doc?.verdict;
                       if (verdict === 'approved' || verdict === 'annotated') {
                         return <span className={`ib-req-hist-verdict${verdict === 'approved' ? ' ok' : ' back'}`}>{verdict === 'approved' ? '已批准' : '已退回'}</span>;
                       }

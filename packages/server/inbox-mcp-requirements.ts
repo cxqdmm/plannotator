@@ -42,7 +42,8 @@ function requirementFullText(requirement: Requirement): string {
   const lines = [requirementLineText(requirement)];
   for (const deliverable of requirement.deliverables) {
     const verdict = deliverable.verdict === "approved" ? "（已批准）" : deliverable.verdict === "annotated" ? "（已退回）" : "";
-    lines.push(`- ${DELIVERABLE_KIND_LABELS[deliverable.kind]}: ${deliverable.title ?? deliverable.ref}${deliverable.title ? ` (${deliverable.ref})` : ""}${deliverable.by ? ` by ${deliverable.by}` : ""}${verdict}`);
+    const of = deliverable.thread ? `（会话 ${deliverable.thread}）` : "";
+    lines.push(`- ${DELIVERABLE_KIND_LABELS[deliverable.kind]}: ${deliverable.title ?? deliverable.ref}${deliverable.title ? ` (${deliverable.ref})` : ""}${deliverable.by ? ` by ${deliverable.by}` : ""}${verdict}${of}`);
   }
   if (requirement.notes.trim()) lines.push(`备注: ${requirement.notes.length > 300 ? `${requirement.notes.slice(0, 300)}…` : requirement.notes}`);
   return lines.join("\n");
@@ -86,11 +87,15 @@ async function runRequirementCall(context: { requirements?: RequirementStore }, 
     return { text: `Linked. ${requirementLineText(linked)}` };
   }
   if (op === "deliver") {
+    // 产出会话：shim/连接填的 agent_session（会话内 agent 交付时都有）记进交付物——
+    // 工坊会话条的去审阅 只挂产出它的那条会话。
+    const session = typeof input.agent_session === "string" && input.agent_session.trim() ? input.agent_session.trim() : null;
     const deliverable = store.deliver(requirementId, {
       kind: input.kind as DeliverableKind,
       ref: input.ref as string,
       ...(typeof input.title === "string" ? { title: input.title } : {}),
       by: authorOf(input),
+      thread: session,
     });
     return { text: `Attached ${DELIVERABLE_KIND_LABELS[deliverable.kind]}: ${deliverable.title ?? deliverable.ref}` };
   }

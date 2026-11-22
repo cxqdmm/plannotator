@@ -85,6 +85,9 @@ export interface Deliverable {
   title?: string;
   /** Who attached it (an agent's name, or null for the person). */
   by?: string | null;
+  /** The session that produced it ('msg_' id), recorded at deliver time. Absent (person-attached, or
+   *  an older record): the session-row 去审阅 does not attach to it — a pill only hangs on its own session. */
+  thread?: string;
   created_at: string;
   /** Computed on reads (never stored): this deliverable's latest review verdict — the design review's
    *  通过/退回 lands as a 审阅裁决 event; the window shows 已批准/已退回 from it. Absent: not reviewed yet. */
