@@ -68,6 +68,9 @@
 .ib-req-wcard-sess-more:hover { background: var(--ib-hover, var(--muted)); color: var(--foreground); }
 @media (hover: none) { .ib-req-wcard-sess-more { opacity: 1; } }
 .ib-req-wcard-sess:hover { background: color-mix(in oklch, var(--muted) 60%, transparent); }
+/* 选中态（右侧详情正开着这条会话）：主色浅底 + 内嵌主色描边——与视图切换/历史过滤的选中语言同款主色，
+   不用主色文字（行内还有状态 chips 与未读加粗，整行染色会打架）；inset 描边不挪布局。放在 hover 之后，选中盖过悬停。 */
+.ib-req-wcard-sess[data-selected] { background: color-mix(in oklab, var(--primary) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary) 40%, transparent); }
 .ib-req-wcard-sess-mk { flex: none; display: inline-flex; }
 /* 运行中的心跳转动：绕中心转一圈（缓起缓停，ease-in-out），停一拍，再转——缓慢往复 */
 .ib-req-wcard-sess-mk.running { animation: ib-req-heartbeat-turn 2.6s ease-in-out infinite; }

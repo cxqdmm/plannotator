@@ -119,7 +119,7 @@ export function RequirementsPanel({
         </div>
         <div className="ib-req-wp-cards">
           {shown.map((r) => (
-            <ReqCard key={r.id} requirement={r} rowsByThread={rowsForCards} patch={patch} onSession={(tid) => setPanel({ k: 'session', threadId: tid })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
+            <ReqCard key={r.id} requirement={r} rowsByThread={rowsForCards} patch={patch} selectedThreadId={panel !== null && panel.k === 'session' ? panel.threadId : null} onSession={(tid) => setPanel((current) => (current !== null && current.k === 'session' && current.threadId === tid ? null : { k: 'session', threadId: tid }))} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
                   // 评审由守护进程自起门控会话；路由等会话起好从登记簿拿地址返回，窗口统一打开（首击即达）。
                   onToast({ icon: 'clock', lead: '正在打开评审页…' });
                   void reviewDeliverable(reqId, dlvId).then((o) => {
@@ -165,11 +165,13 @@ export function RequirementsPanel({
 
 /* ── A requirement card: icon + wrapping title, hover actions (out of flow), created
  * time pinned right on row 1, and its sessions as rows INSIDE the card. ── */
-function ReqCard({ requirement: r, rowsByThread, patch, onSession, onContexts, onHistory, onNewSession, onToast, onReview }: {
+function ReqCard({ requirement: r, rowsByThread, patch, selectedThreadId, onSession, onContexts, onHistory, onNewSession, onToast, onReview }: {
   requirement: Requirement;
   rowsByThread: Map<string, unknown>;
   /** 乐观写（useRequirements 的 patch）：归档/恢复/重新开启都走它，卡片在视图间流动。 */
   patch: (id: string, patch: { stage?: RequirementStage; archived?: boolean }) => Promise<boolean>;
+  /** 右侧详情正开着的那条会话（工坊反查选中态）：null = 详情没开或开的是别的面板。 */
+  selectedThreadId: string | null;
   onSession: (threadId: string) => void;
   onContexts: () => void;
   onHistory: () => void;
@@ -253,7 +255,7 @@ function ReqCard({ requirement: r, rowsByThread, patch, onSession, onContexts, o
           // 打断（v2，会话级）：回合正在跑（run 字「工作中」，或行上的 busy——手动起的会话没有 run 字）就可
           // 打断——按会话下达，手动终端起的会话和工坊启动的一视同仁。
           return (
-            <div key={tid} role="button" tabIndex={0} className="ib-req-wcard-sess" onClick={() => onSession(tid)} onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onSession(tid); } }}>
+            <div key={tid} role="button" tabIndex={0} className="ib-req-wcard-sess" data-selected={selectedThreadId === tid ? '' : undefined} aria-current={selectedThreadId === tid ? 'true' : undefined} onClick={() => onSession(tid)} onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onSession(tid); } }}>
               <span className={`ib-req-wcard-sess-mk${runWord !== null ? ' running' : ''}`}>{agent?.kind === 'agent' ? <HostMark host={agent.host} /> : <Icon name="comment" size={14} />}</span>
               <span className={`ib-req-wcard-sess-t${row?.unread && !archived ? ' is-unread' : ''}`} dir="auto">{subject}</span>
               {archived && (
