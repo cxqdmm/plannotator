@@ -511,7 +511,7 @@ export const INBOX_AGENT_ACTION_LEADS: Readonly<Record<string, string>> = {
   search: 'Find messages by words, older ones too (read-only).',
   get_guide_brief: "How to write a guided review, with a worked submit_guide call.",
   card: "A Board card for work that outlasts this reply: create it, then move it and say where it is as the work moves.",
-  requirement: "The person's requirement this work belongs to: tie the thread to it, attach what you finish, and propose the next stage (they move it).",
+  requirement: "The person's requirement this work belongs to: attach what you finish to it and report your progress and stage (they created it and they review it).",
   steps: INBOX_STEPS_ACTION_LINE,
 }
 
