@@ -182,34 +182,9 @@ button.ib-req-hist-sess:hover { color: var(--foreground); border-color: color-mi
 /* 标题即会话名：占据剩余宽度、超长省略；状态胶囊与 ✕ 恒在最右 */
 .ib-sstr-title { flex: 1; min-width: 0; font-size: var(--ib-fs-13, 13px); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ib-sstr-sess { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted-foreground); padding: 1.5px 7px; border-radius: 999px; border: 1px solid var(--ib-hair, var(--border)); white-space: nowrap; }
-/* ─────────────── 附加需求上下文 (approval "session-reply-contexts"; the workshop's session detail only) ───────────────
-   The reply box's 「上下文」 button (in the row, after Skills) and its picker above it; the picked contexts'
-   removable chips sit over the reply field, with the files' tiles. The Send appends the compose template's
-   上下文材料 list to the words — 名字（引用） per line. */
-.ib-rctx { position: relative; display: inline-flex; }
-.pn-inbox .ib-rctx [data-reply-contexts-button] { position: relative; display: inline-flex; align-items: center; }
-.pn-inbox .ib-rctx [data-reply-contexts-button][aria-expanded="true"] { background: var(--muted); color: var(--foreground); }
-.ib-rctx-n { position: absolute; top: -5px; right: -6px; min-width: 14px; height: 14px; padding: 0 4px; border-radius: 999px; background: var(--primary); color: var(--primary-foreground); font-size: 10px; font-weight: 650; line-height: 14px; text-align: center; font-variant-numeric: tabular-nums; }
-.ib-rctx-pop { position: fixed; z-index: 60; display: flex; flex-direction: column; overflow-y: auto; padding: 6px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14); }
-.ib-rctx-head { padding: 5px 8px 7px; border-bottom: 1px solid var(--border); color: var(--muted-foreground); font-size: var(--ib-fs-12-5, 12.5px); }
-.ib-rctx-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; margin-top: 2px; border: 0; border-radius: 8px; background: none; color: var(--foreground); font: inherit; font-size: var(--ib-fs-12-5, 12.5px); text-align: left; cursor: pointer; }
-@media (hover: hover) { .ib-rctx-row:hover { background: color-mix(in oklch, var(--muted) 55%, transparent); } }
-.ib-rctx-row.on { background: color-mix(in oklab, var(--primary) 10%, transparent); }
-.ib-rctx-row .ib-rctx-ic { flex: none; color: var(--muted-foreground); }
-.ib-rctx-row .ib-rctx-nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ib-rctx-row .ib-rctx-tick { flex: none; width: 14px; color: var(--primary); font-weight: 650; }
-.ib-rctx-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
-.ib-rctx-chip { display: inline-flex; align-items: center; gap: 5px; max-width: 240px; padding: 2px 8px; border: 1px solid color-mix(in oklch, var(--primary) 35%, transparent); border-radius: 999px; background: color-mix(in oklab, var(--primary) 10%, transparent); color: var(--foreground); font-size: 11px; }
-.ib-rctx-chip > :first-child { flex: none; color: var(--muted-foreground); }
-.ib-rctx-chip { overflow: hidden; white-space: nowrap; }
-.ib-rctx-chip > :nth-child(2) { overflow: hidden; text-overflow: ellipsis; }
-.ib-rctx-x { flex: none; padding: 0 2px; border: 0; background: none; color: var(--muted-foreground); font: inherit; font-size: 12px; line-height: 1; cursor: pointer; }
-.ib-rctx-x:hover { color: var(--foreground); }
 /* 运行中：顶栏的活徽章 + 底部的 pending 行 */
-.ib-sstr-live { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 650; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
-.ib-sstr-pill-live { background: color-mix(in oklab, var(--primary) 14%, transparent); color: var(--primary); }
+/* 顶栏的运行中/空闲两态徽标已删（对话流页面改造）：运行状态由需求卡会话行负责。 */
 .ib-sstr-pill-hold { background: var(--ib-badge-hold-bg); color: var(--ib-badge-hold-fg, currentcolor); }
-.ib-sstr-pill-off { background: color-mix(in oklch, var(--muted-foreground) 16%, transparent); color: var(--muted-foreground); }
 .ib-sstr-pending { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted-foreground); }
 .ib-sstr-pending::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); animation: ib-sstr-pulse 1.1s ease-in-out infinite; }
 @keyframes ib-sstr-pulse { 0%, 100% { opacity: 0.35; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }

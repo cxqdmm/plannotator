@@ -285,13 +285,8 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
       : runState === 'working' || runState === 'starting' || askRunning || toolRunning;
   workingRef.current = working;
   const status: ChatStatus = working ? 'streaming' : 'ready';
-  /** 终端镜像，只有两态：终端在跑（思考/输出）→ 运行中；输出结束 → 空闲。
-   *  run 线的中间语言（等终端输入等）不进这里——那是启动器视角，不是终端事实。 */
-  const runPill = working
-    ? { cls: 'live', node: <><span className="ib-spin" aria-hidden="true" /> 运行中</> }
-    : sessionBusy === false
-      ? { cls: 'off', node: <>空闲</> }
-      : null;
+  /** 顶栏的运行中/空闲两态徽标已删（对话流页面改造，需求上下文交付的改动说明）：需求卡的会话行
+   *  已有运行状态（busy 工作中），这里重复了。working 仍驱动 transcript 的流式状态与尾部 pending。 */
 
   const renderPart = (part: ChatMessagePart): React.ReactNode | undefined => {
     if (part.type === 'tool') {
@@ -335,7 +330,6 @@ export function SessionStreamPane({ threadId, onClose }: { threadId: string; onC
           </button>
         </Tip>
         <span className="ib-sstr-title" dir="auto" title={subject ?? undefined}>{subject ?? '会话'}</span>
-        {runPill && <span className={`ib-sstr-live ib-sstr-pill-${runPill.cls}`}>{runPill.node}</span>}
         <span className="ib-sstr-sep" aria-hidden="true" />
         <button type="button" className="ib-sstr-x" aria-label="关闭对话流" onClick={onClose}>
           <Icon name="x" size={16} />
