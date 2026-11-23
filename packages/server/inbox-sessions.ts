@@ -171,6 +171,12 @@ interface SeenSession {
   lastIdleSince?: number | null;
   /** Its poll said it can deliver into a running turn (`send_now`). */
   sendNow: boolean;
+  /**
+   * 该会话最后一次「真实活动」的时刻（跑过回合 busy=true、或收到送达回执），毫秒——
+   * Agents 区只列今天有真实活动的会话（approval "workshop-interrupt" 的全量唤醒扫描
+   * 让每个历史会话都在轮询，「今天见过」不再是有意义的活跃信号）。仅在真实活动时盖章。
+   */
+  lastActiveAt?: number;
   /** Its connection said Claude Code holds its replies until the person types there (`held`). Absent: no. */
   held?: boolean;
   /** Its poll said it understands a reply it was tagged in (`tags`): only then can it be tagged. */
@@ -437,6 +443,8 @@ export function createInboxLiveSessions(options: {
     if (typeof body.busy !== "boolean") return;
     if (body.busy) {
       if (entry.busy !== true) entry.busySince = at;
+      // 真实活动盖章：跑过回合的会话才算「今天活跃」（Agents 区的收录条件；全量唤醒扫描的副作用修复）。
+      entry.lastActiveAt = at;
       setDeliveryFlags(entry, true, entry.sendNow);
       entry.idleSince = null;
     } else {
@@ -889,11 +897,17 @@ export function createInboxLiveSessions(options: {
    * last heard at or after `since` (the start of today) that has ended. In memory, so a restart forgets the ended.
    * A launch's permission prompt (`perm:…`) is no session of its own.
    */
-  const agentSessions = (since: number): InboxAgentSession[] => {
+  const agentSessions = (since: number, options?: { /** Agents 区专用（approval "workshop-interrupt" 的扫描副作用修复）：只列今天有真实活动的会话。 */ activeOnly?: boolean }): InboxAgentSession[] => {
     const out: InboxAgentSession[] = [];
     for (const [session, entry] of sessions) {
+      // 活跃盖章（approval "workshop-interrupt" 的全量唤醒扫描副作用修复）：唤醒扫描让每个历史会话
+      // 都在轮询，「今天见过/活着」不再是有意义的活跃信号——Agents 区只列**今天有真实活动**的会话
+      // （跑过回合 busy=true、或收到过送达回执 lastActiveAt）；只被扫描唤醒、无任何活动的闲置会话
+      // 不进列表（仍实时可达：可对话/打断/插入，只是不刷 Agents 区）。
       const live = isLive(entry);
       const heard = Math.max(entry.lastSeen, mcpSeen.get(session)?.lastSeen ?? 0);
+      const activeToday = entry.lastActiveAt !== undefined && entry.lastActiveAt >= since;
+      if (options?.activeOnly && live && !activeToday) continue;
       if ((!live && heard < since) || isInboxPermissionSession(session)) continue;
       out.push({
         session,
@@ -1432,6 +1446,11 @@ export function createInboxLiveSessions(options: {
     route,
     allLive,
     agentSessions,
+    /** 送达回执的活动盖章（approval "workshop-interrupt" 的扫描副作用修复）：见 lastActiveAt。 */
+    noteActivity: (session: string): void => {
+      const entry = standInOf(session)?.entry;
+      if (entry) entry.lastActiveAt = now();
+    },
     agentsSignature,
     /** The sessions' clock (ms): "today" for the Agents section is by it. */
     clock: now,

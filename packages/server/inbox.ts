@@ -1935,7 +1935,9 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
       if (owner) waits.push({ thread_id: row.thread_id, session: owner.session, host: owner.host, project: row.project, at: row.last_agent_at ?? row.last_at });
     }
     return inboxAgentsGroup({
-      sessions: live.agentSessions(inboxStartOfDay(live.clock())),
+      // Agents 区只列今天有真实活动的会话（busy=true 或收到送达回执；approval "workshop-interrupt"
+      // 的全量唤醒扫描副作用修复）——只被扫描唤醒、无活动的闲置会话保持可达但不刷列表。
+      sessions: live.agentSessions(inboxStartOfDay(live.clock()), { activeOnly: true }),
       launches: launch.agents(),
       waits,
       archived,
@@ -4360,6 +4362,12 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     if (body.type === "state") {
       live.stateChanged(session, host, body);
       return json({ ok: true });
+    }
+    // 送达回执 = 会话的真实活动（approval "workshop-interrupt" 排查的扫描副作用修复）：
+    // 盖章后该会话才有资格进 Agents 区——全量唤醒扫描让每个历史会话都在轮询，
+    // 「今天见过」不再是有意义的活跃信号。
+    if (body.type === "delivered" || body.type === "send_now_failed") {
+      live.noteActivity(session);
     }
     // An item this session took for a session its conversation continues is recorded for that one, the session
     // the thread knows (`continues`, inbox-continuations.ts).
