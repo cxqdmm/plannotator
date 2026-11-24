@@ -299,6 +299,7 @@ import { closeTo, covering, listCovered, rowElement, tourPageInFront, focusAfter
 export { THREAD_READ_RETRY_MS, THREAD_READ_TIMEOUT_MS } from './app/constants';
 // The document UI's settings for the window, before the first render.
 import './configureUI';
+import { Butler } from './components/Butler';
 
 function Inbox() {
   const [route, setRoute] = useState<Route>(() => {
@@ -6657,6 +6658,7 @@ function Inbox() {
         />
       )}
     </div>
+    <Butler />
     </SideButtonContext.Provider>
     </ThreadTagsContext.Provider>
     </LiveInitiativesContext.Provider>

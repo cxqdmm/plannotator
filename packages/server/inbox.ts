@@ -262,6 +262,7 @@ import { createInboxCommentDrafts } from "./inbox-comment-drafts";
 import { createInboxTakeBack } from "./inbox-take-back";
 import { createInboxAsk } from "./inbox-ask";
 import { createInboxStreamRoute, streamSourceOf } from "./inbox-stream";
+import { Butler } from "./inbox-butler";
 import type { InboxAskTimes } from "./inbox-ask-live";
 import { createInboxPins } from "./inbox-pins";
 import { createInboxPriority } from "./inbox-priority";
@@ -4963,6 +4964,9 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
   });
   const commentDrafts = createInboxCommentDrafts({ store, serverSession, readBody: (req) => readBody(req), json });
   const takeBack = createInboxTakeBack({ store, serverSession, readBody: (req) => readBody(req), json });
+  // 管家（approval "butler" 一期）：收件箱的数字总管——形象入口、对话与持久化（inbox-butler.ts）。
+  const butler = new Butler();
+  butler.init();
   // Ask AI: the conversation a thread keeps with its agent (packages/server/inbox-ask.ts).
   const ask = createInboxAsk({
     codeReviewOn,
@@ -5577,6 +5581,11 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
       // Ask AI's session and query routes. On any other server path, they do not exist here.
       if (path.startsWith("/api/ai/")) {
         const answer = await ask.aiRoute(req, path, via);
+        if (answer) return answer;
+      }
+      // 管家（approval "butler" 一期）：数字总管的对话路由（窗口专属 same-origin）。
+      if (path.startsWith("/api/inbox/butler/") && butler) {
+        const answer = await butler.route(req, url);
         if (answer) return answer;
       }
       if (path === CF_ACCESS_ROUTE || path.startsWith(`${CF_ACCESS_ROUTE}/`)) {
