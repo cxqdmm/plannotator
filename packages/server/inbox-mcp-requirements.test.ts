@@ -95,7 +95,7 @@ describe("the requirement tool without create and link", () => {
     expect(text(progressed)).toContain("需求设计 → 设计评审");
     const got = await call({ op: "get", requirement: made.id });
     expect(text(got)).toContain("改版设计");
-    expect(text(got)).toContain("设计文档");
+    expect(text(got)).toContain("提案");
   });
 
   test("the served tool description says the person creates, and lists only the kept ops", async () => {

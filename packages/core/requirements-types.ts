@@ -50,7 +50,8 @@ export function isDeliverableKind(value: unknown): value is DeliverableKind {
 
 /** What a deliverable is, for its line in the detail pane (browser UI: Chinese, this fork's rule). */
 export const DELIVERABLE_KIND_LABELS: Readonly<Record<DeliverableKind, string>> = {
-  'design-doc': '设计文档',
+  // 「提案」：提请人裁决的决策件（设计方案/计划/验收标准），不限于设计文档（approval "review-boundary"）。
+  'design-doc': '提案',
   'test-report': '测试报告',
   link: '链接',
   file: '文件',

@@ -349,7 +349,7 @@ function ReqCard({ requirement: r, rowsByThread, patch, hideArchivedSessions, se
                   <Menu.Root modal={false}>
                     <Menu.Trigger
                       className="ib-req-wcard-sess-review"
-                      aria-label={`去审阅：本会话有 ${pending.length} 份待审设计文档`}
+                      aria-label={`去审阅：本会话有 ${pending.length} 份待审提案`}
                       data-sess-review-menu=""
                       onClick={(ev) => ev.stopPropagation()}
                       onKeyDown={(ev) => ev.stopPropagation()}
@@ -359,7 +359,7 @@ function ReqCard({ requirement: r, rowsByThread, patch, hideArchivedSessions, se
                     </Menu.Trigger>
                     <Menu.Portal container={portal ?? undefined}>
                       <Menu.Positioner className="ib-pm-pos" side="bottom" align="end" sideOffset={4}>
-                        <Menu.Popup className="ib-pm" aria-label={`待审设计文档（${pending.length}）`}>
+                        <Menu.Popup className="ib-pm" aria-label={`待审提案（${pending.length}）`}>
                           {pending.map((doc) => (
                             <Menu.Item key={doc.id} className="ib-pmi" label={doc.title ?? doc.ref} onClick={() => onReview(r.id, doc.id)} data-sess-review-doc={doc.id}>
                               <Icon name="doc" size={15} /> {doc.title ?? doc.ref}
