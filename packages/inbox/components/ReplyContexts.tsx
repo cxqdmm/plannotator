@@ -2,15 +2,14 @@
  * 附加需求上下文（工坊会话详情专属，approval "session-reply-contexts"）：the reply box's
  * 「上下文」 button and its picker. Offered only when the workshop hands the pane the
  * session's requirement (ThreadPane `replyContexts`); the Inbox's own reply box never
- * passes it, so the button never draws there. Picking marks chips over the box; the
- * Send appends the workshop compose template's 上下文材料 list to the words
- * (`replyContextSection`) — 名字（引用） per line, the agent reads the materials
- * straight from the reply.
+ * passes it, so the button never draws there. 点选或**拖拽**一个材料 = 把它的内嵌
+ * markdown 链接（`[名字](引用)`）插进回复文字（点选在光标处，拖放落在落点）——agent
+ * 从回复里直接读材料，无需再查需求。
  */
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { Icon } from '../icons';
 import { Tip } from './Tip';
-import type { ReplyContextOption } from '../thread/replyContexts';
+import { replyContextMarkdown, type ReplyContextOption } from '../thread/replyContexts';
 
 const GAP = 8;
 const LEAST = 96;
@@ -69,23 +68,19 @@ function kindIcon(kind: string): 'link' | 'doc' {
 export function ReplyContextsButton({
   contexts,
   title,
-  picked,
-  onToggle,
-  open,
-  onOpen,
+  onInsert,
   phone = false,
 }: {
   contexts: readonly ReplyContextOption[];
   /** The requirement's title, for the picker's head line. */
   title: string;
-  picked: ReadonlySet<string>;
-  onToggle: (id: string) => void;
-  open: boolean;
-  onOpen: (open: boolean) => void;
+  /** 把材料的内嵌链接插进回复文字（点选=光标处）。 */
+  onInsert: (markdown: string) => void;
   phone?: boolean;
 }) {
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const listId = useRef(`ib-rctx-${Math.random().toString(36).slice(2)}`).current;
+  const [open, setOpen] = useState(false);
   const spot = useSpotAbove(buttonRef, open);
 
   // A press outside the button and its picker closes it; so does Escape, before anything else hears it.
@@ -93,13 +88,13 @@ export function ReplyContextsButton({
     if (!open) return;
     const press = (event: PointerEvent) => {
       const target = event.target as Element | null;
-      if (!target?.closest?.('[data-reply-contexts-toggle], [data-reply-contexts-picker]')) onOpen(false);
+      if (!target?.closest?.('[data-reply-contexts-toggle], [data-reply-contexts-picker]')) setOpen(false);
     };
     const key = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       event.preventDefault();
       event.stopPropagation();
-      onOpen(false);
+      setOpen(false);
     };
     document.addEventListener('pointerdown', press);
     window.addEventListener('keydown', key, true);
@@ -107,89 +102,53 @@ export function ReplyContextsButton({
       document.removeEventListener('pointerdown', press);
       window.removeEventListener('keydown', key, true);
     };
-  }, [open, onOpen]);
+  }, [open, setOpen]);
 
-  const count = picked.size;
   return (
     <div className="ib-rctx" data-reply-contexts-toggle="">
-      <Tip content={count > 0 ? `已选 ${count} 个需求上下文` : '附加需求上下文'}>
+      <Tip content="附加需求上下文（点选或拖入回复）">
         <button
           ref={buttonRef}
           type="button"
           className="ib-ricon"
-          aria-label={`附加需求上下文${count > 0 ? `（已选 ${count} 个）` : ''}`}
+          aria-label="附加需求上下文"
           data-reply-contexts-button=""
           aria-expanded={open}
           aria-controls={open ? listId : undefined}
           onMouseDown={(event) => event.preventDefault()}
-          onClick={() => onOpen(!open)}
+          onClick={() => setOpen(!open)}
         >
           <Icon name="book" size={phone ? 20 : 16} />
-          {count > 0 && (
-            <span className="ib-rctx-n" aria-hidden="true">
-              {count}
-            </span>
-          )}
         </button>
       </Tip>
       {open && (
-        <div className="ib-rctx-pop" id={listId} data-reply-contexts-picker="" role="group" aria-label={`${title}的上下文 · 勾选随回复发出`} style={spot}>
+        <div className="ib-rctx-pop" id={listId} data-reply-contexts-picker="" role="group" aria-label={`${title}的上下文 · 点选插入，或拖进回复`} style={spot}>
           <div className="ib-rctx-head">
-            「{title}」的上下文 · 勾选随回复发出
+            「{title}」的上下文 · 点选插入，或拖进回复
           </div>
           {contexts.map((context) => {
-            const on = picked.has(context.id);
+            const markdown = replyContextMarkdown(context);
             return (
               <button
                 key={context.id}
                 type="button"
-                className={`ib-rctx-row${on ? ' on' : ''}`}
+                className="ib-rctx-row"
                 title={context.ref}
-                aria-pressed={on}
-                onClick={() => onToggle(context.id)}
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.setData('text/plain', markdown);
+                  event.dataTransfer.effectAllowed = 'copy';
+                }}
+                onClick={() => onInsert(markdown)}
               >
                 <Icon name={kindIcon(context.kind)} size={14} className="ib-rctx-ic" />
                 <span className="ib-rctx-nm">{context.name}</span>
-                <span className="ib-rctx-tick" aria-hidden="true">
-                  {on ? '✓' : ''}
-                </span>
+                <span className="ib-rctx-plus" aria-hidden="true">＋</span>
               </button>
             );
           })}
         </div>
       )}
-    </div>
-  );
-}
-
-/** The picked contexts' removable chips over the reply field (the mock's chips row). */
-export function ReplyContextsChips({
-  contexts,
-  picked,
-  onRemove,
-}: {
-  contexts: readonly ReplyContextOption[];
-  picked: ReadonlySet<string>;
-  onRemove: (id: string) => void;
-}) {
-  const chosen = contexts.filter((context) => picked.has(context.id));
-  if (chosen.length === 0) return null;
-  return (
-    <div className="ib-rctx-chips" data-reply-contexts-chips="">
-      {chosen.map((context) => (
-        <span key={context.id} className="ib-rctx-chip" title={context.ref}>
-          <Icon name={kindIcon(context.kind)} size={12} />
-          {context.name}
-          <button
-            type="button"
-            className="ib-rctx-x"
-            aria-label={`移除 ${context.name}`}
-            onClick={() => onRemove(context.id)}
-          >
-            ×
-          </button>
-        </span>
-      ))}
     </div>
   );
 }

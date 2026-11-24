@@ -190,8 +190,7 @@ import { keepEqualByKey } from '../thread/keepEqual';
 import { sentActionsOf } from '../thread/sentActions';
 import { leftoverWords } from '../thread/leftover';
 import { replyWordsCount, withFreeName, withoutReplyWords } from '../shape/addToReply';
-import { replyContextSection, type ReplyContextOption } from '../thread/replyContexts';
-import { ReplyContextsButton, ReplyContextsChips } from './ReplyContexts';
+import { ReplyContextsButton } from './ReplyContexts';
 import { replyKeysToRenew, routeSendAnnotations, sendTargetAnswerIds, sendTargetsOf, tookOverReply, wordsMessage, type SendTarget, type SentContents } from '../sendTargets';
 import { FOLD_STEP, isSuperseded, NO_ANNOTATIONS, NO_QUESTIONS, NO_IDS, NO_OUTBOX, NO_SENT_ANSWERS, NO_UPLOADS, askingSessionOf, commentTags, emptyAnswerFor, isOtherAgent, newBelow, otherSendSessions, reducedMotion, replyKeyOf, reviewOutcomesOf, spanWords, stillHidden, type FoldState } from '../thread/helpers';
 import { NO_SKILLS_HINT_MS, REPLY_FILES_SUMMARY_FROM, SHOW_NEW_MESSAGE_BUTTON, SIDE_COMMAND_DESCRIPTION, SIDE_COMMAND_NAME, THREAD_GONE_TEXT, focusReplyFromBox } from '../thread/replyBox';
@@ -3013,9 +3012,6 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     setRcptPick(null);
     setRcptOpen(false);
     rcptAsked.current = false;
-    // The picked requirement contexts went out with the words: empty for the next reply (a failed Send never reaches here, so its chips stay).
-    setReplyCtxPicked(new Set());
-    setReplyCtxOpen(false);
   };
 
   /**
@@ -3024,8 +3020,15 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
    * takes them there, on the device's route.
    */
   /** 附加的需求上下文（工坊会话详情专属）：弹层开合与勾选集；换会话即清（见 finishSent 与 thread 切换）。 */
-  const [replyCtxOpen, setReplyCtxOpen] = useState(false);
-  const [replyCtxPicked, setReplyCtxPicked] = useState<ReadonlySet<string>>(new Set());
+  /** 附加的需求上下文（工坊会话详情专属）：点选/拖入的材料以内嵌链接插进回复文字。 */
+  const insertReplyContext = (markdown: string) => {
+    const field = textRef.current;
+    if (!field) return;
+    field.focus();
+    const at = field.selectionStart ?? field.value.length;
+    field.setSelectionRange(at, at);
+    document.execCommand('insertText', false, at === 0 || /\s$/.test(field.value.slice(0, at)) ? markdown : ` ${markdown}`);
+  };
 
   const send = async (options: { despiteReplaced?: boolean; routed?: boolean; stayFull?: boolean; endedChecked?: ReadonlySet<string> } = {}): Promise<void> => {
     const byChord = sentByChord.current;
@@ -3075,7 +3078,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       const gone = rcptChosen.length > 0 && rcptChosen.every((r) => r.state === 'ended');
       const reaches = sendCarries || rcptChosen.some((r) => sendEnded.has(r.session));
       if (gone && reaches && rcptAgents.some((r) => r.state === 'live' || r.state === 'old') && !rcptAsked.current) {
-        const empty = picksCount === 0 && records.length === 0 && boxWords() === '' && replyUploads.length === 0 && draftPastes === 0 && replyCtxPicked.size === 0 && !skipping;
+        const empty = picksCount === 0 && records.length === 0 && boxWords() === '' && replyUploads.length === 0 && draftPastes === 0 && !skipping;
         if (empty) {
           setError('请先写回复或选择答案。');
           return;
@@ -3096,7 +3099,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
       }
     }
     if (!pillActive && gateEnded && gateOtherLive && gateAsking && !options.routed) {
-      const empty = picksCount === 0 && records.length === 0 && boxWords() === '' && replyUploads.length === 0 && draftPastes === 0 && replyCtxPicked.size === 0 && !skipping;
+      const empty = picksCount === 0 && records.length === 0 && boxWords() === '' && replyUploads.length === 0 && draftPastes === 0 && !skipping;
       if (empty) {
         setError('请先写回复或选择答案。');
         return;
@@ -3234,10 +3237,8 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         draftSavedAs = kept?.updated_at ?? null;
         draftUploads = (kept?.files ?? []).map((file) => file.upload_id);
       }
-      // 附加的需求上下文（工坊会话详情）：勾选项以「名字（引用）」清单追加进正文尾部——
-      // 与开启新会话的模板同款格式（评审批注 2：只列名字不够，agent 要能直接读材料）。
-      const contextSection = replyContextSection(replyContexts ?? [], replyCtxPicked);
-      if (contextSection !== null) words = words.trimEnd() ? `${words.trimEnd()}\n\n${contextSection}` : contextSection;
+      // 附加的需求上下文（工坊会话详情）：点选/拖入的材料以内嵌链接插在回复文字里——
+      // 插入即成为 words 的一部分，这里无需再追加。
       sendWords = words;
       sendClears = words !== '' || draftUploads.length > 0 || (box.open && replyFiles.draftFiles().length > 0);
       // Only the questions the person chose to skip, and only while still open (sendTargetsOf reads the
@@ -4281,11 +4282,6 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
   const listHome = !resolved && !(guard && staleQuestions.length > 0) && newMessage?.kind !== 'compose' && (box.open || !(route.open && asking));
   // The list lives where it opened: another thread, another view, the box opening or closing, or anything taking the foot's place, takes it away.
   useEffect(() => setCommentsList(null), [thread.thread_id, shownFull, box.open, route.open, artifactsOn, listHome]);
-  // 换会话即清：附加的上下文勾选与弹层属于当前回复框（工坊会话详情）。
-  useEffect(() => {
-    setReplyCtxOpen(false);
-    setReplyCtxPicked(new Set());
-  }, [thread.thread_id]);
   /**
    * Closes the foot's list. `back`: to the count that shows at this width; where the foot has none (a phone, approval
    * "reply-bar-pairs") to the highlight it was opened at; else the foot's first button (no comment left).
@@ -5737,20 +5733,7 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                     />
                   </div>
                 )}
-                {replyContexts && replyContexts.length > 0 && (
-                  <ReplyContextsChips
-                    contexts={replyContexts as readonly ReplyContextOption[]}
-                    picked={replyCtxPicked}
-                    onRemove={(id) => {
-                      setReplyCtxPicked((current) => {
-                        const next = new Set(current);
-                        next.delete(id);
-                        return next;
-                      });
-                      textRef.current?.focus();
-                    }}
-                  />
-                )}
+                {replyContexts && replyContexts.length > 0 && null}
                 {draftAnswers.length > 0 && <ReplyAnswers answers={draftAnswers} onJump={jumpTo} />}
                 {draftActions.length > 0 && <ReplyActions actions={draftActions} onJump={jumpTo} />}
               </div>
@@ -5809,19 +5792,9 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
                 contexts={
                   replyContexts && replyContexts.length > 0 ? (
                     <ReplyContextsButton
-                      contexts={replyContexts as readonly ReplyContextOption[]}
+                      contexts={replyContexts}
                       title={replyContextsTitle}
-                      picked={replyCtxPicked}
-                      onToggle={(id) =>
-                        setReplyCtxPicked((current) => {
-                          const next = new Set(current);
-                          if (next.has(id)) next.delete(id);
-                          else next.add(id);
-                          return next;
-                        })
-                      }
-                      open={replyCtxOpen}
-                      onOpen={setReplyCtxOpen}
+                      onInsert={insertReplyContext}
                       phone={phone}
                     />
                   ) : null
