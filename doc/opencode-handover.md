@@ -57,6 +57,18 @@
 服务端只读查询函数（`openCodeSessionDirectory` / `openCodeRecentSessions`）在这个分支的
 `packages/server/inbox-stream.ts` 里，主线还没有。
 
+## 四点五、实验残留与已知未关闭的洞（2026-11-24 记）
+
+1. **幽灵会话**：唤醒 run 里 agent 走 Code Mode 调收件箱工具时，若 shim 没带上会话身份，
+   shim 会自造一个 `ses_…` id 且 host=null（如 ses_01M85JQK，在 D2C 测试线程里留下 2 条
+   回复）——这种幽灵**永远收不到任何消息**，却会成为线程的「最后 agent 撰写者」，让回复
+   框/收件人列表瞄上它（显示为「某个 agent · 未唤醒」）。清理待做：数据层删除/改归属 +
+   picker 过滤 host=null 会话。**根因未完全关闭**：--standalone + run env 写了
+   PLANNOTATOR_SESSION_TAG 后，独立服务器孵化的 shim 仍未拿到标签（09:29 的幽灵发生在
+   修复之后）——须先查 standalone 服务器的 env 传递链再动手。
+2. 7 次错误目录 run 未产生垃圾会话（已核实，v2 库只有真实会话）。
+
+## 五、待对齐的决策
 ## 五、待对齐的决策（下一轮动手前必须问主人）
 
 1. **触发**：人发消息后多久起唤醒？（上一版：20 秒凑窗 + 失败退避；主人未表态具体数值）
