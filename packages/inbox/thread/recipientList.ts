@@ -24,7 +24,9 @@ export function replyRecipientList(input: {
   start: ReplyStart | null;
 }): RecipientRow[] {
   const { thread, askerEnded, asking, live, taggable, gone, rcptDefault } = input;
-  const people: RecipientPerson[] = [...input.participants];
+  // 无主会话（host=null：唤醒实验期间 shim 自造的 ses_ id）永远收不到话，不进收件人列表
+  // （工坊对话流报错线程 2026-11-24）。
+  const people: RecipientPerson[] = input.participants.filter((p) => p.host !== null);
   const add = (host: string | null, session: string) => {
     if (!people.some((p) => p.session === session)) people.push({ host, session });
   };

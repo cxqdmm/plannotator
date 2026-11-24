@@ -154,7 +154,8 @@ export function wordsMessage(thread: InboxThread): InboxMessageWire {
   }
   // A permission prompt's question (launch, `perm:…`) takes only its own answer: the words go to the agent itself.
   // An agent's routine change line is a note, not its words: the person's words go past it.
-  return thread.messages.filter((m) => m.author.kind === 'agent' && !isInboxPermissionSession(m.author.session) && !m.scheduled_change).at(-1) ?? thread.messages[0]!;
+  // host=null 的 agent 消息（唤醒实验的 shim 自造会话）不作锚点：回复瞄上它永远送不到。
+  return thread.messages.filter((m) => m.author.kind === 'agent' && !isInboxPermissionSession(m.author.session) && !m.scheduled_change && m.author.host !== null).at(-1) ?? thread.messages[0]!;
 }
 
 /** The reply a message's questions ride: its session's, or its own when it has none. */
