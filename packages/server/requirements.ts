@@ -471,7 +471,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       }
       lines.push("");
     }
-    lines.push("## 开始吧", "", "1. 读完上下文再动手；有不清楚的先用 Ask 提问，不要猜；", "2. 阶段性产出用 deliver 挂回本需求；该进下一阶段时 suggest，由人采纳。", `（本会话已自动挂到需求 \`${record.id}\`，无需再 link。）`);
+    lines.push("## 开始吧", "", "1. 读完上下文再动手；有不清楚的先用 Ask 提问，不要猜；", "2. 阶段性产出用 deliver 挂回本需求；较大进展完成时（如每个大步骤落地）用 progress 汇报一句；该进下一阶段时 suggest，由人采纳。", `（本会话已自动挂到需求 \`${record.id}\`，无需再 link。）`);
     return lines.join("\n");
   };
   const seedDesignDoc = (record: Requirement): string => {
