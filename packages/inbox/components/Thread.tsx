@@ -3472,9 +3472,11 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         void loadLive();
         return;
       }
-      // 已解决线程的回复：明确一句话（owner 2026-11-23 选定的最严格语义），不用泛化文案。
+      // 已解决线程的回复：toast 说清（owner 2026-11-24「所有提示用 toast，统一」）——
+      // 顺带告诉人重开的按钮在哪：线程底部那条「已归档」条上的「取消归档」就是重开。
       if (cause instanceof InboxApiError && cause.code === 'thread_resolved') {
-        fail('线程已解决，重新打开再发。');
+        setError(null);
+        onToast?.({ icon: 'warn', lead: '线程已解决，重新打开再发。', detail: '线程底部「已归档」条上的「取消归档」即重开。', wrap: true });
         return;
       }
       const failed = sendFailure(cause);
