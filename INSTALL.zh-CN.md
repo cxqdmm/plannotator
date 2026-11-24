@@ -161,6 +161,8 @@ plugin/
    mac 路径用正斜杠 `/`，**不需要**转义；
 3. 重启 OpenCode（或 `opencode2 reload`），`opencode2 plugin list` 里出现 plannotator 即成功。
 
+> **不需要 MCP 配置**：插件已包含全部收件箱能力（唤醒、投递、会话归属），不要往 `opencode.json` 里再加 `mcp` 配置——MCP 方式启动的是独立进程，拿不到会话身份，消息归属会记错（内网机器尤其如此：进程环境变量里残留的旧标签会被照抄）。看见旧笔记里「往 opencode.json 加 mcp」的步骤，跳过即可。
+
 ### 版本差异与再生产
 
 - **OpenCode 1** 的字段名不同：`"plugin": ["<同上路径>"]`（数组里直接放路径字符串），其余步骤一样；
