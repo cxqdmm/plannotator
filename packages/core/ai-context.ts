@@ -1,5 +1,5 @@
 /** The surface the user is interacting with when they invoke AI. */
-export type AIContextMode = "plan-review" | "code-review" | "annotate";
+export type AIContextMode = "plan-review" | "code-review" | "annotate" | "butler";
 
 /**
  * Describes the parent agent session that originally produced the plan or diff.
@@ -84,4 +84,5 @@ export interface AnnotateContext {
 export type AIContext =
   | { mode: "plan-review"; plan: PlanContext; parent?: ParentSession }
   | { mode: "code-review"; review: CodeReviewContext; parent?: ParentSession }
-  | { mode: "annotate"; annotate: AnnotateContext; parent?: ParentSession };
+  | { mode: "annotate"; annotate: AnnotateContext; parent?: ParentSession }
+  | { mode: "butler"; parent?: ParentSession };
