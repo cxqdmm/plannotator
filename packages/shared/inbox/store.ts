@@ -4965,6 +4965,12 @@ export class InboxStore {
     const replayed = this.replyByKey(messageId, key);
     if (replayed) return { reply: replayed, questions: this.questionsOf(messageId), replayed: true };
     const message = this.targetMessage(messageId);
+    // A resolved thread takes no further words (owner 2026-11-23: replies and
+    // new messages alike refuse with the same line — "已解决，重新打开再发").
+    const threadRoot = this.messages.get(message.thread_id);
+    if (threadRoot?.resolved_at) {
+      throw new InboxError("thread_resolved", "This thread is resolved; reopen it to write in it.");
+    }
     // After the message's own refusals (not found, resolved), so a gone
     // session is only ever the reason when it is the reason.
     if (input.to === null) {

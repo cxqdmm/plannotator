@@ -3472,6 +3472,11 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
         void loadLive();
         return;
       }
+      // 已解决线程的回复：明确一句话（owner 2026-11-23 选定的最严格语义），不用泛化文案。
+      if (cause instanceof InboxApiError && cause.code === 'thread_resolved') {
+        fail('线程已解决，重新打开再发。');
+        return;
+      }
       const failed = sendFailure(cause);
       fail(failed.line);
       if (here()) setErrorDetails(failed.details ? { for: failed.line, text: failed.details } : null);
