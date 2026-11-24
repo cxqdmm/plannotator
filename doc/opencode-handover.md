@@ -65,7 +65,12 @@
    框/收件人列表瞄上它（显示为「某个 agent · 未唤醒」）。清理待做：数据层删除/改归属 +
    picker 过滤 host=null 会话。**根因未完全关闭**：--standalone + run env 写了
    PLANNOTATOR_SESSION_TAG 后，独立服务器孵化的 shim 仍未拿到标签（09:29 的幽灵发生在
-   修复之后）——须先查 standalone 服务器的 env 传递链再动手。
+   修复之后）——**已查实（2026-11-24 env 实锤）**：`opencode2 run --standalone` 孵化的收件箱 shim，
+其 env 是 Nov-17 后台服务的 shell（带 claude-code:f1ce850e 标签），CLI 上写的标签传不到
+它——MCP shim 的孵化经过后台服务（或等价机制），属 opencode 服务架构，plannotator 侧
+改 env 无法到达。候选修法：去掉 opencode.json 的 mcp.plannotator-inbox 配置（与插件工
+具重复、正是无身份 shim 来源，移除后 Code Mode 绑定插件工具自带归属）；或重启后台服
+务清旧 env（治标）。
 2. 7 次错误目录 run 未产生垃圾会话（已核实，v2 库只有真实会话）。
 
 ## 五、待对齐的决策
