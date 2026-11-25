@@ -2245,11 +2245,12 @@ export const inboxApi = {
   /** 管家：发一条消息，返回管家的回复（approval "butler" 一期）。 */
   butlerChat: (message: string) => post<{ reply: string }>(inboxUrl('/butler/chat'), { message }),
   /** 流式一问（v3，owner 2026-11-25「像 web 版一样」）：增量经 onDelta 实时出去，返回全文。 */
-  butlerChatStream: async (message: string, onDelta: (delta: string) => void): Promise<string> => {
+  /** `files`: 主人随消息发来的附件（已读成 data URL），服务端落盘并把图片内联给会话。 */
+  butlerChatStream: async (message: string, onDelta: (delta: string) => void, files: { name: string; mime: string; data: string }[] = []): Promise<string> => {
     const response = await fetch(inboxUrl('/butler/chat'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-      body: JSON.stringify(pageSession ? { message, serverSession: pageSession } : { message }),
+      body: JSON.stringify({ message, files, ...(pageSession ? { serverSession: pageSession } : {}) }),
     });
     if (!response.ok || !response.body) {
       const detail = await response.text().catch(() => '');

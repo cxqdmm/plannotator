@@ -19,6 +19,7 @@ import type {
 	AIMessage,
 	AIProvider,
 	AIProviderCapabilities,
+	AIQueryOptions,
 	AISession,
 	CreateSessionOptions,
 	OpenCodeConfig,
@@ -397,7 +398,7 @@ class OpenCodeSession extends BaseSession {
 		return `${this.config.systemPrompt}\n\n---\n\n${prompt}`;
 	}
 
-	async *query(prompt: string): AsyncIterable<AIMessage> {
+	async *query(prompt: string, options?: AIQueryOptions): AsyncIterable<AIMessage> {
 		const started = this.startQuery();
 		if (!started) {
 			yield BaseSession.BUSY_ERROR;
@@ -500,7 +501,17 @@ class OpenCodeSession extends BaseSession {
 								...(modelParam && { model: modelParam }),
 								// `variant`: the low effort of a model that has one; anything else ignores it.
 								...(this.config.noTools && { tools: { "*": false }, variant: "low" }),
-								parts: [{ type: "text", text: prompt }],
+								parts: [
+									{ type: "text", text: prompt },
+									// 主人发来的文件（管家）：原生 file parts，data URL 直达——图片模型
+									// 当场看得见；其余文件也在提示词里有落盘路径，会话可用工具再读。
+									...(options?.files ?? []).map((file) => ({
+										type: "file",
+										mime: file.mime,
+										filename: file.name,
+										url: file.dataUrl,
+									})),
+								],
 							},
 						});
 					}

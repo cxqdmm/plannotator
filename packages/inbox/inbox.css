@@ -12684,8 +12684,20 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
 .ib-butler-msg-butler { background: var(--card); border: 1px solid var(--ib-hair, var(--border)); }
 .ib-butler-typing { display: inline-flex; align-items: center; }
 
-.ib-butler-inputrow { display: flex; gap: 10px; padding: 12px 16px 16px; border-top: 1px solid var(--border); background: color-mix(in oklch, var(--foreground) 2%, transparent); }
-.ib-butler-input { flex: 1; border: 1px solid var(--border); border-radius: 10px; padding: 9px 13px; background: var(--background); color: var(--foreground); font: inherit; font-size: 13.5px; }
+.ib-butler-inputrow { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid var(--border); background: color-mix(in oklch, var(--foreground) 2%, transparent); }
+.ib-butler-compoerr { margin: 0; color: var(--destructive, var(--foreground)); font-size: 12px; }
+.ib-butler-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ib-butler-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 320px; height: 26px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--muted-foreground); font-size: 12px; }
+.ib-butler-chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ib-butler-chip-x { border: 0; background: none; color: inherit; display: inline-flex; align-items: center; padding: 2px; cursor: pointer; border-radius: 4px; }
+.ib-butler-chip-x:hover { color: var(--foreground); }
+.ib-butler-entry { display: flex; align-items: flex-end; gap: 10px; }
+.ib-butler-add { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 38px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--muted-foreground); cursor: pointer; }
+.ib-butler-add:hover { color: var(--foreground); border-color: color-mix(in oklch, var(--foreground) 25%, var(--border)); }
+.ib-butler-add:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.ib-butler-fileinput { display: none; }
+.ib-butler-input { flex: 1; border: 1px solid var(--border); border-radius: 10px; padding: 9px 13px; background: var(--background); color: var(--foreground); font: inherit; font-size: 13.5px; resize: none; min-height: 38px; max-height: 160px; }
 .ib-butler-input:focus { outline: 2px solid color-mix(in oklch, var(--primary) 45%, transparent); outline-offset: -1px; }
-.ib-butler-send { border: 0; border-radius: 10px; padding: 9px 16px; background: var(--primary); color: var(--primary-foreground); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.ib-butler-send { flex: none; border: 0; border-radius: 10px; padding: 9px 16px; background: var(--primary); color: var(--primary-foreground); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 .ib-butler-send:disabled { opacity: 0.45; cursor: default; }
+.ib-butler-files { display: flex; align-items: center; gap: 5px; margin-bottom: 6px; color: var(--muted-foreground); font-size: 12px; }

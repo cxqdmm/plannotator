@@ -7,7 +7,7 @@
  * the butler folder per test.
  */
 import { beforeEach, afterEach, describe, expect, test, mock } from "bun:test";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -35,8 +35,9 @@ function fakeSession(id: string) {
     parentSessionId: null,
     abort() {},
     // 回声回合：把提示原样带回来，方便断言注入的正是原话。
-    query: async function* (prompt: string) {
-      yield { type: "text", text: `回复：${prompt}` };
+    query: async function* (prompt: string, options?: { files?: { name: string; mime: string; dataUrl: string }[] }) {
+      const inline = (options?.files ?? []).map((file) => `[file ${file.name}]`).join(",");
+      yield { type: "text", text: `回复：${prompt}${inline ? ` | 内联:${inline}` : ""}` };
     },
   };
 }
@@ -70,13 +71,14 @@ async function loadButler(bootstrapBin: string) {
 async function chat(
   butler: { init(): void; route(req: Request, url: URL): Promise<Response | null> },
   message: string,
+  files?: unknown[],
 ): Promise<{ frames: Record<string, unknown>[]; status: number }> {
   butler.init();
   const response = await butler.route(
     new Request("http://127.0.0.1:53998/api/inbox/butler/chat", {
       method: "POST",
       headers: { "content-type": "application/json", "sec-fetch-site": "same-origin" },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, ...(files ? { files } : {}) }),
     }),
     new URL("http://127.0.0.1:53998/api/inbox/butler/chat"),
   );
@@ -186,5 +188,46 @@ describe("the butler's skill whitelist (owner 2026-11-25「管家要有技能白
     const persona = real.buildButlerPrompt();
     expect(persona).toContain("butler-*");
     expect(persona).toContain("NOT yours");
+  });
+});
+
+describe("管家的附件（owner 2026-11-25「关键的输入框的基础功能…图片文件等等」)", () => {
+  const PNG = Buffer.from("89504e470d0a1a0a0000000d49484452", "hex").toString("base64");
+
+  test("小图片：落盘 + 提示词给路径 + 原生 file parts 内联，历史记附件名", async () => {
+    const butler = await loadButler(fakeBin);
+    const { frames, status } = await chat(butler, "看这张截图", [{ name: "截图.png", mime: "image/png", data: PNG }]);
+    expect(status).toBe(200);
+    const done = frames.find((f) => f.done === true)!;
+    const reply = String(done.reply);
+    // 提示词带落盘路径（会话工具可再读）与文件名。
+    expect(reply).toContain("截图.png");
+    expect(reply).toMatch(/files[/\\].*截图\.png/);
+    // 够小的图片内联为原生 file parts（视觉模型当场看得见）。
+    expect(reply).toContain("[file 截图.png]");
+    // 落盘字节与原文件一致（base64 解回）。
+    const dir = join(home, "plannotator-butler", "files");
+    const saved = readdirSync(dir)[0]!;
+    expect(readFileSync(join(dir, saved)).toString("base64")).toBe(PNG);
+    // 历史的 you 侧记了附件名。
+    const history = butlerModule.Butler;
+    const raw = readFileSync(join(home, "plannotator-butler", "history.jsonl"), "utf8").trim().split("\n").map((line) => JSON.parse(line) as { role: string; files?: string[] });
+    expect(raw.find((turn) => turn.role === "you")?.files).toEqual(["截图.png"]);
+  });
+
+  test("非图片不内联（只走落盘路径）；纯附件无文字也能发；超限 413", async () => {
+    const butler = await loadButler(fakeBin);
+    const doc = Buffer.from("附件内容").toString("base64");
+    const { frames } = await chat(butler, "", [{ name: "说明.pdf", mime: "application/pdf", data: doc }]);
+    const reply = String(frames.find((f) => f.done === true)!.reply);
+    expect(reply).toContain("说明.pdf");
+    expect(reply).not.toContain("[file"); // 非图片不内联
+    expect(reply).toContain("发来了 1 个附件"); // 无文字的占位话
+    // 超过 6 个 → 413（JSON 错误，不是流），不落盘不进历史。
+    const many = Array.from({ length: 7 }, (_, index) => ({ name: `f${index}.txt`, mime: "text/plain", data: doc }));
+    const refused = await chat(butler, "太多", many);
+    expect(refused.status).toBe(413);
+    const dir = join(home, "plannotator-butler", "files");
+    expect(readdirSync(dir).length).toBe(1); // 只有前一条消息的说明.pdf
   });
 });

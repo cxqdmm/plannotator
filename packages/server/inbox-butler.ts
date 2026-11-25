@@ -6,18 +6,21 @@
  * = the butler folder, persona = 管家 (AIContext mode "butler"). Phase 2
  * (future): requirement tools + dispatch in the butler's tool surface.
  *
- *   POST /api/inbox/butler/chat   `{ message }` → `{ reply }` (window only)
- *   GET  /api/inbox/butler/history → `{ history: [{ at, role, text }] }`
+ *   POST /api/inbox/butler/chat   `{ message, files? }` → SSE 增量 + done（window only）
+ *   GET  /api/inbox/butler/history → `{ history: [{ at, role, text, files? }] }`
  *
  * The folder: `history.jsonl` (append per turn) + `state.json` (the opencode
- * session id, so the conversation continues across daemon restarts). Nothing
- * here writes anywhere else; the folder is the butler's own.
+ * session id, so the conversation continues across daemon restarts) + `files/`
+ * (主人发来的附件按字节落盘，会话用工具可再读)。Nothing here writes anywhere
+ * else; the folder is the butler's own.
  */
 import { mkdirSync, existsSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { createProvider, buildButlerPrompt } from "@plannotator/ai";
+import type { AIQueryOptions } from "@plannotator/ai";
+import { BUTLER_FILE_INLINE_BYTES, BUTLER_FILE_MAX_BYTES, BUTLER_FILE_MAX_COUNT } from "@plannotator/core/inbox-types";
 
 /** 主人 opencode.json 里的默认模型（`glm/glm-5.3-flash` 之类），读不到给 null。 */
 function readOpencodeDefaultModel(): string | null {
@@ -112,6 +115,71 @@ interface ButlerTurn {
   at: string;
   role: "you" | "butler";
   text: string;
+  /** 这条消息带的附件名（落盘在 files/ 下）；无附件省略。 */
+  files?: string[];
+}
+
+/** 主人发来的一个附件（base64，wire 上与工坊上传同款）。 */
+export interface ButlerFile {
+  name: string;
+  mime: string;
+  data: string;
+}
+
+/** 一条已验收的附件：落盘路径 + 内联用的 dataUrl（图片且够小才有）。 */
+interface ButlerStoredFile {
+  name: string;
+  mime: string;
+  path: string;
+  dataUrl: string | null;
+}
+
+/** 附件验收：数量/大小/形态，过了直接回 413/422 的错。 */
+function storeButlerFiles(files: ButlerFile[]): { stored: ButlerStoredFile[] } | { error: string; status: number } {
+  if (files.length > BUTLER_FILE_MAX_COUNT) return { error: `附件最多 ${BUTLER_FILE_MAX_COUNT} 个。`, status: 413 };
+  const dir = join(butlerDir(), "files");
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o755 });
+  const stamp = Date.now().toString(36);
+  const stored: ButlerStoredFile[] = [];
+  for (const [index, file] of files.entries()) {
+    const name = typeof file.name === "string" && file.name.trim() ? file.name.trim().replace(/[/\\]/g, "_").slice(0, 120) : `file-${index + 1}`;
+    const mime = typeof file.mime === "string" && file.mime.trim() ? file.mime.trim() : "application/octet-stream";
+    const data = typeof file.data === "string" ? file.data.replace(/^data:[^;]*;base64,/, "") : "";
+    if (!/^[A-Za-z0-9+/=\s]+$/.test(data)) return { error: `附件 ${name} 不是 base64 数据。`, status: 422 };
+    let bytes: Buffer;
+    try {
+      bytes = Buffer.from(data, "base64");
+    } catch {
+      return { error: `附件 ${name} 解不开。`, status: 422 };
+    }
+    if (bytes.length > BUTLER_FILE_MAX_BYTES) return { error: `附件 ${name} 超过 ${Math.round(BUTLER_FILE_MAX_BYTES / 1024 / 1024)} MB。`, status: 413 };
+    const path = join(dir, `${stamp}-${index}-${name}`);
+    try {
+      writeFileSync(path, bytes, { mode: 0o600 });
+    } catch {
+      return { error: `附件 ${name} 没能存下。`, status: 500 };
+    }
+    stored.push({
+      name,
+      mime,
+      path,
+      dataUrl: bytes.length <= BUTLER_FILE_INLINE_BYTES && mime.startsWith("image/") ? `data:${mime};base64,${data.replace(/\s/g, "")}` : null,
+    });
+  }
+  return { stored };
+}
+
+/** 附件进提示词的说明行：模型靠它在会话里知道有什么、在哪，工具可再读。 */
+function filesNoteOf(files: readonly ButlerStoredFile[]): string {
+  if (files.length === 0) return "";
+  const lines = files.map((file) => `- ${file.name}（${file.mime}）已存到 ${file.path}`);
+  return `\n\n[主人随这条消息发来了 ${files.length} 个附件：\n${lines.join("\n")}\n]`;
+}
+
+/** 内联文件（够小的图片）作为 opencode 原生 file parts；其余只走提示词里的路径。 */
+function butlerQueryFiles(files: readonly ButlerStoredFile[]): AIQueryOptions {
+  const inline = files.filter((file) => file.dataUrl !== null).map((file) => ({ name: file.name, mime: file.mime, dataUrl: file.dataUrl! }));
+  return inline.length ? { files: inline } : {};
 }
 
 export class Butler {
@@ -178,10 +246,10 @@ export class Butler {
   }
 
   /** 一条对话：先落 you 侧历史，opencode 回复后落 butler 侧并返回全文。 */
-  async chat(message: string): Promise<string> {
+  async chat(message: string, files: ButlerStoredFile[] = []): Promise<string> {
     const at = new Date().toISOString();
-    this.appendHistory({ at, role: "you", text: message });
-    const reply = await this.askButler(message);
+    this.appendHistory({ at, role: "you", text: message, ...(files.length ? { files: files.map((file) => file.name) } : {}) });
+    const reply = await this.askButler(message, files);
     this.appendHistory({ at: new Date().toISOString(), role: "butler", text: reply });
     return reply;
   }
@@ -242,10 +310,10 @@ export class Butler {
     return this.brainSession;
   }
 
-  private async askButler(message: string): Promise<string> {
+  private async askButler(message: string, files: ButlerStoredFile[] = []): Promise<string> {
     const session = await this.brain();
     let reply = "";
-    for await (const msg of session.query(message)) {
+    for await (const msg of session.query(`${message}${filesNoteOf(files)}`, butlerQueryFiles(files))) {
       if (msg.type === "text") reply += msg.text;
       else if (msg.type === "text_delta") reply += msg.delta;
       else if (msg.type === "error") throw new Error(msg.error ?? "管家这会儿没法回答。");
@@ -256,10 +324,10 @@ export class Butler {
   }
 
   /** 流式一问：增量经 onDelta 出去，返回全文（历史照记）。 */
-  private async askButlerStream(message: string, onDelta: (delta: string) => void): Promise<string> {
+  private async askButlerStream(message: string, onDelta: (delta: string) => void, files: ButlerStoredFile[] = []): Promise<string> {
     const session = await this.brain();
     let reply = "";
-    for await (const msg of session.query(message)) {
+    for await (const msg of session.query(`${message}${filesNoteOf(files)}`, butlerQueryFiles(files))) {
       if (msg.type === "text") {
         reply += msg.text;
         onDelta(msg.text);
@@ -298,13 +366,22 @@ export class Butler {
 
   private async chatRoute(req: Request): Promise<Response> {
     let message = "";
+    let files: ButlerStoredFile[] = [];
     try {
-      const body = (await req.json()) as { message?: unknown; stream?: unknown };
+      const body = (await req.json()) as { message?: unknown; files?: unknown };
       message = typeof body.message === "string" ? body.message.trim() : "";
+      // 附件（图片文件等，owner 2026-11-25「关键的输入框的基础功能…图片文件等等」）：
+      // 先验收落盘，验收失败直接 4xx，不进历史不进会话。
+      const raw = Array.isArray(body.files) ? (body.files as ButlerFile[]) : [];
+      if (raw.length > 0 || body.files !== undefined) {
+        const outcome = storeButlerFiles(raw);
+        if ("error" in outcome) return Response.json({ error: outcome.error }, { status: outcome.status });
+        files = outcome.stored;
+      }
     } catch {
       message = "";
     }
-    if (!message) return Response.json({ error: "message: 要对管家说的话不能为空。" }, { status: 422 });
+    if (!message && files.length === 0) return Response.json({ error: "message: 要对管家说的话（或附件）不能为空。" }, { status: 422 });
     // 流式（v3，owner 2026-11-25「像 web 版一样」）：SSE 增量 + 终帧；流中断历史照记。
     let reply = "";
     const stream = new ReadableStream<Uint8Array>({
@@ -312,8 +389,8 @@ export class Butler {
         const send = (payload: Record<string, unknown>) =>
           controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(payload)}\n\n`));
         try {
-          this.appendHistory({ at: new Date().toISOString(), role: "you", text: message });
-          reply = await this.askButlerStream(message, (delta) => send({ delta }));
+          this.appendHistory({ at: new Date().toISOString(), role: "you", text: message, ...(files.length ? { files: files.map((file) => file.name) } : {}) });
+          reply = await this.askButlerStream(message || `（主人发来了 ${files.length} 个附件）`, (delta) => send({ delta }), files);
           this.appendHistory({ at: new Date().toISOString(), role: "butler", text: reply });
           send({ done: true, reply });
         } catch (error) {

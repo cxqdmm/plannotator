@@ -118,6 +118,13 @@ export interface AIQueryOptions {
    * nothing changed since the session last saw them.
    */
   draftAnnotations?: string;
+  /**
+   * 主人随这条消息发来的文件（管家等会话式入口）：已按字节解出的 base64 与类型。
+   * 能力对等的宿主（opencode）把它们作为原生 file parts 发出（图片模型直接看得见）；
+   * 看不懂此字段的宿主按接口约定忽略它——调用方因此同时把落盘路径写进提示词文本，
+   * 会话靠工具也能拿到文件。每个文件 ≤ BUTLER_FILE_INLINE_BYTES 的图片才值得内联。
+   */
+  files?: readonly { name: string; mime: string; dataUrl: string }[];
 }
 
 // ---------------------------------------------------------------------------

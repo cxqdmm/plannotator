@@ -3206,6 +3206,15 @@ export const INBOX_UPLOAD_MAX_BYTES = 100 * 1024 * 1024;
 /** The longest draft body (compose drafts and reply drafts), in characters: the window says so before the server refuses one. */
 export const INBOX_DRAFT_BODY_MAX = 1_000_000;
 
+// ─────────────── 管家的附件（窗口输入框与服务端路由共用一份上限） ───────────────
+
+/** 管家一条消息最多带的附件数。 */
+export const BUTLER_FILE_MAX_COUNT = 6;
+/** 管家单个附件的字节上限（base64 解出后）。 */
+export const BUTLER_FILE_MAX_BYTES = 20 * 1024 * 1024;
+/** 管家的图片以内联 data URL 直达模型的上限；超过就只落盘 + 提示词里给路径。 */
+export const BUTLER_FILE_INLINE_BYTES = 5 * 1024 * 1024;
+
 /**
  * A file the person uploaded from the window for a thread they start, not
  * sent yet (`POST /api/inbox/uploads`). At send it becomes an

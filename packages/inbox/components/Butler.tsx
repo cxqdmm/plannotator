@@ -7,9 +7,11 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { copyTextToClipboard } from '@plannotator/ui/utils/clipboard';
+import { isImeCompositionKey } from '@plannotator/ui/utils/commentSubmitKey';
 import { Tip } from '@plannotator/ui/components/inbox-thread/Tip';
 import { Icon } from '../icons';
 import { inboxApi } from '../api';
+import { BUTLER_FILE_MAX_BYTES, BUTLER_FILE_MAX_COUNT } from '@plannotator/core/inbox-types';
 
 /** 管家徽标：礼帽+领结（SVG，随容器尺寸缩放）。 */
 function ButlerBadge({ size }: { size: number }) {
@@ -32,6 +34,15 @@ interface ButlerTurn {
   at: string;
   role: 'you' | 'butler';
   text: string;
+  files?: string[];
+}
+
+/** 待发送的附件：已读成 data URL，发送时原样上交（服务端按字节落盘 + 图片内联）。 */
+interface PendingFile {
+  id: string;
+  name: string;
+  mime: string;
+  data: string;
 }
 
 export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpenChange?: (open: boolean) => void } = {}) {
@@ -46,6 +57,12 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
   };
   const [turns, setTurns] = useState<ButlerTurn[]>([]);
   const [draft, setDraft] = useState('');
+  // 输入框的基础功能（owner 2026-11-25「关键的输入框的基础功能…图片文件等等」）：
+  // 附件挑选/粘贴即读成 data URL 待发，超限当场拒绝；发送与文字一起走 chat 路由。
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [compoError, setCompoError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const compoRef = useRef<HTMLTextAreaElement>(null);
   const [pending, setPending] = useState(false);
   const [sessionCopy, setSessionCopy] = useState<'idle' | 'busy' | 'copied' | 'failed'>('idle');
   const listRef = useRef<HTMLDivElement>(null);
@@ -76,22 +93,29 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
 
   const send = async () => {
     const message = draft.trim();
-    if (!message || pending) return;
+    if ((!message && pendingFiles.length === 0) || pending) return;
     setDraft('');
-    setTurns((current) => [...current, { at: new Date().toISOString(), role: 'you', text: message }]);
+    const files = pendingFiles;
+    setPendingFiles([]);
+    setCompoError(null);
+    setTurns((current) => [...current, { at: new Date().toISOString(), role: 'you', text: message, ...(files.length ? { files: files.map((file) => file.name) } : {}) }]);
     setPending(true);
     // 流式（v3，owner 2026-11-25「像 web 版一样」）：管家的回复随增量生长。
     const streamAt = new Date().toISOString();
     setTurns((current) => [...current, { at: streamAt, role: 'butler', text: '' }]);
     try {
-      const reply = await inboxApi.butlerChatStream(message, (delta) => {
-        setTurns((current) => {
-          const next = [...current];
-          const last = next[next.length - 1]!;
-          next[next.length - 1] = { ...last, text: last.text + delta };
-          return next;
-        });
-      });
+      const reply = await inboxApi.butlerChatStream(
+        message || `（发来了 ${files.length} 个附件）`,
+        (delta) => {
+          setTurns((current) => {
+            const next = [...current];
+            const last = next[next.length - 1]!;
+            next[next.length - 1] = { ...last, text: last.text + delta };
+            return next;
+          });
+        },
+        files.map((file) => ({ name: file.name, mime: file.mime, data: file.data })),
+      );
       setTurns((current) => {
         const next = [...current];
         const last = next[next.length - 1]!;
@@ -125,6 +149,47 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
     }
     setTimeout(() => setSessionCopy('idle'), 1800);
   };
+
+  /** 粘贴事件里的文件（截图直接贴进来）。 */
+  const takePastedFiles = (event: { clipboardData?: { files?: FileList | null } }): File[] => Array.from(event.clipboardData?.files ?? []);
+
+  /** 挑选/粘贴的附件进待发区：数量与大小当场把关，读成 data URL（发送时原样上交）。 */
+  const addFiles = (list: File[]) => {
+    if (list.length === 0) return;
+    const reasons: string[] = [];
+    const accepted: File[] = [];
+    for (const file of list) {
+      if (pendingFiles.length + accepted.length >= BUTLER_FILE_MAX_COUNT) {
+        reasons.push(`附件最多 ${BUTLER_FILE_MAX_COUNT} 个。`);
+        break;
+      }
+      if (file.size > BUTLER_FILE_MAX_BYTES) {
+        reasons.push(`「${file.name}」超过 ${Math.round(BUTLER_FILE_MAX_BYTES / 1024 / 1024)} MB，没收。`);
+        continue;
+      }
+      accepted.push(file);
+    }
+    if (reasons.length > 0) setCompoError(reasons.join(' '));
+    if (accepted.length === 0) return;
+    void Promise.all(
+      accepted.map(
+        (file) =>
+          new Promise<PendingFile>((done, fail) => {
+            const reader = new FileReader();
+            reader.onload = () => done({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, name: file.name || '未命名', mime: file.type || 'application/octet-stream', data: String(reader.result ?? '') });
+            reader.onerror = () => fail(reader.error ?? new Error(`「${file.name}」读不出来。`));
+            reader.readAsDataURL(file);
+          }),
+      ),
+    )
+      .then((read) => {
+        setPendingFiles((current) => [...current, ...read].slice(0, BUTLER_FILE_MAX_COUNT));
+        setCompoError(null);
+      })
+      .catch((why: unknown) => setCompoError(why instanceof Error ? why.message : String(why)));
+  };
+
+  const dropFile = (id: string) => setPendingFiles((current) => current.filter((file) => file.id !== id));
 
   return (
     <>
@@ -169,6 +234,11 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
             )}
             {turns.map((turn, index) => (
               <div key={`${turn.at}-${index}`} className={`ib-butler-msg ib-butler-msg-${turn.role}`}>
+                {turn.files && turn.files.length > 0 && (
+                  <span className="ib-butler-files" aria-label="附件">
+                    <Icon name="clip" size={12} /> {turn.files.join('、')}
+                  </span>
+                )}
                 {turn.text}
               </div>
             ))}
@@ -179,19 +249,69 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
             )}
           </div>
           <div className="ib-butler-inputrow">
+            {compoError && (
+              <p className="ib-butler-compoerr" role="alert">{compoError}</p>
+            )}
+            {pendingFiles.length > 0 && (
+              <div className="ib-butler-chips" aria-label="待发送附件">
+                {pendingFiles.map((file) => (
+                  <span key={file.id} className="ib-butler-chip">
+                    <Icon name={file.mime.startsWith('image/') ? 'artifacts' : 'doc'} size={12} />
+                    <span className="ib-butler-chip-name" dir="auto">{file.name}</span>
+                    <button type="button" className="ib-butler-chip-x" aria-label={`移除附件 ${file.name}`} onClick={() => dropFile(file.id)}>
+                      <Icon name="x" size={10} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="ib-butler-entry">
+              <Tip content="添加附件（图片、文件）">
+                <button type="button" className="ib-butler-add" aria-label="添加附件" onClick={() => fileInputRef.current?.click()}>
+                  <Icon name="clip" size={15} />
+                </button>
+              </Tip>
+              <textarea
+                ref={compoRef}
+                className="ib-butler-input"
+                rows={2}
+                dir="auto"
+                placeholder="对管家说点什么…（可粘贴图片）"
+                value={draft}
+                disabled={pending}
+                onChange={(event) => setDraft(event.target.value)}
+                onPaste={(event) => {
+                  const files = takePastedFiles(event);
+                  if (files.length > 0) {
+                    event.preventDefault();
+                    addFiles(files);
+                  }
+                }}
+                onKeyDown={(event) => {
+                  const enter = event.key === 'Enter';
+                  if (enter) event.stopPropagation();
+                  if (isImeCompositionKey(event) || !enter) return;
+                  if (event.shiftKey) return;
+                  event.preventDefault();
+                  if (!pending) void send();
+                }}
+              />
+              <button type="button" className="ib-butler-send" aria-label="发送" onClick={() => void send()} disabled={pending || (!draft.trim() && pendingFiles.length === 0)}>
+                发送
+              </button>
+            </div>
             <input
-              type="text"
-              className="ib-butler-input"
-              placeholder="对管家说点什么…"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && draft.trim() && !pending) void send();
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="ib-butler-fileinput"
+              aria-hidden="true"
+              tabIndex={-1}
+              onChange={(event) => {
+                addFiles(Array.from(event.target.files ?? []));
+                event.target.value = '';
               }}
             />
-            <button type="button" className="ib-butler-send" aria-label="发送" onClick={() => void send()} disabled={pending || !draft.trim()}>
-              发送
-            </button>
           </div>
         </div>
       )}
