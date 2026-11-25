@@ -121,6 +121,23 @@ describe("the butler streaming chat", () => {
     expect(resumed).toEqual([state.sessionId, state.sessionId]);
   });
 
+  test("the session route hands out the id and a paste-ready terminal command", async () => {
+    const butler = await loadButler(fakeBin);
+    butler.init();
+    const response = await butler.route(
+      new Request("http://127.0.0.1:53998/api/inbox/butler/session", {
+        headers: { "sec-fetch-site": "same-origin" },
+      }),
+      new URL("http://127.0.0.1:53998/api/inbox/butler/session"),
+    );
+    expect(response).not.toBeNull();
+    const body = (await response!.json()) as { sessionId: string; dir: string; command: string };
+    expect(body.sessionId).toStartWith("ses_butler");
+    expect(body.command).toBe(`cd '${body.dir}' && opencode -s '${body.sessionId}'`);
+    const state = JSON.parse(readFileSync(join(home, "plannotator-butler", "state.json"), "utf8")) as { sessionId: string };
+    expect(state.sessionId).toBe(body.sessionId);
+  });
+
   test("a non-same-origin call is not answered", async () => {
     const butler = await loadButler(fakeBin);
     butler.init();

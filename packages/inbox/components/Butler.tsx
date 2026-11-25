@@ -6,6 +6,8 @@
  * with the butler persona; history persists in the butler folder).
  */
 import { useEffect, useRef, useState } from 'react';
+import { copyTextToClipboard } from '@plannotator/ui/utils/clipboard';
+import { Icon } from '../icons';
 import { inboxApi } from '../api';
 
 /** 管家徽标：礼帽+领结（SVG，随容器尺寸缩放）。 */
@@ -36,6 +38,7 @@ export function Butler() {
   const [turns, setTurns] = useState<ButlerTurn[]>([]);
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState(false);
+  const [sessionCopy, setSessionCopy] = useState<'idle' | 'busy' | 'copied' | 'failed'>('idle');
   const listRef = useRef<HTMLDivElement>(null);
   const loadedRef = useRef(false);
 
@@ -90,6 +93,20 @@ export function Butler() {
     }
   };
 
+  /** 右上角：复制「在终端打开管家会话」的命令（首点会先把会话起好）。 */
+  const copySession = async () => {
+    if (sessionCopy === 'busy') return;
+    setSessionCopy('busy');
+    try {
+      const answer = await inboxApi.butlerSession();
+      const ok = await copyTextToClipboard(answer.command);
+      setSessionCopy(ok ? 'copied' : 'failed');
+    } catch {
+      setSessionCopy('failed');
+    }
+    setTimeout(() => setSessionCopy('idle'), 1800);
+  };
+
   return (
     <>
       <button
@@ -104,6 +121,17 @@ export function Butler() {
       {open && (
         <div className="ib-butler-pane" role="dialog" aria-label="管家">
           <div className="ib-butler-top">
+            <button
+              type="button"
+              className="ib-butler-session"
+              title={sessionCopy === 'failed' ? '没能复制；请重试' : '复制在终端打开管家会话的命令'}
+              aria-label="复制管家会话的终端命令"
+              data-butler-session-copy={sessionCopy}
+              onClick={() => void copySession()}
+            >
+              <Icon name={sessionCopy === 'copied' ? 'check' : 'terminal'} size={16} />
+              {sessionCopy === 'copied' ? '已复制' : sessionCopy === 'busy' ? '准备中…' : sessionCopy === 'failed' ? '未复制' : ''}
+            </button>
             <div className="ib-butler-avatar ib-butler-avatar-live">
               <ButlerBadge size={44} />
             </div>

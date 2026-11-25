@@ -91,6 +91,18 @@ export class Butler {
     }
   }
 
+  /** 管家会话的终端入口：会话 id 与在终端打开它的命令（首次会先起好会话）。 */
+  async session(): Promise<{ sessionId: string; dir: string; command: string }> {
+    const brain = await this.brain();
+    this.persistSessionId(brain.id);
+    const quote = (value: string) => `'${value.replace(/'/g, "'\\''")}'`;
+    return {
+      sessionId: brain.id,
+      dir: this.dir,
+      command: `cd ${quote(this.dir)} && opencode -s ${quote(brain.id)}`,
+    };
+  }
+
   /** 上次管家的 opencode 会话 id（跨守护进程重启延续对话）。 */
   private priorSessionId(): string | null {
     try {
@@ -216,6 +228,14 @@ export class Butler {
     }
     if (url.pathname === "/api/inbox/butler/history" && req.method === "GET") {
       return Response.json({ history: this.history() });
+    }
+    // 管家会话的终端入口（窗口右上角按钮）：会话 id + 可直接粘贴的命令。
+    if (url.pathname === "/api/inbox/butler/session" && req.method === "GET") {
+      try {
+        return Response.json(await this.session());
+      } catch (error) {
+        return Response.json({ error: error instanceof Error ? error.message : String(error) }, { status: 502 });
+      }
     }
     return null;
   }

@@ -2278,6 +2278,8 @@ export const inboxApi = {
   },
   /** 管家：对话历史（最旧在前），用于管家界面的初始渲染。 */
   butlerHistory: () => get<{ history: { at: string; role: 'you' | 'butler'; text: string }[] }>(inboxUrl('/butler/history')),
+  /** 管家会话的终端入口：会话 id 与可直接粘贴的命令（首次调用会先把会话起好）。 */
+  butlerSession: () => get<{ sessionId: string; dir: string; command: string }>(inboxUrl('/butler/session')),
   askSend: (threadId: string, turnId: string, question: string, showMe?: InboxShowMeAsk, source?: string) =>
     post<InboxAskPosted>(inboxUrl(`/threads/${threadId}/ask`), { turn_id: turnId, question, ...(showMe ?? {}), ...(source ? { source } : {}) }),
   askSeen: (threadId: string, seenAt: string) => post<unknown>(inboxUrl(`/threads/${threadId}/ask/seen`), { seen_at: seenAt }),
