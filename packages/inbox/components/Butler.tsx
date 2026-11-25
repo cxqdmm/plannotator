@@ -254,9 +254,11 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
               </Tip>
             </div>
             {/* 顶部只有悬浮的数字形象（owner 2026-11-25「顶部只有一个悬浮的数字形象，
-                不要整体的header头部了」）：无条带无字，慢慢上下浮，底下投影随之收放。 */}
+                不要整体的header头部了」）：无条带无字，慢慢上下浮，底下投影随之收放。
+                形象 = 二维剪影管家（owner 2026-11-25「我还是喜欢二维的svg风格」——
+                Three.js 3D 狐狸试过被否），随对话状态换情绪。 */}
             <span className="ib-butler-avatar" title="管家">
-              <ButlerCharacter size={56} mood={pending ? 'working' : sessionCopy === 'copied' ? 'happy' : 'idle'} />
+              <ButlerCharacter size={72} mood={pending ? 'working' : sessionCopy === 'copied' ? 'happy' : 'idle'} />
               <span className="ib-butler-presence" aria-hidden="true" />
             </span>
           </div>
@@ -264,7 +266,7 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
             {turns.length === 0 && !pending ? (
               <div className="ib-butler-hero">
                 <span className="ib-butler-hero-badge">
-                  <ButlerCharacter size={60} />
+                  <ButlerCharacter size={96} mood={sessionCopy === 'copied' ? 'happy' : 'idle'} />
                 </span>
                 <h2 className="ib-butler-hero-word">{butlerGreeting()}</h2>
                 <p className="ib-butler-hero-sub">吩咐一声——我帮您把想法整理成需求卡片；真正动手，从卡片开启会话。</p>
