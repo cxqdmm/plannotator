@@ -6657,8 +6657,10 @@ function Inbox() {
           onSay={say}
         />
       )}
-    </div>
+    {/* 管家画在 .pn-inbox 门内：图标的尺寸与描边样式（.pn-inbox svg.ib-ic）出不了这个根，
+        挂在根外时右上角的复制/关闭按钮会塌成 0×0——面板本身 fixed，进门不改变几何。 */}
     <Butler />
+    </div>
     </SideButtonContext.Provider>
     </ThreadTagsContext.Provider>
     </LiveInitiativesContext.Provider>
