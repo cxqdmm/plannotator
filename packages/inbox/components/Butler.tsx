@@ -14,48 +14,87 @@ import { Icon } from '../icons';
 import { inboxApi } from '../api';
 import { BUTLER_FILE_MAX_BYTES, BUTLER_FILE_MAX_COUNT } from '@plannotator/core/inbox-types';
 
-/** 管家的活形象（owner 2026-11-25「就不能是那种动态的svg的形象么，生动」）：
- *  剪影管家——礼帽、单边眼镜、领结。眼睛每几秒眨一下，镜片周期性闪光，领结偶尔
- *  歪一下；working 时眼睛左右张望、领结频率变快，happy（复制成功）时眉眼弯成两道
- *  弧。动效全走 CSS 类（ib-blink / ib-glint / ib-tie / ib-look，inbox.css），
- *  prefers-reduced-motion 下一律静止；挖空处用 --background，深浅色自动反色。 */
+/**
+ * 管家的活形象（owner 2026-11-26「我想要一只猫头鹰的形象」）：一只圆滚滚的卡通
+ * 猫头鹰——耳羽、两片浅色面盘、占脸一半的大眼睛、小钩喙、羽毛纹胸脯，脖子上一条
+ * 品牌色围巾。配色走 CSS 变量（--bc-*，inbox.css，深浅色同一套），表情按对话状态换：
+ * idle 眨眼、耳羽偶尔抖、围巾随风轻摆；working 眼睛左右张望 + 头顶小星光；
+ * happy（复制成功）眼睛弯成两道弧、翅膀抬一下。
+ * 26px（悬浮球）到 96px（首屏）都用这一个；细碎装饰一律不放，小尺寸才不糊。
+ * prefers-reduced-motion 下一律静止。
+ */
 function ButlerCharacter({ size, mood = 'idle' }: { size: number; mood?: 'idle' | 'working' | 'happy' }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 48 48"
+      viewBox="0 0 64 64"
       aria-hidden="true"
       className={`ib-bc${mood === 'working' ? ' ib-bc-working' : ''}${mood === 'happy' ? ' ib-bc-happy' : ''}`}
     >
-      {/* 礼帽 */}
-      <rect x="17" y="3" width="14" height="11" rx="2" fill="currentColor" />
-      <rect x="11" y="13" width="26" height="3.2" rx="1.6" fill="currentColor" />
-      {/* 头（剪影） */}
-      <rect x="13" y="16.4" width="22" height="21.6" rx="9.5" fill="currentColor" />
-      {/* 眼睛（挖空）：happy 是两道弯，其余是会眨的圆点 */}
+      {/* 尾羽（在身后） */}
+      <g fill="var(--bc-fur-shade, #d9b98c)">
+        <path d="M28 56 q4 6 4 6 q0 0 4 -6 z" />
+        <path d="M24.4 55.4 q2.8 5.6 2.8 5.6 l3.4 -5 z" opacity="0.85" />
+        <path d="M39.6 55.4 q-2.8 5.6 -2.8 5.6 l-3.4 -5 z" opacity="0.85" />
+      </g>
+      {/* 爪 */}
+      <ellipse cx="27.4" cy="57.6" rx="3.6" ry="1.9" fill="var(--bc-beak, #e8a33d)" />
+      <ellipse cx="36.6" cy="57.6" rx="3.6" ry="1.9" fill="var(--bc-beak, #e8a33d)" />
+      {/* 耳羽（偶尔抖一下） */}
+      <g className="ib-bc-tuft-l">
+        <path d="M20.2 19.6 C18 14 16.4 9.4 16.9 7 C19.6 8 23.6 12.2 26 16 Z" fill="var(--bc-fur-shade, #d9b98c)" />
+      </g>
+      <g className="ib-bc-tuft-r">
+        <path d="M43.8 19.6 C46 14 47.6 9.4 47.1 7 C44.4 8 40.4 12.2 38 16 Z" fill="var(--bc-fur-shade, #d9b98c)" />
+      </g>
+      {/* 身体：一整个圆滚滚的蛋形 */}
+      <path d="M32 13.4 C43.8 13.4 49.4 22.4 49.4 35.4 C49.4 49 43 57.8 32 57.8 C21 57.8 14.6 49 14.6 35.4 C14.6 22.4 20.2 13.4 32 13.4 Z" fill="var(--bc-fur, #e9cfa8)" />
+      {/* 翅膀：贴身体两侧，happy 时抬一下 */}
+      <g className="ib-bc-wing-l">
+        <path d="M17.4 34.6 C15 40 15.4 47.4 18.6 51.8 C20.2 54 22.4 52.6 21.6 50.2 C19.8 45 19.6 39.6 20.6 34.8 Z" fill="var(--bc-fur-shade, #d9b98c)" />
+      </g>
+      <g className="ib-bc-wing-r">
+        <path d="M46.6 34.6 C49 40 48.6 47.4 45.4 51.8 C43.8 54 41.6 52.6 42.4 50.2 C44.2 45 44.4 39.6 43.4 34.8 Z" fill="var(--bc-fur-shade, #d9b98c)" />
+      </g>
+      {/* 胸脯羽毛：浅色底 + 两排羽纹 */}
+      <ellipse cx="32" cy="47.6" rx="9.2" ry="8.6" fill="var(--bc-belly, #f8ecd9)" />
+      <g stroke="var(--bc-fur-shade, #d9b98c)" strokeWidth="0.9" strokeLinecap="round" fill="none" opacity="0.7">
+        <path d="M26.4 45 q2.8 2.6 5.6 0 q2.8 2.6 5.6 0" />
+        <path d="M26.4 50 q2.8 2.6 5.6 0 q2.8 2.6 5.6 0" />
+      </g>
+      {/* 面盘：两片浅色圆，托住大眼 */}
+      <circle cx="25.2" cy="30.6" r="9.2" fill="var(--bc-belly, #f8ecd9)" />
+      <circle cx="38.8" cy="30.6" r="9.2" fill="var(--bc-belly, #f8ecd9)" />
+      {/* 眼睛：happy 弯成弧，其余是会眨、working 时张望的大眼 */}
       {mood === 'happy' ? (
-        <g stroke="var(--background, #fff)" strokeWidth="1.6" strokeLinecap="round" fill="none">
-          <path d="M17.7 25.6 q1.8 -2.1 3.6 0" />
-          <path d="M26.7 25.6 q1.8 -2.1 3.6 0" />
+        <g stroke="var(--bc-ink, #2b2320)" strokeWidth="2" strokeLinecap="round" fill="none">
+          <path d="M21.4 30 q3.8 -3.8 7.6 0" />
+          <path d="M35 30 q3.8 -3.8 7.6 0" />
         </g>
       ) : (
-        <g fill="var(--background, #fff)">
-          <ellipse className="ib-beye" cx="19.5" cy="25.3" rx="1.95" ry="2.2" />
-          <ellipse className="ib-beye" cx="28.5" cy="25.3" rx="1.95" ry="2.2" />
+        <g className="ib-bc-eyes">
+          <circle cx="25.2" cy="30.6" r="5.6" fill="var(--bc-ink, #2b2320)" />
+          <circle cx="38.8" cy="30.6" r="5.6" fill="var(--bc-ink, #2b2320)" />
+          <circle cx="23.4" cy="28.6" r="1.7" fill="#fff" />
+          <circle cx="37" cy="28.6" r="1.7" fill="#fff" />
+          <circle cx="27.2" cy="32.8" r="0.8" fill="#fff" opacity="0.85" />
+          <circle cx="40.8" cy="32.8" r="0.8" fill="#fff" opacity="0.85" />
         </g>
       )}
-      {/* 单边眼镜（右眼）+ 周期性闪光 */}
-      <circle cx="28.5" cy="25.3" r="3.7" fill="none" stroke="var(--background, #fff)" strokeWidth="1" opacity="0.85" />
-      <path className="ib-bglint" d="M26.1 23 l1.7 -1.3" stroke="var(--background, #fff)" strokeWidth="1.3" strokeLinecap="round" opacity="0" />
-      {/* 微笑 */}
-      <path d="M20.8 31.4 q3.2 2.4 6.4 0" stroke="var(--background, #fff)" strokeWidth="1.4" strokeLinecap="round" fill="none" />
-      {/* 领结 */}
-      <g className="ib-btie" fill="currentColor">
-        <path d="M24 38.8 L17.8 35.6 v6.4 Z" />
-        <path d="M24 38.8 L30.2 35.6 v6.4 Z" />
-        <circle cx="24" cy="38.8" r="1.7" />
-      </g>
+      {/* 腮红 */}
+      <ellipse cx="20" cy="39" rx="3.2" ry="1.9" fill="var(--bc-blush, #ef8f7d)" opacity="0.45" />
+      <ellipse cx="44" cy="39" rx="3.2" ry="1.9" fill="var(--bc-blush, #ef8f7d)" opacity="0.45" />
+      {/* 小钩喙：亮色、压在两面盘中间，向下勾一下 */}
+      <path d="M28.9 33.2 L35.1 33.2 L32 38.9 C31.4 39.7 30.4 39.5 30.2 38.7 Z" fill="var(--bc-beak, #eda53a)" />
+      <path d="M30.6 38.2 C31.2 38.9 32.8 38.9 33.4 38.2" stroke="var(--bc-beak-shade, #c9862a)" strokeWidth="0.9" strokeLinecap="round" fill="none" opacity="0.75" />
+      {/* 围巾：品牌色，贴着下巴绕一圈，结上一点亮扣 */}
+      <path d="M20.4 40.6 C26.4 43.6 37.6 43.6 43.6 40.6 L45.2 45.2 C38.2 49.6 25.8 49.6 18.8 45.2 Z" fill="var(--primary)" />
+      <path d="M29.4 47 l2.6 3.8 l-2.6 1 l-2.4 -3.6 Z" fill="var(--primary)" opacity="0.85" />
+      <path d="M34.6 47 l-2.6 3.8 l2.6 1 l2.4 -3.6 Z" fill="var(--primary)" opacity="0.85" />
+      <circle cx="32" cy="47.4" r="1.7" fill="var(--bc-belly, #f8ecd9)" opacity="0.95" />
+      {/* working：头顶一颗小星光 */}
+      <path className="ib-bc-spark" d="M47.6 13 l1.1 3 l3 1.1 l-3 1.1 l-1.1 3 l-1.1 -3 l-3 -1.1 l3 -1.1 z" fill="var(--primary)" />
     </svg>
   );
 }
