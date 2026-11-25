@@ -12660,6 +12660,17 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
 /* ─────────────── 管家 (approval "butler" 一期)：the Inbox's digital butler ───────────────
    右下角常驻悬浮球（呼吸光晕），点击动效展开全屏管家界面（顶部形象、中部对话流、底部输入）。 */
 .ib-butler-orb { position: fixed; right: 26px; bottom: 26px; z-index: 70; width: 48px; height: 48px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--foreground); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18); animation: ib-butler-breath 3.2s ease-in-out infinite; transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1); }
+/* 管家的活形象：眨眼、镜片闪光、领结偶尔歪一下；working 时眼睛张望、领结变快。
+   挖空处用 var(--background)，深浅色自动反色；reduced-motion 一律静止。 */
+.ib-beye { transform-box: fill-box; transform-origin: center; animation: ib-blink 4.4s ease-in-out infinite; }
+@keyframes ib-blink { 0%, 91%, 97%, 100% { transform: scaleY(1); } 94% { transform: scaleY(0.12); } }
+.ib-bglint { animation: ib-glint 4.4s ease-in-out infinite; }
+@keyframes ib-glint { 0%, 76%, 94%, 100% { opacity: 0; } 85% { opacity: 0.95; } }
+.ib-btie { transform-origin: 24px 38.8px; animation: ib-tie 6.4s ease-in-out infinite; }
+@keyframes ib-tie { 0%, 74%, 100% { transform: rotate(0deg); } 79% { transform: rotate(6deg); } 84% { transform: rotate(-5deg); } 89% { transform: rotate(0deg); } }
+.ib-bc-working .ib-beye { animation: ib-look 1.5s ease-in-out infinite; }
+@keyframes ib-look { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(-0.8px); } 65% { transform: translateX(0.8px); } }
+.ib-bc-working .ib-btie { animation-duration: 1.8s; }
 .ib-butler-orb:hover { transform: scale(1.06); }
 @keyframes ib-butler-breath { 0%, 100% { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18), 0 0 0 0 color-mix(in oklab, var(--primary) 25%, transparent); } 50% { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18), 0 0 0 9px transparent; } }
 .ib-butler-orb-open { transform: scale(1.4); opacity: 0; pointer-events: none; transition: transform 240ms ease-in, opacity 240ms ease-in; }
@@ -12755,4 +12766,5 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
   .ib-butler-hero-badge { animation: none; }
   .ib-butler-dots i { animation-duration: 0.01ms; animation-iteration-count: 1; }
   .ib-butler-idea:hover, .ib-butler-send:hover:not(:disabled) { transform: none; }
+  .ib-beye, .ib-btie, .ib-bglint { animation: none; }
 }

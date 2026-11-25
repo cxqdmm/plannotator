@@ -14,19 +14,48 @@ import { Icon } from '../icons';
 import { inboxApi } from '../api';
 import { BUTLER_FILE_MAX_BYTES, BUTLER_FILE_MAX_COUNT } from '@plannotator/core/inbox-types';
 
-/** 管家徽标：礼帽+领结（SVG，随容器尺寸缩放）。 */
-function ButlerBadge({ size }: { size: number }) {
+/** 管家的活形象（owner 2026-11-25「就不能是那种动态的svg的形象么，生动」）：
+ *  剪影管家——礼帽、单边眼镜、领结。眼睛每几秒眨一下，镜片周期性闪光，领结偶尔
+ *  歪一下；working 时眼睛左右张望、领结频率变快，happy（复制成功）时眉眼弯成两道
+ *  弧。动效全走 CSS 类（ib-blink / ib-glint / ib-tie / ib-look，inbox.css），
+ *  prefers-reduced-motion 下一律静止；挖空处用 --background，深浅色自动反色。 */
+function ButlerCharacter({ size, mood = 'idle' }: { size: number; mood?: 'idle' | 'working' | 'happy' }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 48 48"
+      aria-hidden="true"
+      className={`ib-bc${mood === 'working' ? ' ib-bc-working' : ''}${mood === 'happy' ? ' ib-bc-happy' : ''}`}
+    >
       {/* 礼帽 */}
-      <rect x="14" y="8" width="20" height="12" rx="3" fill="currentColor" />
-      <rect x="10" y="19" width="28" height="4" rx="2" fill="currentColor" />
+      <rect x="17" y="3" width="14" height="11" rx="2" fill="currentColor" />
+      <rect x="11" y="13" width="26" height="3.2" rx="1.6" fill="currentColor" />
+      {/* 头（剪影） */}
+      <rect x="13" y="16.4" width="22" height="21.6" rx="9.5" fill="currentColor" />
+      {/* 眼睛（挖空）：happy 是两道弯，其余是会眨的圆点 */}
+      {mood === 'happy' ? (
+        <g stroke="var(--background, #fff)" strokeWidth="1.6" strokeLinecap="round" fill="none">
+          <path d="M17.7 25.6 q1.8 -2.1 3.6 0" />
+          <path d="M26.7 25.6 q1.8 -2.1 3.6 0" />
+        </g>
+      ) : (
+        <g fill="var(--background, #fff)">
+          <ellipse className="ib-beye" cx="19.5" cy="25.3" rx="1.95" ry="2.2" />
+          <ellipse className="ib-beye" cx="28.5" cy="25.3" rx="1.95" ry="2.2" />
+        </g>
+      )}
+      {/* 单边眼镜（右眼）+ 周期性闪光 */}
+      <circle cx="28.5" cy="25.3" r="3.7" fill="none" stroke="var(--background, #fff)" strokeWidth="1" opacity="0.85" />
+      <path className="ib-bglint" d="M26.1 23 l1.7 -1.3" stroke="var(--background, #fff)" strokeWidth="1.3" strokeLinecap="round" opacity="0" />
+      {/* 微笑 */}
+      <path d="M20.8 31.4 q3.2 2.4 6.4 0" stroke="var(--background, #fff)" strokeWidth="1.4" strokeLinecap="round" fill="none" />
       {/* 领结 */}
-      <path d="M24 30 L15 25 L15 35 Z" fill="currentColor" />
-      <path d="M24 30 L33 25 L33 35 Z" fill="currentColor" />
-      <circle cx="24" cy="30" r="3" fill="currentColor" />
-      {/* 单眼（单片眼镜的雅致感） */}
-      <circle cx="24" cy="26.5" r="1.2" fill="var(--background, #fff)" />
+      <g className="ib-btie" fill="currentColor">
+        <path d="M24 38.8 L17.8 35.6 v6.4 Z" />
+        <path d="M24 38.8 L30.2 35.6 v6.4 Z" />
+        <circle cx="24" cy="38.8" r="1.7" />
+      </g>
     </svg>
   );
 }
@@ -201,7 +230,7 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
         title="管家"
         onClick={() => setOpen((current) => !current)}
       >
-        <ButlerBadge size={26} />
+        <ButlerCharacter size={26} />
       </button>
       {open && (
         <div className="ib-butler-pane" role="dialog" aria-label="管家">
@@ -226,7 +255,7 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
             </div>
             <div className="ib-butler-mast">
               <span className="ib-butler-avatar ib-butler-avatar-live">
-                <ButlerBadge size={40} />
+                <ButlerCharacter size={40} mood={pending ? 'working' : sessionCopy === 'copied' ? 'happy' : 'idle'} />
                 <span className="ib-butler-presence" aria-hidden="true" />
               </span>
               <span className="ib-butler-id">
@@ -239,7 +268,7 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
             {turns.length === 0 && !pending ? (
               <div className="ib-butler-hero">
                 <span className="ib-butler-hero-badge">
-                  <ButlerBadge size={60} />
+                  <ButlerCharacter size={60} />
                 </span>
                 <h2 className="ib-butler-hero-word">{butlerGreeting()}</h2>
                 <p className="ib-butler-hero-sub">吩咐一声——我帮您把想法整理成需求卡片；真正动手，从卡片开启会话。</p>
