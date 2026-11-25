@@ -37,7 +37,52 @@ export function butlerDir(): string {
   return join(homedir(), "plannotator-butler");
 }
 
-/** 守护进程初始化时调用：管家文件夹不存在则创建，并写好管家人设（幂等）。
+/** 管家的独有技能（技能 ID 一律 `butler-*`）：写到管家文件夹的 `.opencode/skills/` 下，
+ *  opencode 会话（cwd = 这里）只认这些。加新技能时同步加到这份表——白名单按 ID 放行。 */
+const BUTLER_SKILLS: ReadonlyMap<string, { name: string; description: string; body: string }> = new Map([
+  [
+    "butler-intake",
+    {
+      name: "需求受理",
+      description: "把主人说想做的事整理成一句话需求（工坊需求卡片），并说明从卡片启动执行会话",
+      body: [
+        "## 工作流",
+        "",
+        "1. 听主人讲想做什么，缺要点就追问一句补齐。",
+        "2. 整理成一句话标题（说清要做什么），列出补充要点。",
+        "3. 告知真正动手的入口：工坊里该需求卡片上的「开启新会话」；管家统筹，不亲自执行任务。",
+      ].join("\n"),
+    },
+  ],
+  [
+    "butler-inbox-guide",
+    {
+      name: "收件箱向导",
+      description: "介绍 Plannotator 收件箱的用法：工坊、计划评审、代码评审、文件标注、会话与回复规则",
+      body: [
+        "## 要点",
+        "",
+        "- 工坊：需求卡片挂会话与产物；卡片上「开启新会话」派活，「历史」看事件流。",
+        "- 计划评审：执行会话交出设计文档后，卡片或历史页「去审阅」，批注意见回给会话。",
+        "- 代码评审：会话行 ⋯ 菜单发起，结论送达本会话并记入需求历史。",
+        "- 会话在等你回复时会停下（「等你回复」）；打断在会话行的 ⋯ 菜单里。",
+        "- 管家只统筹不执行；管家会话的终端命令在管家面板右上角复制。",
+      ].join("\n"),
+    },
+  ],
+]);
+
+/** 管家项目的 opencode 配置（技能白名单）：环境里的技能（主人自己的 `~/.claude/skills`、
+ *  全局目录等）一概 deny，只放行 `butler-*`——被拒的技能连模型的可见清单都不进
+ *  （owner 2026-11-25「管家要有技能白名单」；实测 scratch 目录：deny 后只报 butler-*）。
+ *  与 AGENTS.md 同款幂等覆写：每次守护进程启动重写，手改会被重置。 */
+function butlerProjectConfig(): string {
+  const rules = [{ action: "skill", resource: "*", effect: "deny" }, { action: "skill", resource: "butler-*", effect: "allow" }];
+  return `${JSON.stringify({ $schema: "https://opencode.ai/config.json", permissions: rules }, null, 2)}\n`;
+}
+
+/** 守护进程初始化时调用：管家文件夹不存在则创建，写好人设（AGENTS.md）、技能白名单
+ *  （opencode.json）与独有技能（.opencode/skills/butler-*，幂等）。
  *  人设写进 AGENTS.md——opencode 会话（cwd = 这里）自动读取，CLI 引导的会话与
  *  页面续接的会话因此一致地以管家身份说话。 */
 export function ensureButlerDir(): string {
@@ -48,6 +93,17 @@ export function ensureButlerDir(): string {
 `, { mode: 0o600 });
   } catch {
     // 人设写失败不阻断：会话照常能开，只是少了口吻设定。
+  }
+  try {
+    writeFileSync(join(dir, "opencode.json"), butlerProjectConfig(), { mode: 0o600 });
+    for (const [id, skill] of BUTLER_SKILLS) {
+      const folder = join(dir, ".opencode", "skills", id);
+      if (!existsSync(folder)) mkdirSync(folder, { recursive: true, mode: 0o755 });
+      const frontmatter = `---\nname: ${skill.name}\ndescription: ${skill.description}\n---\n\n${skill.body}\n`;
+      writeFileSync(join(folder, "SKILL.md"), frontmatter, { mode: 0o600 });
+    }
+  } catch {
+    // 白名单写失败不阻断：会话照常能开，只是技能面退回环境默认（下轮启动再试）。
   }
   return dir;
 }

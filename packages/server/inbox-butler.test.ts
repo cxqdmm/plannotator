@@ -159,3 +159,32 @@ describe("the butler streaming chat", () => {
     expect(status).toBe(422);
   });
 });
+
+describe("the butler's skill whitelist (owner 2026-11-25「管家要有技能白名单」)", () => {
+  test("init writes the deny-all/allow-butler-* config and only butler-* skills of its own", () => {
+    const dir = butlerModule.ensureButlerDir();
+    // 项目级白名单：环境里的技能（主人的 ~/.claude/skills 等）全拒，只放行 butler-*。
+    const config = JSON.parse(readFileSync(join(dir, "opencode.json"), "utf8")) as {
+      permissions?: { action: string; resource: string; effect: string }[];
+    };
+    const skillRules = (config.permissions ?? []).filter((rule) => rule.action === "skill");
+    expect(skillRules).toEqual([
+      { action: "skill", resource: "*", effect: "deny" },
+      { action: "skill", resource: "butler-*", effect: "allow" },
+    ]);
+    // 独有技能落盘：ID 一律 butler-*，带 name/description（有 description 才会被发现）。
+    const skills = dir.split("/").pop();
+    expect(skills).not.toBe("");
+    const listing = readFileSync(join(dir, ".opencode", "skills", "butler-intake", "SKILL.md"), "utf8");
+    expect(listing).toContain("name: 需求受理");
+    expect(listing).toContain("description: ");
+    expect(readFileSync(join(dir, ".opencode", "skills", "butler-inbox-guide", "SKILL.md"), "utf8")).toContain("name: 收件箱向导");
+  });
+
+  test("the persona disowns ambient skills: only butler-* is its own（真模块的文本；本文件的 @plannotator/ai 是 mock）", async () => {
+    const real = (await import("@plannotator/ai/context")) as typeof import("@plannotator/ai/context");
+    const persona = real.buildButlerPrompt();
+    expect(persona).toContain("butler-*");
+    expect(persona).toContain("NOT yours");
+  });
+});
