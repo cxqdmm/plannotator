@@ -211,6 +211,26 @@ export function openCodeStreamSource(session: string): { host: "opencode"; db: s
   return { host: "opencode", db, session };
 }
 
+/** opencode 会话自己的工作目录（v2 库 `session.directory`）：库、表或行不在 → null（只读，绝不写它的库）。 */
+export function openCodeSessionDirectory(session: string): string | null {
+	const dir = openCodeDataDir();
+	if (!dir) return null;
+	let db: Database;
+	try {
+		db = new Database(join(dir, "opencode.db"), { readonly: true });
+	} catch {
+		return null;
+	}
+	try {
+		const row = db.query("SELECT directory FROM session WHERE id = ?").get(session) as { directory?: unknown } | null;
+		return typeof row?.directory === "string" && row.directory.trim() !== "" ? row.directory : null;
+	} catch {
+		return null;
+	} finally {
+		db.close();
+	}
+}
+
 /** opencode v2 库里该会话的全部条目，最旧在前（`i` 为全局序）。只读连接，绝不写它的库。 */
 export function openCodeStreamEntries(dbPath: string, session: string): StreamEntry[] {
   const db = new Database(dbPath, { readonly: true });

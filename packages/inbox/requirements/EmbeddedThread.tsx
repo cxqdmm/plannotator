@@ -56,6 +56,7 @@ export function EmbeddedThread({ threadId, fileId = null, artifacts: artifactsFi
       }}
       run={held.run ?? null}
       attachCommand={held.attach_command ?? null}
+      terminalCopy
       onToast={onToast as never}
       // 在工坊里看到即算已看（同收件箱 ThreadSlot 的 onSeen → seenOnSight，走同一个 /seen 端点）：
       // 会话行上的「新消息」标随之消失；列表本身由事件帧刷新，无需额外接线。

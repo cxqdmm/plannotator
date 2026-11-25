@@ -208,7 +208,7 @@ import { MessageBody } from '../parts/MessageBody/MessageBody';
 export { AckPill, MessageBody };
 export { routeSendAnnotations, sendTargetsOf, type SendTarget };
 
-export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, notice, thread: threadRead, threadSteps = null, codeReview = false, pullReview, machine = null, onMachineUpdate, onNewMessageWith, outbox = NO_OUTBOX, onDismissOutbox, sent, onQuestions, onSentRead, readPending = false, onPickSaves, onChanged, onTakenBack, draftChanged = 0, filesChanged = 0, draftSignal = null, filesSignal = null, onClose, file, onOpenFile, onOpenGuide, lookSeq, seenThrough = null, onSeen, covered = false, onScreenChange, row, drawn = null, onMarkRead, onMarkUnread, onAck, onAction, onArchive, pinned = false, onPin, priority, onSnooze, onUnsnooze, snoozeBlocked, replyRequest, onReplyOpened, shapeButton = null, onSide, onSideWords, replyWords = null, onReplyWordsTaken, replyPart = null, onReplyPartTaken, onToastGone, backLabel = '收件箱', cardChip, phone = false, stacked = false, fileStacked = false, namedFile = null, onOpenNamedFile, remote = false, onBackToList, onToast, linkOf, onInboxLink, fullFromSide = false, fullExitFile = null, landing = null, onLanded, artifacts: artifactsRoute = false, onArtifacts, links: linksRoute = false, onLinks, decide = null, threadAlone = false, fullSidebar = true, onFull, run: runLine, attachCommand = null, onRunChanged, openedWith = null, snoozeBack = null, agentContext = null, agentFilter = null, onAgentFilter, replyContexts, replyContextsTitle = '需求' }: ThreadPaneProps) {
+export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, notice, thread: threadRead, threadSteps = null, codeReview = false, pullReview, machine = null, onMachineUpdate, onNewMessageWith, outbox = NO_OUTBOX, onDismissOutbox, sent, onQuestions, onSentRead, readPending = false, onPickSaves, onChanged, onTakenBack, draftChanged = 0, filesChanged = 0, draftSignal = null, filesSignal = null, onClose, file, onOpenFile, onOpenGuide, lookSeq, seenThrough = null, onSeen, covered = false, onScreenChange, row, drawn = null, onMarkRead, onMarkUnread, onAck, onAction, onArchive, pinned = false, onPin, priority, onSnooze, onUnsnooze, snoozeBlocked, replyRequest, onReplyOpened, shapeButton = null, onSide, onSideWords, replyWords = null, onReplyWordsTaken, replyPart = null, onReplyPartTaken, onToastGone, backLabel = '收件箱', cardChip, phone = false, stacked = false, fileStacked = false, namedFile = null, onOpenNamedFile, remote = false, onBackToList, onToast, linkOf, onInboxLink, fullFromSide = false, fullExitFile = null, landing = null, onLanded, artifacts: artifactsRoute = false, onArtifacts, links: linksRoute = false, onLinks, decide = null, threadAlone = false, fullSidebar = true, onFull, run: runLine, attachCommand = null, terminalCopy = false, onRunChanged, openedWith = null, snoozeBack = null, agentContext = null, agentFilter = null, onAgentFilter, replyContexts, replyContextsTitle = '需求' }: ThreadPaneProps) {
   /**
    * The questions this pane's own saves brought back (by `<message id>/<key>`), and how many saves landed. The thread
    * drawn is the one read, its questions never older than these: a read that left before the last keys were saved
@@ -259,6 +259,32 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
     : undefined;
   // While the agent rests there is no line: the attach command still comes with the thread (a phone has no Open in Terminal).
   const attach = runLine?.attach_command ?? attachCommand;
+  // 工坊会话详情的「复制在终端打开」（terminalCopy 开，收件箱自己的面板不取不画）：命令由服务端按会话
+  // 现在的宿主给（claude-code `claude --resume`；opencode 先 cd 会话目录），会话在别的机器上时由那台机器
+  // 回答。取不到（不是引擎会话、宿主不认）就没有这个图标，工具栏不空占一位。
+  const [terminalCommand, setTerminalCommand] = useState<string | null>(null);
+  const [terminalCopied, setTerminalCopied] = useState(false);
+  useEffect(() => {
+    if (!terminalCopy) return;
+    let alive = true;
+    setTerminalCommand(null);
+    setTerminalCopied(false);
+    inboxApi.terminal(thread.thread_id)
+      .then((answer) => { if (alive) setTerminalCommand(answer.command); })
+      .catch(() => { if (alive) setTerminalCommand(null); });
+    return () => { alive = false; };
+  }, [terminalCopy, thread.thread_id]);
+  const copyTerminal = terminalCommand === null
+    ? null
+    : () => {
+        void copyTextToClipboard(terminalCommand).then((ok) => {
+          onToast?.(ok ? { icon: 'check', lead: '已复制', detail: '在终端打开的命令' } : { icon: 'warn', lead: '未复制' });
+          if (ok) {
+            setTerminalCopied(true);
+            setTimeout(() => setTerminalCopied(false), 1800);
+          }
+        });
+      };
   // Terminal is on the Inbox's computer: never from a phone or the tailnet, and only with a session or a refused folder.
   // Not for another machine's thread either (remote launch): its Terminal is on that machine; Copy attach command is the way in.
   const openTerminal = launched && !phone && remote !== true && !machine && (launched.session_ref || runLine?.untrusted) ? () => void launchAct(() => inboxApi.launchOpen(launched.id)) : null;
@@ -4848,6 +4874,20 @@ export function ThreadPane({ inReviews = false, reviewView = null, onInReviews, 
               >
                 <HostMark host={streamHost} />
               </button>
+            )}
+            {/* 复制在终端打开（工坊会话详情，terminalCopy 开）：图标在对话流之后、产物之前，产物视图里不画。 */}
+            {copyTerminal !== null && !artifactsOn && (
+              <Tip content="复制在终端打开会话的命令">
+                <button
+                  type="button"
+                  className="ib-iconbtn"
+                  aria-label="复制在终端打开会话的命令"
+                  data-terminal-copy={terminalCopied ? 'copied' : ''}
+                  onClick={copyTerminal}
+                >
+                  <Icon name={terminalCopied ? 'check' : 'terminal'} size={16} />
+                </button>
+              </Tip>
             )}
             {artifactsButton && (
               <Tip content={withShortcut(artifactsOn ? '返回会话' : linksOnly ? '链接' : '产物：此会话中的每个文件、图片和引导式评审', { scope: inboxThreadShortcuts, action: 'artifacts' })}>

@@ -359,6 +359,13 @@ export interface ThreadModel {
   attach_command?: string | null;
 }
 
+/** 工坊会话详情的「在终端打开」：可直接粘贴的命令（按宿主：claude --resume；opencode 先 cd 会话目录）。 */
+export interface ThreadTerminal {
+  command: string;
+  /** opencode 的会话目录（命令里的 cd）；claude-code 无目录：null。 */
+  dir: string | null;
+}
+
 export interface ReplyResult {
   reply: unknown;
   questions: InboxQuestion[];
@@ -1484,6 +1491,8 @@ export const inboxApi = {
   /** `signal`: the person moved on to another thread before it answered; the read is given up (an AbortError). */
   thread: (threadId: string, timeoutMs?: number, signal?: AbortSignal) =>
     (timeoutMs === undefined ? get<ThreadModel>(threadUrl(threadId), signal) : getWithin<ThreadModel>(threadUrl(threadId), timeoutMs, signal)).then((model) => threadModelOf(threadId, model)),
+  /** 会话详情的「在终端打开」命令（工坊，按宿主区分；已启动的会话用运行线的命令）。404＝这个会话没有。 */
+  terminal: (threadId: string) => get<ThreadTerminal>(threadUrl(threadId, '/terminal')),
   /** `store=0`: without the Storage sizes (the server sends them only to a page older than `storage()`). */
   settings: () => get<SettingsModel>(inboxUrl('/settings', 'store=0')),
   /** Settings → Storage's sizes, asked for only while that panel is shown (the server walks every file for them). Given up after STORAGE_READ_MS. */

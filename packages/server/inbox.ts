@@ -261,6 +261,7 @@ import { createInboxReplyDrafts } from "./inbox-reply-drafts";
 import { createInboxCommentDrafts } from "./inbox-comment-drafts";
 import { createInboxTakeBack } from "./inbox-take-back";
 import { createInboxAsk } from "./inbox-ask";
+import { createInboxSessionTerminalRoute } from "./inbox-session-attach";
 import { createInboxStreamRoute, streamSourceOf } from "./inbox-stream";
 import { Butler } from "./inbox-butler";
 import type { InboxAskTimes } from "./inbox-ask-live";
@@ -5007,6 +5008,8 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
   const threadTags = createInboxThreadTags({ store, serverSession, readBody: (req) => readBody(req), json });
   // 会话「对话流」 (packages/server/inbox-stream.ts): the thread's Claude Code transcript, read for the window.
   const stream = createInboxStreamRoute({ store, environment: () => agentEnvironment, json });
+  // 工坊会话详情的「在终端打开」命令 (packages/server/inbox-session-attach.ts): the thread's own session, by host.
+  const sessionTerminal = createInboxSessionTerminalRoute({ store, attachOf: (threadId) => launch.attachOf(threadId), json });
   // Pinned artifacts and the Artifacts wall (packages/server/inbox-artifact-pins.ts).
   const artifactPins = createInboxArtifactPins({ store, serverSession, readBody: (req) => readBody(req), json });
   // Icon sets for agents' icons ("Sets": built in, or fetched into the data folder on one click; inbox-icon-sets.ts).
@@ -6740,6 +6743,9 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
       // 会话「对话流」 (inbox-stream.ts): the thread's Claude Code transcript, the owner's window only.
       const streamed = await stream.route(req, url);
       if (streamed) return streamed;
+      // 工坊会话详情的「在终端打开」 (inbox-session-attach.ts): the paste-able command, the owner's window only.
+      const terminalOpened = await sessionTerminal.route(req, url);
+      if (terminalOpened) return terminalOpened;
       // Pins (approval "inbox-pinned-threads"): pin, unpin and the order of the sidebar's pinned threads.
       const pinned = await pins.route(req, url);
       if (pinned) return pinned;

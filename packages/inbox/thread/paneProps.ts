@@ -106,6 +106,11 @@ export interface ThreadPaneProps {
   decide?: OpenQuestionsDecide | null;
   run?: InboxRun | null;
   attachCommand?: string | null;
+  /**
+   * 工坊会话详情专属：工具栏的「复制在终端打开」图标（按宿主给命令：claude-code `claude --resume`，
+   * opencode 先 `cd` 会话目录；已启动的会话用运行线的命令）。Absent（收件箱自己的面板），不取不画。
+   */
+  terminalCopy?: boolean;
   onRunChanged?: () => void;
   openedWith?: ReadonlySet<string> | null;
   /**
