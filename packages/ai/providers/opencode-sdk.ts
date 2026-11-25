@@ -226,7 +226,7 @@ export class OpenCodeProvider implements AIProvider {
 		});
 	}
 
-	async resumeSession(sessionId: string): Promise<AISession> {
+	async resumeSession(sessionId: string, systemPrompt?: string): Promise<AISession> {
 		await this.ensureServer();
 		const client = this.getClient();
 
@@ -235,7 +235,7 @@ export class OpenCodeProvider implements AIProvider {
 
 		return new OpenCodeSession({
 			sessionId,
-			systemPrompt: null,
+			systemPrompt: systemPrompt ?? null,
 			client,
 			model: undefined,
 			parentSessionId: null,

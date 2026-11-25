@@ -16,7 +16,19 @@
 import { mkdirSync, existsSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { createProvider } from "@plannotator/ai";
+import { spawn } from "node:child_process";
+import { createProvider, buildButlerPrompt } from "@plannotator/ai";
+
+/** 主人 opencode.json 里的默认模型（`glm/glm-5.3-flash` 之类），读不到给 null。 */
+function readOpencodeDefaultModel(): string | null {
+  try {
+    const config = JSON.parse(readFileSync(join(homedir(), ".config", "opencode", "opencode.json"), "utf8")) as { model?: unknown };
+    return typeof config.model === "string" && config.model ? config.model : null;
+  } catch (error) {
+    console.error("[debug] 读模型失败:", String(error));
+    return null;
+  }
+}
 
 /** 管家的家：`~/plannotator-butler/`。测试与开发用 `PLANNOTATOR_BUTLER_DIR` 沙箱
  *  （与 PLANNOTATOR_DATA_DIR 同款模式），避免测试写进真实的管家文件夹。 */
@@ -44,6 +56,15 @@ export class Butler {
   private readonly dir = butlerDir();
   private readonly historyPath = join(this.dir, "history.jsonl");
   private readonly statePath = join(this.dir, "state.json");
+  /** 测试注入：bootstrap 用的 CLI 路径（默认 PATH 上的 opencode）。 */
+  private readonly bootstrapBin: string;
+  /** bootstrap 回合用的模型（主人的 opencode.json 默认模型）；测试可注入。 */
+  private readonly model: string | null;
+
+  constructor(options: { bootstrapBin?: string; model?: string } = {}) {
+    this.model = options.model ?? readOpencodeDefaultModel();
+    this.bootstrapBin = options.bootstrapBin ?? (Bun.which("opencode") ?? "opencode");
+  }
 
   /** 初始化（守护进程启动时调用）：管家文件夹就绪。 */
   init(): void {
@@ -98,30 +119,53 @@ export class Butler {
     }
   }
 
-  /** 管家的大脑：opencode 提供者的一个会话（cwd = 总管文件夹）。跨守护进程重启：
-   *  state.json 里存着上次的 opencode 会话 id，优先 resumeSession 续接同一份对话。 */
+  /** 管家的大脑：一个**固定 id 的真 opencode 会话**（终端 `opencode -s <id>` 可打开同一
+   *  份对话；cwd = 总管文件夹）。跨守护进程重启：state.json 存着会话 id，优先续接；
+   *  会话不存在（首次/被清理）时用 CLI bootstrap 一次（CLI 能建会话，serve 不能）。 */
   private async brain(): Promise<import("@plannotator/ai").AISession> {
     if (this.brainSession) return this.brainSession;
+    const opencodePath = Bun.which("opencode") ?? "opencode";
     // 提供者工厂靠模块导入的副作用注册（ai-runtime 同款）：先导入再建。
     await import("@plannotator/ai/providers/opencode-sdk");
-    const opencodePath = Bun.which("opencode");
     const provider = await createProvider({
       type: "opencode-sdk",
       cwd: this.dir,
       ...(opencodePath ? { opencodeExecutablePath: opencodePath } : {}),
     } as never);
-    const priorId = this.priorSessionId();
+    let priorId = this.priorSessionId();
     if (priorId) {
       try {
-        this.brainSession = await provider.resumeSession(priorId);
+        this.brainSession = await provider.resumeSession(priorId, buildButlerPrompt());
         return this.brainSession;
       } catch {
-        // 会话没了（存储清理等）：开新会话。
+        // 会话没了（存储清理等）：重新 bootstrap。
       }
     }
-    const session = await provider.createSession({ context: { mode: "butler" } });
-    this.persistSessionId(session.id);
-    this.brainSession = session;
+    // Bootstrap：CLI 起一次管家会话（CLI 能建会话，serve 不能）——固定 id，一次性回合。
+    priorId = `ses_butler${Math.random().toString(36).slice(2, 10)}`;
+    // 模型显式带上主人的默认配置：CLI run 不带 --model 会落到 opencode 的免费默认
+    // 模型，额度耗尽时退出 1（现场事故 2026-11-24：Free usage limit reached）。
+    const model = readOpencodeDefaultModel();
+    const bootstrap = spawn(
+      opencodePath,
+      [
+        "run", "--standalone", "--session", priorId,
+        ...(model ? ["--model", model] : []),
+        "（管家就位，等待主人吩咐。）",
+      ],
+      { cwd: this.dir, env: { ...process.env }, timeout: 120_000, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] },
+    );
+    await new Promise<void>((resolve, reject) => {
+      let stderrTail = "";
+      bootstrap.stderr?.on("data", (chunk: Buffer) => { stderrTail = (stderrTail + String(chunk)).slice(-400); });
+      bootstrap.on("error", reject);
+      bootstrap.on("close", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`管家会话初始化失败（退出码 ${code}）${stderrTail ? `：${stderrTail}` : ""}`));
+      });
+    });
+    this.persistSessionId(priorId);
+    this.brainSession = await provider.resumeSession(priorId, buildButlerPrompt());
     return this.brainSession;
   }
 

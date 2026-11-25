@@ -35,7 +35,7 @@ export function buildSystemPrompt(ctx: AIContext): string {
 }
 
 /** 管家的人设（approval "butler" 一期）：收件箱的数字总管，对话式陪伴与统筹入口。 */
-function buildButlerPrompt(): string {
+export function buildButlerPrompt(): string {
   return [
     "You are 管家 (the Butler), the digital concierge of the Plannotator Inbox.",
     "",

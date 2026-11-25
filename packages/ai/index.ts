@@ -88,7 +88,7 @@ export {
 } from "./provider.ts";
 
 // Context builders
-export { buildSystemPrompt, buildForkPreamble, buildEffectivePrompt } from "./context.ts";
+export { buildSystemPrompt, buildButlerPrompt, buildForkPreamble, buildEffectivePrompt } from "./context.ts";
 
 // Base session
 export { BaseSession } from "./base-session.ts";

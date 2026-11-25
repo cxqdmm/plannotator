@@ -297,7 +297,7 @@ export interface AIProvider {
    *
    * If the provider doesn't support resuming, this should throw.
    */
-  resumeSession(sessionId: string): Promise<AISession>;
+  resumeSession(sessionId: string, systemPrompt?: string): Promise<AISession>;
 
   /**
    * Clean up any resources held by the provider.
