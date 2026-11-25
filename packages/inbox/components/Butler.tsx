@@ -253,16 +253,12 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                 </button>
               </Tip>
             </div>
-            <div className="ib-butler-mast">
-              <span className="ib-butler-avatar ib-butler-avatar-live">
-                <ButlerCharacter size={40} mood={pending ? 'working' : sessionCopy === 'copied' ? 'happy' : 'idle'} />
-                <span className="ib-butler-presence" aria-hidden="true" />
-              </span>
-              <span className="ib-butler-id">
-                <span className="ib-butler-name">管家</span>
-                <span className="ib-butler-role">数字总管 · 随时吩咐</span>
-              </span>
-            </div>
+            {/* 顶部只有悬浮的数字形象（owner 2026-11-25「顶部只有一个悬浮的数字形象，
+                不要整体的header头部了」）：无条带无字，慢慢上下浮，底下投影随之收放。 */}
+            <span className="ib-butler-avatar" title="管家">
+              <ButlerCharacter size={56} mood={pending ? 'working' : sessionCopy === 'copied' ? 'happy' : 'idle'} />
+              <span className="ib-butler-presence" aria-hidden="true" />
+            </span>
           </div>
           <div className="ib-butler-list" ref={listRef}>
             {turns.length === 0 && !pending ? (
