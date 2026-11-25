@@ -2090,6 +2090,10 @@ function Inbox() {
   // the browser's Back when the page was opened from there (history.ts), a new entry otherwise.
   const whatsNewReturn = useRef('');
   if (route.page !== 'settings' && route.page !== 'whats-new' && route.page !== 'tour') whatsNewReturn.current = hashOf(route);
+  // 管家页（#butler，owner 2026-11-25「管家是一个单独的页面」）关掉时回到来时的那屏；
+  // 管家自身不记（从管家回不到管家）。
+  const butlerReturn = useRef('');
+  if (route.page !== 'butler') butlerReturn.current = hashOf(route);
   /**
    * Back from Settings or What's new to where the person was (‹ Inbox, Escape), focus on what is there: an open
    * file's pane, else the open thread's row, else its subject, else the first row (never left on the page as the
@@ -5962,7 +5966,7 @@ function Inbox() {
             />
           ) : (
           <Sidebar
-            page={route.page === 'tour' ? 'inbox' : fromCard ? 'board' : route.reviews ? 'reviews' : route.page}
+            page={route.page === 'tour' || route.page === 'butler' ? 'inbox' : fromCard ? 'board' : route.reviews ? 'reviews' : route.page}
             projectId={route.project}
             machineId={route.page === 'inbox' ? (filterMachine?.id ?? null) : null}
             agentFilter={filterAgent ? { id: filterAgent.id, name: filterAgent.name } : null}
@@ -6658,8 +6662,15 @@ function Inbox() {
         />
       )}
     {/* 管家画在 .pn-inbox 门内：图标的尺寸与描边样式（.pn-inbox svg.ib-ic）出不了这个根，
-        挂在根外时右上角的复制/关闭按钮会塌成 0×0——面板本身 fixed，进门不改变几何。 */}
-    <Butler />
+        挂在根外时右上角的复制/关闭按钮会塌成 0×0——面板本身 fixed，进门不改变几何。
+        开着由路由管（#butler 是一页，刷新与 Back 都守页面语义），关掉回来时的那屏。 */}
+    <Butler
+      open={route.page === 'butler'}
+      onOpenChange={(next) => {
+        if (next) go({ page: 'butler', project: null, thread: null });
+        else go(routeOf(butlerReturn.current));
+      }}
+    />
     </div>
     </SideButtonContext.Provider>
     </ThreadTagsContext.Provider>

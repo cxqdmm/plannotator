@@ -34,8 +34,16 @@ interface ButlerTurn {
   text: string;
 }
 
-export function Butler() {
-  const [open, setOpen] = useState(false);
+export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpenChange?: (open: boolean) => void } = {}) {
+  // 开着不由内存丢（owner 2026-11-25「管家是一个单独的页面…现在一刷新就不见了」）：
+  // 传入 open/onOpenChange 时由路由管（#butler，App 写地址），否则本地内存（旧行为）。
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = (value: boolean | ((current: boolean) => boolean)) => {
+    const next = typeof value === 'function' ? value(open) : value;
+    if (onOpenChange) onOpenChange(next);
+    else setOpenState(next);
+  };
   const [turns, setTurns] = useState<ButlerTurn[]>([]);
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState(false);
