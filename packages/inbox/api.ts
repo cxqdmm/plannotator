@@ -2235,6 +2235,47 @@ export const inboxApi = {
   askRead: (threadId: string) => get<InboxAskModel>(inboxUrl(`/threads/${threadId}/ask`)),
   /** 管家：发一条消息，返回管家的回复（approval "butler" 一期）。 */
   butlerChat: (message: string) => post<{ reply: string }>(inboxUrl('/butler/chat'), { message }),
+  /** 流式一问（v3，owner 2026-11-25「像 web 版一样」）：增量经 onDelta 实时出去，返回全文。 */
+  butlerChatStream: async (message: string, onDelta: (delta: string) => void): Promise<string> => {
+    const response = await fetch(inboxUrl('/butler/chat'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+      body: JSON.stringify(pageSession ? { message, serverSession: pageSession } : { message }),
+    });
+    if (!response.ok || !response.body) {
+      const detail = await response.text().catch(() => '');
+      throw new Error(detail || `管家没有返回流（${response.status}）。`);
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let reply = '';
+    let failure: string | null = null;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let split: number;
+      while ((split = buffer.indexOf('\n\n')) >= 0) {
+        const frame = buffer.slice(0, split);
+        buffer = buffer.slice(split + 2);
+        if (!frame.startsWith('data: ')) continue;
+        try {
+          const payload = JSON.parse(frame.slice(6)) as { delta?: string; done?: boolean; reply?: string; error?: string };
+          if (typeof payload.delta === 'string') {
+            reply += payload.delta;
+            onDelta(payload.delta);
+          }
+          if (typeof payload.reply === 'string') reply = payload.reply;
+          if (payload.error) failure = payload.error;
+        } catch {
+          // 不是 JSON 的帧：跳过。
+        }
+      }
+    }
+    if (failure) throw new Error(failure);
+    return reply;
+  },
   /** 管家：对话历史（最旧在前），用于管家界面的初始渲染。 */
   butlerHistory: () => get<{ history: { at: string; role: 'you' | 'butler'; text: string }[] }>(inboxUrl('/butler/history')),
   askSend: (threadId: string, turnId: string, question: string, showMe?: InboxShowMeAsk, source?: string) =>

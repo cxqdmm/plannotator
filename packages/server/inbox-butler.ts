@@ -18,8 +18,11 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { createProvider } from "@plannotator/ai";
 
-/** 管家的家：`~/plannotator-butler/`。 */
+/** 管家的家：`~/plannotator-butler/`。测试与开发用 `PLANNOTATOR_BUTLER_DIR` 沙箱
+ *  （与 PLANNOTATOR_DATA_DIR 同款模式），避免测试写进真实的管家文件夹。 */
 export function butlerDir(): string {
+  const override = process.env.PLANNOTATOR_BUTLER_DIR?.trim();
+  if (override) return override;
   return join(homedir(), "plannotator-butler");
 }
 
@@ -40,6 +43,7 @@ export class Butler {
   private brainSession: import("@plannotator/ai").AISession | null = null;
   private readonly dir = butlerDir();
   private readonly historyPath = join(this.dir, "history.jsonl");
+  private readonly statePath = join(this.dir, "state.json");
 
   /** 初始化（守护进程启动时调用）：管家文件夹就绪。 */
   init(): void {
@@ -56,6 +60,24 @@ export class Butler {
         .map((line) => JSON.parse(line) as ButlerTurn);
     } catch {
       return [];
+    }
+  }
+
+  /** 上次管家的 opencode 会话 id（跨守护进程重启延续对话）。 */
+  private priorSessionId(): string | null {
+    try {
+      const state = JSON.parse(readFileSync(this.statePath, "utf8")) as { sessionId?: unknown };
+      return typeof state.sessionId === "string" && state.sessionId ? state.sessionId : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private persistSessionId(sessionId: string): void {
+    try {
+      writeFileSync(this.statePath, `${JSON.stringify({ sessionId })}\n`, { mode: 0o600 });
+    } catch {
+      // 状态写失败不阻断对话（管家照常回，只是重启后开新会话）。
     }
   }
 
@@ -76,7 +98,8 @@ export class Butler {
     }
   }
 
-  /** 管家的大脑：opencode 提供者的一个会话（cwd = 总管文件夹；本进程持有，进程内延续）。 */
+  /** 管家的大脑：opencode 提供者的一个会话（cwd = 总管文件夹）。跨守护进程重启：
+   *  state.json 里存着上次的 opencode 会话 id，优先 resumeSession 续接同一份对话。 */
   private async brain(): Promise<import("@plannotator/ai").AISession> {
     if (this.brainSession) return this.brainSession;
     // 提供者工厂靠模块导入的副作用注册（ai-runtime 同款）：先导入再建。
@@ -87,7 +110,18 @@ export class Butler {
       cwd: this.dir,
       ...(opencodePath ? { opencodeExecutablePath: opencodePath } : {}),
     } as never);
-    this.brainSession = await provider.createSession({ context: { mode: "butler" } });
+    const priorId = this.priorSessionId();
+    if (priorId) {
+      try {
+        this.brainSession = await provider.resumeSession(priorId);
+        return this.brainSession;
+      } catch {
+        // 会话没了（存储清理等）：开新会话。
+      }
+    }
+    const session = await provider.createSession({ context: { mode: "butler" } });
+    this.persistSessionId(session.id);
+    this.brainSession = session;
     return this.brainSession;
   }
 
@@ -98,6 +132,26 @@ export class Butler {
       if (msg.type === "text") reply += msg.text;
       else if (msg.type === "text_delta") reply += msg.delta;
       else if (msg.type === "error") throw new Error(msg.error ?? "管家这会儿没法回答。");
+    }
+    const trimmed = reply.trim();
+    if (!trimmed) throw new Error("the butler gave no answer");
+    return trimmed;
+  }
+
+  /** 流式一问：增量经 onDelta 出去，返回全文（历史照记）。 */
+  private async askButlerStream(message: string, onDelta: (delta: string) => void): Promise<string> {
+    const session = await this.brain();
+    let reply = "";
+    for await (const msg of session.query(message)) {
+      if (msg.type === "text") {
+        reply += msg.text;
+        onDelta(msg.text);
+      } else if (msg.type === "text_delta") {
+        reply += msg.delta;
+        onDelta(msg.delta);
+      } else if (msg.type === "error") {
+        throw new Error(msg.error ?? "管家这会儿没法回答。");
+      }
     }
     const trimmed = reply.trim();
     if (!trimmed) throw new Error("the butler gave no answer");
@@ -120,18 +174,31 @@ export class Butler {
   private async chatRoute(req: Request): Promise<Response> {
     let message = "";
     try {
-      const body = (await req.json()) as { message?: unknown };
+      const body = (await req.json()) as { message?: unknown; stream?: unknown };
       message = typeof body.message === "string" ? body.message.trim() : "";
     } catch {
       message = "";
     }
     if (!message) return Response.json({ error: "message: 要对管家说的话不能为空。" }, { status: 422 });
-    let reply: string;
-    try {
-      reply = await this.chat(message);
-    } catch (error) {
-      return Response.json({ error: error instanceof Error ? error.message : String(error) }, { status: 502 });
-    }
-    return Response.json({ reply });
+    // 流式（v3，owner 2026-11-25「像 web 版一样」）：SSE 增量 + 终帧；流中断历史照记。
+    let reply = "";
+    const stream = new ReadableStream<Uint8Array>({
+      start: async (controller) => {
+        const send = (payload: Record<string, unknown>) =>
+          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(payload)}\n\n`));
+        try {
+          this.appendHistory({ at: new Date().toISOString(), role: "you", text: message });
+          reply = await this.askButlerStream(message, (delta) => send({ delta }));
+          this.appendHistory({ at: new Date().toISOString(), role: "butler", text: reply });
+          send({ done: true, reply });
+        } catch (error) {
+          send({ error: error instanceof Error ? error.message : String(error) });
+        }
+        controller.close();
+      },
+    });
+    return new Response(stream, {
+      headers: { "content-type": "text/event-stream", "cache-control": "no-cache" },
+    });
   }
 }

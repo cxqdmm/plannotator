@@ -58,12 +58,33 @@ export function Butler() {
     setDraft('');
     setTurns((current) => [...current, { at: new Date().toISOString(), role: 'you', text: message }]);
     setPending(true);
+    // 流式（v3，owner 2026-11-25「像 web 版一样」）：管家的回复随增量生长。
+    const streamAt = new Date().toISOString();
+    setTurns((current) => [...current, { at: streamAt, role: 'butler', text: '' }]);
     try {
-      const answer = await inboxApi.butlerChat(message);
-      setTurns((current) => [...current, { at: new Date().toISOString(), role: 'butler', text: answer.reply }]);
+      const reply = await inboxApi.butlerChatStream(message, (delta) => {
+        setTurns((current) => {
+          const next = [...current];
+          const last = next[next.length - 1]!;
+          next[next.length - 1] = { ...last, text: last.text + delta };
+          return next;
+        });
+      });
+      setTurns((current) => {
+        const next = [...current];
+        const last = next[next.length - 1]!;
+        next[next.length - 1] = { ...last, at: new Date().toISOString(), text: reply };
+        return next;
+      });
     } catch (error) {
       const why = error instanceof Error ? error.message : String(error);
-      setTurns((current) => [...current, { at: new Date().toISOString(), role: 'butler', text: `（管家没能回答：${why}）` }]);
+      setTurns((current) => {
+        const next = [...current];
+        const last = next[next.length - 1]!;
+        return last.role === 'butler' && last.text === ''
+          ? [...next.slice(0, -1), { ...last, text: `（管家没能回答：${why}）` }]
+          : [...next, { at: new Date().toISOString(), role: 'butler' as const, text: `（管家没能回答：${why}）` }];
+      });
     } finally {
       setPending(false);
     }
