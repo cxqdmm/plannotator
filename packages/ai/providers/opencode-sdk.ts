@@ -281,8 +281,14 @@ export class OpenCodeProvider implements AIProvider {
 		await this.ensureServer();
 		const client = this.getClient();
 
-		// Verify session exists
-		await client.session.get({ path: { id: sessionId } });
+		// Verify session exists — and really verify it: the SDK answers a miss in `error` instead of throwing
+		// (as createSession reads its own answer), so an id whose session is gone must be refused HERE. A
+		// handle resumed past a dead id looks fine and then refuses every prompt ("Invalid session ID"), and
+		// the caller that would have started a fresh session never learns it should.
+		const existing = await client.session.get({ path: { id: sessionId } });
+		if (!existing.data) {
+			throw new Error(`OpenCode session ${sessionId} does not exist${existing.error ? `: ${JSON.stringify(existing.error)}` : "."}`);
+		}
 
 		return new OpenCodeSession({
 			sessionId,

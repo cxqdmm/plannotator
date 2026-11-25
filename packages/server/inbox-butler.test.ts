@@ -13,6 +13,8 @@ import { join } from "node:path";
 
 const created: string[] = [];
 const resumed: string[] = [];
+/** 会话 id 在 opencode 侧已经不存在（模拟存储被清理/别的装机留下的 state.json）。 */
+const staleIds = new Set<string>();
 
 mock.module("@plannotator/ai", () => ({
   buildButlerPrompt: () => "你是管家（测试 persona）。",
@@ -24,18 +26,20 @@ mock.module("@plannotator/ai", () => ({
     },
     resumeSession: async (id: string) => {
       resumed.push(id);
-      return fakeSession(id);
+      return fakeSession(id, staleIds.has(id));
     },
   }),
 }));
 
-function fakeSession(id: string) {
+function fakeSession(id: string, stale = false) {
   return {
     id,
     parentSessionId: null,
     abort() {},
     // 回声回合：把提示原样带回来，方便断言注入的正是原话。
     query: async function* (prompt: string, options?: { files?: { name: string; mime: string; dataUrl: string }[] }) {
+      // 续接拿到了句柄、prompt 才被拒（opencode 的真实形态：400 Invalid session ID）。
+      if (stale) throw new Error('OpenCode rejected prompt: OpenCode prompt refused (400): {"message":"Invalid session ID","field":"sessionID"}');
       const inline = (options?.files ?? []).map((file) => `[file ${file.name}]`).join(",");
       yield { type: "text", text: `回复：${prompt}${inline ? ` | 内联:${inline}` : ""}` };
     },
@@ -49,6 +53,7 @@ let butlerModule: typeof import("./inbox-butler");
 beforeEach(async () => {
   created.length = 0;
   resumed.length = 0;
+  staleIds.clear();
   home = mkdtempSync(join(tmpdir(), "plannotator-butler-home-"));
   process.env.PLANNOTATOR_BUTLER_DIR = join(home, "plannotator-butler");
   const binDir = mkdtempSync(join(tmpdir(), "plannotator-butler-bin-"));
@@ -123,6 +128,24 @@ describe("the butler streaming chat", () => {
     expect(resumed).toEqual([state.sessionId, state.sessionId]);
   });
 
+  // Windows 上整个文件的 bootstrap 都走不起来：假 CLI 是无扩展名的 `#!/bin/sh` 脚本，Windows 不能直接
+  // spawn（既有夹具限制，本文件其余用例同样如此）；自愈逻辑本身与平台无关，macOS/Linux 上跑这条。
+  test.skipIf(process.platform === "win32")("a recorded id whose session is gone self-heals: dropped, bootstrapped fresh, and the reply still lands", async () => {
+    // 现场事故 2026-11-26：state.json 里留着一个 opencode 已不认的 id，管家每句话都 400、永不恢复。
+    mkdirSync(join(home, "plannotator-butler"), { recursive: true });
+    writeFileSync(join(home, "plannotator-butler", "state.json"), `${JSON.stringify({ sessionId: "dead-session" })}\n`);
+    staleIds.add("dead-session");
+    const butler = await loadButler(fakeBin);
+    const { frames } = await chat(butler, "你好");
+    expect(frames.some((f) => typeof f.error === "string")).toBe(false);
+    expect(frames.find((f) => f.done === true)).toBeDefined();
+    // 先按记录的 id 续接（被拒），再丢掉它起新会话；state.json 换成新 id。
+    expect(resumed[0]).toBe("dead-session");
+    const state = JSON.parse(readFileSync(join(home, "plannotator-butler", "state.json"), "utf8")) as { sessionId: string };
+    expect(state.sessionId).toStartWith("ses_butler");
+    expect(resumed.at(-1)).toBe(state.sessionId);
+  });
+
   test("the session route hands out the id and a paste-ready terminal command", async () => {
     const butler = await loadButler(fakeBin);
     butler.init();
@@ -135,7 +158,9 @@ describe("the butler streaming chat", () => {
     expect(response).not.toBeNull();
     const body = (await response!.json()) as { sessionId: string; dir: string; command: string };
     expect(body.sessionId).toStartWith("ses_butler");
-    expect(body.command).toBe(`cd '${body.dir}' && opencode -s '${body.sessionId}'`);
+    // 一条命令、不带 cd：opencode 自己收目录参数；引号按平台挑（Windows cmd/PowerShell 不认单引号）。
+    const quote = process.platform === "win32" ? (v: string) => `"${v}"` : (v: string) => `'${v}'`;
+    expect(body.command).toBe(`opencode -s ${quote(body.sessionId)} ${quote(body.dir)}`);
     const state = JSON.parse(readFileSync(join(home, "plannotator-butler", "state.json"), "utf8")) as { sessionId: string };
     expect(state.sessionId).toBe(body.sessionId);
   });

@@ -32,6 +32,13 @@ function readOpencodeDefaultModel(): string | null {
   }
 }
 
+/** 管家给主人复制的命令的引号：Windows（cmd/PowerShell）用双引号，其余平台用 POSIX
+ *  单引号（内含单引号走 `'\''`）。 */
+export function butlerShellQuote(platform: NodeJS.Platform): (value: string) => string {
+  if (platform === "win32") return (value) => `"${value}"`;
+  return (value) => `'${value.replace(/'/g, "'\\''")}'`;
+}
+
 /** 管家的家：`~/plannotator-butler/`。测试与开发用 `PLANNOTATOR_BUTLER_DIR` 沙箱
  *  （与 PLANNOTATOR_DATA_DIR 同款模式），避免测试写进真实的管家文件夹。 */
 export function butlerDir(): string {
@@ -215,15 +222,22 @@ export class Butler {
     }
   }
 
-  /** 管家会话的终端入口：会话 id 与在终端打开它的命令（首次会先起好会话）。 */
+  /**
+   * 管家会话的终端入口：会话 id 与在终端打开它的命令（首次会先起好会话）。
+   *
+   * opencode 自己收目录（positional `directory`），所以不用 `cd … &&`：一条命令在
+   * cmd、PowerShell、Git Bash、zsh 里原样可粘。引号按平台挑——cmd/PowerShell 不认
+   * POSIX 单引号（现场事故 2026-11-26：`cd 'C:\…'` 在 Windows 报「文件名、目录名或
+   * 卷标语法不正确」），Windows 一律双引号，其余平台保持单引号。
+   */
   async session(): Promise<{ sessionId: string; dir: string; command: string }> {
     const brain = await this.brain();
     this.persistSessionId(brain.id);
-    const quote = (value: string) => `'${value.replace(/'/g, "'\\''")}'`;
+    const quote = butlerShellQuote(process.platform);
     return {
       sessionId: brain.id,
       dir: this.dir,
-      command: `cd ${quote(this.dir)} && opencode -s ${quote(brain.id)}`,
+      command: `opencode -s ${quote(brain.id)} ${quote(this.dir)}`,
     };
   }
 
@@ -311,36 +325,57 @@ export class Butler {
   }
 
   private async askButler(message: string, files: ButlerStoredFile[] = []): Promise<string> {
-    const session = await this.brain();
-    let reply = "";
-    for await (const msg of session.query(`${message}${filesNoteOf(files)}`, butlerQueryFiles(files))) {
-      if (msg.type === "text") reply += msg.text;
-      else if (msg.type === "text_delta") reply += msg.delta;
-      else if (msg.type === "error") throw new Error(msg.error ?? "管家这会儿没法回答。");
+    return await this.askButlerStream(message, () => {}, files);
+  }
+
+  /**
+   * opencode 说这个会话 id 不存在（存储清理、重装、别的机器留下的 state.json）：
+   * 是「会话没了」，不是「这轮答不了」——丢掉记录的 id 重建一次即可，别让它把管家焊死。
+   * 现场事故 2026-11-26：Windows 上 state.json 留着一个 Mac/旧装留下的 id，每句话都 400。
+   */
+  private static staleSession(error: unknown): boolean {
+    const text = error instanceof Error ? error.message : String(error);
+    return /Invalid session ID|session .*does not exist|session not found|NotFoundError/i.test(text);
+  }
+
+  /** 忘掉记录的会话 id（下次 brain() 走 bootstrap 起新会话）。 */
+  private forgetSession(): void {
+    this.brainSession = null;
+    try {
+      writeFileSync(this.statePath, "{}\n", { mode: 0o600 });
+    } catch {
+      // 写不掉也没关系：进程内的 brainSession 已清空，这一次仍会重建。
     }
-    const trimmed = reply.trim();
-    if (!trimmed) throw new Error("the butler gave no answer");
-    return trimmed;
   }
 
   /** 流式一问：增量经 onDelta 出去，返回全文（历史照记）。 */
   private async askButlerStream(message: string, onDelta: (delta: string) => void, files: ButlerStoredFile[] = []): Promise<string> {
-    const session = await this.brain();
-    let reply = "";
-    for await (const msg of session.query(`${message}${filesNoteOf(files)}`, butlerQueryFiles(files))) {
-      if (msg.type === "text") {
-        reply += msg.text;
-        onDelta(msg.text);
-      } else if (msg.type === "text_delta") {
-        reply += msg.delta;
-        onDelta(msg.delta);
-      } else if (msg.type === "error") {
-        throw new Error(msg.error ?? "管家这会儿没法回答。");
+    const run = async (): Promise<string> => {
+      const session = await this.brain();
+      let reply = "";
+      for await (const msg of session.query(`${message}${filesNoteOf(files)}`, butlerQueryFiles(files))) {
+        if (msg.type === "text") {
+          reply += msg.text;
+          onDelta(msg.text);
+        } else if (msg.type === "text_delta") {
+          reply += msg.delta;
+          onDelta(msg.delta);
+        } else if (msg.type === "error") {
+          throw new Error(msg.error ?? "管家这会儿没法回答。");
+        }
       }
+      const trimmed = reply.trim();
+      if (!trimmed) throw new Error("the butler gave no answer");
+      return trimmed;
+    };
+    try {
+      return await run();
+    } catch (error) {
+      // 续接通过了、prompt 才被拒（会话在 resumed 之后被删）：自愈一次，不把错误抛给主人。
+      if (!Butler.staleSession(error)) throw error;
+      this.forgetSession();
+      return await run();
     }
-    const trimmed = reply.trim();
-    if (!trimmed) throw new Error("the butler gave no answer");
-    return trimmed;
   }
 
   /** 窗口专属（same-origin 才答）：管家路由。 */
