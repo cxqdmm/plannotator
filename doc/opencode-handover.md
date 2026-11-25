@@ -93,3 +93,11 @@
 3. 服务器重启清空内存会话注册表——一切判据避免依赖内存（用磁盘 claim/宽限期/v2 库）。
 4. 分析结论要用实测钉死再汇报——今天多次改口消耗了主人的信任。
 5. 主人的痛点描述是最高的需求输入：「未送达还在」「像转发不像对话」「选不到会话」——每一条都要正面回应，不要绕。
+
+## 七、后续更新（2026-11-25）
+
+opencode 2.3.0 服务 API 已摸清（`/api` 根 + Basic `opencode:<password>`；建会话 POST
+/api/session、回合 POST /api/session/{id}/prompt `{text}`、历史 GET .../message、事件
+GET /api/event）。管家真会话已打通（提交 b19960c87），`packages/ai/providers/opencode-sdk.ts`
+已适配 2.3 面并对旧宿主回退。事件流以 2.3 的 `session.text.delta` 命名接线；工具调用事件
+（session.tool.*）尚未映射——管家纯对话不依赖，二期补。
