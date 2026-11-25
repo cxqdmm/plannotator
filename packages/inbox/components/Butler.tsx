@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { copyTextToClipboard } from '@plannotator/ui/utils/clipboard';
 import { isImeCompositionKey } from '@plannotator/ui/utils/commentSubmitKey';
+import { chatMarkdownHtml } from '@plannotator/ui/components/chat';
 import { Tip } from '@plannotator/ui/components/inbox-thread/Tip';
 import { Icon } from '../icons';
 import { inboxApi } from '../api';
@@ -223,82 +224,124 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                 </button>
               </Tip>
             </div>
-            <div className="ib-butler-avatar ib-butler-avatar-live">
-              <ButlerBadge size={44} />
+            <div className="ib-butler-mast">
+              <span className="ib-butler-avatar ib-butler-avatar-live">
+                <ButlerBadge size={40} />
+                <span className="ib-butler-presence" aria-hidden="true" />
+              </span>
+              <span className="ib-butler-id">
+                <span className="ib-butler-name">管家</span>
+                <span className="ib-butler-role">数字总管 · 随时吩咐</span>
+              </span>
             </div>
-            <div className="ib-butler-name">管家</div>
           </div>
           <div className="ib-butler-list" ref={listRef}>
-            {turns.length === 0 && (
-              <p className="ib-butler-empty">您好，我是管家。有什么需要，请吩咐。</p>
-            )}
-            {turns.map((turn, index) => (
-              <div key={`${turn.at}-${index}`} className={`ib-butler-msg ib-butler-msg-${turn.role}`}>
-                {turn.files && turn.files.length > 0 && (
-                  <span className="ib-butler-files" aria-label="附件">
-                    <Icon name="clip" size={12} /> {turn.files.join('、')}
-                  </span>
+            {turns.length === 0 && !pending ? (
+              <div className="ib-butler-hero">
+                <span className="ib-butler-hero-badge">
+                  <ButlerBadge size={60} />
+                </span>
+                <h2 className="ib-butler-hero-word">{butlerGreeting()}</h2>
+                <p className="ib-butler-hero-sub">吩咐一声——我帮您把想法整理成需求卡片；真正动手，从卡片开启会话。</p>
+                <div className="ib-butler-ideas">
+                  {BUTLER_IDEAS.map((idea) => (
+                    <button
+                      key={idea}
+                      type="button"
+                      className="ib-butler-idea"
+                      onClick={() => {
+                        setDraft(idea);
+                        compoRef.current?.focus();
+                      }}
+                    >
+                      {idea}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                {turns.map((turn, index) => {
+                  // 管家的话按 markdown 画（ui 的净化渲染；流式中仍在长的最后一条保持纯文本，
+                  // 完成的那一刻成格式化——不做逐增量重排）。
+                  const streaming = pending && index === turns.length - 1 && turn.role === 'butler';
+                  const md = turn.role === 'butler' && !streaming && turn.text !== '' ? chatMarkdownHtml(turn.text) : null;
+                  return (
+                    <div key={`${turn.at}-${index}`} className={`ib-butler-msg ib-butler-msg-${turn.role}`}>
+                      {turn.files && turn.files.length > 0 && (
+                        <span className="ib-butler-files" aria-label="附件">
+                          <Icon name="clip" size={12} /> {turn.files.join('、')}
+                        </span>
+                      )}
+                      {md !== null ? <div className="ib-butler-md" dangerouslySetInnerHTML={{ __html: md }} /> : turn.text}
+                    </div>
+                  );
+                })}
+                {pending && (
+                  <div className="ib-butler-msg ib-butler-msg-butler ib-butler-typing" aria-label="管家正在回复">
+                    <span className="ib-butler-dots" aria-hidden="true">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                  </div>
                 )}
-                {turn.text}
-              </div>
-            ))}
-            {pending && (
-              <div className="ib-butler-msg ib-butler-msg-butler ib-butler-typing" aria-label="管家正在回复">
-                <span className="ib-spin" aria-hidden="true" />
-              </div>
+              </>
             )}
           </div>
           <div className="ib-butler-inputrow">
             {compoError && (
               <p className="ib-butler-compoerr" role="alert">{compoError}</p>
             )}
-            {pendingFiles.length > 0 && (
-              <div className="ib-butler-chips" aria-label="待发送附件">
-                {pendingFiles.map((file) => (
-                  <span key={file.id} className="ib-butler-chip">
-                    <Icon name={file.mime.startsWith('image/') ? 'artifacts' : 'doc'} size={12} />
-                    <span className="ib-butler-chip-name" dir="auto">{file.name}</span>
-                    <button type="button" className="ib-butler-chip-x" aria-label={`移除附件 ${file.name}`} onClick={() => dropFile(file.id)}>
-                      <Icon name="x" size={10} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-            <div className="ib-butler-entry">
-              <Tip content="添加附件（图片、文件）">
-                <button type="button" className="ib-butler-add" aria-label="添加附件" onClick={() => fileInputRef.current?.click()}>
-                  <Icon name="clip" size={15} />
-                </button>
-              </Tip>
-              <textarea
-                ref={compoRef}
-                className="ib-butler-input"
-                rows={2}
-                dir="auto"
-                placeholder="对管家说点什么…（可粘贴图片）"
-                value={draft}
-                disabled={pending}
-                onChange={(event) => setDraft(event.target.value)}
-                onPaste={(event) => {
-                  const files = takePastedFiles(event);
-                  if (files.length > 0) {
+            <div className="ib-butler-compo">
+              {pendingFiles.length > 0 && (
+                <div className="ib-butler-chips" aria-label="待发送附件">
+                  {pendingFiles.map((file) => (
+                    <span key={file.id} className="ib-butler-chip">
+                      <Icon name={file.mime.startsWith('image/') ? 'artifacts' : 'doc'} size={12} />
+                      <span className="ib-butler-chip-name" dir="auto">{file.name}</span>
+                      <button type="button" className="ib-butler-chip-x" aria-label={`移除附件 ${file.name}`} onClick={() => dropFile(file.id)}>
+                        <Icon name="x" size={10} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="ib-butler-entry">
+                <Tip content="添加附件（图片、文件）">
+                  <button type="button" className="ib-butler-add" aria-label="添加附件" onClick={() => fileInputRef.current?.click()}>
+                    <Icon name="clip" size={16} />
+                  </button>
+                </Tip>
+                <textarea
+                  ref={compoRef}
+                  className="ib-butler-input"
+                  rows={2}
+                  dir="auto"
+                  placeholder="对管家说点什么…（可粘贴图片）"
+                  value={draft}
+                  disabled={pending}
+                  onChange={(event) => setDraft(event.target.value)}
+                  onPaste={(event) => {
+                    const files = takePastedFiles(event);
+                    if (files.length > 0) {
+                      event.preventDefault();
+                      addFiles(files);
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    const enter = event.key === 'Enter';
+                    if (enter) event.stopPropagation();
+                    if (isImeCompositionKey(event) || !enter) return;
+                    if (event.shiftKey) return;
                     event.preventDefault();
-                    addFiles(files);
-                  }
-                }}
-                onKeyDown={(event) => {
-                  const enter = event.key === 'Enter';
-                  if (enter) event.stopPropagation();
-                  if (isImeCompositionKey(event) || !enter) return;
-                  if (event.shiftKey) return;
-                  event.preventDefault();
-                  if (!pending) void send();
-                }}
-              />
-              <button type="button" className="ib-butler-send" aria-label="发送" onClick={() => void send()} disabled={pending || (!draft.trim() && pendingFiles.length === 0)}>
-                发送
-              </button>
+                    if (!pending) void send();
+                  }}
+                />
+                <button type="button" className="ib-butler-send" aria-label="发送" onClick={() => void send()} disabled={pending || (!draft.trim() && pendingFiles.length === 0)}>
+                  {pending ? <span className="ib-spin" aria-hidden="true" /> : <ButlerSendGlyph />}
+                </button>
+              </div>
             </div>
             <input
               ref={fileInputRef}
@@ -316,5 +359,28 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
         </div>
       )}
     </>
+  );
+}
+
+/** 时辰问候：管家开口的第一句。 */
+function butlerGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 5) return '夜深了，管家在。';
+  if (hour < 11) return '早上好。';
+  if (hour < 13) return '中午好。';
+  if (hour < 18) return '下午好。';
+  return '晚上好。';
+}
+
+/** 起步的建议（点一下填进输入框）：都是管家真的做得到的事。 */
+const BUTLER_IDEAS: readonly string[] = ['帮我把一个想法整理成需求', '计划评审是怎么用的？', '代码评审的结论会去哪里？'];
+
+/** 发送键的回车箭头（会话流同款）。 */
+function ButlerSendGlyph() {
+  return (
+    <svg className="ib-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M19 5v6a4 4 0 0 1-4 4H5" />
+      <path d="M9 11l-4 4 4 4" />
+    </svg>
   );
 }

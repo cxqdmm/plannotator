@@ -101,4 +101,16 @@ if (hasDom) {
     await settle();
     expect(pane()).not.toBeNull();
   });
+
+  test('空场英雄态：问候 + 三条起步建议，点建议填进输入框', async () => {
+    await renderButler();
+    await act(async () => orb()!.click());
+    await settle();
+    expect(host!.querySelector('.ib-butler-hero')).not.toBeNull();
+    expect(host!.querySelector('.ib-butler-hero-word')!.textContent).not.toBe('');
+    const ideas = host!.querySelectorAll<HTMLButtonElement>('.ib-butler-idea');
+    expect(ideas.length).toBeGreaterThanOrEqual(3);
+    await act(async () => ideas[0]!.click());
+    expect(host!.querySelector<HTMLTextAreaElement>('.ib-butler-input')!.value).toBe(ideas[0]!.textContent);
+  });
 }
