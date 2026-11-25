@@ -7,6 +7,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { copyTextToClipboard } from '@plannotator/ui/utils/clipboard';
+import { Tip } from '@plannotator/ui/components/inbox-thread/Tip';
 import { Icon } from '../icons';
 import { inboxApi } from '../api';
 
@@ -41,6 +42,16 @@ export function Butler() {
   const [sessionCopy, setSessionCopy] = useState<'idle' | 'busy' | 'copied' | 'failed'>('idle');
   const listRef = useRef<HTMLDivElement>(null);
   const loadedRef = useRef(false);
+
+  // ESC 收回（与全屏面板的其它入口一致）。
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
 
   // 打开时读历史（一次；此后本地追加）。
   useEffect(() => {
@@ -121,17 +132,24 @@ export function Butler() {
       {open && (
         <div className="ib-butler-pane" role="dialog" aria-label="管家">
           <div className="ib-butler-top">
-            <button
-              type="button"
-              className="ib-butler-session"
-              title={sessionCopy === 'failed' ? '没能复制；请重试' : '复制在终端打开管家会话的命令'}
-              aria-label="复制管家会话的终端命令"
-              data-butler-session-copy={sessionCopy}
-              onClick={() => void copySession()}
-            >
-              <Icon name={sessionCopy === 'copied' ? 'check' : 'terminal'} size={16} />
-              {sessionCopy === 'copied' ? '已复制' : sessionCopy === 'busy' ? '准备中…' : sessionCopy === 'failed' ? '未复制' : ''}
-            </button>
+            <div className="ib-butler-top-buttons">
+              <Tip content="复制在终端打开管家会话的命令">
+                <button
+                  type="button"
+                  className="ib-iconbtn"
+                  aria-label="复制管家会话的终端命令"
+                  data-butler-session-copy={sessionCopy}
+                  onClick={() => void copySession()}
+                >
+                  <Icon name={sessionCopy === 'copied' ? 'check' : 'terminal'} />
+                </button>
+              </Tip>
+              <Tip content="关闭管家">
+                <button type="button" className="ib-iconbtn" onClick={() => setOpen(false)} aria-label="关闭管家">
+                  <Icon name="x" />
+                </button>
+              </Tip>
+            </div>
             <div className="ib-butler-avatar ib-butler-avatar-live">
               <ButlerBadge size={44} />
             </div>
