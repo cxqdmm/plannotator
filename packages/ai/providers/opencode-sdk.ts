@@ -10,6 +10,7 @@
  * have the `opencode` CLI installed and authenticated.
  */
 
+import { randomBytes } from "node:crypto";
 import type { OpencodeClient } from "@opencode-ai/sdk";
 import { BaseSession } from "../base-session.ts";
 import { buildSystemPrompt } from "../context.ts";
@@ -36,6 +37,19 @@ const PROVIDER_NAME = "opencode-sdk";
 // biome-ignore lint/suspicious/noExplicitAny: SDK types not available at compile time
 let sdk: any = null;
 
+/** Whether a spawned server exposes OpenCode 2.3's `/api` root (with Basic auth). */
+async function serverExposesApi(url: string, password: string): Promise<boolean> {
+	try {
+		const response = await fetch(`${url}/api/info`, {
+			headers: { authorization: `Basic ${Buffer.from(`opencode:${password}`).toString("base64")}` },
+			signal: AbortSignal.timeout(2_000),
+		});
+		return response.ok;
+	} catch {
+		return false;
+	}
+}
+
 async function getSDK() {
 	if (!sdk) {
 		sdk = await import("@opencode-ai/sdk");
@@ -61,6 +75,9 @@ export class OpenCodeProvider implements AIProvider {
 	// biome-ignore lint/suspicious/noExplicitAny: SDK types not available at compile time
 	private server: { url: string; close: () => void } | null = null;
 	private client: OpencodeClient | null = null;
+	/** OpenCode 2.3's API lives under `/api` and speaks HTTP Basic (`opencode:<server password>`). */
+	private apiBase: string | null = null;
+	private authHeader: string | null = null;
 	private startPromise: Promise<void> | null = null;
 	private exitHandler: (() => void) | null = null;
 	/**
@@ -92,19 +109,35 @@ export class OpenCodeProvider implements AIProvider {
 		// process gets its own server instead of piling onto a shared default
 		// port. An explicitly configured port is still honored verbatim.
 		let server: { url: string; close: () => void };
+		let serverPasswordRef = "";
 		try {
 			// Plannotator's integration off in this `opencode serve`
 			// (ask-ai-env.ts): the Plannotator OpenCode plugin it loads reads
 			// process.env and stands down. The SDK takes no env, so the switches
 			// are set on process.env only for the synchronous part of the call,
 			// where the SDK copies it into the spawn.
-			server = await withAskAiChildEnv(() =>
-				createOpencodeServer({
-					hostname: this.config.hostname ?? "127.0.0.1",
-					port: this.config.port ?? 0,
-					timeout: 15_000,
-				}),
-			);
+			// OpenCode 2.3 serves its real API under `/api` behind HTTP Basic auth
+			// (`opencode:<server password>`). The password is generated per
+			// `opencode serve`; pinning it through OPENCODE_SERVER_PASSWORD (copied
+			// into the spawn) lets this provider authenticate without parsing the
+			// child's stdout. Older hosts ignore the variable; their servers accept
+			// unauthenticated calls, and the `/api` probe below falls back.
+			const serverPassword = randomBytes(24).toString("base64url");
+			const previousPassword = process.env.OPENCODE_SERVER_PASSWORD;
+			process.env.OPENCODE_SERVER_PASSWORD = serverPassword;
+			try {
+				server = await withAskAiChildEnv(() =>
+					createOpencodeServer({
+						hostname: this.config.hostname ?? "127.0.0.1",
+						port: this.config.port ?? 0,
+						timeout: 15_000,
+					}),
+				);
+			} finally {
+				if (previousPassword === undefined) delete process.env.OPENCODE_SERVER_PASSWORD;
+				else process.env.OPENCODE_SERVER_PASSWORD = previousPassword;
+			}
+			serverPasswordRef = serverPassword;
 		} catch (err: unknown) {
 			// A missing CLI is a spawn error with code ENOENT in every runtime
 			// (Node: "spawn opencode ENOENT"; Bun: "Executable not found in
@@ -154,8 +187,17 @@ export class OpenCodeProvider implements AIProvider {
 		}
 
 		try {
+			// OpenCode 2.3: the API root is `/api` and every call carries Basic
+			// auth. A server that does not expose `/api` falls back to the bare
+			// root (older hosts), unauthenticated.
+			const exposesApi = await serverExposesApi(server.url, serverPasswordRef);
+			if (exposesApi) {
+				this.apiBase = `${server.url}/api`;
+				this.authHeader = `Basic ${Buffer.from(`opencode:${serverPasswordRef}`).toString("base64")}`;
+			}
 			this.client = createOpencodeClient({
-				baseUrl: server.url,
+				baseUrl: exposesApi ? `${server.url}/api` : server.url,
+				...(exposesApi && this.authHeader ? { headers: { authorization: this.authHeader } } : {}),
 				directory: this.config.cwd ?? process.cwd(),
 			});
 		} catch (err) {
@@ -166,6 +208,12 @@ export class OpenCodeProvider implements AIProvider {
 		}
 		this.server = server;
 		this.exitHandler = exitHandler;
+	}
+
+	/** The 2.3 API root + auth, or undefined on a legacy server (legacy prompt shape). */
+	private api(): { baseUrl: string; auth: string } | undefined {
+		if (!this.apiBase || !this.authHeader) return undefined;
+		return { baseUrl: this.apiBase, auth: this.authHeader };
 	}
 
 	private getClient(): OpencodeClient {
@@ -195,6 +243,7 @@ export class OpenCodeProvider implements AIProvider {
 			parentSessionId: null,
 			firstEventTimeoutMs: this.config.firstEventTimeoutMs,
 			noTools: !!options.oneShot,
+			api: this.api(),
 		});
 		return session;
 	}
@@ -223,6 +272,7 @@ export class OpenCodeProvider implements AIProvider {
 			model: options.model,
 			parentSessionId: parentId,
 			firstEventTimeoutMs: this.config.firstEventTimeoutMs,
+			api: this.api(),
 		});
 	}
 
@@ -240,6 +290,7 @@ export class OpenCodeProvider implements AIProvider {
 			model: undefined,
 			parentSessionId: null,
 			firstEventTimeoutMs: this.config.firstEventTimeoutMs,
+			api: this.api(),
 		});
 	}
 
@@ -317,10 +368,18 @@ interface SessionConfig {
 	firstEventTimeoutMs?: number;
 	/** A single judgment (`CreateSessionOptions.oneShot`): every tool off for this prompt. */
 	noTools?: boolean;
+	/**
+	 * OpenCode 2.3's API root (`…/api`) and its Basic auth header. Present: turns
+	 * go in through `POST {apiBase}/session/{id}/prompt` (`{ text }`) instead of
+	 * the SDK's legacy `/session/{id}/message` path. Absent: the legacy shape.
+	 */
+	api?: { baseUrl: string; auth: string };
 }
 
 class OpenCodeSession extends BaseSession {
 	private config: SessionConfig;
+	/** The persona/system prompt went out with the first turn (2.3 has no system field). */
+	private _systemSent = false;
 
 	constructor(config: SessionConfig) {
 		super({
@@ -329,6 +388,13 @@ class OpenCodeSession extends BaseSession {
 		});
 		this.config = config;
 		this._resolvedId = config.sessionId;
+	}
+
+	/** OpenCode 2.3 has no per-turn `system` field: the persona rides the first turn. */
+	private withSystemLine(prompt: string): string {
+		if (this._systemSent || !this.config.systemPrompt) return prompt;
+		this._systemSent = true;
+		return `${this.config.systemPrompt}\n\n---\n\n${prompt}`;
 	}
 
 	async *query(prompt: string): AsyncIterable<AIMessage> {
@@ -402,19 +468,42 @@ class OpenCodeSession extends BaseSession {
 				}
 
 				try {
-					await this.config.client.session.promptAsync({
-						path: { id: this.config.sessionId },
-						body: {
-							...(!this._firstQuerySent &&
-								this.config.systemPrompt && {
-									system: this.config.systemPrompt,
+					if (this.config.api) {
+						// OpenCode 2.3: one text turn through the real endpoint.
+						const response = await fetch(
+							`${this.config.api.baseUrl}/session/${encodeURIComponent(this.config.sessionId)}/prompt`,
+							{
+								method: "POST",
+								headers: {
+									"content-type": "application/json",
+									authorization: this.config.api.auth,
+								},
+								body: JSON.stringify({
+									text: this.withSystemLine(prompt),
+									...(modelParam ? { model: modelParam } : {}),
 								}),
-							...(modelParam && { model: modelParam }),
-							// `variant`: the low effort of a model that has one; anything else ignores it.
-							...(this.config.noTools && { tools: { "*": false }, variant: "low" }),
-							parts: [{ type: "text", text: prompt }],
-						},
-					});
+								signal,
+							},
+						);
+						if (!response.ok) {
+							const detail = await response.text().catch(() => "");
+							throw new Error(`OpenCode prompt refused (${response.status})${detail ? `: ${detail.slice(0, 200)}` : ""}`);
+						}
+					} else {
+						await this.config.client.session.promptAsync({
+							path: { id: this.config.sessionId },
+							body: {
+								...(!this._firstQuerySent &&
+									this.config.systemPrompt && {
+										system: this.config.systemPrompt,
+									}),
+								...(modelParam && { model: modelParam }),
+								// `variant`: the low effort of a model that has one; anything else ignores it.
+								...(this.config.noTools && { tools: { "*": false }, variant: "low" }),
+								parts: [{ type: "text", text: prompt }],
+							},
+						});
+					}
 				} catch (err) {
 					yield {
 						type: "error",
@@ -576,13 +665,22 @@ export function fallbackAssistantText(state: OpenCodeQueryState): AIMessage[] {
  * ignored by only calling this after the prompt is sent.
  */
 export function consumeOpenCodeEvent(
-	event: { type?: string; properties?: Record<string, unknown> },
+	event: { type?: string; properties?: Record<string, unknown>; data?: Record<string, unknown> },
 	sessionId: string,
 	state: OpenCodeQueryState,
 ): { messages: AIMessage[]; done: boolean } {
 	const eventType = event.type as string;
-	const props = event.properties;
+	// OpenCode 2.3 wraps the payload in `data` (older hosts: `properties`).
+	const props = event.properties ?? event.data;
 	if (props == null) return { messages: [], done: false };
+
+	// OpenCode 2.3's event family (`session.text.delta`, `session.execution.*`).
+	// Its names differ from the 1.18 shape the legacy map below handles.
+	if (/^session\.(text|reasoning|step|execution|usage|inbox|instructions|renamed)\.?/.test(eventType)) {
+		const eventSessionId = typeof props.sessionID === "string" ? props.sessionID : null;
+		if (eventSessionId && eventSessionId !== sessionId) return { messages: [], done: false };
+		return mapOpenCodeV2Event(eventType, props, sessionId);
+	}
 
 	const eventSessionId = openCodeEventSessionId(props);
 	if (eventSessionId && eventSessionId !== sessionId) {
@@ -621,6 +719,37 @@ export function consumeOpenCodeEvent(
  *   session.status        → result (when idle)
  *   message.updated       → error (when message has error)
  */
+/**
+ * OpenCode 2.3's streaming events → Ask AI messages:
+ *   session.text.delta          → text_delta
+ *   session.execution.succeeded → result (the turn ended) / failed, interrupted likewise
+ *   everything else (reasoning, steps, usage) is ignored.
+ */
+export function mapOpenCodeV2Event(
+	eventType: string,
+	props: Record<string, unknown>,
+	sessionId: string,
+): { messages: AIMessage[]; done: boolean } {
+	switch (eventType) {
+		case "session.text.delta": {
+			const delta = props.delta;
+			return typeof delta === "string" && delta
+				? { messages: [{ type: "text_delta", delta }], done: false }
+				: { messages: [], done: false };
+		}
+		case "session.execution.succeeded":
+			return { messages: [{ type: "result", sessionId, success: true }], done: true };
+		case "session.execution.failed":
+		case "session.execution.interrupted":
+			return {
+				messages: [{ type: "error", error: "OpenCode's turn ended before an answer (interrupted or failed).", code: "provider_error" }],
+				done: true,
+			};
+		default:
+			return { messages: [], done: false };
+	}
+}
+
 export function mapOpenCodeEvent(
 	eventType: string,
 	props: Record<string, unknown>,

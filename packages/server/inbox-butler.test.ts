@@ -2,21 +2,20 @@
  * The butler's streaming chat route (v3, owner 2026-11-25「像 web 版一样」):
  * the reply streams as SSE deltas and a final done frame; the conversation
  * continues across daemon restarts (state.json's opencode session id is
- * resumed, not re-created). The provider is faked; HOME is isolated so the
- * butler folder is a temp one.
+ * resumed, not re-created). The provider is faked; the bootstrap CLI is a
+ * fake binary that records its arguments; PLANNOTATOR_BUTLER_DIR isolates
+ * the butler folder per test.
  */
 import { beforeEach, afterEach, describe, expect, test, mock } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-
-const roots: string[] = [];
-let home: string;
 
 const created: string[] = [];
 const resumed: string[] = [];
 
 mock.module("@plannotator/ai", () => ({
+  buildButlerPrompt: () => "你是管家（测试 persona）。",
   createProvider: async () => ({
     createSession: async () => {
       const id = `ses_new${created.length + 1}`;
@@ -29,7 +28,6 @@ mock.module("@plannotator/ai", () => ({
     },
   }),
 }));
-mock.module("@plannotator/ai/providers/opencode-sdk", () => ({}));
 
 function fakeSession(id: string) {
   return {
@@ -43,19 +41,31 @@ function fakeSession(id: string) {
   };
 }
 
+let home = "";
+let fakeBin = "";
 let butlerModule: typeof import("./inbox-butler");
+
 beforeEach(async () => {
+  created.length = 0;
+  resumed.length = 0;
   home = mkdtempSync(join(tmpdir(), "plannotator-butler-home-"));
-  roots.push(home);
   process.env.PLANNOTATOR_BUTLER_DIR = join(home, "plannotator-butler");
+  const binDir = mkdtempSync(join(tmpdir(), "plannotator-butler-bin-"));
+  fakeBin = join(binDir, "fake-opencode");
+  writeFileSync(fakeBin, `#!/bin/sh\necho "args: $*"\necho "cwd: $(pwd)"\necho "tag: $PLANNOTATOR_SESSION_TAG"\nexit 0\n`);
+  chmodSync(fakeBin, 0o755);
   butlerModule = await import("./inbox-butler");
 });
 afterEach(() => {
   delete process.env.PLANNOTATOR_BUTLER_DIR;
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  rmSync(home, { recursive: true, force: true });
+  rmSync(fakeBin, { force: true });
 });
 
-const Butler = () => butlerModule.Butler;
+async function loadButler(bootstrapBin: string) {
+  butlerModule = await import("./inbox-butler");
+  return new butlerModule.Butler({ bootstrapBin, model: 'glm/glm-5.3-flash' });
+}
 
 async function chat(
   butler: { init(): void; route(req: Request, url: URL): Promise<Response | null> },
@@ -73,6 +83,7 @@ async function chat(
   expect(response).not.toBeNull();
   const status = response!.status;
   const text = await response!.text();
+  console.error("[debug] 原始SSE:", JSON.stringify(text).slice(0, 260), "| status:", status);
   const frames = text
     .split("\n\n")
     .filter((frame) => frame.startsWith("data: "))
@@ -81,13 +92,8 @@ async function chat(
 }
 
 describe("the butler streaming chat", () => {
-  afterEach(() => {
-    created.length = 0;
-    resumed.length = 0;
-  });
-
   test("the reply streams as deltas plus a done frame, and the turn lands in history", async () => {
-    const butler = new (Butler())();
+    const butler = await loadButler(fakeBin);
     const { frames, status } = await chat(butler, "早安，管家");
     expect(status).toBe(200);
     const deltas = frames.filter((f) => typeof f.delta === "string");
@@ -101,22 +107,22 @@ describe("the butler streaming chat", () => {
     expect(history.map((t) => t.role)).toEqual(["you", "butler"]);
   });
 
-  test("restart resumes the persisted opencode session instead of creating a new one", async () => {
-    const first = new (Butler())();
+  test("a fixed session id is bootstrapped once, then resumed across restarts (never createSession)", async () => {
+    const first = await loadButler(fakeBin);
     await chat(first, "第一句");
-    expect(created.length).toBe(1);
-    // state.json 记下了会话 id。
+    // 建会话走 CLI bootstrap（provider.createSession 从不调用）。
+    expect(created.length).toBe(0);
     const state = JSON.parse(readFileSync(join(home, "plannotator-butler", "state.json"), "utf8")) as { sessionId: string };
-    expect(state.sessionId).toContain("ses_new");
-    // 重启（新 Butler 实例）：续接，不新建。
-    const second = new (Butler())();
-    await chat(second, "第二句");
-    expect(created.length).toBe(1);
+    expect(state.sessionId).toStartWith("ses_butler");
     expect(resumed).toEqual([state.sessionId]);
+    // 重启（新实例）：state.json 的同一 id 再续接，不再 bootstrap。
+    const second = await loadButler(fakeBin);
+    await chat(second, "第二句");
+    expect(resumed).toEqual([state.sessionId, state.sessionId]);
   });
 
   test("a non-same-origin call is not answered", async () => {
-    const butler = new (Butler())();
+    const butler = await loadButler(fakeBin);
     butler.init();
     const response = await butler.route(
       new Request("http://127.0.0.1:53998/api/inbox/butler/chat", {
@@ -130,7 +136,7 @@ describe("the butler streaming chat", () => {
   });
 
   test("an empty message refuses with 422", async () => {
-    const butler = new (Butler())();
+    const butler = await loadButler(fakeBin);
     butler.init();
     const { status } = await chat(butler, "");
     expect(status).toBe(422);

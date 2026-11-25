@@ -24,8 +24,7 @@ function readOpencodeDefaultModel(): string | null {
   try {
     const config = JSON.parse(readFileSync(join(homedir(), ".config", "opencode", "opencode.json"), "utf8")) as { model?: unknown };
     return typeof config.model === "string" && config.model ? config.model : null;
-  } catch (error) {
-    console.error("[debug] 读模型失败:", String(error));
+  } catch {
     return null;
   }
 }
@@ -38,10 +37,18 @@ export function butlerDir(): string {
   return join(homedir(), "plannotator-butler");
 }
 
-/** 守护进程初始化时调用：管家文件夹不存在则创建（幂等）。 */
+/** 守护进程初始化时调用：管家文件夹不存在则创建，并写好管家人设（幂等）。
+ *  人设写进 AGENTS.md——opencode 会话（cwd = 这里）自动读取，CLI 引导的会话与
+ *  页面续接的会话因此一致地以管家身份说话。 */
 export function ensureButlerDir(): string {
   const dir = butlerDir();
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o755 });
+  try {
+    writeFileSync(join(dir, "AGENTS.md"), `${buildButlerPrompt()}
+`, { mode: 0o600 });
+  } catch {
+    // 人设写失败不阻断：会话照常能开，只是少了口吻设定。
+  }
   return dir;
 }
 
@@ -124,13 +131,12 @@ export class Butler {
    *  会话不存在（首次/被清理）时用 CLI bootstrap 一次（CLI 能建会话，serve 不能）。 */
   private async brain(): Promise<import("@plannotator/ai").AISession> {
     if (this.brainSession) return this.brainSession;
-    const opencodePath = Bun.which("opencode") ?? "opencode";
     // 提供者工厂靠模块导入的副作用注册（ai-runtime 同款）：先导入再建。
     await import("@plannotator/ai/providers/opencode-sdk");
     const provider = await createProvider({
       type: "opencode-sdk",
       cwd: this.dir,
-      ...(opencodePath ? { opencodeExecutablePath: opencodePath } : {}),
+      ...(this.bootstrapBin ? { opencodeExecutablePath: this.bootstrapBin } : {}),
     } as never);
     let priorId = this.priorSessionId();
     if (priorId) {
@@ -145,12 +151,11 @@ export class Butler {
     priorId = `ses_butler${Math.random().toString(36).slice(2, 10)}`;
     // 模型显式带上主人的默认配置：CLI run 不带 --model 会落到 opencode 的免费默认
     // 模型，额度耗尽时退出 1（现场事故 2026-11-24：Free usage limit reached）。
-    const model = readOpencodeDefaultModel();
     const bootstrap = spawn(
-      opencodePath,
+      this.bootstrapBin,
       [
         "run", "--standalone", "--session", priorId,
-        ...(model ? ["--model", model] : []),
+        ...(this.model ? ["--model", this.model] : []),
         "（管家就位，等待主人吩咐。）",
       ],
       { cwd: this.dir, env: { ...process.env }, timeout: 120_000, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] },
