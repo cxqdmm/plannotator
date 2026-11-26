@@ -25,6 +25,7 @@ beforeEach(() => {
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const path = String(input);
     if (path.includes('/butler/history')) return Response.json({ history: [] });
+    if (path.includes('/butler/approvals')) return Response.json({ approvals: { pending: [], decided: [] }, auto: {} });
     return Response.json({});
   }) as typeof fetch;
 });
@@ -100,6 +101,48 @@ if (hasDom) {
     await act(async () => orb()!.click());
     await settle();
     expect(pane()).not.toBeNull();
+  });
+
+  test('审批页签：待批的需求卡带完整文档，点批准发到审批路由', async () => {
+    const approval = {
+      id: 'apr_1',
+      kind: 'butler-action',
+      action: 'create-requirement',
+      status: 'pending',
+      title: '建需求卡《登录页改版》',
+      summary: '旧版太慢 · 1 个上下文',
+      detail: { card: '# 需求卡：登录页改版\n\n## 背景 / 为什么\n旧版太慢', contexts: [{ kind: 'link', name: 'PRD' }] },
+      requested_at: new Date().toISOString(),
+      decided_at: null,
+      result: null,
+      note: null,
+    };
+    const calls: { url: string; body: string | null }[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input);
+      if (path.includes('/butler/history')) return Response.json({ history: [] });
+      if (path.includes('/butler/approvals') && path.endsWith('/decide')) {
+        calls.push({ url: path, body: typeof init?.body === 'string' ? init.body : null });
+        return Response.json({ approval: { ...approval, status: 'approved' } });
+      }
+      if (path.includes('/butler/approvals')) return Response.json({ approvals: { pending: [approval], decided: [] }, auto: { 'create-requirement': false } });
+      return Response.json({});
+    }) as typeof fetch;
+    await renderButler({ open: true, onOpenChange: () => {} });
+    const tabs = host!.querySelectorAll<HTMLButtonElement>('.ib-butler-tab');
+    expect(tabs.length).toBe(2);
+    await act(async () => tabs[1]!.click());
+    await settle();
+    await settle();
+    expect(host!.querySelector('.ib-butler-ap-card')).not.toBeNull();
+    expect(host!.querySelectorAll('.ib-butler-switch-row')).toHaveLength(3);
+    expect(host!.textContent).toContain('建需求卡《登录页改版》');
+    expect(host!.textContent).toContain('旧版太慢');
+    const approve = host!.querySelector<HTMLButtonElement>('.ib-butler-ap-approve');
+    expect(approve).not.toBeNull();
+    await act(async () => approve!.click());
+    await settle();
+    expect(calls.some((call) => call.url.includes('/decide') && call.body?.includes('"decision":"approve"'))).toBe(true);
   });
 
   test('空场英雄态：问候 + 三条起步建议，点建议填进输入框', async () => {

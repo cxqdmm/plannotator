@@ -57,7 +57,7 @@ export function patchRequirement(id: string, patch: { title?: string; notes?: st
 
 /** One requirement with its history (Wave 2's detail pane reads this). */
 export async function readRequirement(id: string, signal?: AbortSignal): Promise<{ requirement: Requirement; events: RequirementEvent[]; card?: string } | null> {
-  return get<{ requirement: Requirement; events: RequirementEvent[] }>(`/api/requirements/${encodeURIComponent(id)}`, signal);
+  return get<{ requirement: Requirement; events: RequirementEvent[]; card?: string }>(`/api/requirements/${encodeURIComponent(id)}`, signal);
 }
 
 export function deliverRequirement(id: string, input: { kind: string; ref: string; title?: string }): Promise<WriteOutcome<{ deliverable: unknown }>> {

@@ -18,6 +18,7 @@ import { mkdirSync, existsSync, readFileSync, writeFileSync, appendFileSync } fr
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
+import { requirementCardGuide, requirementCardTemplate } from "@plannotator/core/requirement-card";
 import { createProvider, buildButlerPrompt } from "@plannotator/ai";
 import type { AIQueryOptions } from "@plannotator/ai";
 import { BUTLER_FILE_INLINE_BYTES, BUTLER_FILE_MAX_BYTES, BUTLER_FILE_MAX_COUNT } from "@plannotator/core/inbox-types";
@@ -60,7 +61,41 @@ const BUTLER_SKILLS: ReadonlyMap<string, { name: string; description: string; bo
         "",
         "1. 听主人讲想做什么，缺要点就追问一句补齐。",
         "2. 整理成一句话标题（说清要做什么），列出补充要点。",
-        "3. 告知真正动手的入口：工坊里该需求卡片上的「开启新会话」；管家统筹，不亲自执行任务。",
+        "3. 需要建卡时，用 butler-requirement-card 技能整理成六段正文和上下文，再调用 create-requirement；建卡可能回 pending_approval，告诉主人已送到管家页的「审批」，等结果事件。",
+        "4. 需要派活/停下时走动作通道：launch-session / stop-session；它们和建卡一样可能回 pending_approval——告诉主人已送到管家页的「审批」，等结果事件，不要说已经做了。",
+        "5. 真正的执行在会话线程里，管家自己不动手；派活之后从需求台账跟进展。",
+      ].join("\n"),
+    },
+  ],
+  [
+    "butler-requirement-card",
+    {
+      name: "需求卡",
+      description: "把主人说的一件事整理成一份 Markdown 需求卡（六段正文 + 上下文引用），并调用管家动作通道建卡",
+      body: [
+        "## 何时用",
+        "主人要新建需求，或让你把一段对话整理成需求卡时。",
+        "",
+        "## 工作流",
+        "1. 先抓标题：一句话，动词开头，可验证。",
+        "2. 按六段写正文；不知道的写「待补充」，不要编。",
+        "3. 收集上下文：链接给 { kind: link, name, ref }；聊天附件在 files/ 下，给 { kind: file, name, path }。",
+        "4. 把来源线程 thread 和触发事件 event_id 带上。",
+        "5. 用 create-requirement 调用动作通道（地址见 action.json），每次新生成 idempotency_key，重试复用同一个。",
+        "6. 返回 pending_approval 时，告诉主人「已送到管家页的审批」，等结果事件；不要称建好了。",
+        "",
+        "## 六段模板",
+        "",
+        requirementCardTemplate(),
+        "",
+        "## 每段写什么",
+        "",
+        requirementCardGuide(),
+        "",
+        "## 注意",
+        "- 需求卡是一份 Markdown 文档，不要把内容拆成问答。",
+        "- 文件只给路径；批准后会复制进需求自己的文件夹。",
+        "- 正文最多 20000 字；一个需求一张卡。",
       ].join("\n"),
     },
   ],
@@ -76,6 +111,7 @@ const BUTLER_SKILLS: ReadonlyMap<string, { name: string; description: string; bo
         "- 计划评审：执行会话交出设计文档后，卡片或历史页「去审阅」，批注意见回给会话。",
         "- 代码评审：会话行 ⋯ 菜单发起，结论送达本会话并记入需求历史。",
         "- 会话在等你回复时会停下（「等你回复」）；打断在会话行的 ⋯ 菜单里。",
+        "- 管家动作通道：建卡、派活、转达、停止；建卡/派活/停止在管家页「审批」页签由主人批准，或打开开关直接允许。",
         "- 管家只统筹不执行；管家会话的终端命令在管家面板右上角复制。",
       ].join("\n"),
     },
@@ -189,6 +225,12 @@ function butlerQueryFiles(files: readonly ButlerStoredFile[]): AIQueryOptions {
   return inline.length ? { files: inline } : {};
 }
 
+/** What the butler needs from a brain provider: resuming its one session. The test injects a fake;
+ *  the real one is created from `@plannotator/ai` (the opencode-sdk provider). */
+export interface ButlerBrainProvider {
+  resumeSession(id: string, systemPrompt: string): Promise<import("@plannotator/ai").AISession>;
+}
+
 export class Butler {
   private brainSession: import("@plannotator/ai").AISession | null = null;
   private readonly dir = butlerDir();
@@ -198,10 +240,22 @@ export class Butler {
   private readonly bootstrapBin: string;
   /** bootstrap 回合用的模型（主人的 opencode.json 默认模型）；测试可注入。 */
   private readonly model: string | null;
+  /** The event plane's pending digest (doc 管家-事件机制设计 §8.1): what happened since the
+   *  butler last looked, put at the front of the next prompt. Absent in tests without events. */
+  private readonly digests: (() => string) | null;
+  /** A wake digest that could not be spoken now (no session yet, or a turn running): said on the next chat. */
+  private readonly deferred: string[] = [];
+  /** Queries running now: a wake never speaks over the owner's own turn. */
+  private running = 0;
+  /** Tests inject the brain provider instead of mocking `@plannotator/ai` process-wide (the mock
+   *  leaked into every other test file in the same run). Absent: the real opencode-sdk provider. */
+  private readonly provider: ButlerBrainProvider | null;
 
-  constructor(options: { bootstrapBin?: string; model?: string } = {}) {
+  constructor(options: { bootstrapBin?: string; model?: string; digests?: () => string; provider?: ButlerBrainProvider | null } = {}) {
     this.model = options.model ?? readOpencodeDefaultModel();
     this.bootstrapBin = options.bootstrapBin ?? (Bun.which("opencode") ?? "opencode");
+    this.digests = options.digests ?? null;
+    this.provider = options.provider ?? null;
   }
 
   /** 初始化（守护进程启动时调用）：管家文件夹就绪。 */
@@ -281,13 +335,16 @@ export class Butler {
    *  会话不存在（首次/被清理）时用 CLI bootstrap 一次（CLI 能建会话，serve 不能）。 */
   private async brain(): Promise<import("@plannotator/ai").AISession> {
     if (this.brainSession) return this.brainSession;
-    // 提供者工厂靠模块导入的副作用注册（ai-runtime 同款）：先导入再建。
-    await import("@plannotator/ai/providers/opencode-sdk");
-    const provider = await createProvider({
-      type: "opencode-sdk",
-      cwd: this.dir,
-      ...(this.bootstrapBin ? { opencodeExecutablePath: this.bootstrapBin } : {}),
-    } as never);
+    // A test's provider stands in for the real one; otherwise the provider factory is registered
+    // by the module import's side effect (ai-runtime 同款): import first, then create.
+    const provider: ButlerBrainProvider = this.provider ?? (await (async () => {
+      await import("@plannotator/ai/providers/opencode-sdk");
+      return await createProvider({
+        type: "opencode-sdk",
+        cwd: this.dir,
+        ...(this.bootstrapBin ? { opencodeExecutablePath: this.bootstrapBin } : {}),
+      } as never);
+    })());
     let priorId = this.priorSessionId();
     if (priorId) {
       try {
@@ -348,12 +405,72 @@ export class Butler {
     }
   }
 
+  /**
+   * The event plane's pending digest, once: what happened since the butler last looked is put
+   * at the front of the next prompt (doc 管家-事件机制设计 §8.1). A wake that could not be
+   * spoken (no session yet, a turn running) waits here too. Empty when there is nothing new.
+   */
+  private takeDigest(): string {
+    const parts = this.deferred.splice(0);
+    if (this.digests) {
+      try {
+        const fresh = this.digests();
+        if (fresh) parts.push(fresh);
+      } catch {
+        // A projector failure never blocks a chat; the ledger still has the facts.
+      }
+    }
+    return parts.join("\n");
+  }
+
+  /**
+   * 事件唤醒：something needs the person, so the butler speaks first (the page shows it as
+   * the butler's own line; there is no fake "you" bubble). A butler that was never opened has
+   * no session, and starting one just to say this would cost a turn the owner did not ask for:
+   * the digest waits for the next chat instead. A turn already running is never spoken over.
+   */
+  async wake(digest: string): Promise<void> {
+    const text = digest.trim();
+    if (!text) return;
+    if (!this.brainSession || this.running > 0 || this.brainSession.isActive) {
+      this.deferred.push(text);
+      return;
+    }
+    this.running += 1;
+    try {
+      const reply = await this.askButlerStream(text, () => {}, [], false);
+      this.appendHistory({ at: new Date().toISOString(), role: "butler", text: reply });
+    } catch {
+      // Could not speak now (the session went away, the model refused): say it with the next chat.
+      this.deferred.push(text);
+    } finally {
+      this.running -= 1;
+    }
+  }
+
   /** 流式一问：增量经 onDelta 出去，返回全文（历史照记）。 */
-  private async askButlerStream(message: string, onDelta: (delta: string) => void, files: ButlerStoredFile[] = []): Promise<string> {
+  private async askButlerStream(message: string, onDelta: (delta: string) => void, files: ButlerStoredFile[] = [], withDigest = true): Promise<string> {
+    // The digest is the event plane's "since you last looked", never the owner's own words.
+    const digest = withDigest ? this.takeDigest() : "";
+    const prompt = `${digest ? `${digest}\n\n` : ""}${message}${filesNoteOf(files)}`;
+    this.running += 1;
+    try {
+      return await this.askButlerRun(prompt, onDelta, files);
+    } catch (error) {
+      // The turn never happened: the digest goes back to the queue, so the next one still sees it
+      // (a failed turn must not quietly eat a delivery the owner was waiting to hear about).
+      if (digest) this.deferred.push(digest);
+      throw error;
+    } finally {
+      this.running -= 1;
+    }
+  }
+
+  private async askButlerRun(prompt: string, onDelta: (delta: string) => void, files: ButlerStoredFile[]): Promise<string> {
     const run = async (): Promise<string> => {
       const session = await this.brain();
       let reply = "";
-      for await (const msg of session.query(`${message}${filesNoteOf(files)}`, butlerQueryFiles(files))) {
+      for await (const msg of session.query(prompt, butlerQueryFiles(files))) {
         if (msg.type === "text") {
           reply += msg.text;
           onDelta(msg.text);

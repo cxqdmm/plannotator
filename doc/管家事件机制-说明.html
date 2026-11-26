@@ -1,0 +1,1797 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>管家事件机制 · M1 观察面 + M2 行动面</title>
+<meta name="description" content="Plannotator 中文 fork：管家事件机制 M1 观察面与 M2 行动面的能力、实现原理与使用方法。">
+<noscript><style>.reveal { opacity: 1 !important; transform: none !important; transition: none !important; }</style></noscript>
+<style>
+  /* ───────────── tokens ───────────── */
+  :root {
+    --paper: #f3ecdf;
+    --paper-2: #ece3d3;
+    --paper-3: #e4d9c5;
+    --ink: #241d19;
+    --ink-soft: #4a3f37;
+    --muted: #7b6c5f;
+    --line: rgba(36, 29, 25, 0.14);
+    --line-strong: rgba(36, 29, 25, 0.28);
+    --amber: #a9621a;
+    --amber-bright: #d99334;
+    --amber-wash: rgba(217, 147, 52, 0.13);
+    --sage: #4e6b5d;
+    --sage-wash: rgba(78, 107, 93, 0.10);
+    --danger: #9d432b;
+    --ok: #3f6b4f;
+    --panel: rgba(255, 252, 246, 0.66);
+    --panel-solid: #fbf7ef;
+    --serif: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
+    --sans: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --step: 8px;
+    --radius: 4px;
+    --max: 1180px;
+    --rail: 208px;
+    --ease: cubic-bezier(0.22, 0.75, 0.25, 1);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.78;
+    background:
+      radial-gradient(1100px 620px at 78% -12%, rgba(217, 147, 52, 0.16), transparent 62%),
+      radial-gradient(900px 540px at -8% 18%, rgba(78, 107, 93, 0.09), transparent 60%),
+      var(--paper);
+    text-wrap: pretty;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: rgba(217, 147, 52, 0.28); }
+  a { color: var(--amber); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a:hover { color: var(--ink); }
+  code, kbd, pre, .mono { font-family: var(--mono); }
+  code {
+    font-size: 0.86em;
+    background: rgba(36, 29, 25, 0.055);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0.08em 0.38em;
+    white-space: nowrap;
+  }
+  pre {
+    margin: 0;
+    padding: 18px 20px;
+    overflow-x: auto;
+    background: rgba(36, 29, 25, 0.045);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    font-size: 12.5px;
+    line-height: 1.72;
+    color: var(--ink-soft);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  pre code { background: none; border: 0; padding: 0; white-space: inherit; }
+  h1, h2, h3, h4 { font-family: var(--serif); font-weight: 600; line-height: 1.24; margin: 0; letter-spacing: -0.01em; }
+  p { margin: 0 0 1em; }
+  ul, ol { margin: 0 0 1em; padding-left: 1.3em; }
+  li { margin: 0.35em 0; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 40px 0; }
+
+  /* faint ledger ruling, only in the hero */
+  .ruled {
+    background-image: repeating-linear-gradient(to bottom, transparent 0 47px, rgba(36, 29, 25, 0.045) 47px 48px);
+  }
+
+  /* ───────────── shell ───────────── */
+  .shell {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 0 28px 96px;
+    display: grid;
+    grid-template-columns: var(--rail) minmax(0, 1fr);
+    gap: 56px;
+  }
+  .rail {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    height: calc(100vh - 64px);
+    padding-top: 128px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    font-size: 12.5px;
+  }
+  .rail-title {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .rail nav { display: flex; flex-direction: column; gap: 2px; }
+  .rail a {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    gap: 6px;
+    align-items: baseline;
+    padding: 6px 4px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border-radius: 3px;
+    transition: background 180ms var(--ease), color 180ms var(--ease);
+  }
+  .rail a .n { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+  .rail a:hover { background: rgba(217, 147, 52, 0.10); }
+  .rail a.active { color: var(--ink); }
+  .rail a.active .n { color: var(--amber); }
+  .rail a.active::after { content: ""; justify-self: end; width: 14px; border-top: 2px solid var(--amber); align-self: center; }
+  .rail-foot { margin-top: auto; color: var(--muted); font-size: 11.5px; line-height: 1.6; border-top: 1px solid var(--line); padding-top: 14px; }
+
+  main { min-width: 0; }
+
+  /* ───────────── hero ───────────── */
+  .hero {
+    padding: 132px 0 40px;
+    position: relative;
+  }
+  .eyebrow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 26px;
+  }
+  .eyebrow b { color: var(--amber); font-weight: 500; letter-spacing: 0.08em; }
+  h1.hero-title {
+    font-size: clamp(46px, 6.6vw, 86px);
+    letter-spacing: -0.035em;
+    line-height: 1.06;
+    margin: 0 0 10px;
+  }
+  h1.hero-title em {
+    font-style: normal;
+    color: var(--amber);
+    position: relative;
+    white-space: nowrap;
+  }
+  h1.hero-title em::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0.08em;
+    height: 0.14em;
+    background: var(--amber-bright);
+    opacity: 0.24;
+    z-index: -1;
+  }
+  .hero-lead {
+    max-width: 43em;
+    font-size: clamp(17px, 1.5vw, 20px);
+    line-height: 1.76;
+    color: var(--ink-soft);
+    margin: 26px 0 0;
+  }
+  .hero-lead strong { color: var(--ink); font-weight: 600; }
+  .stamp {
+    position: absolute;
+    top: 118px;
+    right: 4px;
+    transform: rotate(-2.4deg);
+    border: 2px double var(--amber);
+    color: var(--amber);
+    padding: 12px 14px 10px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    line-height: 1.7;
+    text-align: center;
+    text-transform: uppercase;
+    opacity: 0.86;
+    background: rgba(243, 236, 223, 0.5);
+  }
+  .stamp strong { display: block; font-size: 17px; letter-spacing: 0.22em; font-weight: 500; }
+  @media (max-width: 1180px) { .stamp { display: none; } }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 30px; }
+  .chip {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+    border: 1px solid var(--line-strong);
+    border-radius: 2px;
+    padding: 3px 8px;
+    background: rgba(255, 252, 246, 0.5);
+  }
+  .chip.amber { color: var(--amber); border-color: rgba(169, 98, 26, 0.4); background: var(--amber-wash); }
+  .chip.sage { color: var(--sage); border-color: rgba(78, 107, 93, 0.4); background: var(--sage-wash); }
+
+  /* flow strip */
+  .flow {
+    margin-top: 54px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: stretch;
+    border-top: 1px solid var(--line-strong);
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .flow-step {
+    padding: 16px 16px 15px;
+    border-right: 1px solid var(--line);
+    position: relative;
+    min-width: 0;
+  }
+  .flow-step:last-child { border-right: 0; }
+  .flow-step .k {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .flow-step .v { display: block; font-family: var(--serif); font-size: 18px; line-height: 1.4; }
+  .flow-step .d { display: block; font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+  .flow-step::after {
+    content: "→";
+    position: absolute;
+    right: -9px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--amber);
+    background: var(--paper);
+    padding: 0 2px;
+    z-index: 1;
+  }
+  .flow-step:last-child::after { display: none; }
+  @media (max-width: 760px) {
+    .flow { grid-template-columns: 1fr; }
+    .flow-step { border-right: 0; border-bottom: 1px solid var(--line); }
+    .flow-step:last-child { border-bottom: 0; }
+    .flow-step::after { content: "↓"; right: auto; left: 18px; top: auto; bottom: -9px; transform: none; }
+  }
+
+  /* ───────────── sections ───────────── */
+  section { padding-top: 84px; scroll-margin-top: 24px; }
+  .sec-head {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 18px;
+    align-items: baseline;
+    border-top: 1px solid var(--line-strong);
+    padding-top: 18px;
+    margin-bottom: 34px;
+  }
+  .sec-no {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--amber);
+  }
+  .sec-head h2 { font-size: clamp(28px, 3.3vw, 42px); letter-spacing: -0.02em; }
+  .sec-head .sec-sub { color: var(--muted); font-size: 14px; margin-top: 8px; line-height: 1.65; max-width: 46em; }
+
+  .lede { font-size: 18px; line-height: 1.75; color: var(--ink-soft); max-width: 44em; margin-bottom: 34px; }
+  .lede strong { color: var(--ink); }
+
+  /* capability grid */
+  .caps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .cap {
+    background: var(--panel-solid);
+    padding: 24px 24px 22px;
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 14px;
+    min-width: 0;
+  }
+  .cap .num { font-family: var(--mono); font-size: 11px; color: var(--muted); padding-top: 4px; }
+  .cap h3 { font-size: 20px; margin-bottom: 6px; }
+  .cap p { font-size: 14px; color: var(--ink-soft); margin: 0; line-height: 1.7; }
+  .cap .meta { display: block; margin-top: 10px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .cap.wide { grid-column: 1 / -1; }
+  @media (max-width: 760px) { .caps { grid-template-columns: 1fr; } }
+
+  /* generic panels */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .panel-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .panel-head h3 { font-size: 17px; }
+  .panel-head .tag { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; }
+
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .two.code-split { grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.55fr); }
+  @media (max-width: 1000px) { .two.code-split { grid-template-columns: 1fr; } }
+  .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  @media (max-width: 860px) { .two, .three { grid-template-columns: 1fr; } }
+
+  /* architecture diagram */
+  .arch {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) 44px minmax(0, 1.15fr) 44px minmax(0, 1.1fr);
+    align-items: stretch;
+    gap: 0;
+    margin: 8px 0 22px;
+  }
+  .arch-col { border: 1px solid var(--line-strong); background: var(--panel-solid); padding: 18px 18px 16px; min-width: 0; }
+  .arch-col h4 { font-size: 15px; margin-bottom: 4px; }
+  .arch-col .role { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; display: block; }
+  .arch-col ul { list-style: none; padding: 0; margin: 0; font-size: 12.5px; line-height: 1.62; color: var(--ink-soft); }
+  .arch-col li { padding: 7px 0; border-top: 1px solid var(--line); margin: 0; }
+  .arch-col li:first-child { border-top: 0; padding-top: 0; }
+  .arch-col li b { font-family: var(--mono); font-weight: 500; font-size: 11px; color: var(--amber); display: block; letter-spacing: 0.02em; }
+  .arch-arrow { display: flex; align-items: center; justify-content: center; color: var(--amber); font-family: var(--mono); font-size: 15px; }
+  .arch-note { font-size: 12.5px; color: var(--muted); line-height: 1.7; }
+  .arch-note b { color: var(--ink-soft); font-weight: 600; }
+  @media (max-width: 920px) {
+    .arch { grid-template-columns: 1fr; }
+    .arch-arrow { padding: 6px 0; }
+    .arch-arrow span { transform: rotate(90deg); }
+  }
+
+  .aside {
+    margin-top: 22px;
+    border-left: 2px solid var(--amber-bright);
+    background: var(--amber-wash);
+    padding: 14px 18px;
+    font-size: 13.5px;
+    line-height: 1.72;
+    color: var(--ink-soft);
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+  .aside b { color: var(--ink); }
+  .aside.sage { border-left-color: var(--sage); background: var(--sage-wash); }
+
+  /* tables */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-solid); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 620px; }
+  thead th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--line-strong);
+    background: rgba(36, 29, 25, 0.03);
+    white-space: nowrap;
+  }
+  tbody td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.6; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody td:first-child { white-space: nowrap; }
+  tbody code { white-space: nowrap; }
+  .lv { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; border: 1px solid var(--line-strong); border-radius: 2px; padding: 1px 5px; white-space: nowrap; }
+  .lv.notify { color: var(--amber); border-color: rgba(169, 98, 26, 0.38); background: var(--amber-wash); }
+  .lv.record { color: var(--muted); }
+  .lv.act { color: var(--danger); border-color: rgba(157, 67, 43, 0.35); background: rgba(157, 67, 43, 0.07); }
+
+  /* ledger sample */
+  .ledger-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 20px; }
+  @media (max-width: 900px) { .ledger-grid { grid-template-columns: 1fr; } }
+  .paper-sheet {
+    background:
+      repeating-linear-gradient(to bottom, transparent 0 31px, rgba(36, 29, 25, 0.035) 31px 32px),
+      var(--panel-solid);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    padding: 24px 24px 20px;
+    position: relative;
+  }
+  .paper-sheet::before {
+    content: "ledger/<req>.md";
+    position: absolute;
+    top: -1px; right: -1px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    background: var(--paper-2);
+    border: 1px solid var(--line-strong);
+    border-right: 0;
+    border-top: 0;
+    border-radius: 0 0 0 3px;
+    padding: 3px 8px;
+  }
+  .ledger-md { font-family: var(--mono); font-size: 12px; line-height: 2.66; color: var(--ink-soft); margin: 6px 0 0; white-space: pre-wrap; }
+  .ledger-md .h { color: var(--ink); font-weight: 600; }
+  .ledger-md .sec { color: var(--amber); }
+  .ledger-md .time { color: var(--muted); }
+  .json-sheet { background: rgba(36, 29, 25, 0.045); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+  .json-sheet pre { background: none; border: 0; padding: 0; font-size: 12px; line-height: 1.7; }
+  .json-sheet .k { color: var(--amber); }
+  .json-sheet .s { color: var(--sage); }
+  .json-sheet .n { color: var(--danger); }
+  .todos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-top: 20px; }
+  .todo { background: var(--panel-solid); padding: 16px 16px 14px; min-width: 0; }
+  .todo h4 { font-size: 13px; margin-bottom: 8px; }
+  .todo h4 .n { font-family: var(--mono); font-size: 10px; color: var(--muted); display: block; margin-bottom: 2px; letter-spacing: 0.1em; }
+  .todo ul { padding-left: 1.1em; margin: 0; font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; }
+  .todo p { font-size: 12px; color: var(--muted); margin: 0; }
+  .todo.on-person { background: #fbf5e9; }
+  @media (max-width: 760px) { .todos { grid-template-columns: 1fr; } }
+
+  /* rules */
+  .rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .rule { background: var(--panel-solid); padding: 20px 22px; }
+  .rule .rk { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; color: var(--amber); display: block; margin-bottom: 6px; text-transform: uppercase; }
+  .rule h4 { font-size: 15.5px; margin-bottom: 6px; }
+  .rule p { font-size: 13px; color: var(--ink-soft); margin: 0; line-height: 1.7; }
+  .rule p code { white-space: normal; }
+  @media (max-width: 760px) { .rules { grid-template-columns: 1fr; } }
+
+  /* simulator */
+  .sim {
+    border: 1px solid var(--line-strong);
+    background: var(--panel-solid);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .sim-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(36, 29, 25, 0.035);
+  }
+  .sim-bar .t { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; color: var(--muted); }
+  .sim-bar .t b { color: var(--amber); font-weight: 500; }
+  .sim-body { display: block; }
+  .sim-facts {
+    display: flex; flex-wrap: wrap; gap: 7px; align-items: flex-start;
+    padding: 16px 18px 14px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(236, 227, 211, 0.5);
+  }
+  .sim-facts .hint { flex-basis: 100%; font-size: 11.5px; color: var(--muted); line-height: 1.6; margin: 0 0 2px; }
+  .fact-btn {
+    display: block;
+    width: auto;
+    text-align: left;
+    font-family: var(--sans);
+    font-size: 13.5px;
+    color: var(--ink);
+    background: var(--panel-solid);
+    border: 1px solid var(--line-strong);
+    border-radius: 2px;
+    padding: 8px 11px;
+    margin-bottom: 0;
+    cursor: pointer;
+    transition: transform 140ms var(--ease), background 140ms var(--ease), color 140ms var(--ease), border-color 140ms var(--ease);
+  }
+  .fact-btn .k { display: block; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.05em; color: var(--muted); margin-top: 2px; }
+  .fact-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); transform: translateX(2px); }
+  .fact-btn:hover .k { color: rgba(243, 236, 223, 0.7); }
+  .fact-btn:active { transform: translateX(2px) scale(0.99); }
+  .fact-btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .fact-btn[data-level="record"] .k::after { content: " · 只记录"; color: var(--muted); }
+  .fact-btn[data-level="notify"] .k::after { content: " · 提醒"; color: var(--amber); }
+  .sim-tools { flex-basis: 100%; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 7px; }
+  .ghost-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 1px dashed var(--line-strong);
+    border-radius: 2px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: color 140ms var(--ease), border-color 140ms var(--ease), background 140ms var(--ease);
+  }
+  .ghost-btn:hover { color: var(--amber); border-color: var(--amber); background: var(--amber-wash); }
+  .ghost-btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  .sim-stage { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); }
+  @media (max-width: 900px) { .sim-stage { grid-template-columns: 1fr; } }
+  .sim-main { padding: 20px 22px 18px; min-width: 0; border-right: 1px solid var(--line); }
+  @media (max-width: 900px) { .sim-main { border-right: 0; border-bottom: 1px solid var(--line); } }
+  .sim-side { padding: 20px 20px 18px; min-width: 0; background: rgba(236, 227, 211, 0.3); }
+  .mini-head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--line); padding-bottom: 7px; margin-bottom: 12px;
+  }
+  .mini-head b { color: var(--ink-soft); font-weight: 500; letter-spacing: 0.04em; }
+  .timeline { list-style: none; margin: 0; padding: 0; min-height: 150px; }
+  .timeline li {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: baseline;
+    padding: 7px 0;
+    border-bottom: 1px dotted var(--line);
+    font-size: 12.8px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+  }
+  .timeline li.new { animation: line-in 420ms var(--ease) both; }
+  .timeline li .tm { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .timeline li .kind { font-family: var(--mono); font-size: 9.5px; color: var(--amber); white-space: nowrap; }
+  .timeline li.empty { display: block; }
+  .timeline li.record .kind { color: var(--muted); }
+  .timeline li.merged .kind { color: var(--sage); }
+  @keyframes line-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+  .empty { color: var(--muted); font-size: 12.5px; padding: 14px 0; }
+
+  .readout { margin-top: 16px; display: grid; gap: 8px; }
+  .readout-row { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 10px; font-size: 12.2px; line-height: 1.55; }
+  .readout-row .rk { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; padding-top: 2px; }
+  .readout-row .rv { color: var(--ink-soft); }
+  .readout-row .rv.qa { color: var(--amber); }
+  .brief-box {
+    margin-top: 14px;
+    border: 1px solid var(--line);
+    background: var(--panel-solid);
+    border-radius: 3px;
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.8;
+    color: var(--ink-soft);
+    white-space: pre-wrap;
+  }
+  .brief-box .brief-title { color: var(--ink); font-weight: 600; }
+  .digest-box {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.7;
+    background: rgba(36, 29, 25, 0.055);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 12px 13px;
+    white-space: pre-wrap;
+    color: var(--ink-soft);
+    min-height: 84px;
+    overflow-wrap: anywhere;
+  }
+  .digest-box .dh { color: var(--amber); }
+  .digest-box .id { color: var(--sage); }
+  .digest-actions { display: flex; gap: 7px; margin-top: 9px; flex-wrap: wrap; }
+  .tiny-btn {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em;
+    border: 1px solid var(--line-strong); background: transparent; color: var(--ink-soft);
+    border-radius: 2px; padding: 4px 8px; cursor: pointer;
+    transition: all 140ms var(--ease);
+  }
+  .tiny-btn:hover { border-color: var(--amber); color: var(--amber); background: var(--amber-wash); }
+  .tiny-btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .status-line { margin-top: 10px; font-family: var(--mono); font-size: 10px; color: var(--muted); min-height: 15px; transition: color 200ms var(--ease); }
+  .status-line.hit { color: var(--ok); }
+
+  .envelope {
+    margin-top: 16px;
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+  }
+  .envelope pre { background: none; border: 0; padding: 0; font-size: 11px; line-height: 1.65; }
+  .envelope .k { color: var(--amber); }
+  .envelope .s { color: var(--sage); }
+
+  /* usage */
+  .steps { counter-reset: step; display: grid; gap: 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--panel-solid); }
+  .step {
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr);
+    gap: 18px;
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--line);
+    counter-increment: step;
+  }
+  .step:last-child { border-bottom: 0; }
+  .step::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--amber);
+    padding-top: 2px;
+  }
+  .step h3 { font-size: 16.5px; margin-bottom: 4px; }
+  .step p { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 8px; line-height: 1.7; }
+  .step p:last-child { margin-bottom: 0; }
+  .step pre { font-size: 11.5px; padding: 12px 14px; }
+
+  .filetree {
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.9;
+    background: rgba(36, 29, 25, 0.045);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    color: var(--ink-soft);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .filetree .dir { color: var(--amber); }
+  .filetree .note { color: var(--muted); }
+
+  .code-map { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .code-row { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 18px; background: var(--panel-solid); padding: 12px 18px; font-size: 12.8px; line-height: 1.6; }
+  .code-row .p { font-family: var(--mono); font-size: 11.5px; color: var(--ink); overflow-wrap: anywhere; }
+  .code-row .p .new { font-family: var(--mono); font-size: 9px; color: var(--sage); border: 1px solid rgba(78, 107, 93, 0.4); border-radius: 2px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
+  .code-row .d { color: var(--muted); }
+  @media (max-width: 760px) { .code-row { grid-template-columns: 1fr; gap: 4px; } }
+
+  /* scope */
+  .scope { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .scope-cell { background: var(--panel-solid); padding: 20px 18px; min-width: 0; }
+  .scope-cell .tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--muted); display: block; margin-bottom: 8px; }
+  .scope-cell h4 { font-size: 16px; margin-bottom: 5px; }
+  .scope-cell p { font-size: 12.5px; color: var(--ink-soft); margin: 0; line-height: 1.65; }
+  .scope-cell.done { background: #f7f1e4; }
+  .scope-cell.done .tag { color: var(--ok); }
+  .scope-cell.todo .tag { color: var(--muted); }
+  .scope-cell.wait { background: repeating-linear-gradient(135deg, transparent 0 9px, rgba(36, 29, 25, 0.028) 9px 10px), var(--panel-solid); }
+  @media (max-width: 860px) { .scope { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .scope { grid-template-columns: 1fr; } }
+
+  .closing {
+    margin-top: 84px;
+    border-top: 2px solid var(--ink);
+    padding-top: 22px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 20px;
+    align-items: end;
+  }
+  .closing .q { font-family: var(--serif); font-size: clamp(22px, 2.6vw, 32px); line-height: 1.45; max-width: 26em; }
+  .closing .q em { font-style: normal; color: var(--amber); }
+  .closing .meta { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; color: var(--muted); text-align: right; line-height: 1.8; white-space: nowrap; }
+  @media (max-width: 700px) { .closing { grid-template-columns: 1fr; } .closing .meta { text-align: left; } }
+
+  /* reveal */
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity 650ms var(--ease), transform 650ms var(--ease); }
+  .reveal.in { opacity: 1; transform: none; }
+  /* The safety net's class: shown at once, with no fade, for what the observer never saw. */
+  .reveal.static { opacity: 1; transform: none; transition: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+    .reveal { opacity: 1; transform: none; }
+  }
+
+  @media (max-width: 1020px) {
+    .shell { grid-template-columns: 1fr; gap: 0; padding: 0 22px 72px; }
+    .rail { position: static; height: auto; padding: 18px 0 0; border-bottom: 1px solid var(--line); }
+    .rail-title, .rail-foot { display: none; }
+    .rail nav { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+    .rail a { grid-template-columns: auto auto; gap: 5px; padding: 4px 8px; border: 1px solid var(--line); background: rgba(255, 252, 246, 0.5); }
+    .rail a.active::after { display: none; }
+    .hero { padding-top: 46px; }
+    section { padding-top: 66px; }
+  }
+
+  @media print {
+    body { background: #fff; color: #000; font-size: 12pt; }
+    .rail, .sim-tools, .digest-actions, .fact-btn, .stamp { display: none !important; }
+    .shell { display: block; max-width: none; padding: 0; }
+    .sim-body, .sim-stage { display: block; }
+    .reveal { opacity: 1; transform: none; }
+    section { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail" aria-label="目录">
+    <div class="rail-title">Contents</div>
+    <nav id="toc">
+      <a href="#caps"><span class="n">01</span><span>能力</span></a>
+      <a href="#arch"><span class="n">02</span><span>实现原理</span></a>
+      <a href="#events"><span class="n">03</span><span>事件</span></a>
+      <a href="#ledger"><span class="n">04</span><span>台账</span></a>
+      <a href="#rules"><span class="n">05</span><span>规则</span></a>
+      <a href="#sim"><span class="n">06</span><span>试一下</span></a>
+      <a href="#usage"><span class="n">07</span><span>使用方法</span></a>
+      <a href="#actions"><span class="n">08</span><span>行动面</span></a>
+      <a href="#scope"><span class="n">09</span><span>边界与下一步</span></a>
+    </nav>
+    <div class="rail-foot">
+      M1 + M2 · 2026-11-26<br>
+      Plannotator 中文 fork<br>
+      <span class="mono">doc/管家事件机制-说明.html</span>
+    </div>
+  </aside>
+
+  <main>
+    <!-- ───────────── hero ───────────── -->
+    <header class="hero">
+      <div class="eyebrow">
+        <span><b>Plannotator</b> 中文 fork</span>
+        <span>管家事件机制</span>
+        <span>M1 观察面 · M2 行动面</span>
+        <span>2026-11-26</span>
+      </div>
+      <div class="stamp" aria-hidden="true">
+        <strong>M1+M2</strong>
+        观察面<br>
+        行动面<br>
+        landed<br>
+        26.11.26
+      </div>
+      <h1 class="hero-title">管家不再只是<br><em>会聊天</em>。</h1>
+      <p class="hero-lead">
+        收件箱里的每一次交付、裁决、提问、失败和会话状态变化，现在都会变成<strong>一句人话</strong>，
+        进入每个需求的<strong>台账</strong>；需要主人时，管家会先开口。现在他也能<strong>动手</strong>：
+        建卡、派活、转达、停下——动作写进需求历史，派活和停止第一次要您点头。
+        他不是第二个事实源：台账只是收件箱的投影，随时可以从一条游标重建。
+      </p>
+      <div class="chips" aria-label="特性">
+        <span class="chip amber">事件驱动</span>
+        <span class="chip">收件箱是唯一事实源</span>
+        <span class="chip">游标 · 可重放</span>
+        <span class="chip">幂等 · 合并 · 静默</span>
+        <span class="chip sage">执行面 MCP 零改动</span>
+        <span class="chip amber">M2 · 行动面</span>
+      </div>
+
+      <div class="flow" aria-label="数据流：收件箱事实到管家">
+        <div class="flow-step">
+          <span class="k">01 · 事实源</span>
+          <span class="v">收件箱</span>
+          <span class="d">需求日志 / 消息日志 / 会话状态</span>
+        </div>
+        <div class="flow-step">
+          <span class="k">02 · 投影</span>
+          <span class="v">语义事件</span>
+          <span class="d">原始事实 → 一句状态变化</span>
+        </div>
+        <div class="flow-step">
+          <span class="k">03 · 记忆</span>
+          <span class="v">需求台账</span>
+          <span class="d">进展 / 等你 / 等会话 / 下一步</span>
+        </div>
+        <div class="flow-step">
+          <span class="k">04 · 发声</span>
+          <span class="v">简报 · 唤醒</span>
+          <span class="d">≤12 行摘要，交给管家</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ───────────── 01 caps ───────────── -->
+    <section id="caps" aria-labelledby="caps-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">01</span>
+        <div>
+          <h2 id="caps-h">它现在会做什么</h2>
+          <p class="sec-sub">从“只能聊”，到“知道情况、记得需求、盯得住进展、在需要时开口，需要时动手”。</p>
+        </div>
+      </div>
+
+      <div class="caps reveal">
+        <article class="cap">
+          <span class="num">01</span>
+          <div>
+            <h3>记得需求</h3>
+            <p>每个需求一份台账，人读的 <code>.md</code> 与机器读的 <code>.json</code> 同源：标题、阶段、背景链接、进展、等待关系、下一步。</p>
+            <span class="meta">ledger/&lt;req_id&gt;.md + .json</span>
+          </div>
+        </article>
+        <article class="cap">
+          <span class="num">02</span>
+          <div>
+            <h3>记得进展</h3>
+            <p>不是原始消息堆：每条进展是一句状态变化；60 秒内同域的连续记录折叠成一条，并保留合并计数。</p>
+            <span class="meta">timeline · merged ×N</span>
+          </div>
+        </article>
+        <article class="cap">
+          <span class="num">03</span>
+          <div>
+            <h3>知道事件</h3>
+            <p>三类事实源汇入：需求历史日志、收件箱消息日志、live 会话轮询；再加系统自身的首次接入与重启。</p>
+            <span class="meta">requirement · thread · session · system</span>
+          </div>
+        </article>
+        <article class="cap">
+          <span class="num">04</span>
+          <div>
+            <h3>不漏事</h3>
+            <p>游标记录每个域读到哪里；重启只补漏掉的；全局 <code>dedupe</code> 让同一条事实只落一次；首次接入会明说“以前的事我不在”。</p>
+            <span class="meta">events.cursor.json · replay</span>
+          </div>
+        </article>
+        <article class="cap wide">
+          <span class="num">05</span>
+          <div>
+            <h3>会先开口</h3>
+            <p>提醒级事件合并成 ≤12 行的 <code>【动态】</code>：主人已经开过管家会话时，管家会主动说一句；否则摘要等待下一次对话，随提问一起进入提示词。同一需求、同一类提醒 30 分钟内只响一次。</p>
+            <span class="meta">wake · digest · 30 min silence</span>
+          </div>
+        </article>
+        <article class="cap wide">
+          <span class="num">06</span>
+          <div>
+            <h3>也会动手（M2）</h3>
+            <p>建卡、派活、转达、停止，走管家自己的动作通道。派活和停止第一次要主人确认一次（L3），之后记住；每个动作都以「管家: …」写进需求历史，台账里 <code>actor=butler</code>。</p>
+            <span class="meta">action channel · L3 grant · idempotency · audit</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ───────────── 02 arch ───────────── -->
+    <section id="arch" aria-labelledby="arch-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">02</span>
+        <div>
+          <h2 id="arch-h">怎么实现的</h2>
+          <p class="sec-sub">观察面只读；行动面是管家自己的写入通道；执行面（MCP 工具）一行没动。</p>
+        </div>
+      </div>
+
+      <div class="arch reveal">
+        <div class="arch-col">
+          <h4>事实源</h4>
+          <span class="role">Inbox is the truth</span>
+          <ul>
+            <li><b>requirement-events.json</b>新建 / 阶段 / 交付 / 裁决 / 上下文 / 归档</li>
+            <li><b>store journal</b>消息、问题；问题行带出询问的会话</li>
+            <li><b>live sessions</b>每 5 秒比较一次开始 / 干活 / 结束</li>
+            <li><b>daemon itself</b>首次接入、重启补课</li>
+          </ul>
+        </div>
+        <div class="arch-arrow" aria-hidden="true"><span>→</span></div>
+        <div class="arch-col">
+          <h4>投影器</h4>
+          <span class="role">deterministic projection</span>
+          <ul>
+            <li><b>语义化</b>原始事件 → 人话 + 等级（record / notify / act）</li>
+            <li><b>幂等</b>id 与 dedupe 由事实派生，重复投递只算一次</li>
+            <li><b>合并</b>60 秒内同类记录折叠，保留 eventIds</li>
+            <li><b>归属</b>会话 / 线程 → 所属需求；链接不上就只记在事件流</li>
+            <li><b>台账 upsert</b>三栏待办 + 下一步，写 md 与 json</li>
+          </ul>
+        </div>
+        <div class="arch-arrow" aria-hidden="true"><span>→</span></div>
+        <div class="arch-col">
+          <h4>消费面</h4>
+          <span class="role">read-only, for the butler</span>
+          <ul>
+            <li><b>台账</b>管家按需读 <code>ledger/&lt;id&gt;.md</code>，不塞全量进上下文</li>
+            <li><b>简报</b>GET /api/inbox/butler/brief（≤5 条，多的折叠）</li>
+            <li><b>摘要</b>唤醒 / 下一条提问前的【动态】，≤12 行</li>
+            <li><b>页面</b>管家页每 5 秒对齐历史，主动消息当场出现</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="arch-note reveal">
+        <b>铁律：</b>管家不得成为第二事实源。每一条台账时间线都记着来源 event id；标题、阶段、归档标记在读取时以收件箱记录为准；
+        删除的需求留下只读 tombstone，不再提醒。冲突时，永远以收件箱为准。
+      </p>
+
+      <div class="aside reveal">
+        <b>为什么不给管家开 MCP 工具？</b> 执行面是「干活的人 ↔ 收件箱」的通道；观察面只读，行动面是管家自己的内部接口。
+        三面互不复用协议，才不会让管家的读取变成对执行会话的干扰。
+      </div>
+
+      <div class="aside sage reveal" style="margin-top:12px">
+        <b>行动面（M2，已建）：</b>管家 → <code>POST /api/inbox/butler/act</code> → 建卡 / 派活 / 转达 / 停止。
+        它走的是与 New message、打断相同的写入路径；每个动作以「管家: …」进入需求历史（台账里 <code>actor=butler</code>）。
+        派活/停止（L3）第一次返回 <code>needs_authorization</code>，主人同意后带 <code>authorized: true</code> 重试，授权记在 <code>preferences.json</code>。
+      </div>
+    </section>
+
+    <!-- ───────────── 03 events ───────────── -->
+    <section id="events" aria-labelledby="events-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">03</span>
+        <div>
+          <h2 id="events-h">什么会变成事件</h2>
+          <p class="sec-sub">原始事件 ≠ 管家能用的话。投影器把事实收成一句可复述的状态变化，并建议处理等级。</p>
+        </div>
+      </div>
+
+      <div class="table-wrap reveal">
+        <table>
+          <thead>
+            <tr><th>kind</th><th>语义（示例）</th><th>域</th><th>等级</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>requirement.delivered</code></td><td>交付提案《登录页设计》，等主人裁决</td><td>需求</td><td><span class="lv notify">notify</span></td></tr>
+            <tr><td><code>requirement.verdict</code></td><td>设计文档「登录页设计」被退回（批注 3 条）</td><td>需求</td><td><span class="lv notify">notify</span></td></tr>
+            <tr><td><code>requirement.stage</code></td><td>《登录页改版》阶段：设计评审 → 需求开发</td><td>需求</td><td><span class="lv notify">notify</span> <span class="lv record">record</span></td></tr>
+            <tr><td><code>requirement.note</code></td><td>助手: 做完了登录页骨架</td><td>需求</td><td><span class="lv record">record</span></td></tr>
+            <tr><td><code>session.failed</code></td><td>助手 的会话失败：额度用完</td><td>会话</td><td><span class="lv notify">notify</span></td></tr>
+            <tr><td><code>session.waiting_person</code></td><td>助手 在等主人批准一个操作：Bash</td><td>会话</td><td><span class="lv notify">notify</span></td></tr>
+            <tr><td><code>thread.agent_question</code></td><td>助手 在等主人回答：用哪个配色？</td><td>沟通</td><td><span class="lv notify">notify</span></td></tr>
+            <tr><td><code>thread.person_message</code></td><td>「登录页」里主人在说话</td><td>沟通</td><td><span class="lv record">record</span></td></tr>
+            <tr><td><code>session.started / working / ended</code></td><td>设计助手 开始了一个会话 / 在干活 / 结束了</td><td>会话</td><td><span class="lv record">record</span></td></tr>
+            <tr><td><code>system.daemon_restart</code></td><td>我回来了：期间有 5 条动态，已经补上</td><td>系统</td><td><span class="lv record">record</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="two code-split" style="margin-top:20px">
+        <div class="panel reveal">
+          <div class="panel-head">
+            <h3>事件信封</h3>
+            <span class="tag">ButlerEvent</span>
+          </div>
+<pre><code>{
+  <span class="k" style="color:var(--amber)">id</span>:       "be_evt_01J…",       <span style="color:var(--muted)">// 由事实派生，可重放</span>
+  <span class="k" style="color:var(--amber)">at</span>:       "2026-11-26T09:30:12Z",
+  <span class="k" style="color:var(--amber)">domain</span>:   "requirement",
+  <span class="k" style="color:var(--amber)">kind</span>:     "requirement.delivered",
+  <span class="k" style="color:var(--amber)">subject</span>:  { requirement: "req_01…", thread: "msg_01…" },
+  <span class="k" style="color:var(--amber)">actor</span>:    "agent",
+  <span class="k" style="color:var(--amber)">summary</span>:  "交付提案《登录页设计》，等主人裁决",
+  <span class="k" style="color:var(--amber)">ref</span>:      { kind: "deliverable", id: "dlv_01…" },
+  <span class="k" style="color:var(--amber)">source</span>:   "evt_01J…",           <span style="color:var(--muted)">// 游标读的是它</span>
+  <span class="k" style="color:var(--amber)">dedupe</span>:   "req:evt_01J…",
+  <span class="k" style="color:var(--amber)">level</span>:    "notify"
+}</code></pre>
+        </div>
+        <div class="panel reveal">
+          <div class="panel-head">
+            <h3>语义化，集中在一处</h3>
+            <span class="tag">projector</span>
+          </div>
+          <p style="font-size:13.5px;color:var(--ink-soft);margin-bottom:10px">原始事实只描述“发生了什么”；投影器决定“这句话该怎么说、该不该叫人”。规则是确定性的，不依赖模型。</p>
+          <ul style="font-size:13px;color:var(--ink-soft);line-height:1.7;margin:0">
+            <li>设计稿交付且没有裁决 → 「等您审阅」，<span class="lv notify">notify</span></li>
+            <li>审阅裁决 = approved → 记录结论，会话可继续</li>
+            <li>审阅裁决 = annotated → 「被退回」，等主人决定下一步</li>
+            <li>会话失败 → 一句原因 + 下一步建议</li>
+            <li>普通进展 / 会话开始 → 只记录，不打扰</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── 04 ledger ───────────── -->
+    <section id="ledger" aria-labelledby="ledger-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">04</span>
+        <div>
+          <h2 id="ledger-h">台账长什么样</h2>
+          <p class="sec-sub">同一份事实，两种视图：模型读 Markdown，程序读 JSON。三栏待办是简报唯一的数据源。</p>
+        </div>
+      </div>
+
+      <div class="ledger-grid reveal">
+        <div class="paper-sheet">
+          <div class="ledger-md"><span class="h"># 《登录页改版》</span>
+
+<span class="time">&gt; 需求 req_01J8… · 阶段：设计评审 · 更新：2026-11-26T09:31:04Z</span>
+
+<span class="sec">## 进展</span>
+- 09:22　新需求《登录页改版》
+- 09:26　《登录页改版》阶段：需求设计 → 设计评审
+- 09:30　交付提案《登录页设计》，等主人裁决
+- 09:31　助手: 做完了登录页骨架
+
+<span class="sec">## 等你</span>
+- 审阅：登录页设计
+
+<span class="sec">## 等会话</span>
+- 登录页改版：按批准的方向继续
+
+<span class="sec">## 下一步</span>
+提醒主人审阅：交付提案《登录页设计》，等主人裁决
+（因为：交付物在等主人裁决）</div>
+        </div>
+
+        <div>
+          <div class="json-sheet">
+<pre><code>{
+  <span class="k">"v"</span>: 1,
+  <span class="k">"req"</span>: <span class="s">"req_01J8…"</span>,
+  <span class="k">"title"</span>: <span class="s">"登录页改版"</span>,
+  <span class="k">"stage"</span>: <span class="s">"design-review"</span>,
+  <span class="k">"archived"</span>: <span class="n">false</span>,
+  <span class="k">"background"</span>: {
+    <span class="k">"why"</span>: <span class="n">null</span>,
+    <span class="k">"links"</span>: [{ <span class="k">"kind"</span>: <span class="s">"thread"</span>, <span class="k">"ref"</span>: <span class="s">"msg_01…"</span> }]
+  },
+  <span class="k">"timeline"</span>: [
+    { <span class="k">"at"</span>: <span class="s">"…09:30Z"</span>,
+      <span class="k">"summary"</span>: <span class="s">"交付提案《登录页设计》…"</span>,
+      <span class="k">"eventIds"</span>: [<span class="s">"be_evt_01J…"</span>] }
+  ],
+  <span class="k">"todos"</span>: {
+    <span class="k">"on_person"</span>: [<span class="s">"审阅：登录页设计"</span>],
+    <span class="k">"on_session"</span>: [],
+    <span class="k">"on_butler"</span>: []
+  },
+  <span class="k">"next_action"</span>: { <span class="k">"level"</span>: <span class="s">"notify"</span>, … },
+  <span class="k">"cursor"</span>: { <span class="k">"lastEventId"</span>: <span class="s">"be_evt_01J…"</span> },
+  <span class="k">"handled"</span>: [<span class="s">"req:evt_01J…"</span>, …]
+}</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="todos reveal">
+        <div class="todo on-person">
+          <h4><span class="n">ON PERSON · 等你</span>审阅、拍板、回话</h4>
+          <ul><li>审阅：登录页设计</li></ul>
+        </div>
+        <div class="todo">
+          <h4><span class="n">ON SESSION · 等会话</span>正在跑的事</h4>
+          <ul><li>登录页改版：按批准的方向继续</li></ul>
+        </div>
+        <div class="todo">
+          <h4><span class="n">ON BUTLER · 等管家</span>该催、该转达</h4>
+          <p>暂无</p>
+        </div>
+      </div>
+
+      <div class="aside sage reveal">
+        <b>可丢弃、可重建。</b>台账不是数据库：删掉 <code>ledger/</code> 也能从一条游标和收件箱事实重新投出来。
+        这就是“收件箱唯一事实源”的具体含义——管家说的话必须能追溯回某条事件或某个需求字段。
+      </div>
+    </section>
+
+    <!-- ───────────── 05 rules ───────────── -->
+    <section id="rules" aria-labelledby="rules-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">05</span>
+        <div>
+          <h2 id="rules-h">一致性、合并与安静</h2>
+          <p class="sec-sub">“不漏”和“不烦”是同一套机制的两端。以下数值都是代码里的常量，不是比喻。</p>
+        </div>
+      </div>
+
+      <div class="rules reveal">
+        <div class="rule">
+          <span class="rk">Cursor</span>
+          <h4>游标 + 补课</h4>
+          <p><code>events.cursor.json</code> 记需求日志位置、消息日志 seq、已投递时间与全局 dedupe。重启从游标之后回放，并说一句“我回来了，期间有 N 条动态”。首次接入则只从现在开始，并声明“以前的事我不在”。</p>
+        </div>
+        <div class="rule">
+          <span class="rk">Idempotency</span>
+          <h4>同一条事实只落一次</h4>
+          <p>事件 id 与 <code>dedupe</code> 都由事实派生：重放、重复投递、同一轮询的抖动都不会让台账长出第二条。dedupe 保留最近 500 条，跨重启生效。</p>
+        </div>
+        <div class="rule">
+          <span class="rk">60 s</span>
+          <h4>合并，而不是刷屏</h4>
+          <p>同一需求、同一域、60 秒内的记录级事实（进展、会话工作、会话汇报）折叠成一条，摘要取最后一条，带「合并 N 条」，原始 event id 全部保留。</p>
+        </div>
+        <div class="rule">
+          <span class="rk">30 min</span>
+          <h4>同类提醒只响一次</h4>
+          <p>同一需求、同一类 notify 事件 30 分钟内只提醒一次。提醒仍会记账，只是不再叫醒管家。事实不会因为安静而丢失。</p>
+        </div>
+        <div class="rule">
+          <span class="rk">≤ 12 lines</span>
+          <h4>上下文预算</h4>
+          <p>唤醒摘要最多 12 行，每条只给语义摘要和需求 id；细节留给 <code>ledger/&lt;id&gt;.md</code> 按需读取。台账时间线最多留 60 条，md 只显示最近 20 条。</p>
+        </div>
+        <div class="rule">
+          <span class="rk">Tombstone</span>
+          <h4>删除的需求不再问</h4>
+          <p>需求被删除后，台账保留为只读 tombstone：历史可回查，但待办清空、不再提醒。归档的需求同样退出简报。</p>
+        </div>
+      </div>
+
+      <div class="table-wrap reveal" style="margin-top:20px">
+        <table>
+          <thead><tr><th>阈值</th><th>值</th><th>作用</th></tr></thead>
+          <tbody>
+            <tr><td>事件合并窗口</td><td><code>60 s</code></td><td>同需求同域的记录折叠</td></tr>
+            <tr><td>同类静默</td><td><code>30 min</code></td><td>同一需求同类提醒的间隔</td></tr>
+            <tr><td>会话轮询</td><td><code>5 s</code></td><td>开始 / 干活 / 结束的转换检测</td></tr>
+            <tr><td>唤醒防抖</td><td><code>2 s</code></td><td>一次事件潮只唤醒一次</td></tr>
+            <tr><td>简报条目</td><td><code>≤ 5</code></td><td>多出的折叠为「还有 N 条」</td></tr>
+            <tr><td>唤醒摘要</td><td><code>≤ 12 行</code></td><td>只给摘要 + 需求 id</td></tr>
+            <tr><td>台账时间线</td><td><code>60 / 20</code></td><td>JSON 保留 60 条，md 显示最近 20 条</td></tr>
+            <tr><td>dedupe 保留</td><td><code>500</code></td><td>跨重启的幂等窗口</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ───────────── 06 simulator ───────────── -->
+    <section id="sim" aria-labelledby="sim-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">06</span>
+        <div>
+          <h2 id="sim-h">试一下：一个事实的一生</h2>
+          <p class="sec-sub">点一个事实，看它如何变成事件、进入台账、改变简报，最后变成会给管家看的一段摘要。全部在本地模拟，不写任何文件。</p>
+        </div>
+      </div>
+
+      <div class="sim reveal">
+        <div class="sim-bar">
+          <span class="t">事件台 · <b>req_01J8「登录页改版」</b> · 阶段 设计评审</span>
+          <span class="t" id="sim-counter">0 条事件</span>
+        </div>
+        <div class="sim-body">
+          <div class="sim-facts">
+            <p class="hint">选择一个事实投递进来：</p>
+            <button class="fact-btn" data-fact="deliver" data-level="notify">交付提案<span class="k">requirement.delivered</span></button>
+            <button class="fact-btn" data-fact="verdict" data-level="notify">审阅退回<span class="k">requirement.verdict</span></button>
+            <button class="fact-btn" data-fact="question" data-level="notify">会话提问<span class="k">thread.agent_question</span></button>
+            <button class="fact-btn" data-fact="fail" data-level="notify">会话失败<span class="k">session.failed</span></button>
+            <button class="fact-btn" data-fact="person" data-level="record">主人发言<span class="k">thread.person_message</span></button>
+            <div class="sim-tools">
+              <button class="ghost-btn" id="sim-restart">模拟守护进程重启 → 从游标补课</button>
+              <button class="ghost-btn" id="sim-reset">清空，重新开始</button>
+            </div>
+          </div>
+
+          <div class="sim-stage">
+            <div class="sim-main">
+              <div class="mini-head"><span>台账 · 进展</span><b id="sim-tl-count">0</b></div>
+              <ol class="timeline" id="sim-timeline" aria-live="polite">
+                <li class="empty" id="sim-empty">还没有动态。投递一个事实试试。</li>
+              </ol>
+              <div class="readout">
+                <div class="readout-row"><span class="rk">等你</span><span class="rv qa" id="sim-wait">—</span></div>
+                <div class="readout-row"><span class="rk">下一步</span><span class="rv" id="sim-next">—</span></div>
+              </div>
+              <div class="envelope">
+                <div class="mini-head"><span>最近一条语义事件</span><b id="sim-env-kind">—</b></div>
+                <pre id="sim-envelope">等待投递…</pre>
+              </div>
+            </div>
+
+            <div class="sim-side">
+              <div class="mini-head"><span>简报 · brief</span><b>≤ 5 条</b></div>
+              <div class="brief-box" id="sim-brief"><span class="brief-title">今天没有等你的事。</span></div>
+
+              <div class="mini-head" style="margin-top:18px"><span>唤醒摘要 · digest</span><b>≤ 12 行</b></div>
+              <div class="digest-box" id="sim-digest">（没有新的提醒）</div>
+              <div class="digest-actions">
+                <button class="tiny-btn" id="sim-send">送达管家</button>
+                <button class="tiny-btn" id="sim-clear-seen">标记已看过</button>
+              </div>
+              <div class="status-line" id="sim-status" role="status"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="arch-note reveal" style="margin-top:14px">
+        <b>注意：</b>这里的“送达管家”只模拟 <code>delivered_at</code> 前移；真实唤醒还会经过 2 秒防抖、30 分钟静默，
+        并且只在主人已经开过管家会话时才会主动说话——否则摘要留在队列里，等下一次提问一起送进提示词。
+      </p>
+    </section>
+
+    <!-- ───────────── 07 usage ───────────── -->
+    <section id="usage" aria-labelledby="usage-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">07</span>
+        <div>
+          <h2 id="usage-h">怎么用</h2>
+          <p class="sec-sub">不需要新配置。重启一次 Inbox 守护进程，观察面和行动面就都在了。</p>
+        </div>
+      </div>
+
+      <div class="steps reveal">
+        <div class="step">
+          <div>
+            <h3>打开管家，直接问</h3>
+            <p>收件箱右下角的猫头鹰 → 管家页。问「现在什么情况？」「登录页那个需求怎么样了？」——人设要求它先读对应需求的台账，再回答。</p>
+            <p class="mono" style="font-size:11.5px;color:var(--muted)">#butler · 页面刷新不丢 · 每 5 秒对齐一次历史</p>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>什么都不用做，等它先说</h3>
+            <p>设计稿交付、审阅退回、会话失败、会话提问、权限卡——这些提醒级事件会合并成一句「【动态】」。主人已经开过管家会话时，管家会主动说；否则摘要随下一次对话进入提示词。</p>
+            <p style="font-size:12.5px;color:var(--muted)">同一需求同类提醒 30 分钟内只响一次。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>让它动手</h3>
+            <p>要建卡、派活、转达或停下时，管家走自己的动作通道（<code>~/plannotator-butler/action.json</code> 里的地址）。派活和停止第一次会先问您一次；同意后记住。</p>
+            <p class="mono" style="font-size:11.5px;color:var(--muted)">例：「把这个需求建卡，在 web 项目里开工」</p>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>查台账文件</h3>
+            <p>所有台账在管家自己的文件夹里，人读的 Markdown 与机器读的 JSON 并列：</p>
+<pre><code>~/plannotator-butler/
+  events.cursor.json        <span style="color:var(--muted)"># 游标 / 已投递 / dedupe</span>
+  ledger/
+    req_01J8….md            <span style="color:var(--muted)"># 管家读这个</span>
+    req_01J8….json          <span style="color:var(--muted)"># 程序读这个</span>
+  history.jsonl             <span style="color:var(--muted)"># 管家对话历史</span></code></pre>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>窗口内读简报与台账</h3>
+            <p>两个只读接口，和管家路由一样只答同源窗口：</p>
+<pre><code>GET /api/inbox/butler/brief
+GET /api/inbox/butler/ledger
+GET /api/inbox/butler/ledger/&lt;req_id&gt;</code></pre>
+            <p>从终端里读，带一个同源标记即可（本机信任域）：</p>
+<pre><code>curl -s -H 'sec-fetch-site: same-origin' \
+  http://127.0.0.1:&lt;port&gt;/api/inbox/butler/brief</code></pre>
+            <p style="font-size:12px;color:var(--muted)">端口见 <code>&lt;dataDir&gt;/inbox/inbox.json</code>，或直接用当前 Inbox 的地址。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>重启与沙箱</h3>
+            <p>守护进程重启后从游标补课，不漏不重；首次接入只从现在开始，并明确告诉管家“以前的事我不在”。</p>
+            <p style="font-size:12.5px;color:var(--muted)">测试与开发用 <code>PLANNOTATOR_BUTLER_DIR</code> 把管家文件夹指到临时目录，不会碰真实台账。</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:24px; display:grid; gap:20px">
+        <div class="panel reveal">
+          <div class="panel-head"><h3>代码落点</h3><span class="tag">source map</span></div>
+          <div class="code-map">
+            <div class="code-row"><span class="p">packages/server/inbox-butler-events.ts<span class="new">NEW</span></span><span class="d">投影器、台账、游标、简报、摘要、只读路由</span></div>
+            <div class="code-row"><span class="p">packages/server/requirements.ts</span><span class="d"><code>watch.subscribeEvents</code> 与 <code>eventsAfter</code>：让 <code>say</code> 这类不写记录的事件也能被听到、被补课</span></div>
+            <div class="code-row"><span class="p">packages/server/inbox-butler-actions.ts<span class="new">NEW</span></span><span class="d">行动面协议、L3 授权与偏好文件、幂等日志、审计；<code>/api/inbox/butler/act</code></span></div>
+            <div class="code-row"><span class="p">packages/server/inbox-butler.ts</span><span class="d">摘要注入下一次提示词；<code>wake()</code> 主动说话；失败回队；技能白名单</span></div>
+            <div class="code-row"><span class="p">packages/server/inbox-compose.ts</span><span class="d"><code>startThread</code> 对管家开放：派活复用 New message 的写入路径</span></div>
+            <div class="code-row"><span class="p">packages/server/inbox.ts</span><span class="d">接上需求 / 消息 / 会话三源；挂 brief 与 ledger 路由；随服务停止</span></div>
+            <div class="code-row"><span class="p">packages/ai/context.ts</span><span class="d">管家人设：先读台账、只陈述可追溯的事实、动作通道与 L3 询问</span></div>
+            <div class="code-row"><span class="p">packages/inbox/components/Butler.tsx</span><span class="d">页面每 5 秒对齐历史，主动消息当场出现</span></div>
+            <div class="code-row"><span class="p">packages/server/inbox-butler-events.test.ts<span class="new">NEW</span></span><span class="d">M1 · 15 个用例：投影表、台账、合并、幂等、游标、摘要预算、tombstone</span></div>
+            <div class="code-row"><span class="p">packages/server/inbox-butler-actions.test.ts<span class="new">NEW</span></span><span class="d">M2 · 11 个用例：幂等、L3 授权、偏好文件、转达/停止、审计</span></div>
+            <div class="code-row"><span class="p">packages/server/inbox-butler-actions-server.test.ts<span class="new">NEW</span></span><span class="d">M2 · 真实 Inbox 集成：建卡 → 派活 → 卡片/会话/两条历史</span></div>
+          </div>
+        </div>
+
+        <div class="panel reveal">
+          <div class="panel-head"><h3>验证</h3><span class="tag">tests</span></div>
+          <ul style="font-size:13.5px;color:var(--ink-soft);line-height:1.75;margin:0;padding-left:1.15em">
+            <li>M1 新增 15 个事件面用例；M2 新增 11 个协议/授权用例 + 2 个真实 Inbox 集成用例，全部通过。</li>
+            <li>原有管家 12、需求模块 16、Inbox ack 17 个用例通过。</li>
+            <li><code>tsc --noEmit</code>：server / ai / inbox 三个包无错误。</li>
+            <li>覆盖：三类事实源、重启补课、重复投递、合并/静默/预算、删除 tombstone，以及建卡/派活/授权/转达/停止。</li>
+          </ul>
+          <div class="aside" style="margin-top:18px">
+            <b>没有改的东西：</b>MCP 工具、需求路由的写入语义、会话轮询本身。观察面只读；台账写失败也不会阻断对话。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── 08 scope ───────────── -->
+        <!-- ───────────── 08 actions ───────────── -->
+    <section id="actions" aria-labelledby="actions-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">08</span>
+        <div>
+          <h2 id="actions-h">现在，他能动手了</h2>
+          <p class="sec-sub">M2 行动面：五个动作，一条只属于管家的写入通道。每一步都写进需求历史；派活和停止，第一次要您点头。</p>
+        </div>
+      </div>
+
+      <div class="table-wrap reveal">
+        <table>
+          <thead>
+            <tr><th>action</th><th>做什么</th><th>级别</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>create-requirement</code></td><td>建一张需求卡，背景与要点一起落账</td><td><span class="lv record">L2</span></td></tr>
+            <tr><td><code>launch-session</code></td><td>从需求卡开一个执行会话（项目或文件夹）</td><td><span class="lv act">L3</span></td></tr>
+            <tr><td><code>tell-session</code></td><td>把一句话转达给正在干活的会话</td><td><span class="lv record">L2</span></td></tr>
+            <tr><td><code>stop-session</code></td><td>让会话停下（打断下一次轮询送达）</td><td><span class="lv act">L3</span></td></tr>
+            <tr><td><code>remind</code></td><td>在需求上留一句提醒，进台账</td><td><span class="lv record">L1</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="two reveal" style="margin-top:20px">
+        <div class="panel">
+          <div class="panel-head"><h3>调用方式</h3><span class="tag">butler's own curl</span></div>
+          <p style="font-size:13.5px;color:var(--ink-soft)">地址在管家文件夹的 <code>action.json</code>（每次启动重写）。管家从本机 curl 调用，窗口同源也可以；别的站点被拒。</p>
+<pre><code>cat ~/plannotator-butler/action.json
+# { "url": "http://127.0.0.1:53998/api/inbox/butler/act", ... }
+
+curl -s -X POST "$URL" \
+  -H 'content-type: application/json' \
+  -d '{"action":"create-requirement",
+       "title":"登录页改版",
+       "idempotency_key":"k-1"}'</code></pre>
+          <p style="font-size:12.5px;color:var(--muted);margin:12px 0 0">每个动作带一个 <code>idempotency_key</code>；重试复用同一个，不会建出第二张卡、开第二个会话。</p>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>授权与审计</h3><span class="tag">L3 · actor=butler</span></div>
+          <ul style="font-size:13px;color:var(--ink-soft);line-height:1.75;margin:0;padding-left:1.15em">
+            <li>派活 / 停止第一次返回 <code>needs_authorization</code>；管家先问您，同意后带 <code>authorized: true</code> 重试。</li>
+            <li>授权按动作记在 <code>~/plannotator-butler/preferences.json</code>，下次不再问；M3 会做成可查看、可撤销。</li>
+            <li>动作成功以「管家: …」写进需求历史，台账显示 <code>actor=butler</code>；没有需求时记一条管家事件。</li>
+            <li>失败原样回给管家：它只能如实汇报，不能假装做成。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="steps reveal" style="margin-top:22px">
+        <div class="step">
+          <div>
+            <h3>您说：「把这个建卡，然后开工」</h3>
+            <p>管家先问清项目或文件夹；它不猜。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>create-requirement → 卡片出现</h3>
+            <p>需求卡落在工坊；历史里多一行 <code>管家: 替主人建了这张卡</code>。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>launch-session → 会话开跑</h3>
+            <p>第一次返回 <code>needs_authorization</code>；您同意后重试。卡挂到新线程，历史里多一行 <code>管家: 开好了执行会话</code>。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>验收：卡片、会话、两条历史</h3>
+            <p>这正是设计文档 M2 的验收。一条集成测试用真实 Inbox + 假 agent 跑通了整条链路；重复的 idempotency key 不会多建卡或多开会话。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="aside reveal" style="margin-top:22px">
+        <b>管家聊天不是线程。</b>它自己的对话是管家文件夹里的真 opencode 会话；需求卡是工坊记录，执行会话从卡上开自己的线程。
+        这张卡不会自动落到聊天上——之前他说“您在哪儿开口，哪儿就是线程”是错的，人设已经写死了这条边界。
+      </div>
+    </section>
+
+<section id="scope" aria-labelledby="scope-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">09</span>
+        <div>
+          <h2 id="scope-h">边界与下一步</h2>
+          <p class="sec-sub">M1 观察面与 M2 行动面已完成；M3 规则可配、M4 主动调度尚未实现。</p>
+        </div>
+      </div>
+
+      <div class="scope reveal">
+        <div class="scope-cell done">
+          <span class="tag">M1 · DONE</span>
+          <h4>观察面</h4>
+          <p>语义事件、台账、游标补课、简报、摘要唤醒。今天已经可用。</p>
+        </div>
+        <div class="scope-cell done">
+          <span class="tag">M2 · DONE</span>
+          <h4>行动面</h4>
+          <p>建卡、派活、转达、停止；L3 首次授权后记住；动作以 <code>actor=butler</code> 写入需求历史。</p>
+        </div>
+        <div class="scope-cell wait">
+          <span class="tag">M3 · LATER</span>
+          <h4>规则可配</h4>
+          <p>主人用自然语言调整提醒（“这类别来烦我”），偏好可查看、可撤销。</p>
+        </div>
+        <div class="scope-cell wait">
+          <span class="tag">M4 · LATER</span>
+          <h4>主动调度</h4>
+          <p>定时简报、自动重试、卡点催办；无人干预下发现卡住的需求。</p>
+        </div>
+      </div>
+
+      <div class="two reveal" style="margin-top:22px">
+        <div class="panel">
+          <div class="panel-head"><h3>本期已按推荐默认拍板</h3><span class="tag">design §14</span></div>
+          <ul style="font-size:13px;color:var(--ink-soft);line-height:1.75;margin:0;padding-left:1.15em">
+            <li>收件箱是唯一事实源，台账只是投影。</li>
+            <li>事件采用语义化粒度，而不是把原始事件丢给模型归纳。</li>
+            <li>简报只列「等你」与失败，不列正常推进的流水账。</li>
+            <li>行动面走守护进程内部接口，不开放 MCP；建卡、转达按 L2 直接办并留痕。</li>
+            <li>派活、停止按 L3：第一次询问，授权记进偏好文件。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>已知的诚实边界</h3><span class="tag">limits</span></div>
+          <ul style="font-size:13px;color:var(--ink-soft);line-height:1.75;margin:0;padding-left:1.15em">
+            <li>没有游标时只从现在开始，不伪造历史。</li>
+            <li>事实源日志若被截断，无法凭空知道缺口；台账只反映收件箱还在的事实。</li>
+            <li>会话「结束」靠轮询检测，离线期间结束的会话不会产生事件。</li>
+            <li>简报与台账路由目前只答同源窗口（本机信任域）。</li>
+            <li>L3 的确认是对话里的一次确认；授权在 <code>preferences.json</code>，删掉它即可重新询问（M3 做界面）。</li>
+            <li>动作通道是本机信任域：无浏览器头的本机 curl 与窗口可调；别的站点被拒。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="closing reveal">
+        <div class="q">需求是项目，事件是动态，台账是档案，<br>管家是项目经理，<em>人是审批人</em>。</div>
+        <div class="meta">
+          管家事件机制 · M1 + M2<br>
+          Plannotator 中文 fork<br>
+          2026-11-26 · 工作区改动
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ── reveal on scroll ─────────────────────────────────────── */
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const revealables = document.querySelectorAll(".reveal");
+  if (!reduced && "IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("in");
+          io.unobserve(entry.target);
+        }
+      }
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+    revealables.forEach((el) => io.observe(el));
+  } else {
+    revealables.forEach((el) => el.classList.add("in"));
+  }
+  // A safety net: a section never stays invisible because the observer did not fire
+  // (printing, a very tall capture, a browser that throttles offscreen work).
+  setTimeout(() => revealables.forEach((el) => el.classList.add("in", "static")), 1400);
+
+  /* ── scrollspy TOC ────────────────────────────────────────── */
+  const tocLinks = [...document.querySelectorAll("#toc a")];
+  const sections = tocLinks
+    .map((link) => document.querySelector(link.getAttribute("href")))
+    .filter(Boolean);
+  if ("IntersectionObserver" in window && sections.length) {
+    const spy = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const id = "#" + entry.target.id;
+        for (const link of tocLinks) link.classList.toggle("active", link.getAttribute("href") === id);
+      }
+    }, { rootMargin: "-18% 0px -68% 0px", threshold: 0 });
+    sections.forEach((section) => spy.observe(section));
+  }
+
+  /* ── simulator ────────────────────────────────────────────── */
+  const facts = {
+    deliver: {
+      label: "交付提案",
+      kind: "requirement.delivered",
+      level: "notify",
+      summary: "交付提案《登录页设计》，等主人裁决",
+      timelineKind: "delivered",
+      todo: "审阅：登录页设计",
+      next: "提醒主人审阅：交付提案《登录页设计》，等主人裁决",
+      nextWhy: "交付物在等主人裁决"
+    },
+    verdict: {
+      label: "审阅退回",
+      kind: "requirement.verdict",
+      level: "notify",
+      summary: "设计文档「登录页设计」被退回（批注 3 条）",
+      timelineKind: "verdict",
+      clearPrefix: "审阅：",
+      todo: "看批注并决定下一步：登录页改版",
+      next: "把批注转达给产出会话；会话不在就提醒主人重开",
+      nextWhy: "主人退回了，需要按批注修改"
+    },
+    question: {
+      label: "会话提问",
+      kind: "thread.agent_question",
+      level: "notify",
+      summary: "助手 在等主人回答：用哪个配色？",
+      timelineKind: "question",
+      todo: "回答：用哪个配色？",
+      next: "提醒主人回答",
+      nextWhy: "会话停在一个问题上"
+    },
+    fail: {
+      label: "会话失败",
+      kind: "session.failed",
+      level: "notify",
+      summary: "助手 的会话失败：额度用完",
+      timelineKind: "failed",
+      todo: "处理失败的会话：额度用完",
+      next: "说明失败原因，并给出重试或改配置的下一步",
+      nextWhy: "会话失败了，主人在等解释"
+    },
+    person: {
+      label: "主人发言",
+      kind: "thread.person_message",
+      level: "record",
+      summary: "「登录页」里主人在说话",
+      timelineKind: "person",
+      todo: null,
+      next: null,
+      nextWhy: null
+    }
+  };
+
+  const state = {
+    timeline: [],
+    todos: [],
+    digest: [],
+    next: null,
+    nextWhy: null,
+    delivered: 0,
+    seq: 0,
+    fact: null,
+    clock: 9 * 60 + 22,
+    eventsSinceCursor: 0
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const pad = (n) => String(n).padStart(2, "0");
+  const stamp = () => {
+    const h = Math.floor(state.clock / 60) % 24;
+    const m = state.clock % 60;
+    return pad(h) + ":" + pad(m);
+  };
+  const uid = () => "01J" + String(1000 + state.seq * 7).slice(-4) + "K" + String(state.seq * 13 % 999).padStart(3, "0");
+
+  function renderTimeline() {
+    const list = $("sim-timeline");
+    list.innerHTML = "";
+    if (state.timeline.length === 0) {
+      const li = document.createElement("li");
+      li.className = "empty";
+      li.id = "sim-empty";
+      li.textContent = "还没有动态。投递一个事实试试。";
+      list.appendChild(li);
+    } else {
+      for (const entry of state.timeline) {
+        const li = document.createElement("li");
+        li.className = (entry.level === "record" ? "record " : "") + (entry.animate ? "new" : "");
+        const tm = document.createElement("span");
+        tm.className = "tm";
+        tm.textContent = entry.at;
+        const text = document.createElement("span");
+        text.textContent = entry.summary;
+        const kind = document.createElement("span");
+        kind.className = "kind";
+        kind.textContent = entry.kind + (entry.merged ? " ×" + entry.merged : "");
+        if (entry.merged) li.classList.add("merged");
+        li.append(tm, text, kind);
+        list.appendChild(li);
+      }
+    }
+    $("sim-tl-count").textContent = String(state.timeline.length);
+    $("sim-counter").textContent = state.seq + " 条事件";
+  }
+
+  function renderReadout() {
+    $("sim-wait").textContent = state.todos.length ? state.todos.join("；") : "—";
+    $("sim-wait").style.color = state.todos.length ? "var(--amber)" : "var(--ink-soft)";
+    if (state.next) {
+      $("sim-next").innerHTML = "";
+      const text = document.createTextNode(state.next + " ");
+      const why = document.createElement("span");
+      why.style.color = "var(--muted)";
+      why.style.fontSize = "11.5px";
+      why.textContent = "（因为：" + state.nextWhy + "）";
+      $("sim-next").append(text, why);
+    } else {
+      $("sim-next").textContent = "—";
+    }
+  }
+
+  function renderBrief() {
+    const box = $("sim-brief");
+    box.innerHTML = "";
+    if (state.todos.length === 0) {
+      const span = document.createElement("span");
+      span.className = "brief-title";
+      span.textContent = "今天没有等你的事。";
+      box.appendChild(span);
+      return;
+    }
+    const title = document.createElement("span");
+    title.className = "brief-title";
+    title.textContent = "今天等你 " + state.todos.length + " 件";
+    box.appendChild(title);
+    box.appendChild(document.createTextNode("\n"));
+    state.todos.slice(0, 5).forEach((todo, i) => {
+      const line = document.createElement("div");
+      line.textContent = (i + 1) + ") 「登录页改版」" + todo;
+      box.appendChild(line);
+    });
+    if (state.todos.length > 5) {
+      const more = document.createElement("div");
+      more.textContent = "（还有 " + (state.todos.length - 5) + " 条）";
+      box.appendChild(more);
+    }
+  }
+
+  function renderDigest() {
+    const box = $("sim-digest");
+    box.innerHTML = "";
+    if (state.digest.length === 0) {
+      box.textContent = "（没有新的提醒）";
+      return;
+    }
+    const head = document.createElement("span");
+    head.className = "dh";
+    head.textContent = "【动态】";
+    box.appendChild(head);
+    box.appendChild(document.createTextNode("\n"));
+    const max = 11;
+    state.digest.slice(0, max).forEach((entry) => {
+      const line = document.createElement("div");
+      const id = document.createElement("span");
+      id.className = "id";
+      id.textContent = "[" + entry.req + "] ";
+      line.appendChild(id);
+      line.appendChild(document.createTextNode(entry.summary));
+      box.appendChild(line);
+    });
+    if (state.digest.length > max) {
+      const more = document.createElement("div");
+      more.textContent = "（还有 " + (state.digest.length - max) + " 条动态）";
+      box.appendChild(more);
+    }
+  }
+
+  function renderEnvelope() {
+    const fact = state.fact;
+    $("sim-env-kind").textContent = fact ? fact.kind : "—";
+    const env = $("sim-envelope");
+    if (!fact) {
+      env.textContent = "等待投递…";
+      return;
+    }
+    env.innerHTML =
+      "{\n" +
+      '  <span class="k">id</span>:       "be_evt_' + uid() + '",\n' +
+      '  <span class="k">at</span>:       "2026-11-26T' + stamp() + ':12Z",\n' +
+      '  <span class="k">domain</span>:   "' + (fact.kind.split(".")[0]) + '",\n' +
+      '  <span class="k">kind</span>:     "' + fact.kind + '",\n' +
+      '  <span class="k">subject</span>:  { requirement: "req_01J8…" },\n' +
+      '  <span class="k">actor</span>:    "' + (fact.kind.startsWith("thread") ? "person" : "agent") + '",\n' +
+      '  <span class="k">summary</span>:  "' + fact.summary + '",\n' +
+      '  <span class="k">dedupe</span>:   "req:evt_' + uid() + '",\n' +
+      '  <span class="k">level</span>:    "' + fact.level + '"\n' +
+      "}";
+  }
+
+  function setStatus(text, hit) {
+    const el = $("sim-status");
+    el.textContent = text;
+    el.classList.toggle("hit", !!hit);
+  }
+
+  function deliver(key) {
+    const fact = facts[key];
+    if (!fact) return;
+    state.fact = fact;
+    state.seq += 1;
+    state.eventsSinceCursor += 1;
+    state.clock += 1;
+
+    for (const old of state.timeline) old.animate = false;
+    const entry = { at: stamp(), summary: fact.summary, kind: fact.kind.split(".").pop(), level: fact.level, merged: 0, animate: true };
+    setTimeout(() => { entry.animate = false; }, 600);
+    // 60s 合并：同 kind 的上一条记录还在窗口内（这里是演示：连续两次同事实）
+    const prev = state.timeline[state.timeline.length - 1];
+    if (prev && prev.kind === entry.kind && prev.level === "record") {
+      prev.summary = fact.summary;
+      prev.merged += 1;
+      entry.at = prev.at;
+      state.timeline[state.timeline.length - 1] = prev;
+    } else {
+      state.timeline.push(entry);
+    }
+
+    if (fact.todo) {
+      if (fact.clearPrefix) state.todos = state.todos.filter((todo) => !todo.startsWith(fact.clearPrefix));
+      if (!state.todos.includes(fact.todo)) state.todos.push(fact.todo);
+    }
+    if (fact.next) {
+      state.next = fact.next;
+      state.nextWhy = fact.nextWhy;
+    }
+    if (fact.level === "notify") {
+      state.digest.push({ req: "req_01J8…", summary: fact.summary });
+    }
+
+    renderTimeline();
+    renderReadout();
+    renderBrief();
+    renderDigest();
+    renderEnvelope();
+    setStatus("已投递 · dedupe 命中一次 · 台账已更新", true);
+  }
+
+  function restart() {
+    state.clock += 1;
+    const n = state.eventsSinceCursor;
+    const text = n > 0 ? "我回来了：期间有 " + n + " 条动态，已经补上" : "我回来了，期间没有新的动态";
+    for (const old of state.timeline) old.animate = false;
+    const note = { at: stamp(), summary: text, kind: "restart", level: "record", merged: 0, animate: true };
+    state.timeline.unshift(note);
+    setTimeout(() => { note.animate = false; }, 600);
+    state.eventsSinceCursor = 0;
+    renderTimeline();
+    setStatus("游标回放完成 · " + (n > 0 ? "补课 " + n + " 条" : "无缺口"), true);
+  }
+
+  function sendDigest() {
+    if (state.digest.length === 0) {
+      setStatus("没有新的提醒可以送达。");
+      return;
+    }
+    const n = state.digest.length;
+    state.digest = [];
+    state.delivered += n;
+    renderDigest();
+    setStatus("已送达管家 · " + n + " 条进入【动态】", true);
+  }
+
+  function markSeen() {
+    if (state.digest.length === 0) {
+      setStatus("已看过 · 没有待送摘要。");
+      return;
+    }
+    const n = state.digest.length;
+    state.digest = [];
+    renderDigest();
+    setStatus("已标记看过 · " + n + " 条不再重复提醒", true);
+  }
+
+  function reset() {
+    state.timeline = [];
+    state.todos = [];
+    state.digest = [];
+    state.next = null;
+    state.nextWhy = null;
+    state.delivered = 0;
+    state.seq = 0;
+    state.fact = null;
+    state.clock = 9 * 60 + 22;
+    state.eventsSinceCursor = 0;
+    renderTimeline();
+    renderReadout();
+    renderBrief();
+    renderDigest();
+    renderEnvelope();
+    setStatus("已重置。", false);
+  }
+
+  document.querySelectorAll(".fact-btn").forEach((button) => {
+    button.addEventListener("click", () => deliver(button.dataset.fact));
+  });
+  $("sim-restart").addEventListener("click", restart);
+  $("sim-send").addEventListener("click", sendDigest);
+  $("sim-clear-seen").addEventListener("click", markSeen);
+  $("sim-reset").addEventListener("click", reset);
+
+  renderTimeline();
+  renderReadout();
+  renderBrief();
+  renderDigest();
+  renderEnvelope();
+})();
+</script>
+</body>
+</html>

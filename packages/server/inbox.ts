@@ -263,7 +263,10 @@ import { createInboxTakeBack } from "./inbox-take-back";
 import { createInboxAsk } from "./inbox-ask";
 import { createInboxSessionTerminalRoute } from "./inbox-session-attach";
 import { createInboxStreamRoute, streamSourceOf } from "./inbox-stream";
-import { Butler } from "./inbox-butler";
+import { Butler, butlerDir } from "./inbox-butler";
+import { createButlerEvents } from "./inbox-butler-events";
+import { createButlerActions, type ButlerActionLaunchInput, type ButlerActionOutcome, type ButlerActionStopInput, type ButlerActionTellInput } from "./inbox-butler-actions";
+import { createInboxApprovals, type InboxApprovalRequest } from "./inbox-approvals";
 import type { InboxAskTimes } from "./inbox-ask-live";
 import { createInboxPins } from "./inbox-pins";
 import { createInboxPriority } from "./inbox-priority";
@@ -3984,6 +3987,9 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
           send(`event: deliveries\ndata: ${JSON.stringify({ ...(labels ? { labels: true } : {}), ...(sessions ? { sessions: true } : {}), ...(agents ? { agents: true } : {}) })}\n\n`);
         };
         if (windowId || url.searchParams.get("deliveries") === "1") deliveryListeners.add(sendDeliveries);
+        // 管家审批 changed (a new card request, a decision, a switch): the butler page's tab and badge read it.
+        const stopApprovals = windowId ? approvals.onChange(() => send(`event: approvals
+data: {}\n\n`)) : () => {};
         // Linked machines (`machines=1`, the window only; the door refuses it to a machine): their records, states and
         // the outbox, each in its own frame and never with an `id:`, so the local seq and Last-Event-ID stay this Inbox's.
         // A `machines` snapshot opens every stream: a resync, never a notification.
@@ -4024,6 +4030,7 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
           stopShapes = null;
           stopRequirements?.();
           deliveryListeners.delete(sendDeliveries);
+          stopApprovals();
           stopMachines();
           leave();
         };
@@ -4966,8 +4973,151 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
   const commentDrafts = createInboxCommentDrafts({ store, serverSession, readBody: (req) => readBody(req), json });
   const takeBack = createInboxTakeBack({ store, serverSession, readBody: (req) => readBody(req), json });
   // 管家（approval "butler" 一期）：收件箱的数字总管——形象入口、对话与持久化（inbox-butler.ts）。
-  const butler = new Butler();
+  // 事件机制（doc/管家-事件机制设计.md，M1 观察面）：the Inbox's own facts projected into semantic
+  // events, a per-requirement ledger and a cursor (inbox-butler-events.ts). The execution face
+  // (MCP) is untouched: this is read-only, and the butler acts through its own channel.
+  let butlerRef: Butler | null = null;
+  const butlerEvents = createButlerEvents({
+    dir: butlerDir(),
+    requirements: requirementsSwitchOn() ? { store: requirements.store, watch: requirements.watch } : null,
+    inbox: {
+      cursor: () => store.cursor(),
+      changesSince: (cursor) => store.changesSince(cursor),
+      subscribe: (listener) => store.subscribe(listener),
+      message: (id) => store.message(id),
+      threadSubject: (threadId) => store.thread(threadId)?.subject ?? null,
+      threadOfSession: (session) => store.threadOwnedBy(session),
+    },
+    sessions: () => live.allLive(),
+    // 事件唤醒（§8.1）：only speaks when the owner already has a butler session; otherwise the
+    // digest waits for the next chat (Butler.wake).
+    onWake: (digest) => void butlerRef?.wake(digest),
+  });
+  // 管家行动面（doc/管家-事件机制设计.md，M2）：the butler's own write channel. The protocol,
+  // the L3 grant and the audit live in inbox-butler-actions.ts; the heavy work (the same compose
+  // write path New message uses, a reply into a live thread, an interrupt) stays here, where the
+  // stores and the live sessions are. None of it goes through the agents' MCP tools.
+  const butlerDepFailure = (error: unknown, fallback: string): ButlerActionOutcome => ({
+    ok: false,
+    code: error instanceof InboxError ? error.code : fallback,
+    error: error instanceof Error ? error.message : String(error),
+    status: error instanceof InboxError ? 400 : 502,
+  });
+
+  const butlerLaunch = async (input: ButlerActionLaunchInput): Promise<ButlerActionOutcome> => {
+    try {
+      const record = input.requirement ? requirements.store.get(input.requirement)?.requirement ?? null : null;
+      // No project named: the requirement's own session's project, when it has one.
+      const projectId = input.project_id ?? (record?.threads[0] ? store.thread(record.threads[0])?.project.id ?? null : null);
+      if (!projectId && !input.folder) return { ok: false, code: "project_required", error: "请告诉我在哪个项目（project_id）或文件夹（folder）里开工。", status: 422 };
+      const words = input.words?.trim() || (record ? requirements.store.card?.(record.id) ?? `# ${record.title}\n\n${record.notes}` : "");
+      if (!words) return { ok: false, code: "validation_error", error: "没有要执行的内容。", status: 422 };
+      // The same validated write path New message uses: the launch switch, the folder, trust,
+      // one idempotency key; the agent starts only after the thread is written.
+      const response = await compose.startThread({
+        to: { launch: { agent: input.agent, ...(projectId ? { project_id: projectId } : { folder: input.folder }) } },
+        body: words,
+        idempotency_key: input.idempotency_key,
+        ...(input.thread_name ? { thread_name: input.thread_name } : {}),
+      });
+      const data = (await response.json().catch(() => ({}))) as { thread_id?: string; error?: string; code?: string; launch?: { id: string; state: string } };
+      if (!response.ok || !data.thread_id) return { ok: false, code: data.code ?? "launch_failed", error: data.error ?? "启动没成功。", status: response.status };
+      return { ok: true, thread_id: data.thread_id, ...(data.launch ? { launch_id: data.launch.id } : {}) };
+    } catch (error) {
+      return butlerDepFailure(error, "launch_failed");
+    }
+  };
+
+  const butlerTell = async (input: ButlerActionTellInput): Promise<ButlerActionOutcome> => {
+    try {
+      const record = input.requirement ? requirements.store.get(input.requirement)?.requirement ?? null : null;
+      const threadId = input.thread ?? record?.threads.at(-1) ?? (input.session ? store.threadOwnedBy(input.session) : null);
+      if (!threadId) return { ok: false, code: "thread_unknown", error: "找不到要转达的线程：告诉我需求或会话。", status: 409 };
+      const root = store.message(threadId);
+      if (!root) return { ok: false, code: "thread_unknown", error: `没有线程 ${threadId}。`, status: 404 };
+      const recipient = store.recipientOf(root);
+      if (!recipient?.session) return { ok: false, code: "session_unknown", error: "这个线程没有对应的会话，转达不到。", status: 409 };
+      if (input.session && recipient.session !== input.session) return { ok: false, code: "not_addressed", error: `线程 ${threadId} 不归会话 ${input.session}。`, status: 409 };
+      if (!live.isSessionLive(recipient.session)) return { ok: false, code: "session_not_live", error: "会话不在线：等它回来或重开会话再转达。", status: 409 };
+      const host = recipient.host ?? input.host ?? live.hostOf(recipient.session);
+      if (!host) return { ok: false, code: "session_unknown", error: "这个会话没有说自己属于哪个 agent，转达不到。", status: 409 };
+      // A person-voiced message (the Inbox has one voice for the owner), marked as the butler's relay.
+      const result = store.sendNewMessage(threadId, { body: `【管家转达】${input.words}`, to: { host, session: recipient.session }, idempotency_key: input.idempotency_key });
+      return { ok: true, thread_id: threadId, message_id: result.message.id, session: recipient.session };
+    } catch (error) {
+      return butlerDepFailure(error, "tell_failed");
+    }
+  };
+
+  const butlerStop = async (input: ButlerActionStopInput): Promise<ButlerActionOutcome> => {
+    try {
+      const record = input.requirement ? requirements.store.get(input.requirement)?.requirement ?? null : null;
+      const threadId = input.thread ?? record?.threads.at(-1) ?? (input.session ? store.threadOwnedBy(input.session) : null);
+      if (!threadId) return { ok: false, code: "thread_unknown", error: "找不到要停的会话：告诉我需求或会话。", status: 409 };
+      const root = store.message(threadId);
+      if (!root) return { ok: false, code: "thread_unknown", error: `没有线程 ${threadId}。`, status: 404 };
+      const recipient = store.recipientOf(root);
+      if (!recipient?.session) return { ok: false, code: "session_unknown", error: "这个线程没有对应的会话，停不了。", status: 409 };
+      if (input.session && recipient.session !== input.session) return { ok: false, code: "not_addressed", error: `线程 ${threadId} 不归会话 ${input.session}。`, status: 409 };
+      const host = recipient.host ?? input.host ?? live.hostOf(recipient.session);
+      if (!host || !live.pollsNow(host, recipient.session)) return { ok: false, code: "session_not_connected", error: "会话未连接（没有在轮询收件箱），停止送不到。", status: 409 };
+      if (!live.interruptCapable(recipient.session)) {
+        const fix =
+          host === "opencode"
+            ? "更新 opencode 的 plannotator 插件（opencode2 reload 或重启 opencode）后重开该会话再试。"
+            : host === "claude-code"
+              ? "重开该会话，或在会话里跑一次 /reload-plugins 后再试。"
+              : "更新该会话的 plannotator 插件后重开会话再试。";
+        return { ok: false, code: "session_too_old", error: `这个会话的 plannotator 插件不支持打断（启动早于打断功能）。${fix}`, status: 409 };
+      }
+      pendingInterrupt.set(recipient.session, { id: crypto.randomUUID(), at: Date.now() });
+      // A held poll answers at once, like Esc; the session's mod stops its current turn.
+      for (const listener of interruptListeners) listener(recipient.session);
+      return { ok: true, thread_id: threadId, session: recipient.session };
+    } catch (error) {
+      return butlerDepFailure(error, "stop_failed");
+    }
+  };
+
+  // 审批（doc 管家审批与需求卡-方案）：the switch + the one approval area, inside the butler page.
+  // The approval store is built first (its executor closes over the action channel, assigned below).
+  let butlerActionsRef: ReturnType<typeof createButlerActions> | null = null;
+  const approvals = createInboxApprovals({
+    dataDir,
+    butlerDir: butlerDir(),
+    serverSession,
+    execute: async (action, payload, meta) => {
+      if (!butlerActionsRef) return { ok: false, code: "not_ready", error: "行动通道还没准备好。" };
+      return await butlerActionsRef.execute(action, payload, meta);
+    },
+    recordEvent: (event) => butlerEvents.record(event),
+  });
+  const butlerActions = createButlerActions({
+    dir: butlerDir(),
+    requirementsOn: requirementsSwitchOn(),
+    requirements: requirements.store,
+    recordEvent: (event) => butlerEvents.record(event),
+    launch: butlerLaunch,
+    tell: butlerTell,
+    stop: butlerStop,
+    approvals: {
+      auto: (action) => approvals.auto(action),
+      byKey: (key) => approvals.byKey(key),
+      request: (input) => approvals.request(input as InboxApprovalRequest),
+    },
+    linkThread: (requirement, thread) => {
+      requirements.store.link(requirement, thread, "管家");
+    },
+    threadExists: (thread) => Boolean(store.message(thread)),
+  });
+  butlerActionsRef = butlerActions;
+  // An approval marked approved before a crash is run once its executor exists.
+  void approvals.resume();
+
+  const butler = new Butler({ digests: () => butlerEvents.takeDigest() });
+  butlerRef = butler;
   butler.init();
+  butlerEvents.start();
   // Ask AI: the conversation a thread keeps with its agent (packages/server/inbox-ask.ts).
   const ask = createInboxAsk({
     codeReviewOn,
@@ -5587,7 +5737,16 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
         if (answer) return answer;
       }
       // 管家（approval "butler" 一期）：数字总管的对话路由（窗口专属 same-origin）。
+      // 先问事件面：简报与台账（doc 管家-事件机制设计 §6.4、§9.1），其余归管家对话路由。
       if (path.startsWith("/api/inbox/butler/") && butler) {
+        // 审批 first: the list, the switch and the owner's decision (the butler page's tab).
+        const approvalAnswer = await approvals.route(req, url);
+        if (approvalAnswer) return approvalAnswer;
+        // 行动面 (M2): the butler's own POST for 建卡/派活/转达/停止.
+        const acted = await butlerActions.route(req, url);
+        if (acted) return acted;
+        const projected = await butlerEvents.route(req, url);
+        if (projected) return projected;
         const answer = await butler.route(req, url);
         if (answer) return answer;
       }
@@ -7612,6 +7771,8 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
   portChanged = started.portChanged;
   port = server.port as number;
   baseUrl = inboxCanonicalBaseUrl(port);
+  // 管家动作通道的地址（M2）：the butler reads ~/plannotator-butler/action.json and curls it.
+  butlerActions.publish(port);
 
   const registry: InboxRegistryEntry = {
     v: 1,
@@ -7831,6 +7992,11 @@ export async function startInboxServer(options: InboxServerOptions = {}): Promis
     clearInterval(autoSendWatch);
     unsubscribeWaits();
     scheduled.stop();
+    // 管家事件面（doc 管家-事件机制设计 §10）：the cursor is already on disk; the timers and
+    // subscriptions go with the server, as every other one here. The action endpoint's hint goes
+    // too, so the butler never curls a dead port.
+    butlerEvents.stop();
+    butlerActions.stop();
     launch.stop();
     unsubscribeLaunchTip();
     unsubscribeAgentWork();

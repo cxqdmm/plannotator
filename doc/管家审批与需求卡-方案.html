@@ -1,0 +1,1402 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>管家审批与需求卡 · 方案</title>
+<meta name="description" content="管家审批开关、管家页审批、需求卡（Markdown 文档）与上下文的设计方案。">
+<style>
+  :root {
+    --paper: #f3ecdf;
+    --paper-2: #ece3d3;
+    --paper-3: #e4d9c5;
+    --ink: #241d19;
+    --ink-soft: #4a3f37;
+    --muted: #7b6c5f;
+    --line: rgba(36, 29, 25, 0.14);
+    --line-strong: rgba(36, 29, 25, 0.28);
+    --amber: #a9621a;
+    --amber-bright: #d99334;
+    --amber-wash: rgba(217, 147, 52, 0.13);
+    --sage: #4e6b5d;
+    --sage-wash: rgba(78, 107, 93, 0.10);
+    --danger: #9d432b;
+    --ok: #3f6b4f;
+    --panel: rgba(255, 252, 246, 0.68);
+    --panel-solid: #fbf7ef;
+    --serif: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
+    --sans: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --radius: 4px;
+    --max: 1200px;
+    --rail: 208px;
+    --ease: cubic-bezier(0.22, 0.75, 0.25, 1);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.78;
+    background:
+      radial-gradient(1100px 620px at 78% -12%, rgba(217, 147, 52, 0.15), transparent 62%),
+      radial-gradient(900px 540px at -8% 18%, rgba(78, 107, 93, 0.09), transparent 60%),
+      var(--paper);
+    text-wrap: pretty;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: rgba(217, 147, 52, 0.28); }
+  a { color: var(--amber); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a:hover { color: var(--ink); }
+  code, kbd, pre, .mono { font-family: var(--mono); }
+  code {
+    font-size: 0.86em;
+    background: rgba(36, 29, 25, 0.055);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0.08em 0.38em;
+    white-space: nowrap;
+  }
+  pre {
+    margin: 0;
+    padding: 16px 18px;
+    overflow-x: auto;
+    background: rgba(36, 29, 25, 0.045);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  pre code { background: none; border: 0; padding: 0; white-space: inherit; }
+  h1, h2, h3, h4 { font-family: var(--serif); font-weight: 600; line-height: 1.24; margin: 0; letter-spacing: -0.01em; }
+  p { margin: 0 0 1em; }
+  ul, ol { margin: 0 0 1em; padding-left: 1.3em; }
+  li { margin: 0.34em 0; }
+
+  .shell {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 0 28px 100px;
+    display: grid;
+    grid-template-columns: var(--rail) minmax(0, 1fr);
+    gap: 56px;
+  }
+  .rail {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    height: calc(100vh - 64px);
+    padding-top: 128px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    font-size: 12.5px;
+  }
+  .rail-title {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .rail nav { display: flex; flex-direction: column; gap: 2px; }
+  .rail a {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    gap: 6px;
+    align-items: baseline;
+    padding: 6px 4px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border-radius: 3px;
+    transition: background 180ms var(--ease);
+  }
+  .rail a .n { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+  .rail a:hover { background: rgba(217, 147, 52, 0.10); }
+  .rail a.active { color: var(--ink); }
+  .rail a.active .n { color: var(--amber); }
+  .rail a.active::after { content: ""; justify-self: end; width: 14px; border-top: 2px solid var(--amber); align-self: center; }
+  .rail-foot { margin-top: auto; color: var(--muted); font-size: 11.5px; line-height: 1.6; border-top: 1px solid var(--line); padding-top: 14px; }
+
+  main { min-width: 0; }
+
+  /* hero */
+  .hero { padding: 126px 0 44px; position: relative; }
+  .eyebrow {
+    display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 24px;
+  }
+  .eyebrow b { color: var(--amber); font-weight: 500; }
+  h1.hero-title {
+    font-size: clamp(44px, 6.2vw, 80px);
+    letter-spacing: -0.035em; line-height: 1.08; margin: 0 0 10px;
+  }
+  h1.hero-title em { font-style: normal; color: var(--amber); position: relative; white-space: nowrap; }
+  .hero-lead {
+    max-width: 44em; font-size: clamp(17px, 1.5vw, 19px); line-height: 1.78;
+    color: var(--ink-soft); margin: 24px 0 0;
+  }
+  .hero-lead strong { color: var(--ink); }
+  .stamp {
+    position: absolute; top: 112px; right: 2px; transform: rotate(-2.4deg);
+    border: 2px double var(--amber); color: var(--amber);
+    padding: 11px 14px 9px; font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.14em; line-height: 1.75; text-align: center;
+    text-transform: uppercase; opacity: 0.88; background: rgba(243, 236, 223, 0.55);
+  }
+  .stamp strong { display: block; font-size: 16px; letter-spacing: 0.2em; font-weight: 500; }
+  @media (max-width: 1180px) { .stamp { display: none; } }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+  .chip {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em;
+    color: var(--ink-soft); border: 1px solid var(--line-strong); border-radius: 2px;
+    padding: 3px 8px; background: rgba(255, 252, 246, 0.5);
+  }
+  .chip.amber { color: var(--amber); border-color: rgba(169, 98, 26, 0.4); background: var(--amber-wash); }
+  .chip.sage { color: var(--sage); border-color: rgba(78, 107, 93, 0.4); background: var(--sage-wash); }
+
+  /* sections */
+  section { padding-top: 82px; scroll-margin-top: 22px; }
+  .sec-head {
+    display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 18px;
+    align-items: baseline; border-top: 1px solid var(--line-strong);
+    padding-top: 18px; margin-bottom: 32px;
+  }
+  .sec-no { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; color: var(--amber); }
+  .sec-head h2 { font-size: clamp(28px, 3.3vw, 42px); letter-spacing: -0.02em; }
+  .sec-head .sec-sub { color: var(--muted); font-size: 14px; margin-top: 8px; line-height: 1.65; max-width: 48em; }
+  .lede { font-size: 17px; line-height: 1.78; color: var(--ink-soft); max-width: 46em; margin-bottom: 28px; }
+  .lede strong { color: var(--ink); }
+
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  @media (max-width: 900px) { .two, .three { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 22px;
+  }
+  .panel-head {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline;
+    gap: 8px; margin-bottom: 14px;
+  }
+  .panel-head h3 { font-size: 17px; }
+  .panel-head .tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; }
+  .muted { color: var(--muted); }
+  .small { font-size: 12.5px; line-height: 1.65; }
+
+  .aside {
+    margin-top: 20px; border-left: 2px solid var(--amber-bright);
+    background: var(--amber-wash); padding: 13px 17px;
+    font-size: 13.5px; line-height: 1.72; color: var(--ink-soft);
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+  .aside b { color: var(--ink); }
+  .aside.sage { border-left-color: var(--sage); background: var(--sage-wash); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-solid); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 620px; }
+  thead th {
+    text-align: left; font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted); font-weight: 500;
+    padding: 10px 14px; border-bottom: 1px solid var(--line-strong);
+    background: rgba(36, 29, 25, 0.03); white-space: nowrap;
+  }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.6; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody td:first-child { white-space: nowrap; }
+  .lv {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+    border: 1px solid var(--line-strong); border-radius: 2px; padding: 1px 5px; white-space: nowrap;
+  }
+  .lv.ask { color: var(--amber); border-color: rgba(169, 98, 26, 0.38); background: var(--amber-wash); }
+  .lv.auto { color: var(--sage); border-color: rgba(78, 107, 93, 0.38); background: var(--sage-wash); }
+  .lv.l3 { color: var(--danger); border-color: rgba(157, 67, 43, 0.35); background: rgba(157, 67, 43, 0.07); }
+
+  /* compare */
+  .compare { display: grid; grid-template-columns: 1fr 58px 1fr; align-items: stretch; gap: 0; }
+  .compare .side { border: 1px solid var(--line-strong); background: var(--panel-solid); padding: 22px; }
+  .compare .side.now { background: rgba(236, 227, 211, 0.55); }
+  .compare .side h3 { font-size: 18px; margin-bottom: 4px; }
+  .compare .side .tagline { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 14px; }
+  .compare .side ul { margin: 0; padding-left: 1.15em; font-size: 13.5px; color: var(--ink-soft); }
+  .compare .side li { margin: 0.55em 0; }
+  .compare .gap { display: flex; align-items: center; justify-content: center; font-family: var(--mono); color: var(--amber); font-size: 18px; }
+  @media (max-width: 760px) {
+    .compare { grid-template-columns: 1fr; }
+    .compare .gap { padding: 8px 0; }
+  }
+
+  /* flow map */
+  .map {
+    border: 1px solid var(--line-strong);
+    background:
+      linear-gradient(rgba(36, 29, 25, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(36, 29, 25, 0.035) 1px, transparent 1px),
+      var(--panel-solid);
+    background-size: 24px 24px, 24px 24px, auto;
+    border-radius: var(--radius);
+    padding: 26px 24px;
+  }
+  .map-row { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
+  .map-node {
+    flex: 1 1 150px; min-width: 0; background: var(--paper);
+    border: 1px solid var(--line-strong); border-radius: 3px;
+    padding: 12px 13px; position: relative;
+  }
+  .map-node .mk { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; color: var(--muted); display: block; text-transform: uppercase; margin-bottom: 4px; }
+  .map-node .mv { display: block; font-family: var(--serif); font-size: 16px; line-height: 1.35; }
+  .map-node .md { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.5; margin-top: 3px; }
+  .map-node.amber { background: var(--amber-wash); border-color: rgba(169, 98, 26, 0.4); }
+  .map-node.sage { background: var(--sage-wash); border-color: rgba(78, 107, 93, 0.4); }
+  .map-arrow { display: flex; align-items: center; justify-content: center; color: var(--amber); font-family: var(--mono); font-size: 15px; flex: 0 0 22px; }
+  .map-down { text-align: center; color: var(--amber); font-family: var(--mono); font-size: 15px; line-height: 1; padding: 9px 0; }
+  .map-branch { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px; }
+  .branch-lane { border: 1px dashed var(--line-strong); border-radius: 3px; padding: 12px; background: rgba(255, 252, 246, 0.55); align-self: start; }
+  .branch-lane .bl { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); display: block; margin-bottom: 6px; }
+  .branch-lane .bd { font-size: 12px; color: var(--muted); line-height: 1.55; }
+  .map-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 18px; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .map-legend span::before { content: "■"; color: var(--amber); margin-right: 5px; font-size: 8px; vertical-align: 1px; }
+  @media (max-width: 760px) {
+    .map-arrow { flex-basis: 100%; height: 18px; transform: rotate(90deg); }
+    .map-branch { grid-template-columns: 1fr; }
+  }
+
+  /* mock card */
+  .cardmock {
+    background:
+      repeating-linear-gradient(to bottom, transparent 0 31px, rgba(36, 29, 25, 0.032) 31px 32px),
+      var(--panel-solid);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    padding: 26px 28px 22px;
+    position: relative;
+    min-height: 100%;
+  }
+  .cardmock::before {
+    content: "需求卡.md · 文档视图";
+    position: absolute; top: -1px; right: -1px;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em;
+    color: var(--muted); background: var(--paper-2);
+    border: 1px solid var(--line-strong); border-right: 0; border-top: 0;
+    border-radius: 0 0 0 3px; padding: 3px 8px;
+  }
+  .mc-title { font-family: var(--serif); font-size: 26px; line-height: 1.3; margin: 6px 0 4px; }
+  .mc-meta { font-family: var(--mono); font-size: 10.5px; color: var(--muted); line-height: 1.7; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .mc-sec { margin-top: 15px; }
+  .mc-sec h4 {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--amber); margin-bottom: 4px; font-weight: 500;
+  }
+  .mc-lines { font-size: 12.5px; line-height: 1.72; color: var(--ink-soft); white-space: pre-wrap; }
+  .mc-lines .ph { color: var(--muted); font-style: italic; }
+  .mc-ctx { margin-top: 15px; padding-top: 11px; border-top: 1px dashed var(--line-strong); }
+  .mc-ctx .ch { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .ctx-chip {
+    font-family: var(--mono); font-size: 9.5px; color: var(--ink-soft);
+    border: 1px solid var(--line-strong); padding: 2px 6px; border-radius: 2px;
+    background: rgba(255, 252, 246, 0.65);
+  }
+  .mc-foot { margin-top: 16px; padding: 10px 12px; background: rgba(78, 107, 93, 0.08); border-left: 2px solid var(--sage); font-size: 11.5px; line-height: 1.65; color: var(--ink-soft); }
+
+  .annot { display: grid; gap: 12px; }
+  .annot-item { display: grid; grid-template-columns: 24px 1fr; gap: 10px; font-size: 12.5px; line-height: 1.65; color: var(--ink-soft); }
+  .annot-item .an {
+    font-family: var(--mono); font-size: 10px; color: var(--amber);
+    width: 20px; height: 20px; border: 1px solid rgba(169, 98, 26, 0.5);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  }
+  .annot-item b { display: block; color: var(--ink); font-size: 13px; margin-bottom: 1px; }
+
+  /* builder */
+  .builder { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 18px; align-items: start; }
+  @media (max-width: 940px) { .builder { grid-template-columns: 1fr; } }
+  .form { border: 1px solid var(--line-strong); background: var(--panel); border-radius: var(--radius); padding: 18px; }
+  .form label { display: block; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 10px 0 4px; }
+  .form input, .form textarea {
+    width: 100%; font-family: var(--sans); font-size: 12.5px; line-height: 1.6;
+    color: var(--ink); background: var(--panel-solid); border: 1px solid var(--line-strong);
+    border-radius: 2px; padding: 7px 9px; resize: vertical;
+  }
+  .form textarea { min-height: 86px; }
+  .form input:focus, .form textarea:focus { outline: 2px solid rgba(217, 147, 52, 0.5); outline-offset: 1px; border-color: var(--amber); }
+  .form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form .mini { font-size: 10.5px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+  .builder-tools { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 2px; overflow: hidden; }
+  .seg button {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em;
+    background: transparent; color: var(--ink-soft); border: 0; padding: 5px 9px; cursor: pointer;
+  }
+  .seg button + button { border-left: 1px solid var(--line-strong); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .text-btn {
+    font-family: var(--mono); font-size: 10px; color: var(--amber);
+    background: transparent; border: 0; cursor: pointer; padding: 4px 2px;
+  }
+  .preview-wrap { min-width: 0; }
+  .preview-md { display: none; }
+  .preview-wrap.md .preview-card { display: none; }
+  .preview-wrap.md .preview-md { display: block; }
+
+  /* approval mock window */
+  .window {
+    border: 1px solid var(--line-strong); border-radius: 6px;
+    background: var(--paper); overflow: hidden;
+    box-shadow: 0 18px 40px -30px rgba(36, 29, 25, 0.55);
+  }
+  .win-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 13px; border-bottom: 1px solid var(--line);
+    background: var(--paper-2);
+  }
+  .win-dots { display: flex; gap: 4px; }
+  .win-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(36, 29, 25, 0.22); display: block; }
+  .win-addr { font-family: var(--mono); font-size: 9.5px; color: var(--muted); margin-left: 4px; }
+  .win-body { display: grid; grid-template-columns: 148px minmax(0, 1fr); min-height: 460px; }
+  .win-body.butler { display: block; }
+  .butler-top {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 10px 16px; border-bottom: 1px solid var(--line);
+    background: rgba(236, 227, 211, 0.38);
+  }
+  .butler-id { display: flex; align-items: center; gap: 8px; font-family: var(--serif); font-size: 15px; }
+  .butler-orb {
+    width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--amber-wash); border: 1px solid rgba(169, 98, 26, 0.4);
+    color: var(--amber); font-family: var(--serif); font-size: 13px;
+  }
+  .butler-tabs { display: flex; gap: 2px; }
+  .btab {
+    font-family: var(--sans); font-size: 12px; padding: 5px 10px;
+    border: 1px solid transparent; background: transparent; color: var(--muted);
+    border-radius: 2px; cursor: default;
+  }
+  .btab.active { background: var(--panel-solid); border-color: var(--line-strong); color: var(--ink); }
+  .btab .ws-badge { margin-left: 4px; }
+  @media (max-width: 760px) { .win-body { grid-template-columns: 1fr; } .win-side { display: none !important; } }
+  .win-side {
+    border-right: 1px solid var(--line); background: rgba(236, 227, 211, 0.55);
+    padding: 14px 10px; font-size: 11.5px; color: var(--ink-soft);
+  }
+  .win-side .ws-brand { font-family: var(--serif); font-size: 14px; color: var(--ink); padding: 0 8px 10px; }
+  .win-side .ws-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px; border-radius: 3px; }
+  .win-side .ws-row.active { background: rgba(217, 147, 52, 0.14); color: var(--ink); font-weight: 600; }
+  .win-side .ws-badge {
+    font-family: var(--mono); font-size: 9px; min-width: 17px; text-align: center;
+    background: var(--amber); color: var(--panel-solid); border-radius: 9px; padding: 0 4px;
+  }
+  .win-main { padding: 18px 20px 22px; min-width: 0; }
+  .win-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+  .win-head h3 { font-size: 20px; }
+  .win-count { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .win-sub { font-size: 11.5px; color: var(--muted); margin-bottom: 14px; }
+  .switch-panel {
+    border: 1px solid var(--line-strong); background: var(--panel-solid);
+    border-radius: 3px; padding: 12px 14px; margin-bottom: 14px;
+  }
+  .switch-panel .sp-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .switch-panel .sp-head b { font-size: 12.5px; }
+  .switch-panel .sp-head span { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.08em; }
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; border-top: 1px dotted var(--line); font-size: 12px; }
+  .switch-row:first-of-type { border-top: 0; }
+  .switch-row .sr-name { color: var(--ink-soft); }
+  .switch-row .sr-name small { color: var(--muted); font-size: 10px; display: block; }
+  .switch-toggle {
+    display: inline-flex; border: 1px solid var(--line-strong); border-radius: 2px; overflow: hidden; flex: none;
+  }
+  .switch-toggle button {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.02em;
+    border: 0; background: transparent; color: var(--muted); padding: 4px 7px; cursor: pointer;
+  }
+  .switch-toggle button + button { border-left: 1px solid var(--line-strong); }
+  .switch-toggle button[aria-pressed="true"] { background: var(--sage); color: var(--panel-solid); }
+  .switch-toggle button[aria-pressed="true"].ask { background: var(--amber); }
+
+  .pending { display: grid; gap: 10px; }
+  .ap-card {
+    border: 1px solid var(--line-strong); background: var(--panel-solid);
+    border-radius: 3px; padding: 13px 15px;
+  }
+  .ap-card.ap-new { animation: ap-in 380ms var(--ease) both; }
+  @keyframes ap-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+  .ap-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .ap-kind { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); }
+  .ap-who { font-family: var(--mono); font-size: 9px; color: var(--muted); }
+  .ap-card h4 { font-size: 16px; margin: 4px 0 3px; }
+  .ap-sum { font-size: 11.5px; line-height: 1.6; color: var(--ink-soft); margin: 0 0 6px; }
+  .ap-ctx { font-family: var(--mono); font-size: 9.5px; color: var(--muted); }
+  .ap-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+  .ap-btn {
+    font-family: var(--sans); font-size: 12px; border-radius: 2px; padding: 5px 12px; cursor: pointer;
+    border: 1px solid var(--line-strong); background: transparent; color: var(--ink-soft);
+    transition: all 140ms var(--ease);
+  }
+  .ap-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .ap-btn.approve { background: var(--sage); border-color: var(--sage); color: var(--panel-solid); }
+  .ap-btn.approve:hover { background: #3e5a4b; border-color: #3e5a4b; color: #fff; }
+  .ap-btn.deny:hover { border-color: var(--danger); color: var(--danger); }
+  .ap-always { font-family: var(--mono); font-size: 9.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+  .ap-always input { accent-color: var(--sage); }
+  .ap-empty {
+    border: 1px dashed var(--line-strong); border-radius: 3px;
+    padding: 24px 16px; text-align: center; font-size: 12.5px; color: var(--muted);
+  }
+  .history { margin-top: 16px; }
+  .history .hh { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 6px; margin-bottom: 8px; }
+  .hist-row { display: grid; grid-template-columns: 68px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; font-size: 11px; padding: 5px 0; border-bottom: 1px dotted var(--line); color: var(--ink-soft); }
+  .hist-row .ht { font-family: var(--mono); font-size: 9px; color: var(--muted); }
+  .hist-row .hb { font-family: var(--mono); font-size: 9px; border: 1px solid var(--line); border-radius: 2px; padding: 0 4px; color: var(--muted); }
+  .hist-row .hb.ok { color: var(--ok); border-color: rgba(63, 107, 79, 0.4); }
+  .hist-row .hb.no { color: var(--danger); border-color: rgba(157, 67, 43, 0.35); }
+  .demo-controls {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    margin: 14px 0 0; padding: 12px 14px; border: 1px solid var(--line);
+    background: var(--panel); border-radius: var(--radius);
+  }
+  .demo-controls .hint { font-size: 11.5px; color: var(--muted); margin-right: auto; }
+  .demo-btn {
+    font-family: var(--sans); font-size: 12px; border: 1px solid var(--ink);
+    background: var(--ink); color: var(--paper); border-radius: 2px; padding: 6px 12px; cursor: pointer;
+  }
+  .demo-btn.ghost { background: transparent; color: var(--ink-soft); border-color: var(--line-strong); }
+  .demo-btn:hover { opacity: 0.9; }
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 10px);
+    background: var(--ink); color: var(--paper); font-size: 12.5px;
+    border-radius: 3px; padding: 9px 14px; opacity: 0; pointer-events: none;
+    transition: opacity 200ms var(--ease), transform 200ms var(--ease);
+    z-index: 20; max-width: 90vw; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* model cards */
+  .model { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+  @media (max-width: 900px) { .model { grid-template-columns: 1fr; } }
+  .model-card { border: 1px solid var(--line-strong); background: var(--panel-solid); border-radius: 3px; padding: 17px 18px; }
+  .model-card .mt { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); }
+  .model-card h3 { font-size: 16px; margin: 4px 0 8px; }
+  .model-card ul { list-style: none; padding: 0; margin: 0; font-size: 11.5px; line-height: 1.7; color: var(--ink-soft); }
+  .model-card li { padding: 4px 0; border-top: 1px dotted var(--line); margin: 0; }
+  .model-card li:first-child { border-top: 0; }
+  .model-card li b { font-family: var(--mono); font-weight: 500; font-size: 10.5px; color: var(--ink); }
+  .model-card li span { color: var(--muted); }
+  .model-flow { display: flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 12px; flex-wrap: wrap; }
+  .model-flow b { color: var(--amber); font-weight: 500; }
+  .single-truth { margin-top: 18px; border: 1px solid rgba(78, 107, 93, 0.35); background: var(--sage-wash); padding: 14px 16px; border-radius: 3px; font-size: 13px; line-height: 1.7; color: var(--ink-soft); }
+  .single-truth b { color: var(--ink); }
+
+  /* skill */
+  .skill { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 18px; }
+  @media (max-width: 900px) { .skill { grid-template-columns: 1fr; } }
+  .skill-card { border: 1px solid var(--line-strong); border-radius: 3px; background: var(--panel-solid); overflow: hidden; }
+  .skill-card .sk-head { padding: 13px 16px; border-bottom: 1px solid var(--line); background: var(--paper-2); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .skill-card .sk-head .skn { font-family: var(--mono); font-size: 11px; color: var(--ink); }
+  .skill-card .sk-head .skb { font-family: var(--mono); font-size: 9px; color: var(--sage); border: 1px solid rgba(78, 107, 93, 0.35); border-radius: 2px; padding: 0 4px; }
+  .skill-card .sk-body { padding: 15px 16px; }
+  .skill-card h4 { font-size: 15px; margin-bottom: 5px; }
+  .skill-card p, .skill-card li { font-size: 12.5px; line-height: 1.68; color: var(--ink-soft); }
+  .skill-card ol { padding-left: 1.15em; }
+  .skill-card .call { margin-top: 12px; }
+  .skill-card .call pre { font-size: 10.5px; padding: 11px 12px; }
+
+  /* phases */
+  .phases { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 860px) { .phases { grid-template-columns: 1fr; } }
+  .phase { border: 1px solid var(--line-strong); border-radius: 3px; padding: 18px 19px; background: var(--panel-solid); }
+  .phase.p1 { background: #f7f1e4; }
+  .phase .pt { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ok); }
+  .phase h3 { font-size: 17px; margin: 4px 0 7px; }
+  .phase ul { font-size: 12.5px; line-height: 1.68; color: var(--ink-soft); padding-left: 1.15em; margin: 0; }
+  .phase .pn { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 10px; display: block; }
+
+  .decisions { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); margin-top: 20px; }
+  .decision { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 14px; background: var(--panel-solid); padding: 13px 16px; font-size: 12.5px; line-height: 1.65; }
+  .decision .dq { color: var(--ink); }
+  .decision .dq small { display: block; font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px; }
+  .decision .da { color: var(--ink-soft); }
+  .decision .da b { color: var(--sage); font-weight: 600; }
+  @media (max-width: 700px) { .decision { grid-template-columns: 1fr; gap: 4px; } }
+
+  .closing { margin-top: 84px; border-top: 2px solid var(--ink); padding-top: 22px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: end; }
+  .closing .q { font-family: var(--serif); font-size: clamp(22px, 2.6vw, 32px); line-height: 1.45; max-width: 27em; }
+  .closing .q em { font-style: normal; color: var(--amber); }
+  .closing .meta { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; color: var(--muted); text-align: right; line-height: 1.8; white-space: nowrap; }
+  @media (max-width: 700px) { .closing { grid-template-columns: 1fr; } .closing .meta { text-align: left; } }
+
+  .reveal { opacity: 0; transform: translateY(12px); transition: opacity 620ms var(--ease), transform 620ms var(--ease); }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.static { opacity: 1; transform: none; transition: none; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+    .reveal { opacity: 1; transform: none; }
+  }
+  @media (max-width: 1020px) {
+    .shell { grid-template-columns: 1fr; gap: 0; padding: 0 22px 72px; }
+    .rail { position: static; height: auto; padding: 16px 0 0; border-bottom: 1px solid var(--line); }
+    .rail-title, .rail-foot { display: none; }
+    .rail nav { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+    .rail a { grid-template-columns: auto auto; gap: 5px; padding: 4px 8px; border: 1px solid var(--line); background: rgba(255, 252, 246, 0.5); }
+    .rail a.active::after { display: none; }
+    .hero { padding-top: 46px; }
+    section { padding-top: 64px; }
+  }
+  @media print {
+    body { background: #fff; color: #000; font-size: 12pt; }
+    .rail, .demo-controls, .demo-btn, .form, .seg, .text-btn, .ap-actions, .toast { display: none !important; }
+    .shell { display: block; max-width: none; padding: 0; }
+    .reveal { opacity: 1; transform: none; }
+    section { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail" aria-label="目录">
+    <div class="rail-title">Contents</div>
+    <nav id="toc">
+      <a href="#problem"><span class="n">01</span><span>问题与目标</span></a>
+      <a href="#flow"><span class="n">02</span><span>完整回路</span></a>
+      <a href="#card"><span class="n">03</span><span>需求卡</span></a>
+      <a href="#approval"><span class="n">04</span><span>管家页审批</span></a>
+      <a href="#model"><span class="n">05</span><span>数据模型</span></a>
+      <a href="#skill"><span class="n">06</span><span>管家技能</span></a>
+      <a href="#plan"><span class="n">07</span><span>分期与待拍板</span></a>
+    </nav>
+    <div class="rail-foot">
+      方案 v1 · 2026-11-26<br>
+      待拍板 / 待开发<br>
+      <span class="mono">doc/管家审批与需求卡-方案.html</span>
+    </div>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <div class="eyebrow">
+        <span><b>Plannotator</b> 中文 fork</span>
+        <span>管家 · M2.5</span>
+        <span>方案 v1</span>
+        <span>2026-11-26</span>
+      </div>
+      <div class="stamp" aria-hidden="true">
+        <strong>方案</strong>
+        管家页<br>
+        审批<br>
+        待拍板
+      </div>
+      <h1 class="hero-title">让管家动手，<br>先给一张<em>合格的卡</em>。</h1>
+      <p class="hero-lead">
+        管家要能建需求卡，但不是“点一下就多一张卡”。这一版把三件事连起来：
+        <strong>授权开关</strong>决定要不要人点头，<strong>管家页里的审批</strong>让人一次看清所有待批，
+        <strong>一张 Markdown 需求卡</strong>保证批准的那份文档带着背景、目标、验收和上下文。
+      </p>
+      <div class="chips" aria-label="方案关键词">
+        <span class="chip amber">审批在管家页</span>
+        <span class="chip">审批开关</span>
+        <span class="chip">需求卡 = Markdown</span>
+        <span class="chip sage">上下文随卡</span>
+        <span class="chip">待拍板</span>
+      </div>
+    </header>
+
+    <!-- 01 problem -->
+    <section id="problem" aria-labelledby="problem-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">01</span>
+        <div>
+          <h2 id="problem-h">问题不在“能不能建”，在“建出来是什么”</h2>
+          <p class="sec-sub">现在的管家能聊、能看台账；M2 给了它建卡和派活的手，但没有让人看清、改动的入口。</p>
+        </div>
+      </div>
+
+      <div class="compare reveal">
+        <div class="side now">
+          <span class="tagline">现状 · Today</span>
+          <h3>能建，但很黑</h3>
+          <ul>
+            <li>授权在对话里问一次，主人可能不在；授权结果只落一个偏好文件，看不见。</li>
+            <li>审查入口散落在聊天里，没有“所有待批”一栏。</li>
+            <li>需求卡只有标题和一个自由文本；正文没有编辑器，主人看不到管家写了什么。</li>
+            <li>上下文是单独的链接/文件列表；建卡时不能随卡一起交给管家。</li>
+            <li>“卡”没有固定格式，管家每次写的结构都不一样。</li>
+          </ul>
+        </div>
+        <div class="gap" aria-hidden="true">→</div>
+        <div class="side">
+          <span class="tagline">目标 · This design</span>
+          <h3>能建，而且看得见、改得动</h3>
+          <ul>
+            <li><b>开关</b>：建卡 / 派活 / 停止，各自“每次审批”或“直接允许”。</li>
+            <li><b>审批在管家页里</b>：和对话同一个地方，页签「对话 / 审批」，不用再开一个页面。</li>
+            <li><b>文档</b>：需求卡就是一份 Markdown 文档，固定六段 + 上下文小节，主人可读可改。</li>
+            <li><b>上下文随卡</b>：链接与文件一并进卡；文件复制进需求自己的文件夹。</li>
+            <li><b>结果回流</b>：批准/拒绝都变成事件唤醒管家，它再向主人汇报。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="aside reveal">
+        <b>一份文档，一个来源：</b>需求卡就是 <code>notes</code> + <code>contexts</code> 渲染出的 Markdown 文档；
+        审批、工坊、会话开场读的是同一份，不是三份摘要。
+      </div>
+    </section>
+
+    <!-- 02 flow -->
+    <section id="flow" aria-labelledby="flow-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">02</span>
+        <div>
+          <h2 id="flow-h">一张图看完整回路</h2>
+          <p class="sec-sub">从主人开口，到卡进入需求、会话开跑、结果回到管家。开关只改一件事：中间要不要经过管家页的审批页签。</p>
+        </div>
+      </div>
+
+      <div class="map reveal" role="img" aria-label="从主人说话到需求卡与审批再到会话的流程图">
+        <div class="map-row">
+          <div class="map-node">
+            <span class="mk">01 · 人</span>
+            <span class="mv">主人开口</span>
+            <span class="md">“把这个需求建卡，在 web 项目里开工”</span>
+          </div>
+          <div class="map-arrow" aria-hidden="true">→</div>
+          <div class="map-node amber">
+            <span class="mk">02 · 管家技能</span>
+            <span class="mv">整理成卡</span>
+            <span class="md">标题、六段正文、上下文、来源线程；缺的标“待补充”</span>
+          </div>
+          <div class="map-arrow" aria-hidden="true">→</div>
+          <div class="map-node">
+            <span class="mk">03 · 动作</span>
+            <span class="mv">create-requirement</span>
+            <span class="md">正文 + 链接/文件 + thread + event_id</span>
+          </div>
+        </div>
+
+        <div class="map-down" aria-hidden="true">↓</div>
+
+        <div class="map-node" style="max-width: none;">
+          <span class="mk">04 · 开关</span>
+          <span class="mv">这张卡要不要人点头？</span>
+          <span class="md">开关在管家页「审批」页签顶部；建卡、派活、停止各自一条。</span>
+        </div>
+
+        <div class="map-branch">
+          <div class="branch-lane">
+            <span class="bl">直接允许 · auto</span>
+            <div class="map-row">
+              <div class="map-node sage" style="flex:1 1 100%;">
+                <span class="mk">05A · 执行</span>
+                <span class="mv">直接建卡</span>
+                <span class="md">不经过审批；仍然写历史、仍然通知管家。</span>
+              </div>
+            </div>
+            <div class="bd" style="margin-top:10px">结果直接进入 06 · 需求记录。</div>
+          </div>
+          <div class="branch-lane">
+            <span class="bl">每次审批 · ask</span>
+            <div class="map-row">
+              <div class="map-node" style="flex:1 1 100%;">
+                <span class="mk">05B · 管家页 · 审批</span>
+                <span class="mv">待批卡片</span>
+                <span class="md">在管家页的审批页签里；完整文档预览 + 上下文 + 批准 / 拒绝 / 以后直接允许。</span>
+              </div>
+            </div>
+            <div class="map-down" aria-hidden="true">↓</div>
+            <div class="map-node" style="border-style:dashed;">
+              <span class="mk">05C · 人</span>
+              <span class="mv">批准</span>
+              <span class="md">只有窗口同源请求能决策；第一次决定生效。</span>
+            </div>
+            <div class="bd" style="margin-top:10px">批准后进入 06；拒绝则回到管家，不建卡。</div>
+          </div>
+        </div>
+
+        <div class="map-down" aria-hidden="true">↓</div>
+
+        <div class="map-row">
+          <div class="map-node">
+            <span class="mk">06 · 事实</span>
+            <span class="mv">需求记录</span>
+            <span class="md">正文 + 上下文文件夹 + 来源线程 + 一条 <code>管家: …（主人批准）</code> 历史</span>
+          </div>
+          <div class="map-arrow" aria-hidden="true">→</div>
+          <div class="map-node">
+            <span class="mk">07 · 使用</span>
+            <span class="mv">从卡启动会话</span>
+            <span class="md">会话开场就是同一份文档；不是另一套摘要。</span>
+          </div>
+          <div class="map-arrow" aria-hidden="true">→</div>
+          <div class="map-node amber">
+            <span class="mk">08 · 回流</span>
+            <span class="mv">结果事件</span>
+            <span class="md">批准/拒绝/失败 → 摘要唤醒管家 → 它向主人汇报。</span>
+          </div>
+        </div>
+
+        <div class="map-legend">
+          <span>琥珀 = 管家参与</span>
+          <span>灰绿 = 直接执行</span>
+          <span>虚线 = 人的决定</span>
+        </div>
+      </div>
+
+      <div class="two reveal" style="margin-top:18px">
+        <div class="panel">
+          <div class="panel-head"><h3>为什么审批卡要放完整卡片</h3><span class="tag">key choice</span></div>
+          <p class="small" style="margin:0;color:var(--ink-soft)">只给一句“管家想建卡”等于让人盲签。审批卡里直接渲染将要进入需求的那张 Markdown 卡和上下文清单，主人批准的是<b>内容</b>，不是动作。第一版只读预览；批准后到工坊再改。</p>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>为什么结果还要回给管家</h3><span class="tag">closing loop</span></div>
+          <p class="small" style="margin:0;color:var(--ink-soft)">批准后建卡是守护进程做的，不是管家“假装做了”。它需要一条<code>butler.action.approved</code>事件，才能如实说“卡建好了”；拒绝同理。没有这条回流，审批页签就只是另一块没人收尾的表单。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 card -->
+    <section id="card" aria-labelledby="card-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">03</span>
+        <div>
+          <h2 id="card-h">需求卡：一份有固定骨架的 Markdown</h2>
+          <p class="sec-sub">它是一份 Markdown 文档，不是一张表单：标题一句话，正文六段，上下文单独列；启动会话时原样成为会话的开场白。</p>
+        </div>
+      </div>
+
+      <div class="two reveal" style="align-items:start">
+        <div class="cardmock" aria-label="需求卡样张">
+          <div class="mc-title">登录页改版</div>
+          <div class="mc-meta">需求 ID · req_01J8…　阶段：需求设计　优先级：中<br>来源：与主人的对话 · msg_01J…</div>
+
+          <div class="mc-sec">
+            <h4>背景 / 为什么</h4>
+            <div class="mc-lines">登录页是转化入口，现在的首屏要 3 秒才出来，移动端还会错位。本月先把结构重排，视觉不变。</div>
+          </div>
+          <div class="mc-sec">
+            <h4>目标</h4>
+            <div class="mc-lines">- 首屏在 1 秒内可交互
+- 移动端不再横向滚动
+- 登录成功率不低于现在</div>
+          </div>
+          <div class="mc-sec">
+            <h4>范围</h4>
+            <div class="mc-lines">做：布局、加载顺序、断点
+不做：重做视觉、改后端鉴权、加第三方登录</div>
+          </div>
+          <div class="mc-sec">
+            <h4>约束</h4>
+            <div class="mc-lines">- 保持现有设计令牌
+- 不能引入新的运行时依赖
+- 上线前要过现有回归</div>
+          </div>
+          <div class="mc-sec">
+            <h4>验收</h4>
+            <div class="mc-lines">- [ ] 桌面 / 移动端都不横向滚动
+- [ ] 首屏交互 ≤ 1s（本机与低端机各测一次）
+- [ ] 登录走通一条真实账号</div>
+          </div>
+          <div class="mc-sec">
+            <h4>开放问题</h4>
+            <div class="mc-lines">- 低端机的具体机型？
+- 是否需要保留旧版入口？</div>
+          </div>
+
+          <div class="mc-ctx">
+            <h4 style="margin-bottom:4px">相关上下文</h4>
+            <div class="ch"> <span class="ctx-chip">链接 · PRD</span> <span class="ctx-chip">链接 · 竞品首页</span> <span class="ctx-chip">文件 · 登录页截图.png</span> </div>
+          </div>
+          <div class="mc-foot">开始吧：读完上下文再动手；阶段性产出用 deliver 挂回本需求；该进下一阶段时 suggest，由人采纳。</div>
+        </div>
+
+        <div class="annot" aria-label="卡片结构说明">
+          <div class="annot-item"><span class="an">①</span><div><b>标题</b>一句话说清“要做什么”，不是项目名。它会成为线程名和需求卡标题。</div></div>
+          <div class="annot-item"><span class="an">②</span><div><b>正文六段</b>背景 / 目标 / 范围 / 约束 / 验收 / 开放问题。未知写“待补充”，管家不编。</div></div>
+          <div class="annot-item"><span class="an">③</span><div><b>上下文</b>链接和文件是引用，不把文件内容粘进正文；文件复制进需求自己的文件夹。</div></div>
+          <div class="annot-item"><span class="an">④</span><div><b>开始吧</b>启动会话时系统追加的指令；卡片正文始终是同一份 Markdown。</div></div>
+          <div class="annot-item"><span class="an">⑤</span><div><b>来源线程</b>挂在需求记录上（<code>threads</code>），方便回查；不假设执行会话能读收件箱。</div></div>
+          <div class="annot-item"><span class="an">⑥</span><div><b>格式来源</b>六段标题与渲染器都来自共享的 <code>requirement-card</code> 模块，技能与代码不会各写一套。</div></div>
+        </div>
+      </div>
+
+      <div class="aside sage reveal">
+        <b>需求卡就是这份 Markdown 文档。</b>正文来自需求记录的 <code>notes</code>，上下文小节由 <code>contexts</code> 渲染；
+        审批预览、工坊里打开、会话开场读的都是同一份文档。需要拿走时导出为 <code>card.md</code>；
+        不做会漂移的第二份副本。
+      </div>
+
+      <div style="margin-top:26px" class="reveal">
+        <div class="panel-head" style="border-top:1px solid var(--line-strong);padding-top:18px">
+          <h3 style="font-family:var(--serif);font-size:24px">试写这份文档</h3>
+          <span class="tag">interactive · 文档编辑器示意</span>
+        </div>
+        <div class="builder">
+          <div class="form" aria-label="卡片填写示例">
+            <label for="f-title">标题</label>
+            <input id="f-title" value="登录页改版" autocomplete="off">
+            <label for="f-bg">背景 / 为什么</label>
+            <textarea id="f-bg">登录页是转化入口，现在的首屏要 3 秒才出来，移动端还会错位。本月先把结构重排，视觉不变。</textarea>
+            <div class="row">
+              <div><label for="f-goal">目标</label><textarea id="f-goal">- 首屏在 1 秒内可交互
+- 移动端不再横向滚动</textarea></div>
+              <div><label for="f-scope">范围（做 / 不做）</label><textarea id="f-scope">做：布局、加载顺序、断点
+不做：重做视觉、改后端鉴权</textarea></div>
+            </div>
+            <label for="f-cons">约束</label>
+            <textarea id="f-cons">- 保持现有设计令牌
+- 不能引入新的运行时依赖</textarea>
+            <div class="row">
+              <div><label for="f-accept">验收</label><textarea id="f-accept">- [ ] 桌面 / 移动端都不横向滚动
+- [ ] 首屏交互 ≤ 1s</textarea></div>
+              <div><label for="f-open">开放问题</label><textarea id="f-open">- 低端机的具体机型？
+- 是否需要保留旧版入口？</textarea></div>
+            </div>
+            <p class="mini">上下文示例：PRD（链接）、竞品首页（链接）、登录页截图.png（文件）。文件会复制进需求文件夹。</p>
+            <div class="builder-tools">
+              <div class="seg" role="group" aria-label="文档视图">
+                <button type="button" id="mode-card" aria-pressed="true">文档预览</button>
+                <button type="button" id="mode-md" aria-pressed="false">Markdown 源码</button>
+              </div>
+              <button type="button" class="text-btn" id="reset-card">重置示例</button>
+            </div>
+          </div>
+          <div class="preview-wrap" id="preview-wrap">
+            <div class="preview-card" id="card-preview" aria-live="polite"></div>
+            <div class="preview-md"><pre id="md-preview"></pre></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 approval -->
+    <section id="approval" aria-labelledby="approval-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">04</span>
+        <div>
+          <h2 id="approval-h">审批就在管家页里</h2>
+          <p class="sec-sub">不另开页面。管家页顶部是「对话 / 审批」两个页签，待批数量挂在页签上；开关、待批卡、已决定都在这里。</p>
+        </div>
+      </div>
+
+      <div class="window reveal" aria-label="管家页审批页签示意">
+        <div class="win-bar"><span class="win-dots"><i></i><i></i><i></i></span><span class="win-addr">localhost:53998/#butler · 审批</span></div>
+        <div class="win-body butler">
+          <div class="butler-top">
+            <div class="butler-id"><span class="butler-orb">管</span><span>管家</span></div>
+            <div class="butler-tabs" role="tablist" aria-label="管家页">
+              <button type="button" class="btab" role="tab" aria-selected="false">对话</button>
+              <button type="button" class="btab active" role="tab" aria-selected="true">审批 <span class="ws-badge" id="side-badge">1</span></button>
+            </div>
+          </div>
+          <div class="win-main">
+            <div class="win-head">
+              <h3>审批</h3>
+              <span class="win-count" id="win-count">0 件待审批</span>
+            </div>
+            <p class="win-sub">和管家说话的地方，也是批事的地方。批准后会立刻执行，并把结果送回管家。</p>
+
+            <div class="switch-panel">
+              <div class="sp-head"><b>授权开关</b><span>每次审批 / 直接允许</span></div>
+              <div class="switch-row">
+                <span class="sr-name">建需求卡 <small>管家整理好的卡直接创建，还是先给您看</small></span>
+                <div class="switch-toggle" role="group" aria-label="建需求卡授权模式">
+                  <button type="button" id="sw-ask" aria-pressed="true" class="ask">每次审批</button>
+                  <button type="button" id="sw-auto" aria-pressed="false">直接允许</button>
+                </div>
+              </div>
+              <div class="switch-row">
+                <span class="sr-name">启动执行会话 <small>L3 · Phase 2 接入同一套开关</small></span>
+                <div class="switch-toggle" role="group" aria-label="启动会话授权模式">
+                  <button type="button" aria-pressed="true" class="ask" disabled>每次审批</button>
+                  <button type="button" aria-pressed="false" disabled>直接允许</button>
+                </div>
+              </div>
+              <div class="switch-row">
+                <span class="sr-name">停止会话 <small>L3 · Phase 2 接入；打断正在跑的回合</small></span>
+                <div class="switch-toggle" role="group" aria-label="停止会话授权模式">
+                  <button type="button" aria-pressed="true" class="ask" disabled>每次审批</button>
+                  <button type="button" aria-pressed="false" disabled>直接允许</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="pending" id="ap-pending"></div>
+            <div class="history">
+              <div class="hh">已决定 · RECENT</div>
+              <div id="ap-history"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-controls reveal">
+        <span class="hint">可点：切换「建需求卡」的开关，再让管家请求建卡，看它进管家页的审批页签还是直接执行。</span>
+        <button type="button" class="demo-btn" id="ask-card">让管家请求建卡</button>
+        <button type="button" class="demo-btn ghost" id="reset-approval">重置</button>
+      </div>
+
+      <div class="two reveal" style="margin-top:18px">
+        <div class="panel">
+          <div class="panel-head"><h3>审批卡里有什么</h3><span class="tag">what the owner sees</span></div>
+          <ul class="small" style="margin:0;color:var(--ink-soft);padding-left:1.15em">
+            <li>动作与请求者（建需求卡 · 管家）</li>
+            <li>完整文档预览（折叠/展开）和上下文清单</li>
+            <li>批准 / 拒绝 / 以后直接允许</li>
+            <li>触发它的来源事件与对话线程</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>决定之后</h3><span class="tag">the loop closes</span></div>
+          <ul class="small" style="margin:0;color:var(--ink-soft);padding-left:1.15em">
+            <li>批准 → 执行建卡/派活/停止 → 需求历史写“（主人批准）”</li>
+            <li>拒绝 → 不执行，记录原因；管家收到拒绝事件</li>
+            <li>两种结果都进已决定，并唤醒管家汇报</li>
+            <li>第一次决定生效；两个窗口同时点，只有一个算数</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 model -->
+    <section id="model" aria-labelledby="model-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">05</span>
+        <div>
+          <h2 id="model-h">数据模型：卡不是副本</h2>
+          <p class="sec-sub">三份数据各管一件事：需求记录是事实，审批记录是待办，偏好文件是开关。卡片是需求记录的渲染。</p>
+        </div>
+      </div>
+
+      <div class="model reveal">
+        <div class="model-card">
+          <span class="mt">Requirement · 事实</span>
+          <h3>需求记录</h3>
+          <ul>
+            <li><b>title</b> <span>一句话标题</span></li>
+            <li><b>notes</b> <span>卡片文档正文（Markdown，六段）</span></li>
+            <li><b>contexts[]</b> <span>文档的上下文小节（链接 / 文件）</span></li>
+            <li><b>threads[]</b> <span>来源与执行线程</span></li>
+            <li><b>stage / priority</b> <span>生命周期</span></li>
+          </ul>
+        </div>
+        <div class="model-card">
+          <span class="mt">Approval · 待办</span>
+          <h3>审批记录</h3>
+          <ul>
+            <li><b>id</b> <span>apr_…</span></li>
+            <li><b>action</b> <span>create / launch / stop</span></li>
+            <li><b>status</b> <span>pending / approved / denied / failed</span></li>
+            <li><b>detail</b> <span>给主人看的文档预览</span></li>
+            <li><b>payload</b> <span>执行用的动作体，只在服务端</span></li>
+            <li><b>idempotency_key</b> <span>重试不重复</span></li>
+          </ul>
+        </div>
+        <div class="model-card">
+          <span class="mt">Preferences · 开关</span>
+          <h3>偏好文件</h3>
+          <ul>
+            <li><b>auto.create-requirement</b> <span>false = 每次审批</span></li>
+            <li><b>auto.launch-session</b> <span>L3</span></li>
+            <li><b>auto.stop-session</b> <span>L3</span></li>
+            <li><b>updated_at</b> <span>可查看、可撤销</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="model-flow reveal">
+        <span>动作请求</span><b>→</b><span>开关</span><b>→</b><span>审批记录</span><b>→ 批准 →</b><span>执行</span><b>→</b><span>需求记录</span><b>→ 同一份 →</b><span>Markdown 文档</span>
+      </div>
+
+      <div class="single-truth reveal">
+        <b>需求卡是一份 Markdown 文档。</b>正文来自 <code>notes</code>，上下文小节由 <code>contexts</code> 渲染；
+        审批预览、工坊详情、会话开场用的是同一个渲染函数——主人批准的和执行会话读到的，保证是同一份文档。
+        需要拿走时导出为 <code>card.md</code>，不做会漂移的第二份副本。
+      </div>
+    </section>
+
+    <!-- 06 skill -->
+    <section id="skill" aria-labelledby="skill-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">06</span>
+        <div>
+          <h2 id="skill-h">管家技能：butler-requirement-card</h2>
+          <p class="sec-sub">建卡不是自由发挥，而是一套固定的整理流程。它是独立技能，<code>butler-intake</code> 负责在入口接住主人。</p>
+        </div>
+      </div>
+
+      <div class="skill reveal">
+        <div class="skill-card">
+          <div class="sk-head"><span class="skn">butler-requirement-card</span><span class="skb">new skill</span></div>
+          <div class="sk-body">
+            <h4>把一段对话整理成一份需求卡文档</h4>
+            <p>产出：一份 Markdown 文档（<code>card.md</code>）+ 一组上下文引用。目标是在不啰嗦的前提下，把主人已经说过的信息收进固定六段；缺的标“待补充”，不编。</p>
+            <ol>
+              <li>先抓标题：一句话，动词开头，可验证。</li>
+              <li>按模板写正文；每段最多几句话，不写小说。</li>
+              <li>收集上下文：链接、文件、截图；聊天附件在管家 <code>files/</code> 下。</li>
+              <li>把来源线程 <code>thread</code> 与触发事件 <code>event_id</code> 带上。</li>
+              <li>调用 <code>create-requirement</code>，读回返回的 <code>card</code> 复述给主人。</li>
+              <li>如果进管家页的审批页签，只说“已送到审批”，不说“建好了”。</li>
+            </ol>
+            <div class="call">
+<pre><code>{
+  "action": "create-requirement",
+  "title": "登录页改版",
+  "notes": "## 背景\n…\n## 目标\n…",
+  "contexts": [
+    { "kind": "link", "name": "PRD", "ref": "https://…" },
+    { "kind": "file", "name": "登录页截图", "path": "~/plannotator-butler/files/…" }
+  ],
+  "thread": "msg_01J…",
+  "event_id": "be_…",
+  "idempotency_key": "…"
+}</code></pre>
+            </div>
+            <p class="small" style="color:var(--muted);margin:10px 0 0">技能正文由共享的卡片模板生成，避免“技能里一套、代码里一套”。</p>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="sk-head"><span class="skn">共享格式 · requirement-card</span><span class="skb">single source</span></div>
+          <div class="sk-body">
+            <h4>一份文档格式，四处使用</h4>
+            <ul>
+              <li><b>技能</b>：告诉管家六段怎么写。</li>
+              <li><b>动作</b>：校验/提示缺了哪段，不硬拒。</li>
+              <li><b>渲染</b>：启动会话、审批预览、工坊详情读同一份文档。</li>
+              <li><b>编辑器</b>：工坊的需求卡文档，空的时候从模板开始。</li>
+            </ul>
+            <div class="single-truth" style="margin-top:12px">
+              <b>建议默认：</b>六段标题固定；未知写“待补充”；缺段只警告不阻断；文件复制进需求文件夹，不只记路径。
+            </div>
+            <div class="aside sage" style="margin-top:12px;font-size:12px">
+              <b>工坊要补的缺口：</b>现在只有标题和上下文，没有正文编辑器。这一版要加「需求卡」文档面板：
+              Markdown 编辑 + 预览 + 上下文列表；编辑的就是这份文档，保存走现有的 PATCH notes。
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 plan -->
+    <section id="plan" aria-labelledby="plan-h">
+      <div class="sec-head reveal">
+        <span class="sec-no">07</span>
+        <div>
+          <h2 id="plan-h">分期与待拍板</h2>
+          <p class="sec-sub">先把“合格的卡 + 审批回路”做成一条可用的线，再扩到派活/停止和工坊编辑。</p>
+        </div>
+      </div>
+
+      <div class="single-truth reveal" style="margin:0 0 18px">
+        <b>已定前提（你）：</b>审批放在<b>管家页的「对话 / 审批」页签</b>里，不做独立页面；
+        <b>需求卡是一份 Markdown 文档</b>，正文与上下文是同一份文档，不是一张需要另存副本的表单。
+      </div>
+
+      <div class="phases reveal">
+        <div class="phase p1">
+          <span class="pt">Phase 1 · 先做</span>
+          <h3>卡片 + 审批闭环</h3>
+          <ul>
+            <li>共享卡片格式：六段模板、渲染器、缺段检查。</li>
+            <li><code>butler-requirement-card</code> 技能 + 人设/入口技能接线。</li>
+            <li><code>create-requirement</code> 支持正文、链接、文件、来源线程。</li>
+            <li>审批记录 + 开关 + 管家页「审批」页签 + 完整文档预览 + 批准后执行 + 结果事件。</li>
+            <li>工坊的需求卡编辑器（至少能读、能改正文）。</li>
+          </ul>
+          <span class="pn">验收：说“建卡” → 管家页的审批页签出现完整文档 → 批准 → 文档/上下文/线程落地 → 管家收到结果。</span>
+        </div>
+        <div class="phase">
+          <span class="pt">Phase 2 · 接着</span>
+          <h3>把其它审批也收进来</h3>
+          <ul>
+            <li>派活 / 停止改用同一审批模块（替换对话里的 L3 问法）。</li>
+            <li>“以后直接允许”写入开关；可查看、可撤销。</li>
+            <li>把现有 agent 权限请求聚合进管家页的审批页签：先只读跳转，再就地回答。</li>
+            <li>工坊需求卡文档补全、上下文预览、导出 <code>card.md</code>。</li>
+          </ul>
+          <span class="pn">验收：所有需要人的动作都只在管家页的审批页签出现一次；开关能单独控制每类动作。</span>
+        </div>
+      </div>
+
+      <div class="decisions reveal">
+        <div class="decision">
+          <div class="dq"><small>Decision 1 · card document</small>需求卡文档的正文用现有 <code>notes</code>，还是新增 <code>card</code> 字段？</div>
+          <div class="da"><b>建议：notes 作为文档正文</b>，不新增字段，避免两套真相；旧的无标题 notes 兼容包在「背景」下。</div>
+        </div>
+        <div class="decision">
+          <div class="dq"><small>Decision 2 · files</small>上下文文件复制进需求文件夹，还是只记路径？</div>
+          <div class="da"><b>建议：复制</b>到 <code>requirements/contexts/&lt;req&gt;/</code>，管家文件夹清理后卡不坏。</div>
+        </div>
+        <div class="decision">
+          <div class="dq"><small>Decision 3 · skill</small>建卡技能独立，还是扩展现有 <code>butler-intake</code>？</div>
+          <div class="da"><b>建议：独立</b> <code>butler-requirement-card</code>；intake 只负责入口和追问，职责清楚。</div>
+        </div>
+        <div class="decision">
+          <div class="dq"><small>Decision 4 · approval preview</small>审批里的文档只读，还是批准前可编辑？</div>
+          <div class="da"><b>建议：第一版只读</b>；批准后到工坊编辑。可编辑会把审批页签变成另一个编辑器，风险大。</div>
+        </div>
+      </div>
+
+      <div class="aside reveal" style="margin-top:20px">
+        <b>测试要点：</b>模板渲染/缺段、动作带上下文（链接校验、文件复制）、审批 pending → 批准建卡 → 拒绝不建、开关 ask/auto、幂等、窗口专属决策、
+        结果事件唤醒管家；外加一次“干净房间”测试：只给管家这份技能，在临时目录里完成一张真实需求卡。
+      </div>
+
+      <div class="closing reveal">
+        <div class="q">给管家的不是“建卡权限”，<br>而是一条<em>看得见、改得动、能收尾</em>的路。</div>
+        <div class="meta">
+          管家审批与需求卡 · 方案 v1<br>
+          Plannotator 中文 fork<br>
+          2026-11-26 · 待拍板
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* reveal + toc */
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const revealables = document.querySelectorAll(".reveal");
+  if (!reduced && "IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) { entry.target.classList.add("in"); io.unobserve(entry.target); }
+      }
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+    revealables.forEach((el) => io.observe(el));
+  } else revealables.forEach((el) => el.classList.add("in"));
+  setTimeout(() => revealables.forEach((el) => el.classList.add("in", "static")), 1400);
+
+  const tocLinks = [...document.querySelectorAll("#toc a")];
+  const sections = tocLinks.map((link) => document.querySelector(link.getAttribute("href"))).filter(Boolean);
+  if ("IntersectionObserver" in window && sections.length) {
+    const spy = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const id = "#" + entry.target.id;
+        for (const link of tocLinks) link.classList.toggle("active", link.getAttribute("href") === id);
+      }
+    }, { rootMargin: "-18% 0px -68% 0px", threshold: 0 });
+    sections.forEach((section) => spy.observe(section));
+  }
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (value) => String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  /* ── card builder ─────────────────────────────────────── */
+  const SAMPLE = {
+    title: "登录页改版",
+    bg: "登录页是转化入口，现在的首屏要 3 秒才出来，移动端还会错位。本月先把结构重排，视觉不变。",
+    goal: "- 首屏在 1 秒内可交互\n- 移动端不再横向滚动",
+    scope: "做：布局、加载顺序、断点\n不做：重做视觉、改后端鉴权",
+    cons: "- 保持现有设计令牌\n- 不能引入新的运行时依赖",
+    accept: "- [ ] 桌面 / 移动端都不横向滚动\n- [ ] 首屏交互 ≤ 1s",
+    open: "- 低端机的具体机型？\n- 是否需要保留旧版入口？"
+  };
+  const fields = {
+    title: $("f-title"), bg: $("f-bg"), goal: $("f-goal"), scope: $("f-scope"),
+    cons: $("f-cons"), accept: $("f-accept"), open: $("f-open")
+  };
+  const read = () => ({
+    title: fields.title.value.trim(),
+    bg: fields.bg.value.trim(), goal: fields.goal.value.trim(), scope: fields.scope.value.trim(),
+    cons: fields.cons.value.trim(), accept: fields.accept.value.trim(), open: fields.open.value.trim()
+  });
+  const lines = (text) => {
+    const value = String(text || "").trim();
+    if (!value) return '<div class="mc-lines"><span class="ph">待补充</span></div>';
+    return '<div class="mc-lines">' + value.split("\n").map((line) => esc(line)).join("\n") + "</div>";
+  };
+  function renderCard() {
+    const f = read();
+    $("card-preview").innerHTML =
+      '<div class="mc-title">' + (esc(f.title) || '<span class="ph">（还没标题）</span>') + "</div>" +
+      '<div class="mc-meta">需求 ID · req_01J8…　阶段：需求设计　优先级：中<br>来源：与主人的对话 · msg_01J…</div>' +
+      '<div class="mc-sec"><h4>背景 / 为什么</h4>' + lines(f.bg) + "</div>" +
+      '<div class="mc-sec"><h4>目标</h4>' + lines(f.goal) + "</div>" +
+      '<div class="mc-sec"><h4>范围</h4>' + lines(f.scope) + "</div>" +
+      '<div class="mc-sec"><h4>约束</h4>' + lines(f.cons) + "</div>" +
+      '<div class="mc-sec"><h4>验收</h4>' + lines(f.accept) + "</div>" +
+      '<div class="mc-sec"><h4>开放问题</h4>' + lines(f.open) + "</div>" +
+      '<div class="mc-ctx"><h4 style="margin-bottom:4px">相关上下文</h4><div class="ch"><span class="ctx-chip">链接 · PRD</span> <span class="ctx-chip">链接 · 竞品首页</span> <span class="ctx-chip">文件 · 登录页截图.png</span></div></div>' +
+      '<div class="mc-foot">开始吧：读完上下文再动手；阶段性产出用 deliver 挂回本需求；该进下一阶段时 suggest，由人采纳。</div>';
+    $("md-preview").textContent = cardMarkdown(f);
+  }
+  function cardMarkdown(f) {
+    const section = (title, body) => "## " + title + "\n" + (body || "待补充") + "\n";
+    return "# 需求卡：" + (f.title || "（还没标题）") + "\n\n" +
+      "> 需求 ID：req_01J8… · 阶段：需求设计 · 优先级：中\n\n" +
+      section("背景 / 为什么", f.bg) + "\n" +
+      section("目标", f.goal) + "\n" +
+      section("范围", f.scope) + "\n" +
+      section("约束", f.cons) + "\n" +
+      section("验收", f.accept) + "\n" +
+      section("开放问题", f.open) + "\n" +
+      "## 相关上下文\n- 链接：https://… —— PRD\n- 链接：https://… —— 竞品首页\n- 文件：<dataDir>/requirements/contexts/<req>/登录页截图.png —— 登录页截图\n";
+  }
+  Object.values(fields).forEach((el) => el.addEventListener("input", renderCard));
+  $("reset-card").addEventListener("click", () => {
+    fields.title.value = SAMPLE.title; fields.bg.value = SAMPLE.bg; fields.goal.value = SAMPLE.goal;
+    fields.scope.value = SAMPLE.scope; fields.cons.value = SAMPLE.cons; fields.accept.value = SAMPLE.accept;
+    fields.open.value = SAMPLE.open;
+    renderCard();
+  });
+  $("mode-card").addEventListener("click", () => {
+    $("preview-wrap").classList.remove("md");
+    $("mode-card").setAttribute("aria-pressed", "true");
+    $("mode-md").setAttribute("aria-pressed", "false");
+  });
+  $("mode-md").addEventListener("click", () => {
+    $("preview-wrap").classList.add("md");
+    $("mode-card").setAttribute("aria-pressed", "false");
+    $("mode-md").setAttribute("aria-pressed", "true");
+    $("md-preview").textContent = cardMarkdown(read());
+  });
+  renderCard();
+
+  /* ── approval demo ────────────────────────────────────── */
+  const toast = (text) => {
+    const el = $("toast");
+    el.textContent = text;
+    el.classList.add("show");
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => el.classList.remove("show"), 2400);
+  };
+  const initialPending = () => [{
+    id: "apr_0",
+    title: "登录页改版",
+    summary: "登录页首屏慢、移动端错位；目标与验收已写进卡片。",
+    preview: [
+      "背景：登录页首屏慢、移动端错位",
+      "目标：首屏 ≤ 1s；移动端不横向滚动",
+      "范围：布局 / 加载顺序 / 断点",
+      "约束：现有设计令牌；不加重依赖",
+      "验收：两档设备实测；登录走通",
+      "开放问题：低端机机型；旧入口保留？"
+    ].join("\n"),
+    mode: "每次审批",
+    open: true
+  }];
+  const ap = { mode: "ask", pending: initialPending(), history: [], seq: 0 };
+
+  function renderApproval() {
+    const badge = ap.pending.length;
+    $("side-badge").textContent = String(badge);
+    $("win-count").textContent = badge === 0 ? "0 件待审批" : badge + " 件待审批";
+
+    $("sw-ask").setAttribute("aria-pressed", String(ap.mode === "ask"));
+    $("sw-auto").setAttribute("aria-pressed", String(ap.mode === "auto"));
+    $("sw-ask").classList.toggle("ask", ap.mode === "ask");
+    $("sw-auto").classList.toggle("ask", ap.mode === "auto");
+
+    const pending = $("ap-pending");
+    pending.innerHTML = "";
+    if (ap.pending.length === 0) {
+      pending.innerHTML = '<div class="ap-empty">没有待批的事。切到「每次审批」，再让管家请求建卡试试。</div>';
+    } else {
+      for (const item of ap.pending) {
+        const el = document.createElement("div");
+        el.className = "ap-card ap-new";
+        el.innerHTML =
+          '<div class="ap-top"><span class="ap-kind">建需求卡 · ' + esc(item.mode) + "</span><span class=\"ap-who\">管家 · 刚刚</span></div>" +
+          "<h4>" + esc(item.title) + "</h4>" +
+          '<p class="ap-sum">' + esc(item.summary) + "</p>" +
+          '<div class="ap-ctx">上下文：PRD 链接 · 竞品首页 · 登录页截图.png</div>' +
+          '<details' + (item.open ? ' open' : '') + ' style="margin-top:6px"><summary style="font-family:var(--mono);font-size:9.5px;color:var(--muted);cursor:pointer">完整文档预览</summary>' +
+          '<div style="margin-top:8px;border:1px solid var(--line);background:var(--paper);padding:10px;font-size:10.5px;line-height:1.6;color:var(--ink-soft);white-space:pre-wrap">' + esc(item.preview) + "</div></details>" +
+          '<div class="ap-actions">' +
+          '<button type="button" class="ap-btn approve" data-ap="approve">批准</button>' +
+          '<button type="button" class="ap-btn deny" data-ap="deny">拒绝</button>' +
+          '<label class="ap-always"><input type="checkbox" data-ap="always">以后直接允许</label>' +
+          "</div>";
+        pending.appendChild(el);
+      }
+    }
+
+    const history = $("ap-history");
+    history.innerHTML = "";
+    if (ap.history.length === 0) history.innerHTML = '<div class="hist-row"><span class="ht">—</span><span>还没有决定。</span><span class="hb">—</span></div>';
+    for (const item of ap.history.slice(0, 6)) {
+      const row = document.createElement("div");
+      row.className = "hist-row";
+      row.innerHTML = '<span class="ht">' + esc(item.at) + '</span><span>' + esc(item.text) + '</span><span class="hb ' + (item.ok ? "ok" : "no") + '">' + esc(item.tag) + '</span>';
+      history.appendChild(row);
+    }
+  }
+
+  function nowLabel() {
+    const d = new Date();
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+  function requestCard() {
+    ap.seq += 1;
+    const preview = [
+      "背景：登录页首屏慢、移动端错位",
+      "目标：首屏 ≤ 1s；移动端不横向滚动",
+      "范围：布局 / 加载顺序 / 断点",
+      "约束：现有设计令牌；不加重依赖",
+      "验收：两档设备实测；登录走通",
+      "开放问题：低端机机型；旧入口保留？"
+    ].join("\n");
+    if (ap.mode === "auto") {
+      ap.history.unshift({ at: nowLabel(), text: "已直接建卡：登录页改版（开关=直接允许）", tag: "直接建卡", ok: true });
+      toast("已按开关直接建卡；结果事件会唤醒管家。");
+    } else {
+      ap.pending.push({ id: "apr_" + ap.seq, title: "登录页改版", summary: "登录页首屏慢、移动端错位；目标与验收已写进卡片。", preview, mode: "每次审批" });
+      toast("管家请求建卡，已进入管家页的审批。");
+    }
+    renderApproval();
+  }
+
+  $("sw-ask").addEventListener("click", () => { ap.mode = "ask"; renderApproval(); });
+  $("sw-auto").addEventListener("click", () => { ap.mode = "auto"; renderApproval(); });
+  $("ask-card").addEventListener("click", requestCard);
+  $("reset-approval").addEventListener("click", () => {
+    ap.mode = "ask"; ap.pending = initialPending(); ap.history = []; ap.seq = 0;
+    renderApproval();
+    toast("已重置审批演示。");
+  });
+
+  $("ap-pending").addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const action = target.dataset.ap;
+    if (action !== "approve" && action !== "deny") return;
+    const card = target.closest(".ap-card");
+    if (!card) return;
+    const index = [...$("ap-pending").children].indexOf(card);
+    if (index < 0 || !ap.pending[index]) return;
+    const item = ap.pending[index];
+    const always = card.querySelector('input[data-ap="always"]');
+    if (action === "approve") {
+      ap.pending.splice(index, 1);
+      if (always && always.checked) ap.mode = "auto";
+      ap.history.unshift({ at: nowLabel(), text: "已批准并建卡：" + item.title + (always && always.checked ? "（以后直接允许）" : ""), tag: "已批准", ok: true });
+      toast("需求卡已创建；结果事件已唤醒管家。");
+    } else {
+      ap.pending.splice(index, 1);
+      ap.history.unshift({ at: nowLabel(), text: "已拒绝建卡：" + item.title, tag: "已拒绝", ok: false });
+      toast("已拒绝；管家会收到拒绝结果。");
+    }
+    renderApproval();
+  });
+
+  renderApproval();
+})();
+</script>
+</body>
+</html>

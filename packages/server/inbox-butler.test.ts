@@ -6,30 +6,22 @@
  * fake binary that records its arguments; PLANNOTATOR_BUTLER_DIR isolates
  * the butler folder per test.
  */
-import { beforeEach, afterEach, describe, expect, test, mock } from "bun:test";
-import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { beforeEach, afterEach, describe, expect, test } from "bun:test";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const created: string[] = [];
 const resumed: string[] = [];
 /** 会话 id 在 opencode 侧已经不存在（模拟存储被清理/别的装机留下的 state.json）。 */
 const staleIds = new Set<string>();
 
-mock.module("@plannotator/ai", () => ({
-  buildButlerPrompt: () => "你是管家（测试 persona）。",
-  createProvider: async () => ({
-    createSession: async () => {
-      const id = `ses_new${created.length + 1}`;
-      created.push(id);
-      return fakeSession(id);
-    },
-    resumeSession: async (id: string) => {
-      resumed.push(id);
-      return fakeSession(id, staleIds.has(id));
-    },
-  }),
-}));
+/** 注入的大脑提供者（不再 mock 整个 @plannotator/ai：进程级 mock 会漏进同一次运行里的其它测试文件）。 */
+const fakeProvider = {
+  resumeSession: async (id: string) => {
+    resumed.push(id);
+    return fakeSession(id, staleIds.has(id));
+  },
+};
 
 function fakeSession(id: string, stale = false) {
   return {
@@ -51,7 +43,6 @@ let fakeBin = "";
 let butlerModule: typeof import("./inbox-butler");
 
 beforeEach(async () => {
-  created.length = 0;
   resumed.length = 0;
   staleIds.clear();
   home = mkdtempSync(join(tmpdir(), "plannotator-butler-home-"));
@@ -68,9 +59,9 @@ afterEach(() => {
   rmSync(fakeBin, { force: true });
 });
 
-async function loadButler(bootstrapBin: string) {
+async function loadButler(bootstrapBin: string, digests?: () => string) {
   butlerModule = await import("./inbox-butler");
-  return new butlerModule.Butler({ bootstrapBin, model: 'glm/glm-5.3-flash' });
+  return new butlerModule.Butler({ bootstrapBin, model: 'glm/glm-5.3-flash', provider: fakeProvider, ...(digests ? { digests } : {}) });
 }
 
 async function chat(
@@ -117,8 +108,7 @@ describe("the butler streaming chat", () => {
   test("a fixed session id is bootstrapped once, then resumed across restarts (never createSession)", async () => {
     const first = await loadButler(fakeBin);
     await chat(first, "第一句");
-    // 建会话走 CLI bootstrap（provider.createSession 从不调用）。
-    expect(created.length).toBe(0);
+    // 建会话走 CLI bootstrap（提供者只被用来续接；createSession 从不调用）。
     const state = JSON.parse(readFileSync(join(home, "plannotator-butler", "state.json"), "utf8")) as { sessionId: string };
     expect(state.sessionId).toStartWith("ses_butler");
     expect(resumed).toEqual([state.sessionId]);
@@ -165,6 +155,43 @@ describe("the butler streaming chat", () => {
     expect(state.sessionId).toBe(body.sessionId);
   });
 
+  // 事件机制（doc/管家-事件机制设计 §8.1）：管家每次说话前先看到「自上次以来发生了什么」。
+  test("the event plane's digest rides in front of the next prompt, once", async () => {
+    let digest = "【动态】\n- 需求「登录页改版」：设计稿已交付，等主人审阅";
+    const butler = await loadButler(fakeBin, () => {
+      const value = digest;
+      digest = "";
+      return value;
+    });
+    const first = await chat(butler, "那事怎么样了");
+    expect(String(first.frames.find((frame) => frame.done === true)!.reply)).toContain("设计稿已交付");
+    // Consumed: the next turn is the owner's own words only.
+    const second = await chat(butler, "还有呢");
+    const reply = String(second.frames.find((frame) => frame.done === true)!.reply);
+    expect(reply).not.toContain("【动态】");
+    expect(reply).toContain("还有呢");
+  });
+
+  // 唤醒不能凭空起一个会话（owner 没打开过管家时，开一个只为说一句话是没被要求的开销）；
+  // 已有的会话则直接说话，页面看到的是管家自己的一行，不是伪造的「你」。
+  test("a wake speaks into an open session; with no session yet it waits for the next chat", async () => {
+    const butler = await loadButler(fakeBin);
+    await butler.wake("【动态】\n- 需求「登录页改版」：设计稿已交付");
+    const historyPath = join(home, "plannotator-butler", "history.jsonl");
+    expect(existsSync(historyPath)).toBe(false);
+    // The deferred digest is said with the owner's first words.
+    const first = await chat(butler, "在吗");
+    expect(String(first.frames.find((frame) => frame.done === true)!.reply)).toContain("设计稿已交付");
+    const before = readFileSync(historyPath, "utf8").trim().split("\n").map((line) => JSON.parse(line) as { role: string });
+    expect(before.map((turn) => turn.role)).toEqual(["you", "butler"]);
+    // A live session: the wake is a butler line, and no owner turn is invented for it.
+    await butler.wake("【动态】\n- 会话失败：额度耗尽");
+    const after = readFileSync(historyPath, "utf8").trim().split("\n").map((line) => JSON.parse(line) as { role: string; text: string });
+    expect(after.filter((turn) => turn.role === "you")).toHaveLength(1);
+    expect(after.at(-1)).toMatchObject({ role: "butler" });
+    expect(after.at(-1)!.text).toContain("额度耗尽");
+  });
+
   test("a non-same-origin call is not answered", async () => {
     const butler = await loadButler(fakeBin);
     butler.init();
@@ -206,9 +233,13 @@ describe("the butler's skill whitelist (owner 2026-11-25「管家要有技能白
     expect(listing).toContain("name: 需求受理");
     expect(listing).toContain("description: ");
     expect(readFileSync(join(dir, ".opencode", "skills", "butler-inbox-guide", "SKILL.md"), "utf8")).toContain("name: 收件箱向导");
+    const cardSkill = readFileSync(join(dir, ".opencode", "skills", "butler-requirement-card", "SKILL.md"), "utf8");
+    expect(cardSkill).toContain("name: 需求卡");
+    expect(cardSkill).toContain("## 背景 / 为什么");
+    expect(cardSkill).toContain("pending_approval");
   });
 
-  test("the persona disowns ambient skills: only butler-* is its own（真模块的文本；本文件的 @plannotator/ai 是 mock）", async () => {
+  test("the persona disowns ambient skills: only butler-* is its own", async () => {
     const real = (await import("@plannotator/ai/context")) as typeof import("@plannotator/ai/context");
     const persona = real.buildButlerPrompt();
     expect(persona).toContain("butler-*");

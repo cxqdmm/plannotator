@@ -17,8 +17,10 @@
  * The whole set is held in memory (personal scale, the design doc's §9.3).
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, watch, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { isAbsolute, join, basename } from "node:path";
 import { ulid } from "@plannotator/core/inbox-types";
+import { renderRequirementCard, requirementCardBody } from "@plannotator/core/requirement-card";
 import { loadConfig } from "@plannotator/shared/config";
 import {
   DELIVERABLE_KINDS,
@@ -90,7 +92,22 @@ export interface RequirementStore {
   addContext(id: string, input: { kind: "link" | "file"; name: string; ref: string; image?: boolean; by?: string | null }): RequirementContext;
   patchContext(id: string, contextId: string, patch: { name?: string; ref?: string }): RequirementContext;
   removeContext(id: string, contextId: string): void;
-  watch: { subscribe(listener: (ids: string[]) => void): () => void };
+  watch: {
+    subscribe(listener: (ids: string[]) => void): () => void;
+    /** Every history line as it is recorded (`say` included: it saves no record, so no change watch fires for it).
+     *  The butler's event projector reads this; a test's literal store may leave it out. */
+    subscribeEvents?(listener: (event: RequirementEvent) => void): () => void;
+  };
+  /** The requirement card (the words a session starts on), as the Workshop's detail read builds it.
+   *  The butler's launch action starts an execution session with this card. */
+  card?(id: string): string;
+  /** Copy a file already on disk into the requirement's own context folder and record it (the butler's
+   *  create-requirement action uses it for the chat's attachments; the window's upload route does the same
+   *  for base64). `~/…` is the person's home. */
+  addFileContext?(id: string, input: { name: string; path: string; by?: string | null }): RequirementContext;
+  /** Every history line recorded after `sinceId` (null: all), oldest first, kept through a deleted requirement
+   *  (the record is gone, the history is not). The butler replays from its cursor through this. */
+  eventsAfter?(sinceId: string | null): RequirementEvent[];
   /** agent 的引擎会话 id → 收件箱线程 id（会话归属落账前的换算）；解析不到返回 null（落「无归属」）。
    *  由工厂返回的包装对象提供（挂 options.threadOfSession），裸字面量 store 上不存在。 */
   threadOfSession?(session: string): string | null;
@@ -186,6 +203,9 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
 
   /** Who hears that requirements changed: the window stream forwards this as `event: requirements`. */
   const listeners = new Set<(ids: string[]) => void>();
+  /** Who hears each history line as it is recorded (the butler's event projector): `say` writes no record,
+   *  so the change watch above never fires for it. */
+  const eventListeners = new Set<(event: RequirementEvent) => void>();
   const watch = {
     subscribe(listener: (ids: string[]) => void): () => void {
       listeners.add(listener);
@@ -193,14 +213,31 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         listeners.delete(listener);
       };
     },
+    subscribeEvents(listener: (event: RequirementEvent) => void): () => void {
+      eventListeners.add(listener);
+      return () => {
+        eventListeners.delete(listener);
+      };
+    },
   };
   const changed = (ids: string[]) => {
     for (const listener of listeners) listener(ids);
   };
+  const eventsRecorded = (event: RequirementEvent) => {
+    for (const listener of eventListeners) {
+      try {
+        listener(event);
+      } catch {
+        // A listener's failure never fails the write.
+      }
+    }
+  };
 
   const recordEvent = (req: string, kind: RequirementEvent["kind"], extra: Partial<RequirementEvent> = {}) => {
-    events.events.push({ id: `evt_${ulid()}`, req, at: new Date().toISOString(), kind, ...extra });
+    const event: RequirementEvent = { id: `evt_${ulid()}`, req, at: new Date().toISOString(), kind, ...extra };
+    events.events.push(event);
     writeJson(eventsPath, events);
+    eventsRecorded(event);
   };
 
   const save = (ids: string[]): void => {
@@ -230,6 +267,14 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       const record = file.requirements.find((r) => r.id === id);
       if (!record) return null;
       return { requirement: record, events: events.events.filter((event) => event.req === id) };
+    },
+    eventsAfter(sinceId: string | null) {
+      // Event ids are `evt_` + ULID, so a plain string comparison is the log's order. Deleted requirements'
+      // lines stay here (only the record goes), which is what a replay must see.
+      return sinceId === null ? [...events.events] : events.events.filter((event) => event.id > sinceId);
+    },
+    card(id: string) {
+      return requirementCardOf(at(id));
     },
     create(input: { title: string; priority?: RequirementPriority; notes?: string }) {
       if ("stage" in (input as Record<string, unknown>)) throw new RequirementStoreError("validation_error", "stage: not at create (a requirement starts in 待跟进; PATCH moves it).", "stage");
@@ -369,6 +414,27 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
     },
     /** 需求上下文: the requirement's background material. `file` is the absolute path of a file already written
      *  into the requirement's context folder (the routes below do the writing); the store only records. */
+    addFileContext(id: string, input: { name: string; path: string; by?: string | null }) {
+      const record = at(id);
+      if (!record) throw new RequirementStoreError("not_found", "No such requirement.");
+      if (typeof input.name !== "string" || !input.name.trim()) throw new RequirementStoreError("validation_error", "name: what this material is.", "name");
+      if (typeof input.path !== "string" || !input.path.trim()) throw new RequirementStoreError("validation_error", "path: the file to copy.", "path");
+      const source = input.path.startsWith("~/") ? join(homedir(), input.path.slice(2)) : input.path;
+      let bytes: Buffer;
+      try {
+        bytes = readFileSync(source);
+      } catch {
+        throw new RequirementStoreError("validation_error", `path: 读不到 ${input.path}。`, "path");
+      }
+      if (bytes.length > 9 * 1024 * 1024) throw new RequirementStoreError("validation_error", "path: the file is larger than 9 MB.", "path");
+      const name = input.name.trim();
+      const suffix = (/\.[A-Za-z0-9]{1,8}$/.exec(name)?.[0] ?? "").toLowerCase();
+      mkdirSync(contextDirOf(id), { recursive: true, mode: 0o700 });
+      const file = join(contextDirOf(id), `${ulid()}${suffix}`);
+      writeFileSync(file, bytes, { mode: 0o600 });
+      const image = IMAGE_CONTEXT_SUFFIXES.some((entry) => suffix === entry);
+      return store.addContext(id, { kind: "file", name, ref: file, ...(image ? { image: true } : {}), by: input.by ?? null });
+    },
     addContext(id: string, input: { kind: "link" | "file"; name: string; ref: string; image?: boolean; by?: string | null }) {
       const record = at(id);
       if (input.kind !== "link" && input.kind !== "file") throw new RequirementStoreError("validation_error", "kind: link or file.", "kind");
@@ -452,28 +518,10 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
   const IMAGE_CONTEXT_SUFFIXES = [".png", ".jpg", ".jpeg", ".gif", ".webp"] as const;
 
   /**
-   * The 需求卡 (requirement card): the message a session starts on — the requirement's own words plus its
-   * context as REFERENCES (links stay links, files stay paths; the agent reads them itself), never contents.
+   * The 需求卡 (requirement card): the Markdown document a session starts on. The renderer lives in
+   * @plannotator/core/requirement-card so the Workshop, the approval preview and the session read one document.
    */
-  const requirementCardOf = (record: Requirement): string => {
-    const priority = record.priority === "none" ? "" : `　**优先级**：${record.priority}`;
-    const lines = [
-      `# 需求卡：${record.title}`,
-      "",
-      `**需求 ID**：\`${record.id}\`　**阶段**：${requirementStageLabel(record.stage)}${priority}`,
-      "",
-    ];
-    if (record.notes.trim()) lines.push("## 背景", "", record.notes.trim(), "");
-    if (record.contexts.length > 0) {
-      lines.push("## 相关上下文", "", "> 以下都是引用：链接直接访问，文件按路径读取（图片可直接看）。动手前先读一遍。", "");
-      for (const context of record.contexts) {
-        lines.push(context.kind === "link" ? `- 链接：${context.ref} —— ${context.name}` : `- 文件：${context.ref} —— ${context.name}`);
-      }
-      lines.push("");
-    }
-    lines.push("## 开始吧", "", "1. 读完上下文再动手；有不清楚的先用 Ask 提问，不要猜；", "2. 阶段性产出用 deliver 挂回本需求；较大进展完成时（如每个大步骤落地）用 progress 汇报一句；该进下一阶段时 suggest，由人采纳。", `（本会话已自动挂到需求 \`${record.id}\`，无需再 link。）`);
-    return lines.join("\n");
-  };
+  const requirementCardOf = (record: Requirement): string => renderRequirementCard(record);
   const seedDesignDoc = (record: Requirement): string => {
     const file = designDocOf(record.id);
     if (!existsSync(file)) {
@@ -481,7 +529,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       mkdirSync(join(options.dataDir, "requirements", "design-docs"), { recursive: true });
       writeFileSync(
         file,
-        `# ${record.title}\n\n> 需求阶段：${requirementStageLabel(record.stage)}${stage?.wants ? `（本阶段期望产出：${stage.wants}）` : ""}\n\n## 背景\n\n${record.notes.trim() || "（待补充）"}\n\n## 目标\n\n- \n\n## 方案\n\n- \n\n## 开放问题\n\n- \n`,
+        `# ${record.title}\n\n> 需求阶段：${requirementStageLabel(record.stage)}${stage?.wants ? `（本阶段期望产出：${stage.wants}）` : ""}\n\n${requirementCardBody(record.notes)}\n\n## 方案\n\n- \n`,
         { mode: 0o600 },
       );
     }

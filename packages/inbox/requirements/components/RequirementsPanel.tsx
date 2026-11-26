@@ -9,7 +9,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { HostMark, Icon } from '../../icons';
 import { SidebarTrigger } from '../../shell/sidebar';
 import { subscribeRequirementFrames } from '../frames';
-import { addContext, annotateDeliverable, readRequirement, removeContext, reviewDeliverable, startSessionCodeReview } from '../api';
+import { addContext, annotateDeliverable, patchRequirement, readRequirement, removeContext, reviewDeliverable, startSessionCodeReview } from '../api';
 import { inboxApi } from '../../api';
 import { EmbeddedThread } from '../EmbeddedThread';
 import { putThread } from '../../data/queries/thread';
@@ -20,6 +20,9 @@ import { Tip } from '../../components/Tip';
 import { Menu } from '@base-ui/react/menu';
 import { useRequirements } from '../useRequirements';
 import { DELIVERABLE_KIND_LABELS, requirementStageLabel, type Requirement, type RequirementEvent, type RequirementStage } from '@plannotator/core/requirements-types';
+import { missingRequirementCardSections, renderRequirementCard, requirementCardTemplate } from '@plannotator/core/requirement-card';
+import { chatMarkdownHtml } from '@plannotator/ui/components/chat';
+import { copyTextToClipboard } from '@plannotator/ui/utils/clipboard';
 import { inboxRowArchived } from '@plannotator/core/inbox-types';
 
 const EVENT_WORDS: Readonly<Record<RequirementEvent['kind'], string>> = {
@@ -50,6 +53,7 @@ function useArchivedRows(on: boolean, missing: readonly string[]): Map<string, u
 /** What the right panel shows. */
 type Panel =
   | { k: 'session'; threadId: string; fileId?: string | null; artifacts?: boolean }
+  | { k: 'card'; requirementId: string }
   | { k: 'contexts'; requirementId: string }
   | { k: 'history'; requirementId: string }
   | null;
@@ -158,7 +162,7 @@ export function RequirementsPanel({
         </div>
         <div className="ib-req-wp-cards">
           {shown.map((r) => (
-            <ReqCard key={r.id} requirement={r} rowsByThread={rowsForCards} patch={patch} hideArchivedSessions={hideArchivedSessions} selectedThreadId={panel !== null && panel.k === 'session' ? panel.threadId : null} onSession={(tid) => setPanel((current) => (current !== null && current.k === 'session' && current.threadId === tid ? null : { k: 'session', threadId: tid }))} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
+            <ReqCard key={r.id} requirement={r} rowsByThread={rowsForCards} patch={patch} hideArchivedSessions={hideArchivedSessions} selectedThreadId={panel !== null && panel.k === 'session' ? panel.threadId : null} onSession={(tid) => setPanel((current) => (current !== null && current.k === 'session' && current.threadId === tid ? null : { k: 'session', threadId: tid }))} onCard={() => setPanel({ k: 'card', requirementId: r.id })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
                   // 评审由守护进程自起门控会话；路由等会话起好从登记簿拿地址返回，窗口统一打开（首击即达）。
                   onToast({ icon: 'clock', lead: '正在打开评审页…' });
                   void reviewDeliverable(reqId, dlvId).then((o) => {
@@ -204,7 +208,7 @@ export function RequirementsPanel({
 
 /* ── A requirement card: icon + wrapping title, hover actions (out of flow), created
  * time pinned right on row 1, and its sessions as rows INSIDE the card. ── */
-function ReqCard({ requirement: r, rowsByThread, patch, hideArchivedSessions, selectedThreadId, onSession, onContexts, onHistory, onNewSession, onToast, onReview }: {
+function ReqCard({ requirement: r, rowsByThread, patch, hideArchivedSessions, selectedThreadId, onSession, onCard, onContexts, onHistory, onNewSession, onToast, onReview }: {
   requirement: Requirement;
   rowsByThread: Map<string, unknown>;
   /** 乐观写（useRequirements 的 patch）：归档/恢复/重新开启都走它，卡片在视图间流动。 */
@@ -214,6 +218,7 @@ function ReqCard({ requirement: r, rowsByThread, patch, hideArchivedSessions, se
   /** 右侧详情正开着的那条会话（工坊反查选中态）：null = 详情没开或开的是别的面板。 */
   selectedThreadId: string | null;
   onSession: (threadId: string) => void;
+  onCard: () => void;
   onContexts: () => void;
   onHistory: () => void;
   onNewSession: () => void;
@@ -252,6 +257,9 @@ function ReqCard({ requirement: r, rowsByThread, patch, hideArchivedSessions, se
             <Menu.Portal container={portal ?? undefined}>
               <Menu.Positioner className="ib-pm-pos" side="bottom" align="end" sideOffset={4}>
                 <Menu.Popup className="ib-pm" aria-label={`需求「${r.title}」的操作`}>
+                  <Menu.Item className="ib-pmi" label="需求卡" onClick={onCard} data-req-menu="card">
+                    <Icon name="doc" size={15} /> 需求卡
+                  </Menu.Item>
                   <Menu.Item className="ib-pmi" label="上下文" onClick={onContexts} data-req-menu="contexts">
                     <Icon name="book" size={15} /> 上下文（{r.contexts.length}）
                   </Menu.Item>
@@ -428,6 +436,87 @@ function ReqCard({ requirement: r, rowsByThread, patch, hideArchivedSessions, se
   );
 }
 
+/* ── 需求卡文档：Markdown 就是这张卡（编辑 / 文档视图 / 保存）── */
+function CardBody({ requirement, onChanged, onError }: {
+  requirement: Requirement | null;
+  onChanged: () => void;
+  onError: (message: string) => void;
+}) {
+  const [notes, setNotes] = useState(requirement?.notes ?? '');
+  const [mode, setMode] = useState<'doc' | 'edit'>('doc');
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    setNotes(requirement?.notes ?? '');
+    setDirty(false);
+  }, [requirement?.id, requirement?.notes]);
+  if (!requirement) {
+    return <div className="ib-req-wp-panel-body ib-req-card-panel"><p className="ib-req-card-loading">正在读需求卡…</p></div>;
+  }
+  const missing = missingRequirementCardSections(notes);
+  const preview = renderRequirementCard({ id: requirement.id, title: requirement.title, notes, stage: requirement.stage, priority: requirement.priority, contexts: requirement.contexts });
+  const copyDocument = async () => {
+    const ok = await copyTextToClipboard(preview);
+    setCopied(ok);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  const save = async () => {
+    setSaving(true);
+    const outcome = await patchRequirement(requirement.id, { notes });
+    setSaving(false);
+    if (!outcome.ok) {
+      onError(outcome.error);
+      return;
+    }
+    setDirty(false);
+    onChanged();
+  };
+  return (
+    <div className="ib-req-wp-panel-body ib-req-card-panel">
+      <div className="ib-req-card-tools">
+        <div className="ib-req-card-tabs" role="tablist" aria-label="需求卡视图">
+          <button type="button" className={mode === 'doc' ? 'on' : ''} aria-selected={mode === 'doc'} onClick={() => setMode('doc')}>文档</button>
+          <button type="button" className={mode === 'edit' ? 'on' : ''} aria-selected={mode === 'edit'} onClick={() => setMode('edit')}>Markdown</button>
+        </div>
+        <div className="ib-req-card-actions">
+          <button type="button" className="ib-req-card-copy" onClick={() => void copyDocument()}>{copied ? '已复制' : '复制 Markdown'}</button>
+          {dirty && (
+            <button type="button" className="ib-req-card-revert" onClick={() => { setNotes(requirement.notes); setDirty(false); }}>还原</button>
+          )}
+          <button type="button" className="ib-req-card-save" disabled={!dirty || saving} onClick={() => void save()}>
+            {saving ? '保存中…' : '保存'}
+          </button>
+        </div>
+      </div>
+      {missing.length > 0 && (
+        <p className="ib-req-card-missing">缺少章节：{missing.join('、')}。可以让管家补，也可以在这里直接写。</p>
+      )}
+      {mode === 'doc' ? (
+        <article className="ib-req-card-doc" aria-label="需求卡文档">
+          <div className="ib-butler-md" dangerouslySetInnerHTML={{ __html: chatMarkdownHtml(preview) }} />
+        </article>
+      ) : (
+        <div className="ib-req-card-edit">
+          <textarea
+            value={notes}
+            dir="auto"
+            spellCheck={false}
+            aria-label="需求卡 Markdown"
+            onChange={(event) => { setNotes(event.target.value); setDirty(true); }}
+          />
+          {!notes.trim() && (
+            <button type="button" className="ib-req-card-template" onClick={() => { setNotes(requirementCardTemplate()); setDirty(true); }}>
+              从六段模板开始
+            </button>
+          )}
+          <p className="ib-req-card-hint">正文就是这份 Markdown 文档；上下文在「上下文」里管理，渲染成文档的上下文小节。保存后，启动会话与审批预览读的是同一份。</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── 上下文管理：列表 + 添加（链接 / 文本 / 上传文件）── */
 const CONTEXT_KIND_ICON: Record<string, string> = { link: 'external', text: 'doc', upload: 'clip' };
 const CONTEXT_KIND_LABEL: Record<string, string> = { link: '链接', text: '文本', upload: '文件' };
@@ -557,7 +646,7 @@ function PanelContent({ panel, requirements, rowsByThread, onClose, onOpenThread
   const [, setAnnotating] = useState<string | null>(null);
   /** 上下文增删后 +1，重读详情。 */
   const [bump, setBump] = useState(0);
-  const [detail, setDetail] = useState<{ requirement: Requirement; events: RequirementEvent[] } | null>(null);
+  const [detail, setDetail] = useState<{ requirement: Requirement; events: RequirementEvent[]; card?: string } | null>(null);
   /** 历史的会话过滤：'all' | thread id | 'none'（工坊手动操作/旧事件）。 */
   const [histFilter, setHistFilter] = useState<string>('all');
   const reload = useRef<AbortController | null>(null);
@@ -580,6 +669,15 @@ function PanelContent({ panel, requirements, rowsByThread, onClose, onOpenThread
       <button type="button" className="ib-req-wp-panel-x" aria-label="关闭" onClick={onClose}><Icon name="x" size={16} /></button>
     </div>
   );
+
+  if (panel.k === 'card') {
+    return (
+      <>
+        {top(`需求卡 · ${req?.title ?? ''}`)}
+        <CardBody requirement={detail?.requirement ?? req} onChanged={() => setBump(b => b + 1)} onError={setError} />
+      </>
+    );
+  }
 
   if (panel.k === 'contexts') {
     return (

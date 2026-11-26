@@ -11,7 +11,8 @@ import { isImeCompositionKey } from '@plannotator/ui/utils/commentSubmitKey';
 import { chatMarkdownHtml } from '@plannotator/ui/components/chat';
 import { Tip } from '@plannotator/ui/components/inbox-thread/Tip';
 import { Icon } from '../icons';
-import { inboxApi } from '../api';
+import { inboxApi, type InboxButlerApprovalsModel } from '../api';
+import { ButlerApprovals } from './ButlerApprovals';
 import { BUTLER_FILE_MAX_BYTES, BUTLER_FILE_MAX_COUNT } from '@plannotator/core/inbox-types';
 
 /**
@@ -136,6 +137,57 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
   const [sessionCopy, setSessionCopy] = useState<'idle' | 'busy' | 'copied' | 'failed'>('idle');
   const listRef = useRef<HTMLDivElement>(null);
   const loadedRef = useRef(false);
+  /** 管家页的两个页签：对话 / 审批（owner 2026-11-26「审批放在管家页面中」）。 */
+  const [tab, setTab] = useState<'chat' | 'approvals'>('chat');
+  const [approvalsModel, setApprovalsModel] = useState<InboxButlerApprovalsModel | null>(null);
+  const [approvalsError, setApprovalsError] = useState<string | null>(null);
+  const [approvalBusy, setApprovalBusy] = useState<string | null>(null);
+  const approvalsPending = approvalsModel?.approvals.pending.length ?? 0;
+
+  /** 审批页签的数据：打开时与每 5 秒读一次；决定/开关后再读。 */
+  const loadApprovals = () => {
+    void inboxApi
+      .butlerApprovals()
+      .then((answer) => {
+        if (!answer || !answer.approvals || !Array.isArray(answer.approvals.pending)) throw new Error('审批数据读不出来。');
+        setApprovalsModel(answer);
+        setApprovalsError(null);
+      })
+      .catch((error: unknown) => {
+        setApprovalsError(error instanceof Error ? error.message : String(error));
+      });
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    loadApprovals();
+    const timer = setInterval(loadApprovals, 5000);
+    return () => clearInterval(timer);
+  }, [open]);
+
+  const decideApproval = async (id: string, decision: 'approve' | 'deny', always: boolean) => {
+    if (approvalBusy) return;
+    setApprovalBusy(id);
+    setApprovalsError(null);
+    try {
+      await inboxApi.butlerApprovalDecide(id, { decision, ...(always ? { always: true } : {}) });
+      loadApprovals();
+    } catch (error) {
+      setApprovalsError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setApprovalBusy(null);
+    }
+  };
+
+  const setApprovalMode = async (action: 'create-requirement' | 'launch-session' | 'stop-session', mode: 'ask' | 'auto') => {
+    setApprovalsError(null);
+    try {
+      await inboxApi.butlerApprovalSettings(action, mode);
+      loadApprovals();
+    } catch (error) {
+      setApprovalsError(error instanceof Error ? error.message : String(error));
+    }
+  };
 
   // ESC 收回（与全屏面板的其它入口一致）。
   useEffect(() => {
@@ -153,6 +205,24 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
     loadedRef.current = true;
     void inboxApi.butlerHistory().then((answer) => setTurns(answer.history ?? [])).catch(() => setTurns([]));
   }, [open]);
+
+  // 事件唤醒（doc/管家-事件机制设计 §8.1）：管家自己开口说的话由服务端写进历史，
+  // 这一页开着时每 5 秒对齐一次，主人当场看到「设计稿已交付，等你审阅」。
+  // 正在流式的自己那条不动（pending），否则以服务端历史为准。
+  useEffect(() => {
+    if (!open) return;
+    const timer = setInterval(() => {
+      if (pending) return;
+      void inboxApi
+        .butlerHistory()
+        .then((answer) => {
+          const history = answer.history ?? [];
+          setTurns((current) => (history.length > current.length ? history : current));
+        })
+        .catch(() => {});
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [open, pending]);
 
   // 新消息/流式追加时滚到底。
   useEffect(() => {
@@ -301,6 +371,17 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
               <span className="ib-butler-presence" aria-hidden="true" />
             </span>
           </div>
+          <div className="ib-butler-tabs" role="tablist" aria-label="管家页">
+            <button type="button" role="tab" aria-selected={tab === 'chat'} className={`ib-butler-tab${tab === 'chat' ? ' is-on' : ''}`} onClick={() => setTab('chat')}>
+              对话
+            </button>
+            <button type="button" role="tab" aria-selected={tab === 'approvals'} className={`ib-butler-tab${tab === 'approvals' ? ' is-on' : ''}`} onClick={() => setTab('approvals')}>
+              审批
+              {approvalsPending > 0 && <span className="ib-butler-tab-badge">{approvalsPending}</span>}
+            </button>
+          </div>
+          {tab === 'chat' ? (
+          <>
           <div className="ib-butler-list" ref={listRef}>
             {turns.length === 0 && !pending ? (
               <div className="ib-butler-hero">
@@ -308,7 +389,7 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                   <ButlerCharacter size={96} mood={sessionCopy === 'copied' ? 'happy' : 'idle'} />
                 </span>
                 <h2 className="ib-butler-hero-word">{butlerGreeting()}</h2>
-                <p className="ib-butler-hero-sub">吩咐一声——我帮您把想法整理成需求卡片；真正动手，从卡片开启会话。</p>
+                <p className="ib-butler-hero-sub">我盯着每件事的进展，有动静会先说；真正动手，从需求卡片开启会话。</p>
                 <div className="ib-butler-ideas">
                   {BUTLER_IDEAS.map((idea) => (
                     <button
@@ -422,6 +503,17 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
               }}
             />
           </div>
+          </>
+          ) : (
+            <ButlerApprovals
+              model={approvalsModel}
+              error={approvalsError}
+              busy={approvalBusy}
+              onDecide={(id, decision, always) => void decideApproval(id, decision, always)}
+              onMode={(action, mode) => void setApprovalMode(action, mode)}
+              onRefresh={loadApprovals}
+            />
+          )}
         </div>
       )}
     </>
@@ -439,7 +531,7 @@ function butlerGreeting(): string {
 }
 
 /** 起步的建议（点一下填进输入框）：都是管家真的做得到的事。 */
-const BUTLER_IDEAS: readonly string[] = ['帮我把一个想法整理成需求', '计划评审是怎么用的？', '代码评审的结论会去哪里？'];
+const BUTLER_IDEAS: readonly string[] = ['现在什么情况？', '帮我把一个想法整理成需求', '计划评审是怎么用的？', '代码评审的结论会去哪里？'];
 
 /** 发送键的回车箭头（会话流同款）。 */
 function ButlerSendGlyph() {

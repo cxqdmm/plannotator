@@ -78,6 +78,7 @@
     "./shape": "./shape.ts",
     "./plans": "./plans.ts",
     "./requirements-types": "./requirements-types.ts",
+    "./requirement-card": "./requirement-card.ts",
     "./shape-scene": "./shape-scene.ts",
     "./shape-animate": "./shape-animate.ts",
     "./shape-skill": "./shape-skill.ts",

@@ -425,5 +425,7 @@ export function createInboxCompose(options: {
     }
   };
 
-  return { route, sweep, sessionsModel };
+  // `startThread` is public for the butler's action face (M2): the same validated write path New
+  // message uses (launch switch, folder checks, trust, one idempotency key), never a second one.
+  return { route, sweep, sessionsModel, startThread };
 }

@@ -2288,6 +2288,14 @@ export const inboxApi = {
   },
   /** 管家：对话历史（最旧在前），用于管家界面的初始渲染。 */
   butlerHistory: () => get<{ history: { at: string; role: 'you' | 'butler'; text: string }[] }>(inboxUrl('/butler/history')),
+  /** 管家页的「审批」页签：待批 + 已决定 + 授权开关。 */
+  butlerApprovals: () => get<InboxButlerApprovalsModel>(inboxUrl('/butler/approvals')),
+  /** 主人对一条审批做决定；批准后守护进程立刻执行，并把结果送回管家。 */
+  butlerApprovalDecide: (id: string, body: { decision: 'approve' | 'deny'; always?: boolean; note?: string }) =>
+    post<{ approval: InboxButlerApproval }>(inboxUrl(`/butler/approvals/${encodeURIComponent(id)}/decide`), body),
+  /** 授权开关：每次审批 / 直接允许。 */
+  butlerApprovalSettings: (action: 'create-requirement' | 'launch-session' | 'stop-session', mode: 'ask' | 'auto') =>
+    post<{ auto: Record<string, boolean> }>(inboxUrl('/butler/approvals/settings'), { action, mode }),
   /** 管家会话的终端入口：会话 id 与可直接粘贴的命令（首次调用会先把会话起好）。 */
   butlerSession: () => get<{ sessionId: string; dir: string; command: string }>(inboxUrl('/butler/session')),
   askSend: (threadId: string, turnId: string, question: string, showMe?: InboxShowMeAsk, source?: string) =>
@@ -2302,6 +2310,39 @@ export const inboxApi = {
   },
   deleteProject: (projectId: string) => post<{ store: InboxStorageModel }>(inboxUrl(`/projects/${encodeURIComponent(projectId)}/delete`), {}),
 };
+
+/** One 管家审批 as the window sees it (`packages/server/inbox-approvals.ts`); `payload` never leaves the server. */
+export interface InboxButlerApproval {
+  id: string;
+  kind: 'butler-action';
+  action: 'create-requirement' | 'launch-session' | 'stop-session';
+  status: 'pending' | 'approved' | 'denied' | 'failed';
+  title: string;
+  summary: string;
+  detail: {
+    requirement?: string;
+    thread?: string;
+    event_id?: string;
+    /** The complete requirement-card document, Markdown. */
+    card?: string;
+    contexts?: { kind: string; name: string }[];
+    warnings?: string[];
+    project_id?: string;
+    agent?: string;
+    session?: string;
+    words?: string;
+  };
+  requested_at: string;
+  decided_at: string | null;
+  result: { ok: boolean; requirement_id?: string; thread_id?: string; message_id?: string; session?: string; warnings?: string[]; error?: string; code?: string } | null;
+  note: string | null;
+}
+
+/** `GET /api/inbox/butler/approvals`. */
+export interface InboxButlerApprovalsModel {
+  approvals: { pending: InboxButlerApproval[]; decided: InboxButlerApproval[] };
+  auto: Record<string, boolean>;
+}
 
 /** 会话「对话流」: one transcript line as the pane draws it, keyed by its line index (`i`; a tool's result lands
  *  on the same one, so the window upserts). `packages/server/inbox-stream.ts` owns the shape. */
