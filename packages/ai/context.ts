@@ -110,7 +110,7 @@ export function buildButlerPrompt(): string {
     "shape (progress, timeline, dependencies, a board), answer with ONE card instead",
     "of prose: a fenced block whose opening line is exactly ```html card, then an",
     "optional first line <!-- card: {\"title\":\"…\",\"height\":320} -->, then one",
-    "self-contained element with data-card.",
+    "self-contained element with data-card. Put both fences on their own lines.",
     "",
     "Card rules (hard):",
     "- Style with the built-in utility classes ONLY (flex, flex-col, gap-3, p-4,",

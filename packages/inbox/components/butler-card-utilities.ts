@@ -31,7 +31,11 @@ const UTILITIES = [
   '.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}',
   '.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}',
   '.w-full{width:100%}',
+  '.w-1\/2{width:50%}',
+  '.w-2\/3{width:66.6667%}',
+  '.w-3\/4{width:75%}',
   '.h-full{height:100%}',
+  spacing('h', ['height']),
   '.min-w-0{min-width:0}',
   '.overflow-hidden{overflow:hidden}',
   '.relative{position:relative}',
@@ -95,7 +99,7 @@ const UTILITIES = [
   '.btn:hover{opacity:0.9}',
   '.btn-primary{border-color:var(--primary);background:var(--primary);color:var(--primary-foreground)}',
   '.btn-disabled{opacity:0.45;cursor:not-allowed}',
-  '.chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 9px;font-size:12px}',
+  '.chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 9px;font-size:12px;background:var(--muted);color:var(--muted-foreground)}',
 ].join('');
 
 /** 沙箱内联的整套工具类（一次性；模型看不到它，也不为它付 token）。 */

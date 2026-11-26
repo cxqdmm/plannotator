@@ -26,8 +26,6 @@ export const BUTLER_CARD_MAX_BYTES = 200 * 1024;
 const HEIGHT_MIN = 160;
 const HEIGHT_MAX = 900;
 
-const OPEN = /^```html[ \t]+card[ \t]*$/i;
-const CLOSE = /^```[ \t]*$/;
 const META = /^<!--\s*card:\s*(\{[\s\S]*?\})\s*-->\s*$/i;
 
 /** 一张卡片的首行元信息：标题给骨架屏用，高度给初始布局。坏 JSON 直接忽略。 */
@@ -49,41 +47,35 @@ export function cardMetaOf(html: string): ButlerCardMeta {
   }
 }
 
-/** 把一条回复切成「文字」与「卡片」两类段。未收尾的卡片以 closed=false 返回（画骨架）。 */
+/**
+ * 把一条回复切成「文字」与「卡片」两类段。未收尾的卡片以 closed=false 返回（画骨架）。
+ *
+ * 容错（现场 2026-11-27）：模型常把开标记写在句子末尾、结束标记挤在内容行尾——
+ * `…全在这一张里：```html card … </div> ``` 后面接着说话`。围栏不必须独占一行：
+ * 开标记可以在任何位置，结束标记是开标记之后的第一个三反引号。HTML 正文里因此不能再出现
+ * 三反引号（卡片模板里也不会有）。
+ */
 export function parseButlerCards(text: string): ButlerSegment[] {
-  const lines = text.split('\n');
   const segments: ButlerSegment[] = [];
-  let prose: string[] = [];
-  const flush = () => {
-    if (prose.length > 0) {
-      segments.push({ kind: 'text', text: prose.join('\n') });
-      prose = [];
+  let rest = text;
+  for (;;) {
+    const open = /```[ 	]*html[ 	]+card\b/i.exec(rest);
+    if (!open) break;
+    const before = rest.slice(0, open.index);
+    if (before.trim() !== '') segments.push({ kind: 'text', text: before });
+    const afterOpen = open.index + open[0].length;
+    const close = rest.indexOf('```', afterOpen);
+    if (close === -1) {
+      const html = rest.slice(afterOpen).trim();
+      segments.push({ kind: 'card', html, meta: cardMetaOf(html), closed: false });
+      rest = '';
+      break;
     }
-  };
-  let index = 0;
-  while (index < lines.length) {
-    if (!OPEN.test(lines[index]!.trim())) {
-      prose.push(lines[index]!);
-      index += 1;
-      continue;
-    }
-    // 卡片正文：到收尾围栏（独占一行）为止；流式途中没有收尾，正文就是剩下的全部。
-    const body: string[] = [];
-    let closed = false;
-    index += 1;
-    for (; index < lines.length; index += 1) {
-      if (CLOSE.test(lines[index]!.trim())) {
-        closed = true;
-        index += 1;
-        break;
-      }
-      body.push(lines[index]!);
-    }
-    flush();
-    const html = body.join('\n');
-    segments.push({ kind: 'card', html, meta: cardMetaOf(html), closed });
+    const html = rest.slice(afterOpen, close).trim();
+    segments.push({ kind: 'card', html, meta: cardMetaOf(html), closed: true });
+    rest = rest.slice(close + 3);
   }
-  flush();
+  if (rest !== '' && (rest.trim() !== '' || segments.length === 0)) segments.push({ kind: 'text', text: rest });
   return segments;
 }
 

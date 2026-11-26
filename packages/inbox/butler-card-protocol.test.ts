@@ -72,6 +72,28 @@ describe('cardProblem', () => {
   });
 });
 
+describe('tolerant fences (models do not always put them on their own line)', () => {
+  const F = '```';
+  const NL = String.fromCharCode(10);
+  test('an opener at the end of a sentence and a closer at the end of a line still parse', () => {
+    const text = ['好的，样例卡在此：' + F + 'html card', '', '<!-- card: {"title":"样例","height":300} -->', '', '<div data-card>hi</div> ' + F + ' 后面还有一句'].join(NL);
+    const segments = parseButlerCards(text);
+    expect(segments.map((segment) => segment.kind)).toEqual(['text', 'card', 'text']);
+    const card = segments[1]!;
+    if (card.kind !== 'card') throw new Error('expected a card');
+    expect(card.closed).toBe(true);
+    expect(card.meta.title).toBe('样例');
+    expect(card.html).toContain('<div data-card>hi</div>');
+    expect((segments[2] as { text: string }).text).toContain('后面还有一句');
+  });
+
+  test('two cards in one reply are both found', () => {
+    const text = [F + 'html card', '<div data-card>A</div>', F, '中间', F + 'html card', '<div data-card>B</div>', F].join(NL);
+    const kinds = parseButlerCards(text).map((segment) => segment.kind);
+    expect(kinds.filter((kind) => kind === 'card')).toHaveLength(2);
+  });
+});
+
 describe('cardWarnings', () => {
   test('multiple inputs without a confirm button are flagged', () => {
     const html = '<div data-card><input type="checkbox">A<input type="checkbox">B<button onclick="plannotator.send(1)">x</button><button onclick="plannotator.send(2)">y</button></div>';
