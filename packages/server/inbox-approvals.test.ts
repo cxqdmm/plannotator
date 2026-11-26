@@ -127,6 +127,19 @@ describe("the owner's decision", () => {
     expect(list.decided[0]?.status).toBe("approved");
   });
 
+  test("a supplementary note on approve and on deny reaches the butler's closing event", async () => {
+    const api = make();
+    const approval = requestCard(api);
+    await postDecide(api, approval.id, { decision: "approve", note: "项目选 beta，标题再短一点" });
+    expect(events.some((event) => event.kind === "butler.action.approved" && event.summary.includes("补充：项目选 beta，标题再短一点"))).toBe(true);
+    expect(api.list().decided[0]?.note).toBe("项目选 beta，标题再短一点");
+
+    // 另一张卡（同一幂等键会拿回已决定的那张）：拒绝的补充话术也要送到管家。
+    const second = requestCard(api, "k-2", "第二张");
+    await postDecide(api, second.id, { decision: "deny", note: "先不做这个" });
+    expect(events.some((event) => event.kind === "butler.action.denied" && event.summary.includes("补充：先不做这个"))).toBe(true);
+  });
+
   test("denying never executes and tells the butler", async () => {
     const api = make();
     const approval = requestCard(api);

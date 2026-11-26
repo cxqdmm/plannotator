@@ -192,6 +192,18 @@ describe("the butler streaming chat", () => {
     expect(after.at(-1)!.text).toContain("额度耗尽");
   });
 
+  // 主人刚在管家页点了批准/拒绝：这一步的后续动作（通常提议开执行会话）不能等下一句对话。
+  test.skipIf(process.platform === "win32")("an approval decision wakes the butler even before any session exists", async () => {
+    const butler = await loadButler(fakeBin);
+    const digest = "【动态】\n- 主人批准，管家完成了：建需求卡《编曲 skill》";
+    await butler.wake(digest, [{ kind: "butler.action.approved" }]);
+    const rows = readFileSync(join(home, "plannotator-butler", "history.jsonl"), "utf8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as { role: string; text: string });
+    expect(rows.some((turn) => turn.role === "butler" && turn.text.includes("主人批准"))).toBe(true);
+  });
+
   test("a non-same-origin call is not answered", async () => {
     const butler = await loadButler(fakeBin);
     butler.init();

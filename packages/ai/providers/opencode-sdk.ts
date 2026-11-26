@@ -661,10 +661,12 @@ export function assistantTextFromPartUpdate(
 export interface OpenCodeQueryState {
 	sawTextDelta: boolean;
 	lastAssistantText: string;
+	/** Tool names by `session.tool.input.started`'s id: `session.tool.called` names the input, not the tool. */
+	toolNames?: Map<string, string>;
 }
 
 export function createOpenCodeQueryState(): OpenCodeQueryState {
-	return { sawTextDelta: false, lastAssistantText: "" };
+	return { sawTextDelta: false, lastAssistantText: "", toolNames: new Map() };
 }
 
 /**
@@ -693,10 +695,10 @@ export function consumeOpenCodeEvent(
 
 	// OpenCode 2.3's event family (`session.text.delta`, `session.execution.*`).
 	// Its names differ from the 1.18 shape the legacy map below handles.
-	if (/^session\.(text|reasoning|step|execution|usage|inbox|instructions|renamed)\.?/.test(eventType)) {
+	if (/^session\.(text|reasoning|step|tool|execution|usage|inbox|instructions|renamed)\.?/.test(eventType)) {
 		const eventSessionId = typeof props.sessionID === "string" ? props.sessionID : null;
 		if (eventSessionId && eventSessionId !== sessionId) return { messages: [], done: false };
-		return mapOpenCodeV2Event(eventType, props, sessionId);
+		return mapOpenCodeV2Event(eventType, props, sessionId, state);
 	}
 
 	const eventSessionId = openCodeEventSessionId(props);
@@ -746,6 +748,7 @@ export function mapOpenCodeV2Event(
 	eventType: string,
 	props: Record<string, unknown>,
 	sessionId: string,
+	state?: OpenCodeQueryState,
 ): { messages: AIMessage[]; done: boolean } {
 	switch (eventType) {
 		case "session.text.delta": {
@@ -753,6 +756,43 @@ export function mapOpenCodeV2Event(
 			return typeof delta === "string" && delta
 				? { messages: [{ type: "text_delta", delta }], done: false }
 				: { messages: [], done: false };
+		}
+		// 模型在说话前想的事（管家页显示成可折叠的「思考」）。
+		case "session.reasoning.delta": {
+			const delta = props.delta;
+			return typeof delta === "string" && delta
+				? { messages: [{ type: "reasoning_delta", delta }], done: false }
+				: { messages: [], done: false };
+		}
+		// 工具生命周期：input.started 只记名字（called 的 data 里没有工具名），
+		// called 给输入，success/failed 给结果。
+		case "session.tool.input.started": {
+			const id = typeof props.id === "string" ? props.id : null;
+			const name = typeof props.name === "string" ? props.name : null;
+			if (id && name) state?.toolNames?.set(id, name);
+			return { messages: [], done: false };
+		}
+		case "session.tool.called": {
+			const id = typeof props.id === "string" ? props.id : null;
+			if (!id) return { messages: [], done: false };
+			const input = props.input && typeof props.input === "object" && !Array.isArray(props.input)
+				? (props.input as Record<string, unknown>)
+				: {};
+			return { messages: [{ type: "tool_use", toolName: state?.toolNames?.get(id) ?? "tool", toolInput: input, toolUseId: id }], done: false };
+		}
+		case "session.tool.success": {
+			const id = typeof props.id === "string" ? props.id : null;
+			const content = Array.isArray(props.content) ? props.content : [];
+			const text = content
+				.map((part) => (part && typeof part === "object" && (part as { type?: unknown }).type === "text" ? String((part as { text?: unknown }).text ?? "") : ""))
+				.join("\n")
+				.trim();
+			return { messages: [{ type: "tool_result", ...(id ? { toolUseId: id } : {}), result: text }], done: false };
+		}
+		case "session.tool.failed": {
+			const id = typeof props.id === "string" ? props.id : null;
+			const error = props.error && typeof props.error === "object" ? (props.error as { message?: unknown }).message : null;
+			return { messages: [{ type: "tool_result", ...(id ? { toolUseId: id } : {}), result: typeof error === "string" && error ? error : "工具调用失败。" }], done: false };
 		}
 		case "session.execution.succeeded":
 			return { messages: [{ type: "result", sessionId, success: true }], done: true };

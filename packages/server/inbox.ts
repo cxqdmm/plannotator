@@ -4996,7 +4996,7 @@ data: {}\n\n`)) : () => {};
     sessions: () => live.allLive(),
     // 事件唤醒（§8.1）：only speaks when the owner already has a butler session; otherwise the
     // digest waits for the next chat (Butler.wake).
-    onWake: (digest) => void butlerRef?.wake(digest),
+    onWake: (digest, events) => void butlerRef?.wake(digest, events),
   });
   // 管家行动面（doc/管家-事件机制设计.md，M2）：the butler's own write channel. The protocol,
   // the L3 grant and the audit live in inbox-butler-actions.ts; the heavy work (the same compose
@@ -5122,6 +5122,7 @@ data: {}\n\n`)) : () => {};
       const project = store.thread(threadId)?.project;
       return project ? { id: project.id, name: project.name, root: project.root } : null;
     },
+    listProjects: () => store.listProjects().map((project) => ({ id: project.id, name: project.name, root: project.root })),
   });
   butlerActionsRef = butlerActions;
   // An approval marked approved before a crash is run once its executor exists.

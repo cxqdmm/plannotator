@@ -28,6 +28,15 @@ export interface AITextDeltaMessage {
   delta: string;
 }
 
+/**
+ * The model's reasoning stream (OpenCode 2.x `session.reasoning.delta`). Shown by the
+ * butler as 「思考」; Ask AI ignores it, so it never enters an answer's text.
+ */
+export interface AIReasoningDeltaMessage {
+  type: "reasoning_delta";
+  delta: string;
+}
+
 export interface AIToolUseMessage {
   type: "tool_use";
   toolName: string;
@@ -93,6 +102,7 @@ export interface AIUnknownMessage {
 export type AIMessage =
   | AITextMessage
   | AITextDeltaMessage
+  | AIReasoningDeltaMessage
   | AIToolUseMessage
   | AIToolResultMessage
   | AIErrorMessage

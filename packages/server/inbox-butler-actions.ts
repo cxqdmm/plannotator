@@ -117,6 +117,8 @@ export interface ButlerActionDeps {
   projectOf?: ((id: string) => RequirementProject | null) | null;
   /** The project of a requirement's linked thread, for a launch with no explicit project. */
   projectOfThread?: ((thread: string) => RequirementProject | null) | null;
+  /** The Inbox's projects, offered by name when a launch needs one and the card has none. */
+  listProjects?: (() => RequirementProject[]) | null;
   now?: () => number;
 }
 
@@ -467,7 +469,10 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
       ? record?.project ?? (record?.threads[0] ? deps.projectOfThread?.(record.threads[0]) ?? null : null)
       : null;
     if (!projectId.value && !folder.value && !derivedProject) {
-      return { error: failure("project_required", "这个需求还没有项目。请在需求卡里选一个项目，或告诉我这个项目/文件夹。", 422) };
+      // 给出可选项目，管家就能在回复里报名字让主人挑（页面看得见），而不是去用交互式提问。
+      const choices = (deps.listProjects?.() ?? []).slice(0, 8).map((project) => `${project.name}（${project.id}）`);
+      const hint = choices.length > 0 ? `可选项目：${choices.join("、")}。` : "工坊里还没有项目，先在需求卡上选一个项目或给一个文件夹。";
+      return { error: failure("project_required", `这个需求还没有项目。${hint}`, 422) };
     }
     const resolvedProject = projectId.value ? deps.projectOf?.(projectId.value) ?? null : derivedProject;
     if (projectId.value && !resolvedProject) return { error: failure("project_not_found", `没有项目 ${projectId.value}。`, 404) };
@@ -712,7 +717,17 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
       if (isCrossSiteRequest(req)) return answer(INBOX_CROSS_SITE_BODY, 403);
       let body: Record<string, unknown>;
       try {
-        const parsed = (await req.json()) as unknown;
+        // Windows 上模型用 curl 发中文时，命令行编码可能是 GBK（cmd 的代码页），UTF-8 严格解码会失败；
+        // 直接把字节当 UTF-8 解会把中文全变成 U+FFFD（现场 2026-11-27：审批卡「要说的话」乱码）。
+        // 先严格试 UTF-8，失败再按 GBK 解一次——同一份 JSON 两种编码都能落地。
+        const bytes = new Uint8Array(await req.arrayBuffer());
+        let text: string;
+        try {
+          text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+        } catch {
+          text = new TextDecoder("gbk").decode(bytes);
+        }
+        const parsed = JSON.parse(text) as unknown;
         if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return answer({ error: "body: a JSON object.", code: "validation_error" }, 422);
         body = parsed as Record<string, unknown>;
       } catch {

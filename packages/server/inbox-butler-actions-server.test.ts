@@ -181,6 +181,28 @@ describe("the butler's action channel in a running Inbox", () => {
     await until(() => fake.calls.some((call) => call.startsWith("stop ")));
   });
 
+  // Windows 的 cmd 用 GBK 发送命令行时，中文会以 GBK 字节进到 JSON 里：按 UTF-8 硬解会全是 U+FFFD
+  // （现场 2026-11-27 审批卡「要说的话」乱码）。动作通道要能按 GBK 兜底解出来。
+  test("a GBK-encoded body from a Windows shell is decoded, not turned into U+FFFD", async () => {
+    const { base, decide, requirement } = await setup();
+    const encoder = new TextEncoder();
+    const prefix = encoder.encode('{"action":"create-requirement","title":"');
+    const suffix = encoder.encode('","notes":"","idempotency_key":"gbk-card"}');
+    // 「开工」的 GBK 字节：BF AA B9 A4。
+    const body = new Uint8Array([...prefix, 0xbf, 0xaa, 0xb9, 0xa4, ...suffix]);
+    const made = await fetch(`${base}/api/inbox/butler/act`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+    });
+    expect(made.status).toBe(202);
+    const pending = (await made.json()) as { approval_id: string };
+    const approved = await decide(pending.approval_id, { decision: "approve" });
+    const answer = (await approved.json()) as { approval: { result: { requirement_id: string } } };
+    const detail = await requirement(answer.approval.result.requirement_id);
+    expect(detail.requirement.title).toBe("开工");
+  });
+
   test("a repeated key answers the card it made and starts nothing more; a denied card never appears", async () => {
     const { fake, project, act, approvals, decide, settings } = await setup();
     const auto = await settings("create-requirement", "auto");

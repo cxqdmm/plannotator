@@ -68,7 +68,7 @@ mock.module("@opencode-ai/sdk", () => ({
 	createOpencodeClient: () => clientFactory(),
 }));
 
-const { OpenCodeProvider } = await import("./opencode-sdk.ts");
+const { OpenCodeProvider, consumeOpenCodeEvent, createOpenCodeQueryState } = await import("./opencode-sdk.ts");
 
 function makeProvider(port?: number) {
 	return new OpenCodeProvider({
@@ -517,5 +517,47 @@ describe("OpenCode Ask AI event stream through the real client", async () => {
 		} finally {
 			serve.stop();
 		}
+	});
+});
+
+describe("OpenCode 2.x reasoning and tool events (the butler's process view)", () => {
+	test("reasoning deltas arrive as reasoning_delta, never as answer text", () => {
+		const state = createOpenCodeQueryState();
+		const mapped = consumeOpenCodeEvent({ type: "session.reasoning.delta", data: { sessionID: "s1", delta: "先看看" } }, "s1", state);
+		expect(mapped.messages).toEqual([{ type: "reasoning_delta", delta: "先看看" }]);
+		expect(mapped.done).toBe(false);
+	});
+
+	test("a tool call takes its name from input.started and its input from called", () => {
+		const state = createOpenCodeQueryState();
+		consumeOpenCodeEvent({ type: "session.tool.input.started", data: { sessionID: "s1", id: "t1", name: "read" } }, "s1", state);
+		const called = consumeOpenCodeEvent(
+			{ type: "session.tool.called", data: { sessionID: "s1", id: "t1", input: { path: "/a" }, executed: true } },
+			"s1",
+			state,
+		);
+		expect(called.messages).toEqual([{ type: "tool_use", toolName: "read", toolInput: { path: "/a" }, toolUseId: "t1" }]);
+	});
+
+	test("success carries the text content; failure carries the error message", () => {
+		const state = createOpenCodeQueryState();
+		const ok = consumeOpenCodeEvent(
+			{ type: "session.tool.success", data: { sessionID: "s1", id: "t1", content: [{ type: "text", text: "hi" }] } },
+			"s1",
+			state,
+		);
+		expect(ok.messages).toEqual([{ type: "tool_result", toolUseId: "t1", result: "hi" }]);
+		const bad = consumeOpenCodeEvent(
+			{ type: "session.tool.failed", data: { sessionID: "s1", id: "t1", error: { type: "x", message: "no such file" } } },
+			"s1",
+			state,
+		);
+		expect(bad.messages).toEqual([{ type: "tool_result", toolUseId: "t1", result: "no such file" }]);
+	});
+
+	test("another session's reasoning and tools are ignored", () => {
+		const state = createOpenCodeQueryState();
+		expect(consumeOpenCodeEvent({ type: "session.reasoning.delta", data: { sessionID: "s2", delta: "x" } }, "s1", state).messages).toEqual([]);
+		expect(consumeOpenCodeEvent({ type: "session.tool.called", data: { sessionID: "s2", id: "t1", input: {} } }, "s1", state).messages).toEqual([]);
 	});
 });

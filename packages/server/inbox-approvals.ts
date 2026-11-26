@@ -262,6 +262,9 @@ export function createInboxApprovals(options: InboxApprovalOptions): InboxApprov
     }
   };
 
+  /** 主人随批准/拒绝写的话：跟着决定事件送到管家，让它在下一步照着办。 */
+  const noteSuffix = (approval: InboxApproval): string => (approval.note ? `（补充：${approval.note}）` : "");
+
   const execute = async (approval: InboxApproval): Promise<void> => {
     let result: InboxApprovalResult;
     try {
@@ -276,9 +279,9 @@ export function createInboxApprovals(options: InboxApprovalOptions): InboxApprov
     const title = approval.title;
     if (result.ok) {
       const extra = result.warnings && result.warnings.length > 0 ? `（注意：${result.warnings.join("；")}）` : "";
-      recordDecision(approval, "butler.action.approved", `主人批准，管家完成了：${title}${extra}`);
+      recordDecision(approval, "butler.action.approved", `主人批准，管家完成了：${title}${extra}${noteSuffix(approval)}`);
     } else {
-      recordDecision(approval, "butler.action.failed", `主人批准了，但执行失败：${title}（${result.error ?? result.code ?? "未知原因"}）`);
+      recordDecision(approval, "butler.action.failed", `主人批准了，但执行失败：${title}（${result.error ?? result.code ?? "未知原因"}）${noteSuffix(approval)}`);
     }
   };
 
@@ -302,7 +305,7 @@ export function createInboxApprovals(options: InboxApprovalOptions): InboxApprov
       approval.status = "denied";
       approval.result = { ok: false, code: "denied", error: "主人拒绝了。" };
       save();
-      recordDecision(approval, "butler.action.denied", `主人拒绝了：${approval.title}`);
+      recordDecision(approval, "butler.action.denied", `主人拒绝了：${approval.title}${noteSuffix(approval)}`);
       return { ok: true, approval };
     }
     // Mark first, then execute: a second window's click finds a decided record, never a second run.

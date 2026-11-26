@@ -6,7 +6,8 @@
  * = the butler folder, persona = 管家 (AIContext mode "butler"). Phase 2
  * (future): requirement tools + dispatch in the butler's tool surface.
  *
- *   POST /api/inbox/butler/chat   `{ message, files? }` → SSE 增量 + done（window only）
+ *   POST /api/inbox/butler/chat   `{ message, files? }` → SSE 增量 + done（window only）；
+ *     过程帧：`{ reasoning }` 思考增量、`{ tool }` 工具开始、`{ tool_result }` 工具结果
  *   GET  /api/inbox/butler/history → `{ history: [{ at, role, text, files? }] }`
  *
  * The folder: `history.jsonl` (append per turn) + `state.json` (the opencode
@@ -50,6 +51,115 @@ export function butlerDir(): string {
 
 /** 管家的独有技能（技能 ID 一律 `butler-*`）：写到管家文件夹的 `.opencode/skills/` 下，
  *  opencode 会话（cwd = 这里）只认这些。加新技能时同步加到这份表——白名单按 ID 放行。 */
+/** 卡片协议的围栏标记：模型写三反引号 + html card；源码里用常量拼，避免出现三反引号。 */
+const CARD_FENCE = "```html card";
+
+/** `butler-card` 技能正文：协议、工具类词表、铁律（多选必须先选后确认）、阿里 C 端卡片风格与模板。 */
+const BUTLER_CARD_SKILL_BODY = [
+  '## 协议',
+  '',
+  `${CARD_FENCE} 开头的围栏就是卡片；首行可给元信息：`,
+  '',
+  '<!-- card: {"title":"标题","height":320} -->',
+  '',
+  '正文必须是一个带 data-card 的自包含元素；一条回复最多一张卡；纯叙述不用卡。',
+  '',
+  '## 铁律',
+  '',
+  '1. 只用内置工具类，不写 <style>，不写自定义 class。词表：',
+  '   flex / flex-col / flex-wrap / flex-1 / items-center / items-start / justify-between / justify-center / justify-end',
+  '   grid / grid-cols-2 / grid-cols-3 / w-full / h-full / min-w-0 / overflow-hidden / relative / absolute',
+  '   p-1..6 / px-* / py-* / pt-* / pb-* / m-* / mt-* / mb-* / ml-* / mr-* / gap-1..6 / ml-auto / mx-auto',
+  '   text-xs..2xl / font-medium / font-semibold / font-bold / leading-relaxed / text-center / truncate',
+  '   text-foreground / text-muted / text-primary / text-primary-fg / bg-card / bg-muted / bg-background / bg-primary / border-border',
+  '   border / border-t / border-0 / border-dashed / rounded-lg / rounded-xl / rounded-2xl / rounded-full / shadow-sm',
+  '   cursor-pointer / transition / hover:bg-muted / hover:opacity-90 / hover:underline / opacity-70',
+  '   btn / btn-primary / btn-disabled / chip',
+  '',
+  '2. 多选/多输入：必须「先选后确认」——所有选项只改本地选中状态，最后由一个带 data-card-confirm 的',
+  '   按钮统一 plannotator.send(...)。禁止每个选项一点就发（主人就没法再选别的）。单选卡可以直接点选即发。',
+  '',
+  '3. 风格对标阿里 C 端卡片：容器 p-4 bg-card border rounded-2xl shadow-sm，内部用 gap-3 排开；',
+  '   标题 text-lg font-semibold，次要信息 text-sm text-muted；主操作 btn btn-primary，次操作 btn；',
+  '   留白充足、层级清楚，不堆密表格。',
+  '',
+  '## 模板：单选（点一个即发）',
+  '',
+  '```html card',
+  '<!-- card: {"title":"选一个方向","height":240} -->',
+  '<div data-card class="p-4 bg-card border rounded-2xl shadow-sm flex flex-col gap-3">',
+  '  <div class="flex items-center justify-between">',
+  '    <span class="text-lg font-semibold">选一个方向</span>',
+  '    <span class="chip bg-muted text-muted">单选</span>',
+  '  </div>',
+  '  <button type="button" class="btn w-full" onclick="plannotator.send({label:\'方向 A\',value:\'A · 民谣单旋律\'})">A · 民谣单旋律</button>',
+  '  <button type="button" class="btn w-full" onclick="plannotator.send({label:\'方向 B\',value:\'B · 钢琴织体\'})">B · 钢琴织体</button>',
+  '</div>',
+  '```',
+  '',
+  '## 模板：多选（先选后确认）',
+  '',
+  '```html card',
+  '<!-- card: {"title":"可以多选","height":300} -->',
+  '<div data-card class="p-4 bg-card border rounded-2xl shadow-sm flex flex-col gap-3">',
+  '  <span class="text-lg font-semibold">可以多选</span>',
+  '  <div class="flex flex-col gap-2">',
+  '    <button type="button" class="btn w-full" onclick="toggle(this, \'A · 民谣单旋律\')">A · 民谣单旋律</button>',
+  '    <button type="button" class="btn w-full" onclick="toggle(this, \'B · 钢琴织体\')">B · 钢琴织体</button>',
+  '  </div>',
+  '  <button type="button" data-card-confirm class="btn btn-primary w-full" onclick="confirmPick()">确认（已选 0 项）</button>',
+  '  <script>',
+  "    var picked = [];",
+  "    function toggle(button, value) {",
+  "      var at = picked.indexOf(value);",
+  "      if (at >= 0) picked.splice(at, 1); else picked.push(value);",
+  "      button.classList.toggle('btn-primary', picked.indexOf(value) >= 0);",
+  "      document.querySelector('[data-card-confirm]').textContent = '确认（已选 ' + picked.length + ' 项）';",
+  '    }',
+  "    function confirmPick() {",
+  "      if (picked.length === 0) return;",
+  "      plannotator.send({ label: '选好了', value: picked.join('、') });",
+  '    }',
+  '  </script>',
+  '</div>',
+  '```',
+  '',
+  '## 模板：进展时间线',
+  '',
+  '```html card',
+  '<!-- card: {"title":"需求进展","height":260} -->',
+  '<div data-card class="p-4 bg-card border rounded-2xl shadow-sm flex flex-col gap-3">',
+  '  <span class="text-lg font-semibold">需求进展</span>',
+  '  <ol class="flex flex-col gap-2 text-sm text-muted">',
+  '    <li class="text-foreground">设计稿已交付 · 等你审阅</li>',
+  '    <li>开工（待审批）</li>',
+  '    <li>交付验收</li>',
+  '  </ol>',
+  '</div>',
+  '```',
+  '',
+  '## 模板：方案对比',
+  '',
+  '```html card',
+  '<!-- card: {"title":"两个方案","height":260} -->',
+  '<div data-card class="p-4 bg-card border rounded-2xl shadow-sm flex flex-col gap-3">',
+  '  <span class="text-lg font-semibold">两个方案</span>',
+  '  <div class="grid grid-cols-2 gap-3">',
+  '    <div class="border rounded-xl p-3 flex flex-col gap-1"><span class="text-sm font-semibold">A · 单旋律</span><span class="text-sm text-muted">上手快，变化少</span></div>',
+  '    <div class="border rounded-xl p-3 flex flex-col gap-1"><span class="text-sm font-semibold">B · 旋律+和弦</span><span class="text-sm text-muted">更完整，需要更多输入</span></div>',
+  '  </div>',
+  '  <button type="button" class="btn btn-primary w-full" onclick="plannotator.send({label:\'选方案\',value:\'B\'})">用 B 开工</button>',
+  '</div>',
+  '```',
+  '',
+  '## 要点',
+  '',
+  '- 卡片是表达层：需要动作时让它回一句话，再由你走审批；卡片不直接执行。',
+  '- 文字解释留在卡外；卡片只承载需要看/点的部分。',
+  '- 保持精简（token 是主人的钱）：不写注释、不写 id、能用工具类就不写行内样式、去掉空包裹；一张卡几 KB 就够。',
+  '- 高度按内容估计（卡片也可调 plannotator.resize(h)）。',
+].join('\n');
+
 const BUTLER_SKILLS: ReadonlyMap<string, { name: string; description: string; body: string }> = new Map([
   [
     "butler-intake",
@@ -116,6 +226,14 @@ const BUTLER_SKILLS: ReadonlyMap<string, { name: string; description: string; bo
       ].join("\n"),
     },
   ],
+  [
+    "butler-card",
+    {
+      name: "交互卡片",
+      description: "用一张 HTML 卡片代替纯文字（选择、参数、进展、对比）；只用内置工具类，多选必须先选后确认",
+      body: BUTLER_CARD_SKILL_BODY,
+    },
+  ],
 ]);
 
 /** 管家项目的 opencode 配置（技能白名单）：环境里的技能（主人自己的 `~/.claude/skills`、
@@ -124,7 +242,10 @@ const BUTLER_SKILLS: ReadonlyMap<string, { name: string; description: string; bo
  *  与 AGENTS.md 同款幂等覆写：每次守护进程启动重写，手改会被重置。 */
 function butlerProjectConfig(): string {
   const rules = [{ action: "skill", resource: "*", effect: "deny" }, { action: "skill", resource: "butler-*", effect: "allow" }];
-  return `${JSON.stringify({ $schema: "https://opencode.ai/config.json", permissions: rules }, null, 2)}\n`;
+  // 管家的提问写在回复里（页面能看见、主人能直接回），不用 opencode 的交互式提问工具：
+  // 那个工具在本页面没有作答入口，会把整轮挂住（现场 2026-11-27「Asked 1 question」）。
+  const policies = [{ action: "tool.use", resource: "question", effect: "deny" }];
+  return `${JSON.stringify({ $schema: "https://opencode.ai/config.json", permissions: rules, policies }, null, 2)}\n`;
 }
 
 /** 守护进程初始化时调用：管家文件夹不存在则创建，写好人设（AGENTS.md）、技能白名单
@@ -168,6 +289,13 @@ export interface ButlerFile {
   mime: string;
   data: string;
 }
+
+/** 流式过程中的非正文事件：模型的思考增量、工具调用的开始与结果（管家页分别画成
+ *  「思考」与工具行；历史只存正文，这些是过程不是内容）。 */
+export type ButlerStreamEvent =
+  | { type: "reasoning"; delta: string }
+  | { type: "tool"; id: string; name: string; input: Record<string, unknown> }
+  | { type: "tool_result"; id: string | null; text: string };
 
 /** 一条已验收的附件：落盘路径 + 内联用的 dataUrl（图片且够小才有）。 */
 interface ButlerStoredFile {
@@ -425,14 +553,19 @@ export class Butler {
 
   /**
    * 事件唤醒：something needs the person, so the butler speaks first (the page shows it as
-   * the butler's own line; there is no fake "you" bubble). A butler that was never opened has
-   * no session, and starting one just to say this would cost a turn the owner did not ask for:
-   * the digest waits for the next chat instead. A turn already running is never spoken over.
+   * the butler's own line; there is no fake "you" bubble). A turn already running is never
+   * spoken over.
+   *
+   * 没有会话时（守护进程刚重启、主人还没开口）：普通动态留到下一句对话再说；但**审批结果**
+   * （butler.action.*）不同——主人刚刚在管家页点过按钮，正看着结果，这一步的后续动作
+   * （比如提议开执行会话）就该由管家接着做。现场 2026-11-27：批准建卡后没有任何后续，
+   * 因为重启后 brainSession 为空，唤醒被静静压后了。
    */
-  async wake(digest: string): Promise<void> {
+  async wake(digest: string, events: readonly { kind: string }[] = []): Promise<void> {
     const text = digest.trim();
     if (!text) return;
-    if (!this.brainSession || this.running > 0 || this.brainSession.isActive) {
+    const ownerJustActed = events.some((event) => typeof event.kind === "string" && event.kind.startsWith("butler.action."));
+    if ((!this.brainSession && !ownerJustActed) || this.running > 0 || this.brainSession?.isActive) {
       this.deferred.push(text);
       return;
     }
@@ -449,13 +582,13 @@ export class Butler {
   }
 
   /** 流式一问：增量经 onDelta 出去，返回全文（历史照记）。 */
-  private async askButlerStream(message: string, onDelta: (delta: string) => void, files: ButlerStoredFile[] = [], withDigest = true): Promise<string> {
+  private async askButlerStream(message: string, onDelta: (delta: string) => void, files: ButlerStoredFile[] = [], withDigest = true, onEvent?: (event: ButlerStreamEvent) => void): Promise<string> {
     // The digest is the event plane's "since you last looked", never the owner's own words.
     const digest = withDigest ? this.takeDigest() : "";
     const prompt = `${digest ? `${digest}\n\n` : ""}${message}${filesNoteOf(files)}`;
     this.running += 1;
     try {
-      return await this.askButlerRun(prompt, onDelta, files);
+      return await this.askButlerRun(prompt, onDelta, files, onEvent);
     } catch (error) {
       // The turn never happened: the digest goes back to the queue, so the next one still sees it
       // (a failed turn must not quietly eat a delivery the owner was waiting to hear about).
@@ -466,7 +599,7 @@ export class Butler {
     }
   }
 
-  private async askButlerRun(prompt: string, onDelta: (delta: string) => void, files: ButlerStoredFile[]): Promise<string> {
+  private async askButlerRun(prompt: string, onDelta: (delta: string) => void, files: ButlerStoredFile[], onEvent?: (event: ButlerStreamEvent) => void): Promise<string> {
     const run = async (): Promise<string> => {
       const session = await this.brain();
       let reply = "";
@@ -477,6 +610,13 @@ export class Butler {
         } else if (msg.type === "text_delta") {
           reply += msg.delta;
           onDelta(msg.delta);
+        } else if (msg.type === "reasoning_delta") {
+          // 思考不是回答：不进 reply，只作为过程事件给页面。
+          onEvent?.({ type: "reasoning", delta: msg.delta });
+        } else if (msg.type === "tool_use") {
+          onEvent?.({ type: "tool", id: msg.toolUseId, name: msg.toolName, input: msg.toolInput ?? {} });
+        } else if (msg.type === "tool_result") {
+          onEvent?.({ type: "tool_result", id: msg.toolUseId ?? null, text: msg.result });
         } else if (msg.type === "error") {
           throw new Error(msg.error ?? "管家这会儿没法回答。");
         }
@@ -542,7 +682,17 @@ export class Butler {
           controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(payload)}\n\n`));
         try {
           this.appendHistory({ at: new Date().toISOString(), role: "you", text: message, ...(files.length ? { files: files.map((file) => file.name) } : {}) });
-          reply = await this.askButlerStream(message || `（主人发来了 ${files.length} 个附件）`, (delta) => send({ delta }), files);
+          reply = await this.askButlerStream(
+            message || `（主人发来了 ${files.length} 个附件）`,
+            (delta) => send({ delta }),
+            files,
+            true,
+            (event) => {
+              if (event.type === "reasoning") send({ reasoning: event.delta });
+              else if (event.type === "tool") send({ tool: { id: event.id, name: event.name, input: event.input } });
+              else send({ tool_result: { id: event.id, text: event.text } });
+            },
+          );
           this.appendHistory({ at: new Date().toISOString(), role: "butler", text: reply });
           send({ done: true, reply });
         } catch (error) {
