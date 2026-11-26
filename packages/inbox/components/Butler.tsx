@@ -8,21 +8,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { copyTextToClipboard } from '@plannotator/ui/utils/clipboard';
 import { isImeCompositionKey } from '@plannotator/ui/utils/commentSubmitKey';
-import { chatMarkdownHtml } from '@plannotator/ui/components/chat';
 import { Tip } from '@plannotator/ui/components/inbox-thread/Tip';
 import { Icon } from '../icons';
 import { inboxApi, type InboxButlerApprovalsModel } from '../api';
-import { ButlerApprovals } from './ButlerApprovals';
+import { ButlerApprovals, ButlerAuthSettings } from './ButlerApprovals';
+import { ButlerLedger } from './ButlerLedger';
+import { ButlerRichText } from './ButlerCards';
+import { cardReplyOf } from './butler-card-protocol';
 import { BUTLER_FILE_MAX_BYTES, BUTLER_FILE_MAX_COUNT } from '@plannotator/core/inbox-types';
 
 /**
- * 管家的活形象（owner 2026-11-26「我想要一只猫头鹰的形象」）：一只圆滚滚的卡通
- * 猫头鹰——耳羽、两片浅色面盘、占脸一半的大眼睛、小钩喙、羽毛纹胸脯，脖子上一条
- * 品牌色围巾。配色走 CSS 变量（--bc-*，inbox.css，深浅色同一套），表情按对话状态换：
- * idle 眨眼、耳羽偶尔抖、围巾随风轻摆；working 眼睛左右张望 + 头顶小星光；
- * happy（复制成功）眼睛弯成两道弧、翅膀抬一下。
- * 26px（悬浮球）到 96px（首屏）都用这一个；细碎装饰一律不放，小尺寸才不糊。
- * prefers-reduced-motion 下一律静止。
+ * 管家的活形象（owner 2026-11-26「除了眼睛像，其他地方都不太像猫头鹰；要翘翘的耳朵、
+ * 扑腾扑腾的翅膀」）：一只立在枝头的角鸮——两只尖耳朵、心形面盘带羽边、琥珀色大眼、
+ * 蓬松眉羽，两片翅膀会成对扑腾（平时偶尔扑两下，开心时连续扑），头一直轻轻歪着晃。
+ * 配色走 CSS 变量（--bc-*，inbox.css，深浅色同一套）。26px 悬浮球到 96px 首屏同一个，
+ * 不放细碎装饰；prefers-reduced-motion 一律静止。
  */
 function ButlerCharacter({ size, mood = 'idle' }: { size: number; mood?: 'idle' | 'working' | 'happy' }) {
   return (
@@ -33,69 +33,88 @@ function ButlerCharacter({ size, mood = 'idle' }: { size: number; mood?: 'idle' 
       aria-hidden="true"
       className={`ib-bc${mood === 'working' ? ' ib-bc-working' : ''}${mood === 'happy' ? ' ib-bc-happy' : ''}`}
     >
-      {/* 尾羽（在身后） */}
-      <g fill="var(--bc-fur-shade, #d9b98c)">
-        <path d="M28 56 q4 6 4 6 q0 0 4 -6 z" />
-        <path d="M24.4 55.4 q2.8 5.6 2.8 5.6 l3.4 -5 z" opacity="0.85" />
-        <path d="M39.6 55.4 q-2.8 5.6 -2.8 5.6 l-3.4 -5 z" opacity="0.85" />
+      {/* 枝头 + 叶子 */}
+      <path d="M7 58 C19 55.2 45 55.2 57 57.2" stroke="var(--bc-branch, #b08f63)" strokeWidth="2.6" strokeLinecap="round" fill="none" />
+      <path d="M50.4 55.4 C52.6 52.6 56 52.8 57.4 55 C55 56.2 52.4 56.2 50.4 55.4 Z" fill="var(--bc-leaf, #9fbf8a)" />
+      {/* 尾羽（在身后，向右翘） */}
+      <g fill="var(--bc-fur-shade, #c9a877)">
+        <path d="M42.4 48.6 q7.2 1 9.8 4.6 q-5.2 0.4 -8.6 -2.2 Z" />
+        <path d="M42.8 52 q6 .8 8 3.6 q-4.4 0.4 -7.4 -1.8 Z" opacity="0.85" />
       </g>
-      {/* 爪 */}
-      <ellipse cx="27.4" cy="57.6" rx="3.6" ry="1.9" fill="var(--bc-beak, #e8a33d)" />
-      <ellipse cx="36.6" cy="57.6" rx="3.6" ry="1.9" fill="var(--bc-beak, #e8a33d)" />
-      {/* 耳羽（偶尔抖一下） */}
-      <g className="ib-bc-tuft-l">
-        <path d="M20.2 19.6 C18 14 16.4 9.4 16.9 7 C19.6 8 23.6 12.2 26 16 Z" fill="var(--bc-fur-shade, #d9b98c)" />
+      {/* 身体（坐姿）+ 胸脯羽纹 + 爪子 */}
+      <ellipse cx="32" cy="45" rx="13.4" ry="11.6" fill="var(--bc-fur, #e3c79f)" />
+      <ellipse cx="32" cy="48.6" rx="8.8" ry="7" fill="var(--bc-belly, #f8ecd9)" opacity="0.8" />
+      <g stroke="var(--bc-fur-shade, #c9a877)" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.55">
+        <path d="M27.4 45.6 q2.3 2.2 4.6 0 q2.3 2.2 4.6 0" />
+        <path d="M27.4 49.4 q2.3 2.2 4.6 0 q2.3 2.2 4.6 0" />
       </g>
-      <g className="ib-bc-tuft-r">
-        <path d="M43.8 19.6 C46 14 47.6 9.4 47.1 7 C44.4 8 40.4 12.2 38 16 Z" fill="var(--bc-fur-shade, #d9b98c)" />
-      </g>
-      {/* 身体：一整个圆滚滚的蛋形 */}
-      <path d="M32 13.4 C43.8 13.4 49.4 22.4 49.4 35.4 C49.4 49 43 57.8 32 57.8 C21 57.8 14.6 49 14.6 35.4 C14.6 22.4 20.2 13.4 32 13.4 Z" fill="var(--bc-fur, #e9cfa8)" />
-      {/* 翅膀：贴身体两侧，happy 时抬一下 */}
+      <ellipse cx="27.6" cy="55.4" rx="2.4" ry="1.5" fill="var(--bc-beak, #eda53a)" />
+      <ellipse cx="36.4" cy="55.4" rx="2.4" ry="1.5" fill="var(--bc-beak, #eda53a)" />
+      {/* 翅膀：左右各一片，羽尖带叉口，会成对扑腾 */}
       <g className="ib-bc-wing-l">
-        <path d="M17.4 34.6 C15 40 15.4 47.4 18.6 51.8 C20.2 54 22.4 52.6 21.6 50.2 C19.8 45 19.6 39.6 20.6 34.8 Z" fill="var(--bc-fur-shade, #d9b98c)" />
+        <path d="M19.8 36.8 C14 39 10.2 45 10.8 51.6 L13.2 54.8 L14.4 50.8 L16.6 54 L18 49.4 C19.4 45.2 20.4 40.6 21.4 38.2 Z" fill="var(--bc-fur-shade, #c9a877)" />
+        <path d="M15.2 43.6 q-1.8 3.4 -1.6 6.6 M18.2 41.6 q-1.4 3.2 -1.2 6" stroke="var(--bc-fur, #e3c79f)" strokeWidth="0.85" strokeLinecap="round" fill="none" opacity="0.7" />
       </g>
       <g className="ib-bc-wing-r">
-        <path d="M46.6 34.6 C49 40 48.6 47.4 45.4 51.8 C43.8 54 41.6 52.6 42.4 50.2 C44.2 45 44.4 39.6 43.4 34.8 Z" fill="var(--bc-fur-shade, #d9b98c)" />
+        <path d="M44.2 36.8 C50 39 53.8 45 53.2 51.6 L50.8 54.8 L49.6 50.8 L47.4 54 L46 49.4 C44.6 45.2 43.6 40.6 42.6 38.2 Z" fill="var(--bc-fur-shade, #c9a877)" />
+        <path d="M48.8 43.6 q1.8 3.4 1.6 6.6 M45.8 41.6 q1.4 3.2 1.2 6" stroke="var(--bc-fur, #e3c79f)" strokeWidth="0.85" strokeLinecap="round" fill="none" opacity="0.7" />
       </g>
-      {/* 胸脯羽毛：浅色底 + 两排羽纹 */}
-      <ellipse cx="32" cy="47.6" rx="9.2" ry="8.6" fill="var(--bc-belly, #f8ecd9)" />
-      <g stroke="var(--bc-fur-shade, #d9b98c)" strokeWidth="0.9" strokeLinecap="round" fill="none" opacity="0.7">
-        <path d="M26.4 45 q2.8 2.6 5.6 0 q2.8 2.6 5.6 0" />
-        <path d="M26.4 50 q2.8 2.6 5.6 0 q2.8 2.6 5.6 0" />
+      {/* 头：两只尖耳朵、心形面盘（带羽边）、眉羽、眼睛、喙——整颗头轻轻歪着晃 */}
+      <g className="ib-bc-head">
+        {/* 耳朵（角鸮的尖耳，会抖） */}
+        <g className="ib-bc-tuft-l">
+          <path d="M22.6 16.6 L16.6 5 C16.2 4.2 17 3.6 17.8 4 L28.4 12.2 Z" fill="var(--bc-fur, #e3c79f)" />
+          <path d="M22.2 15.8 L18 7 L26 12.4 Z" fill="var(--bc-fur-shade, #c9a877)" opacity="0.6" />
+        </g>
+        <g className="ib-bc-tuft-r">
+          <path d="M41.4 16.6 L47.4 5 C47.8 4.2 47 3.6 46.2 4 L35.6 12.2 Z" fill="var(--bc-fur, #e3c79f)" />
+          <path d="M41.8 15.8 L46 7 L38 12.4 Z" fill="var(--bc-fur-shade, #c9a877)" opacity="0.6" />
+        </g>
+        <circle cx="32" cy="26.6" r="14.6" fill="var(--bc-fur, #e3c79f)" />
+        {/* 心形面盘 + 一圈羽边（猫头鹰的脸） */}
+        <path d="M32 17.4 C36.6 17.4 42.2 20.4 43.8 26.2 C45.6 32.8 40.2 38.4 32 38.4 C23.8 38.4 18.4 32.8 20.2 26.2 C21.8 20.4 27.4 17.4 32 17.4 Z" fill="var(--bc-belly, #f8ecd9)" />
+        <path d="M32 17.4 C36.6 17.4 42.2 20.4 43.8 26.2 C45.6 32.8 40.2 38.4 32 38.4 C23.8 38.4 18.4 32.8 20.2 26.2 C21.8 20.4 27.4 17.4 32 17.4 Z" fill="none" stroke="var(--bc-fur-shade, #c9a877)" strokeWidth="0.9" opacity="0.5" />
+        {/* 蓬松眉羽（会挑） */}
+        <g stroke="var(--bc-fur-shade, #c9a877)" strokeWidth="2" strokeLinecap="round" fill="none">
+          <path className="ib-bc-brow-l" d="M21.6 20.6 q3.4 -2.8 6.6 -0.8" />
+          <path className="ib-bc-brow-r" d="M42.4 20.6 q-3.4 -2.8 -6.6 -0.8" />
+        </g>
+        {/* 腮红 */}
+        <ellipse cx="21.6" cy="32.6" rx="2.9" ry="1.7" fill="var(--bc-blush, #ef8f7d)" opacity="0.45" />
+        <ellipse cx="42.4" cy="32.6" rx="2.9" ry="1.7" fill="var(--bc-blush, #ef8f7d)" opacity="0.45" />
+        {/* 眼睛：happy 弯成弧；其余是琥珀虹膜的大眼，会眨（偶尔连眨两下） */}
+        {mood === 'happy' ? (
+          <g stroke="var(--bc-ink, #2b2320)" strokeWidth="2" strokeLinecap="round" fill="none">
+            <path d="M22.2 26.8 q4.4 -4 8.8 0" />
+            <path d="M33 26.8 q4.4 -4 8.8 0" />
+          </g>
+        ) : (
+          <g className="ib-bc-eyes">
+            <circle cx="26.6" cy="27" r="5.5" fill="var(--bc-eye-white, #fffdf7)" />
+            <circle cx="37.4" cy="27" r="5.5" fill="var(--bc-eye-white, #fffdf7)" />
+            <circle cx="26.6" cy="27" r="4.1" fill="var(--bc-iris, #e8a33d)" />
+            <circle cx="37.4" cy="27" r="4.1" fill="var(--bc-iris, #e8a33d)" />
+            <circle cx="26.9" cy="27.2" r="2.1" fill="var(--bc-ink, #2b2320)" />
+            <circle cx="37.1" cy="27.2" r="2.1" fill="var(--bc-ink, #2b2320)" />
+            <circle cx="25.4" cy="25.6" r="1.25" fill="#fff" />
+            <circle cx="35.9" cy="25.6" r="1.25" fill="#fff" />
+            <circle cx="27.9" cy="28.8" r="0.6" fill="#fff" opacity="0.85" />
+            <circle cx="38.4" cy="28.8" r="0.6" fill="#fff" opacity="0.85" />
+          </g>
+        )}
+        {/* 喙 + 一点笑意 */}
+        <path d="M30.1 30.6 L33.9 30.6 L32 34.8 C31.5 35.4 30.6 35.2 30.4 34.6 Z" fill="var(--bc-beak, #eda53a)" />
+        <path d="M30.7 35.4 q1.3 1 2.6 0" stroke="var(--bc-beak-shade, #c9862a)" strokeWidth="0.9" strokeLinecap="round" fill="none" opacity="0.75" />
       </g>
-      {/* 面盘：两片浅色圆，托住大眼 */}
-      <circle cx="25.2" cy="30.6" r="9.2" fill="var(--bc-belly, #f8ecd9)" />
-      <circle cx="38.8" cy="30.6" r="9.2" fill="var(--bc-belly, #f8ecd9)" />
-      {/* 眼睛：happy 弯成弧，其余是会眨、working 时张望的大眼 */}
-      {mood === 'happy' ? (
-        <g stroke="var(--bc-ink, #2b2320)" strokeWidth="2" strokeLinecap="round" fill="none">
-          <path d="M21.4 30 q3.8 -3.8 7.6 0" />
-          <path d="M35 30 q3.8 -3.8 7.6 0" />
-        </g>
-      ) : (
-        <g className="ib-bc-eyes">
-          <circle cx="25.2" cy="30.6" r="5.6" fill="var(--bc-ink, #2b2320)" />
-          <circle cx="38.8" cy="30.6" r="5.6" fill="var(--bc-ink, #2b2320)" />
-          <circle cx="23.4" cy="28.6" r="1.7" fill="#fff" />
-          <circle cx="37" cy="28.6" r="1.7" fill="#fff" />
-          <circle cx="27.2" cy="32.8" r="0.8" fill="#fff" opacity="0.85" />
-          <circle cx="40.8" cy="32.8" r="0.8" fill="#fff" opacity="0.85" />
-        </g>
-      )}
-      {/* 腮红 */}
-      <ellipse cx="20" cy="39" rx="3.2" ry="1.9" fill="var(--bc-blush, #ef8f7d)" opacity="0.45" />
-      <ellipse cx="44" cy="39" rx="3.2" ry="1.9" fill="var(--bc-blush, #ef8f7d)" opacity="0.45" />
-      {/* 小钩喙：亮色、压在两面盘中间，向下勾一下 */}
-      <path d="M28.9 33.2 L35.1 33.2 L32 38.9 C31.4 39.7 30.4 39.5 30.2 38.7 Z" fill="var(--bc-beak, #eda53a)" />
-      <path d="M30.6 38.2 C31.2 38.9 32.8 38.9 33.4 38.2" stroke="var(--bc-beak-shade, #c9862a)" strokeWidth="0.9" strokeLinecap="round" fill="none" opacity="0.75" />
-      {/* 围巾：品牌色，贴着下巴绕一圈，结上一点亮扣 */}
-      <path d="M20.4 40.6 C26.4 43.6 37.6 43.6 43.6 40.6 L45.2 45.2 C38.2 49.6 25.8 49.6 18.8 45.2 Z" fill="var(--primary)" />
-      <path d="M29.4 47 l2.6 3.8 l-2.6 1 l-2.4 -3.6 Z" fill="var(--primary)" opacity="0.85" />
-      <path d="M34.6 47 l-2.6 3.8 l2.6 1 l2.4 -3.6 Z" fill="var(--primary)" opacity="0.85" />
-      <circle cx="32" cy="47.4" r="1.7" fill="var(--bc-belly, #f8ecd9)" opacity="0.95" />
+      {/* 领结：管家的身份 */}
+      <g fill="var(--primary)">
+        <path d="M32 38.6 L26.2 36.2 L26.2 41.4 Z" />
+        <path d="M32 38.6 L37.8 36.2 L37.8 41.4 Z" />
+        <circle cx="32" cy="38.8" r="1.9" />
+      </g>
+      <circle cx="32" cy="38.8" r="0.8" fill="var(--bc-belly, #f8ecd9)" opacity="0.9" />
       {/* working：头顶一颗小星光 */}
-      <path className="ib-bc-spark" d="M47.6 13 l1.1 3 l3 1.1 l-3 1.1 l-1.1 3 l-1.1 -3 l-3 -1.1 l3 -1.1 z" fill="var(--primary)" />
+      <path className="ib-bc-spark" d="M47.4 13.6 l1.1 3 l3 1.1 l-3 1.1 l-1.1 3 l-1.1 -3 l-3 -1.1 l3 -1.1 z" fill="var(--primary)" />
     </svg>
   );
 }
@@ -135,10 +154,40 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
   const compoRef = useRef<HTMLTextAreaElement>(null);
   const [pending, setPending] = useState(false);
   const [sessionCopy, setSessionCopy] = useState<'idle' | 'busy' | 'copied' | 'failed'>('idle');
+  /**
+   * 这一轮的「过程」（owner 2026-11-26「看不到管家的思考过程和工具调用」）：模型的思考增量
+   * 与工具调用，只属于正在进行的这一轮；历史里只存正文，所以下一轮开始时清空。
+   */
+  const [live, setLive] = useState<{ reasoning: string; tools: ButlerToolCall[] }>({ reasoning: '', tools: [] });
   const listRef = useRef<HTMLDivElement>(null);
   const loadedRef = useRef(false);
-  /** 管家页的两个页签：对话 / 审批（owner 2026-11-26「审批放在管家页面中」）。 */
-  const [tab, setTab] = useState<'chat' | 'approvals'>('chat');
+  /**
+   * 右侧抽屉（owner 2026-11-26「不要页签，对话常驻；审批/配置从右边像抽屉一样挤出来」）：
+   * `drawer` 是当前开着的那一栏，`shown` 是还在动画里的内容（收起时留到宽度动画结束再卸载，
+   * 否则会看到一条空白面板缩回去）。
+   */
+  const [drawer, setDrawerState] = useState<'approvals' | 'config' | 'ledger' | null>(null);
+  const [shown, setShown] = useState<'approvals' | 'config' | 'ledger' | null>(null);
+  const drawerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const setDrawer = (next: 'approvals' | 'config' | 'ledger' | null) => {
+    if (drawerTimer.current) {
+      clearTimeout(drawerTimer.current);
+      drawerTimer.current = null;
+    }
+    if (next !== null) {
+      setShown(next);
+      setDrawerState(next);
+      return;
+    }
+    setDrawerState(null);
+    drawerTimer.current = setTimeout(() => {
+      setShown(null);
+      drawerTimer.current = null;
+    }, 380);
+  };
+  useEffect(() => () => {
+    if (drawerTimer.current) clearTimeout(drawerTimer.current);
+  }, []);
   const [approvalsModel, setApprovalsModel] = useState<InboxButlerApprovalsModel | null>(null);
   const [approvalsError, setApprovalsError] = useState<string | null>(null);
   /** The Inbox's projects, for the card's project picker in the approval tab. */
@@ -168,12 +217,17 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
     return () => clearInterval(timer);
   }, [open]);
 
-  const decideApproval = async (id: string, decision: 'approve' | 'deny', always: boolean, projectId?: string | null) => {
+  const decideApproval = async (id: string, decision: 'approve' | 'deny', always: boolean, projectId?: string | null, note?: string) => {
     if (approvalBusy) return;
     setApprovalBusy(id);
     setApprovalsError(null);
     try {
-      await inboxApi.butlerApprovalDecide(id, { decision, ...(always ? { always: true } : {}), ...(projectId !== undefined ? { project_id: projectId } : {}) });
+      await inboxApi.butlerApprovalDecide(id, {
+        decision,
+        ...(always ? { always: true } : {}),
+        ...(projectId !== undefined ? { project_id: projectId } : {}),
+        ...(note && note.trim() ? { note: note.trim() } : {}),
+      });
       loadApprovals();
     } catch (error) {
       setApprovalsError(error instanceof Error ? error.message : String(error));
@@ -192,15 +246,17 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
     }
   };
 
-  // ESC 收回（与全屏面板的其它入口一致）。
+  // ESC：先收抽屉，再收整页（与全屏面板的其它入口一致）。
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key !== 'Escape') return;
+      if (drawer !== null) setDrawer(null);
+      else setOpen(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
+  }, [open, drawer]);
 
   // 打开时读历史（一次；此后本地追加）。
   useEffect(() => {
@@ -233,28 +289,60 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
     if (list) list.scrollTop = list.scrollHeight;
   }, [turns, pending, open]);
 
+  // 卡片自己报高度后，若列表本来贴着底部就继续贴底（M2：卡片加载不把视线甩走）。
+  useEffect(() => {
+    if (!open) return;
+    const onCardResize = () => {
+      const list = listRef.current;
+      if (!list) return;
+      if (list.scrollHeight - list.scrollTop - list.clientHeight < 120) list.scrollTop = list.scrollHeight;
+    };
+    window.addEventListener('butler:card-resize', onCardResize);
+    return () => window.removeEventListener('butler:card-resize', onCardResize);
+  }, [open]);
+
   const send = async () => {
     const message = draft.trim();
     if ((!message && pendingFiles.length === 0) || pending) return;
     setDraft('');
     const files = pendingFiles;
     setPendingFiles([]);
+    await sendText(message, files);
+  };
+
+  /** 真正发一轮：输入框与卡片回话（「来自卡片：…」）共用同一条路径。 */
+  const sendText = async (message: string, files: PendingFile[] = []) => {
+    if (pending) return;
     setCompoError(null);
     setTurns((current) => [...current, { at: new Date().toISOString(), role: 'you', text: message, ...(files.length ? { files: files.map((file) => file.name) } : {}) }]);
     setPending(true);
+    setLive({ reasoning: '', tools: [] });
     // 流式（v3，owner 2026-11-25「像 web 版一样」）：管家的回复随增量生长。
     const streamAt = new Date().toISOString();
     setTurns((current) => [...current, { at: streamAt, role: 'butler', text: '' }]);
     try {
       const reply = await inboxApi.butlerChatStream(
         message || `（发来了 ${files.length} 个附件）`,
-        (delta) => {
-          setTurns((current) => {
-            const next = [...current];
-            const last = next[next.length - 1]!;
-            next[next.length - 1] = { ...last, text: last.text + delta };
-            return next;
-          });
+        {
+          onDelta: (delta) => {
+            setTurns((current) => {
+              const next = [...current];
+              const last = next[next.length - 1]!;
+              next[next.length - 1] = { ...last, text: last.text + delta };
+              return next;
+            });
+          },
+          onReasoning: (delta) => setLive((current) => ({ ...current, reasoning: current.reasoning + delta })),
+          onTool: (tool) =>
+            setLive((current) => ({
+              ...current,
+              tools: [...current.tools.filter((each) => each.id !== tool.id), { id: tool.id, name: tool.name, input: tool.input }],
+            })),
+          onToolResult: (result) =>
+            setLive((current) => ({
+              ...current,
+              tools: current.tools.map((each) => (result.id !== null && each.id !== result.id ? each : { ...each, result: result.text })),
+            })),
         },
         files.map((file) => ({ name: file.name, mime: file.mime, data: file.data })),
       );
@@ -342,11 +430,49 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
         title="管家"
         onClick={() => setOpen((current) => !current)}
       >
-        <ButlerCharacter size={26} />
+        <ButlerCharacter size={52} />
       </button>
       {open && (
         <div className="ib-butler-pane" role="dialog" aria-label="管家">
+          <div className="ib-butler-main">
           <div className="ib-butler-top">
+            {/* 左上角：审批（带待批数）/ 配置——右侧抽屉的入口（owner 2026-11-26）。 */}
+            <div className="ib-butler-rail" role="group" aria-label="管家面板">
+              <button
+                type="button"
+                className="ib-butler-railbtn"
+                data-on={drawer === 'approvals'}
+                aria-pressed={drawer === 'approvals'}
+                aria-label={approvalsPending > 0 ? `审批（${approvalsPending} 件待批）` : '审批'}
+                onClick={() => setDrawer(drawer === 'approvals' ? null : 'approvals')}
+              >
+                <Icon name="checkCircle" size={15} />
+                审批
+                {approvalsPending > 0 && <span className="ib-butler-railbadge">{approvalsPending}</span>}
+              </button>
+              <button
+                type="button"
+                className="ib-butler-railbtn"
+                data-on={drawer === 'config'}
+                aria-pressed={drawer === 'config'}
+                aria-label="配置"
+                onClick={() => setDrawer(drawer === 'config' ? null : 'config')}
+              >
+                <Icon name="settings" size={15} />
+                配置
+              </button>
+              <button
+                type="button"
+                className="ib-butler-railbtn"
+                data-on={drawer === 'ledger'}
+                aria-pressed={drawer === 'ledger'}
+                aria-label="台账"
+                onClick={() => setDrawer(drawer === 'ledger' ? null : 'ledger')}
+              >
+                <Icon name="book" size={15} />
+                台账
+              </button>
+            </div>
             <div className="ib-butler-top-buttons">
               <Tip content="复制在终端打开管家会话的命令">
                 <button
@@ -370,26 +496,15 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                 形象 = 二维剪影管家（owner 2026-11-25「我还是喜欢二维的svg风格」——
                 Three.js 3D 狐狸试过被否），随对话状态换情绪。 */}
             <span className="ib-butler-avatar" title="管家">
-              <ButlerCharacter size={72} mood={pending ? 'working' : sessionCopy === 'copied' ? 'happy' : 'idle'} />
+              <ButlerCharacter size={144} mood={pending ? 'working' : sessionCopy === 'copied' ? 'happy' : 'idle'} />
               <span className="ib-butler-presence" aria-hidden="true" />
             </span>
           </div>
-          <div className="ib-butler-tabs" role="tablist" aria-label="管家页">
-            <button type="button" role="tab" aria-selected={tab === 'chat'} className={`ib-butler-tab${tab === 'chat' ? ' is-on' : ''}`} onClick={() => setTab('chat')}>
-              对话
-            </button>
-            <button type="button" role="tab" aria-selected={tab === 'approvals'} className={`ib-butler-tab${tab === 'approvals' ? ' is-on' : ''}`} onClick={() => setTab('approvals')}>
-              审批
-              {approvalsPending > 0 && <span className="ib-butler-tab-badge">{approvalsPending}</span>}
-            </button>
-          </div>
-          {tab === 'chat' ? (
-          <>
           <div className="ib-butler-list" ref={listRef}>
             {turns.length === 0 && !pending ? (
               <div className="ib-butler-hero">
                 <span className="ib-butler-hero-badge">
-                  <ButlerCharacter size={96} mood={sessionCopy === 'copied' ? 'happy' : 'idle'} />
+                  <ButlerCharacter size={192} mood={sessionCopy === 'copied' ? 'happy' : 'idle'} />
                 </span>
                 <h2 className="ib-butler-hero-word">{butlerGreeting()}</h2>
                 <p className="ib-butler-hero-sub">我盯着每件事的进展，有动静会先说；真正动手，从需求卡片开启会话。</p>
@@ -415,15 +530,26 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                   // 管家的话按 markdown 画（ui 的净化渲染；流式中仍在长的最后一条保持纯文本，
                   // 完成的那一刻成格式化——不做逐增量重排）。
                   const streaming = pending && index === turns.length - 1 && turn.role === 'butler';
-                  const md = turn.role === 'butler' && !streaming && turn.text !== '' ? chatMarkdownHtml(turn.text) : null;
+                  const showProcess = index === turns.length - 1 && turn.role === 'butler' && (live.reasoning !== '' || live.tools.length > 0);
                   return (
                     <div key={`${turn.at}-${index}`} className={`ib-butler-msg ib-butler-msg-${turn.role}`}>
+                      {showProcess && <ButlerProcess reasoning={live.reasoning} tools={live.tools} streaming={streaming || pending} answered={turn.text !== ''} />}
                       {turn.files && turn.files.length > 0 && (
                         <span className="ib-butler-files" aria-label="附件">
                           <Icon name="clip" size={12} /> {turn.files.join('、')}
                         </span>
                       )}
-                      {md !== null ? <div className="ib-butler-md" dangerouslySetInnerHTML={{ __html: md }} /> : turn.text}
+                      {turn.role === 'butler' ? (
+                        <ButlerRichText text={turn.text} streaming={streaming} onCardMessage={(text) => void sendText(text)} />
+                      ) : cardReplyOf(turn.text) !== null ? (
+                        // 卡片按钮回话：不是主人打字，用专门的标记画（M2）。
+                        <span className="ib-butler-cardreply">
+                          <Icon name="checkCircle" size={12} />
+                          {cardReplyOf(turn.text)}
+                        </span>
+                      ) : (
+                        turn.text
+                      )}
                     </div>
                   );
                 })}
@@ -506,22 +632,105 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
               }}
             />
           </div>
-          </>
-          ) : (
-            <ButlerApprovals
-              model={approvalsModel}
-              projects={projects}
-              error={approvalsError}
-              busy={approvalBusy}
-              onDecide={(id, decision, always, projectId) => void decideApproval(id, decision, always, projectId)}
-              onMode={(action, mode) => void setApprovalMode(action, mode)}
-              onRefresh={loadApprovals}
-            />
-          )}
+          </div>
+          {/* 右侧抽屉：不是浮层——占位挤压，对话列随之变窄（owner 2026-11-26「像抽屉一样
+              挤出来，对话页面的宽度就变窄」）。收起时内容留到宽度动画结束再卸载。 */}
+          <aside
+            className="ib-butler-side"
+            data-open={drawer !== null}
+            aria-hidden={drawer === null}
+            aria-label={shown === 'config' ? '配置' : shown === 'ledger' ? '台账' : '待批事项'}
+          >
+            <div className="ib-butler-side-inner">
+              <header className="ib-butler-side-head">
+                <div>
+                  <span className="ib-butler-side-kicker">{shown === 'config' ? 'SETTINGS' : shown === 'ledger' ? 'LEDGER' : 'APPROVALS'}</span>
+                  <h2>{shown === 'config' ? '配置' : shown === 'ledger' ? '台账' : '待批事项'}</h2>
+                </div>
+                <Tip content="收起侧栏">
+                  <button type="button" className="ib-iconbtn" aria-label="收起侧栏" onClick={() => setDrawer(null)}>
+                    <Icon name="x" />
+                  </button>
+                </Tip>
+              </header>
+              <div className="ib-butler-side-body">
+                {shown === 'approvals' && (
+                  <ButlerApprovals
+                    model={approvalsModel}
+                    projects={projects}
+                    error={approvalsError}
+                    busy={approvalBusy}
+                    onDecide={(id, decision, always, projectId, note) => void decideApproval(id, decision, always, projectId, note)}
+                    onRefresh={loadApprovals}
+                  />
+                )}
+                {shown === 'ledger' && <ButlerLedger open={drawer === 'ledger'} />}
+                {shown === 'config' && (
+                  <ButlerAuthSettings
+                    model={approvalsModel}
+                    error={approvalsError}
+                    onMode={(action, mode) => void setApprovalMode(action, mode)}
+                  />
+                )}
+              </div>
+            </div>
+          </aside>
         </div>
       )}
     </>
   );
+}
+
+/** 一轮里的工具调用（过程视图用；历史不存）。 */
+interface ButlerToolCall {
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+  result?: string;
+}
+
+/**
+ * 一轮对话的过程（owner 2026-11-26「看不到管家的思考过程和工具调用」）：可折叠的「思考」，
+ * 加上每次工具调用的名字、输入摘要与结果。回答开始出现后「思考」自动收起；下一轮开始时整块清空。
+ */
+function ButlerProcess({ reasoning, tools, streaming, answered }: { reasoning: string; tools: ButlerToolCall[]; streaming: boolean; answered: boolean }) {
+  return (
+    <div className="ib-butler-proc">
+      {reasoning !== '' && (
+        <details className="ib-butler-think" open={!answered}>
+          <summary>
+            <span className="ib-butler-proc-k">思考</span>
+            <span className="ib-butler-proc-n">{streaming && !answered ? '正在想…' : `${reasoning.length} 字`}</span>
+          </summary>
+          <div className="ib-butler-think-body">{reasoning}</div>
+        </details>
+      )}
+      {tools.length > 0 && (
+        <div className="ib-butler-tools">
+          {tools.map((tool) => (
+            <details key={tool.id} className="ib-butler-tool" data-done={tool.result !== undefined}>
+              <summary>
+                <span className="ib-butler-tool-name">{tool.name}</span>
+                <span className="ib-butler-tool-arg">{butlerToolArg(tool.input)}</span>
+                <span className="ib-butler-tool-state">{tool.result === undefined ? (streaming ? '运行中' : '已结束') : '完成'}</span>
+              </summary>
+              {tool.result !== undefined && <pre className="ib-butler-tool-out">{tool.result.slice(0, 2000)}</pre>}
+            </details>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** 工具输入的一行摘要：常见字段优先，否则 JSON 截断。 */
+function butlerToolArg(input: Record<string, unknown>): string {
+  for (const key of ['command', 'path', 'filePath', 'file_path', 'pattern', 'query', 'url', 'description']) {
+    const value = input[key];
+    if (typeof value === 'string' && value.trim()) return value.length > 90 ? `${value.slice(0, 90)}…` : value;
+  }
+  const json = JSON.stringify(input);
+  return json.length > 90 ? `${json.slice(0, 90)}…` : json;
 }
 
 /** 时辰问候：管家开口的第一句。 */

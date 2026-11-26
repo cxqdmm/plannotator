@@ -2246,7 +2246,19 @@ export const inboxApi = {
   butlerChat: (message: string) => post<{ reply: string }>(inboxUrl('/butler/chat'), { message }),
   /** 流式一问（v3，owner 2026-11-25「像 web 版一样」）：增量经 onDelta 实时出去，返回全文。 */
   /** `files`: 主人随消息发来的附件（已读成 data URL），服务端落盘并把图片内联给会话。 */
-  butlerChatStream: async (message: string, onDelta: (delta: string) => void, files: { name: string; mime: string; data: string }[] = []): Promise<string> => {
+  butlerChatStream: async (
+    message: string,
+    handlers: {
+      onDelta: (delta: string) => void;
+      /** 模型的思考增量（过程，不进正文）。 */
+      onReasoning?: (delta: string) => void;
+      /** 一次工具调用开始（名字 + 输入）。 */
+      onTool?: (tool: { id: string; name: string; input: Record<string, unknown> }) => void;
+      /** 该工具的结果（成功文本或失败原因）。 */
+      onToolResult?: (result: { id: string | null; text: string }) => void;
+    },
+    files: { name: string; mime: string; data: string }[] = [],
+  ): Promise<string> => {
     const response = await fetch(inboxUrl('/butler/chat'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
@@ -2271,10 +2283,29 @@ export const inboxApi = {
         buffer = buffer.slice(split + 2);
         if (!frame.startsWith('data: ')) continue;
         try {
-          const payload = JSON.parse(frame.slice(6)) as { delta?: string; done?: boolean; reply?: string; error?: string };
+          const payload = JSON.parse(frame.slice(6)) as {
+            delta?: string;
+            done?: boolean;
+            reply?: string;
+            error?: string;
+            reasoning?: string;
+            tool?: { id?: unknown; name?: unknown; input?: unknown };
+            tool_result?: { id?: unknown; text?: unknown };
+          };
+          if (typeof payload.reasoning === 'string' && payload.reasoning) handlers.onReasoning?.(payload.reasoning);
+          if (payload.tool && typeof payload.tool.id === 'string' && typeof payload.tool.name === 'string') {
+            handlers.onTool?.({
+              id: payload.tool.id,
+              name: payload.tool.name,
+              input: payload.tool.input && typeof payload.tool.input === 'object' ? (payload.tool.input as Record<string, unknown>) : {},
+            });
+          }
+          if (payload.tool_result && typeof payload.tool_result.text === 'string') {
+            handlers.onToolResult?.({ id: typeof payload.tool_result.id === 'string' ? payload.tool_result.id : null, text: payload.tool_result.text });
+          }
           if (typeof payload.delta === 'string') {
             reply += payload.delta;
-            onDelta(payload.delta);
+            handlers.onDelta(payload.delta);
           }
           if (typeof payload.reply === 'string') reply = payload.reply;
           if (payload.error) failure = payload.error;
@@ -2290,6 +2321,10 @@ export const inboxApi = {
   butlerHistory: () => get<{ history: { at: string; role: 'you' | 'butler'; text: string }[] }>(inboxUrl('/butler/history')),
   /** 管家页的「审批」页签：待批 + 已决定 + 授权开关。 */
   butlerApprovals: () => get<InboxButlerApprovalsModel>(inboxUrl('/butler/approvals')),
+  /** 管家台账（只读）：每个需求一行摘要；点开再看一份的完整台账（服务端渲染的 Markdown）。 */
+  butlerLedger: () => get<{ ledgers: InboxButlerLedgerRow[] }>(inboxUrl('/butler/ledger')),
+  butlerLedgerOf: (req: string) =>
+    get<{ ledger: InboxButlerLedgerRow; markdown: string }>(inboxUrl(`/butler/ledger/${encodeURIComponent(req)}`)),
   /** The Inbox's projects (id / name / root), for the requirement card's project picker. */
   projectsList: () => get<{ projects: { id: string; name: string; root: string }[] }>(inboxUrl('/projects')),
   /** 主人对一条审批做决定；批准后守护进程立刻执行，并把结果送回管家。 */
@@ -2345,6 +2380,17 @@ export interface InboxButlerApproval {
 }
 
 /** `GET /api/inbox/butler/approvals`. */
+/** 管家台账的一行（GET /butler/ledger）：摘要列表用；详情另带 markdown。 */
+export interface InboxButlerLedgerRow {
+  req: string;
+  title: string;
+  stage: string;
+  archived: boolean;
+  next_action: { text: string; why: string; level: 'record' | 'notify' | 'act'; at: string } | null;
+  waiting: number;
+  running: number;
+}
+
 export interface InboxButlerApprovalsModel {
   approvals: { pending: InboxButlerApproval[]; decided: InboxButlerApproval[] };
   auto: Record<string, boolean>;

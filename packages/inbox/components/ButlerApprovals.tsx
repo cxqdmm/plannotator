@@ -40,23 +40,29 @@ function ApprovalCard({
   approval: InboxButlerApproval;
   busy: boolean;
   projects: { id: string; name: string; root: string }[];
-  onDecide: (id: string, decision: 'approve' | 'deny', always: boolean, projectId?: string | null) => void;
+  onDecide: (id: string, decision: 'approve' | 'deny', always: boolean, projectId?: string | null, note?: string) => void;
 }) {
   const [always, setAlways] = useState(false);
+  const [note, setNote] = useState('');
   const [projectId, setProjectId] = useState(approval.detail.project_id ?? '');
   const card = approval.detail.card ?? '';
   const knownProject = projects.some((project) => project.id === projectId) || !projectId;
   const projectChoices = !knownProject && approval.detail.project_id
     ? [...projects, { id: approval.detail.project_id, name: approval.detail.project_name ?? approval.detail.project_id, root: approval.detail.project_root ?? '' }]
     : projects;
+  const noteId = `butler-ap-note-${approval.id}`;
   return (
-    <article className="ib-butler-ap-card">
-      <div className="ib-butler-ap-top">
-        <span className="ib-butler-ap-kind">{ACTION_LABEL[approval.action]}</span>
-        <span className="ib-butler-ap-time">管家 · {timeOf(approval.requested_at)}</span>
-      </div>
-      <h3>{approval.title}</h3>
-      <p className="ib-butler-ap-summary">{approval.summary}</p>
+    <article className="ib-butler-ap-card" data-action={approval.action}>
+      <header className="ib-butler-ap-cardhead">
+        <span className="ib-butler-ap-kind">
+          <i aria-hidden="true" />
+          {ACTION_LABEL[approval.action]}
+        </span>
+        <span className="ib-butler-ap-time">{timeOf(approval.requested_at)}</span>
+      </header>
+      <h3 className="ib-butler-ap-title">{approval.title}</h3>
+      {approval.summary && <p className="ib-butler-ap-summary">{approval.summary}</p>}
+
       <dl className="ib-butler-ap-facts">
         {approval.detail.agent && <div><dt>agent</dt><dd>{approval.detail.agent}</dd></div>}
         {(approval.detail.project_name || approval.detail.project_id) && <div><dt>项目</dt><dd>{approval.detail.project_name ?? approval.detail.project_id}</dd></div>}
@@ -66,6 +72,7 @@ function ApprovalCard({
         {approval.detail.words && <div><dt>要说的话</dt><dd>{approval.detail.words}</dd></div>}
         {approval.detail.released !== undefined && <div><dt>释放会话</dt><dd>{approval.detail.released}</dd></div>}
       </dl>
+
       {approval.action === 'create-requirement' && (
         <label className="ib-butler-ap-project">
           <span>项目</span>
@@ -90,34 +97,52 @@ function ApprovalCard({
         <p className="ib-butler-ap-warn">{approval.detail.warnings.join('；')}</p>
       )}
       {card && (
-        <details className="ib-butler-ap-doc" open>
-          <summary>查看完整需求卡</summary>
+        <details className="ib-butler-ap-doc">
+          <summary>
+            <span>查看完整需求卡</span>
+            <span className="ib-butler-ap-doc-caret" aria-hidden="true">›</span>
+          </summary>
           <div className="ib-butler-md" dangerouslySetInnerHTML={{ __html: chatMarkdownHtml(card) }} />
         </details>
       )}
-      <div className="ib-butler-ap-actions">
-        <button type="button" className="ib-butler-ap-approve" disabled={busy} onClick={() => onDecide(approval.id, 'approve', always, approval.action === 'create-requirement' ? projectId || null : undefined)}>
-          批准
-        </button>
-        <button type="button" className="ib-butler-ap-deny" disabled={busy} onClick={() => onDecide(approval.id, 'deny', false)}>
-          拒绝
-        </button>
-        <label className="ib-butler-ap-always">
-          <input type="checkbox" checked={always} onChange={(event) => setAlways(event.target.checked)} disabled={busy} />
-          以后直接允许
-        </label>
+
+      {/* 补充话术（owner 2026-11-27）：批准或拒绝都能写一句，随决定送到管家。 */}
+      <div className="ib-butler-ap-decide">
+        <label className="ib-butler-ap-notelabel" htmlFor={noteId}>补充话术</label>
+        <textarea
+          id={noteId}
+          className="ib-butler-ap-note"
+          rows={2}
+          dir="auto"
+          placeholder="可选：说清理由、边界，或让管家下一步注意什么"
+          value={note}
+          disabled={busy}
+          onChange={(event) => setNote(event.target.value)}
+        />
+        <div className="ib-butler-ap-actions">
+          <button type="button" className="ib-butler-ap-approve" disabled={busy} onClick={() => onDecide(approval.id, 'approve', always, approval.action === 'create-requirement' ? projectId || null : undefined, note)}>
+            批准
+          </button>
+          <button type="button" className="ib-butler-ap-deny" disabled={busy} onClick={() => onDecide(approval.id, 'deny', false, undefined, note)}>
+            拒绝
+          </button>
+          <label className="ib-butler-ap-always">
+            <input type="checkbox" checked={always} onChange={(event) => setAlways(event.target.checked)} disabled={busy} />
+            以后直接允许
+          </label>
+        </div>
       </div>
     </article>
   );
 }
 
+/** 抽屉「待批事项」（owner 2026-11-26：审批不再是页签，而是右侧抽屉）。 */
 export function ButlerApprovals({
   model,
   projects,
   error,
   busy,
   onDecide,
-  onMode,
   onRefresh,
 }: {
   model: InboxButlerApprovalsModel | null;
@@ -125,27 +150,69 @@ export function ButlerApprovals({
   /** The approval being decided now, or null. */
   projects: { id: string; name: string; root: string }[];
   busy: string | null;
-  onDecide: (id: string, decision: 'approve' | 'deny', always: boolean, projectId?: string | null) => void;
-  onMode: (action: 'create-requirement' | 'launch-session' | 'archive-requirement' | 'stop-session', mode: 'ask' | 'auto') => void;
+  onDecide: (id: string, decision: 'approve' | 'deny', always: boolean, projectId?: string | null, note?: string) => void;
   onRefresh: () => void;
 }) {
   const pending = model?.approvals.pending ?? [];
   const decided = model?.approvals.decided ?? [];
-  const modeOf = (action: 'create-requirement' | 'launch-session' | 'archive-requirement' | 'stop-session'): 'ask' | 'auto' => (model?.auto[action] === true ? 'auto' : 'ask');
   return (
     <div className="ib-butler-approvals">
-      <div className="ib-butler-ap-head">
-        <div>
-          <h2>审批</h2>
-          <p>和管家说话的地方，也是批事的地方。批准后会立刻执行，并把结果送回管家。</p>
-        </div>
+      <div className="ib-butler-ap-bar">
+        <span className="ib-butler-ap-count">
+          {model ? (pending.length > 0 ? `${pending.length} 件待批` : '没有待批的事') : '正在读审批…'}
+        </span>
         <button type="button" className="ib-butler-ap-refresh" onClick={onRefresh} aria-label="刷新审批">
-          <Icon name="restart" size={14} /> 刷新
+          <Icon name="restart" size={13} /> 刷新
         </button>
       </div>
 
       {error && <p className="ib-butler-ap-error" role="alert">{error}</p>}
 
+      {!model ? (
+        <div className="ib-butler-ap-empty">正在读审批…</div>
+      ) : pending.length === 0 ? (
+        <div className="ib-butler-ap-empty">没有待批的事。管家请求建卡、派活、归档或停止时会出现在这里。</div>
+      ) : (
+        <div className="ib-butler-ap-list">
+          {pending.map((approval) => (
+            <ApprovalCard key={approval.id} approval={approval} projects={projects} busy={busy === approval.id} onDecide={onDecide} />
+          ))}
+        </div>
+      )}
+
+      {decided.length > 0 && (
+        <div className="ib-butler-ap-history">
+          <div className="ib-butler-ap-hh">已决定 · 最近</div>
+          {decided.slice(0, 8).map((approval) => (
+            <div key={approval.id} className="ib-butler-ap-hist">
+              <span className="ib-butler-ap-hist-title">{approval.title}</span>
+              <span className={`ib-butler-ap-status is-${approval.status}`}>{statusLabel(approval.status)}</span>
+              <span className="ib-butler-ap-hist-time">{timeOf(approval.decided_at ?? approval.requested_at)}</span>
+              {approval.note && <span className="ib-butler-ap-hist-note">{approval.note}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 抽屉「配置」（owner 2026-11-26「再加一个配置按钮…侧边栏里是授权开关」）：四类管家动作的
+ * 授权模式。窄栏里改成一列（说明在上、分段开关在下），比横排更好读。
+ */
+export function ButlerAuthSettings({
+  model,
+  error,
+  onMode,
+}: {
+  model: InboxButlerApprovalsModel | null;
+  error: string | null;
+  onMode: (action: 'create-requirement' | 'launch-session' | 'archive-requirement' | 'stop-session', mode: 'ask' | 'auto') => void;
+}) {
+  const modeOf = (action: 'create-requirement' | 'launch-session' | 'archive-requirement' | 'stop-session'): 'ask' | 'auto' => (model?.auto[action] === true ? 'auto' : 'ask');
+  return (
+    <div className="ib-butler-config">
       <section className="ib-butler-switch" aria-label="授权开关">
         <div className="ib-butler-switch-head">
           <b>授权开关</b>
@@ -177,31 +244,7 @@ export function ButlerApprovals({
         })}
         <p className="ib-butler-switch-note">所有需要您点头的管家动作都在这里；批准后立刻执行，结果送回管家。</p>
       </section>
-
-      {!model ? (
-        <div className="ib-butler-ap-empty">正在读审批…</div>
-      ) : pending.length === 0 ? (
-        <div className="ib-butler-ap-empty">没有待批的事。管家请求建卡、派活、归档或停止时会出现在这里。</div>
-      ) : (
-        <div className="ib-butler-ap-list">
-          {pending.map((approval) => (
-            <ApprovalCard key={approval.id} approval={approval} projects={projects} busy={busy === approval.id} onDecide={onDecide} />
-          ))}
-        </div>
-      )}
-
-      {decided.length > 0 && (
-        <div className="ib-butler-ap-history">
-          <div className="ib-butler-ap-hh">已决定 · 最近</div>
-          {decided.slice(0, 8).map((approval) => (
-            <div key={approval.id} className="ib-butler-ap-hist">
-              <span className="ib-butler-ap-hist-title">{approval.title}</span>
-              <span className={`ib-butler-ap-status is-${approval.status}`}>{statusLabel(approval.status)}</span>
-              <span className="ib-butler-ap-hist-time">{timeOf(approval.decided_at ?? approval.requested_at)}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {error && <p className="ib-butler-ap-error" role="alert">{error}</p>}
     </div>
   );
 }
