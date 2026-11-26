@@ -30,6 +30,14 @@ function fakeSession(id: string, stale = false) {
     abort() {},
     // 回声回合：把提示原样带回来，方便断言注入的正是原话。
     query: async function* (prompt: string, options?: { files?: { name: string; mime: string; dataUrl: string }[] }) {
+      // 循环保险：同一个工具+同一份输入连着来 4 次，这一轮要被中止。
+      if (prompt.includes('循环测试')) {
+        for (let index = 0; index < 6; index += 1) {
+          yield { type: 'tool_use', toolName: 'shell', toolInput: { command: 'echo .' }, toolUseId: `t${index}` };
+        }
+        yield { type: 'text', text: '不该走到这里' };
+        return;
+      }
       // 续接拿到了句柄、prompt 才被拒（opencode 的真实形态：400 Invalid session ID）。
       if (stale) throw new Error('OpenCode rejected prompt: OpenCode prompt refused (400): {"message":"Invalid session ID","field":"sessionID"}');
       const inline = (options?.files ?? []).map((file) => `[file ${file.name}]`).join(",");
@@ -202,6 +210,13 @@ describe("the butler streaming chat", () => {
       .split("\n")
       .map((line) => JSON.parse(line) as { role: string; text: string });
     expect(rows.some((turn) => turn.role === "butler" && turn.text.includes("主人批准"))).toBe(true);
+  });
+
+  test.skipIf(process.platform === "win32")("a turn that keeps repeating one tool call is aborted with words", async () => {
+    const butler = await loadButler(fakeBin);
+    const { frames } = await chat(butler, "循环测试");
+    expect(frames.some((frame) => typeof frame.error === "string" && String(frame.error).includes("重复"))).toBe(true);
+    expect(frames.some((frame) => frame.done === true)).toBe(false);
   });
 
   test("a non-same-origin call is not answered", async () => {

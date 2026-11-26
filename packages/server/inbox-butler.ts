@@ -376,6 +376,8 @@ export class Butler {
   private readonly deferred: string[] = [];
   /** Queries running now: a wake never speaks over the owner's own turn. */
   private running = 0;
+  /** 连续由事件唤起、中间没有主人说话的次数：防「动作→事件→唤醒→动作」自我循环。 */
+  private wakeStreak = 0;
   /** Tests inject the brain provider instead of mocking `@plannotator/ai` process-wide (the mock
    *  leaked into every other test file in the same run). Absent: the real opencode-sdk provider. */
   private readonly provider: ButlerBrainProvider | null;
@@ -444,6 +446,7 @@ export class Butler {
 
   /** 一条对话：先落 you 侧历史，opencode 回复后落 butler 侧并返回全文。 */
   async chat(message: string, files: ButlerStoredFile[] = []): Promise<string> {
+    this.wakeStreak = 0;
     const at = new Date().toISOString();
     this.appendHistory({ at, role: "you", text: message, ...(files.length ? { files: files.map((file) => file.name) } : {}) });
     const reply = await this.askButler(message, files);
@@ -566,11 +569,15 @@ export class Butler {
     const text = digest.trim();
     if (!text) return;
     const ownerJustActed = events.some((event) => typeof event.kind === "string" && event.kind.startsWith("butler.action."));
-    if ((!this.brainSession && !ownerJustActed) || this.running > 0 || this.brainSession?.isActive) {
+    // 连续第三次由事件唤起（中间没人说话）就停下来：否则管家自己的动作产生事件、事件又唤醒它，
+    // 能自己转一晚上（现场 2026-11-27 的 127 次工具调用就是这么起来的）。留到下一句对话。
+    const runLooping = this.wakeStreak >= 3;
+    if ((!this.brainSession && !ownerJustActed) || this.running > 0 || this.brainSession?.isActive || runLooping) {
       this.deferred.push(text);
       return;
     }
     this.running += 1;
+    this.wakeStreak += 1;
     try {
       const reply = await this.askButlerStream(text, () => {}, [], false);
       this.appendHistory({ at: new Date().toISOString(), role: "butler", text: reply });
@@ -604,6 +611,11 @@ export class Butler {
     const run = async (): Promise<string> => {
       const session = await this.brain();
       let reply = "";
+      // 循环保险（现场 2026-11-27：模型退化，连发 127 次 `shell: echo .` 不停）。
+      // 连续同一个工具+同一份输入 4 次，或一轮超过 60 次工具调用，就中止这一轮并说明。
+      let lastSig = "";
+      let sameCount = 0;
+      let calls = 0;
       for await (const msg of session.query(prompt, butlerQueryFiles(files))) {
         if (msg.type === "text") {
           reply += msg.text;
@@ -615,6 +627,18 @@ export class Butler {
           // 思考不是回答：不进 reply，只作为过程事件给页面。
           onEvent?.({ type: "reasoning", delta: msg.delta });
         } else if (msg.type === "tool_use") {
+          calls += 1;
+          const signature = `${msg.toolName}:${JSON.stringify(msg.toolInput ?? {})}`;
+          sameCount = signature === lastSig ? sameCount + 1 : 1;
+          lastSig = signature;
+          if (sameCount >= 4 || calls > 60) {
+            try {
+              session.abort();
+            } catch {
+              // 中止失败也要抛出：这一轮不能再跑下去。
+            }
+            throw new Error("管家连续重复调用同一个工具，已中止这一轮。可以换个说法再试。");
+          }
           onEvent?.({ type: "tool", id: msg.toolUseId, name: msg.toolName, input: msg.toolInput ?? {} });
         } else if (msg.type === "tool_result") {
           onEvent?.({ type: "tool_result", id: msg.toolUseId ?? null, text: msg.result });
@@ -681,6 +705,7 @@ export class Butler {
       start: async (controller) => {
         const send = (payload: Record<string, unknown>) =>
           controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(payload)}\n\n`));
+        this.wakeStreak = 0;
         try {
           this.appendHistory({ at: new Date().toISOString(), role: "you", text: message, ...(files.length ? { files: files.map((file) => file.name) } : {}) });
           reply = await this.askButlerStream(
