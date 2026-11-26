@@ -4553,6 +4553,11 @@ data: {}\n\n`)) : () => {};
   const gatedReviews = new Map<string, { child: Bun.Subprocess; url: string | null }>();
   const requirements = createBunRequirementRoutes({
     dataDir,
+    // The card's project field: an Inbox project by id, resolved where the store lives.
+    projectOf: (id) => {
+      const project = store.project(id);
+      return project ? { id: project.id, name: project.name, root: project.root } : null;
+    },
     spawnAnnotate: (file) => {
       // 子进程不自己开浏览器（单弹窗原则）：路由轮询登记簿拿到地址后返回，由窗口统一打开——
       // 首击即达，也不受守护进程环境变量（SKIP_BROWSER_OPEN 等）影响。
@@ -5008,7 +5013,7 @@ data: {}\n\n`)) : () => {};
     try {
       const record = input.requirement ? requirements.store.get(input.requirement)?.requirement ?? null : null;
       // No project named: the requirement's own session's project, when it has one.
-      const projectId = input.project_id ?? (record?.threads[0] ? store.thread(record.threads[0])?.project.id ?? null : null);
+      const projectId = input.project_id ?? record?.project?.id ?? (record?.threads[0] ? store.thread(record.threads[0])?.project.id ?? null : null);
       if (!projectId && !input.folder) return { ok: false, code: "project_required", error: "请告诉我在哪个项目（project_id）或文件夹（folder）里开工。", status: 422 };
       const words = input.words?.trim() || (record ? requirements.store.card?.(record.id) ?? `# ${record.title}\n\n${record.notes}` : "");
       if (!words) return { ok: false, code: "validation_error", error: "没有要执行的内容。", status: 422 };
@@ -5109,6 +5114,14 @@ data: {}\n\n`)) : () => {};
       requirements.store.link(requirement, thread, "管家");
     },
     threadExists: (thread) => Boolean(store.message(thread)),
+    projectOf: (id) => {
+      const project = store.project(id);
+      return project ? { id: project.id, name: project.name, root: project.root } : null;
+    },
+    projectOfThread: (threadId) => {
+      const project = store.thread(threadId)?.project;
+      return project ? { id: project.id, name: project.name, root: project.root } : null;
+    },
   });
   butlerActionsRef = butlerActions;
   // An approval marked approved before a crash is run once its executor exists.

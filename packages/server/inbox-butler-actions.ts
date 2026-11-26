@@ -35,7 +35,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writ
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { ulid } from "@plannotator/core/inbox-types";
-import { isRequirementPriority, type Requirement, type RequirementContext, type RequirementPriority } from "@plannotator/core/requirements-types";
+import { isRequirementPriority, type Requirement, type RequirementContext, type RequirementPriority, type RequirementProject } from "@plannotator/core/requirements-types";
 import { missingRequirementCardSections, renderRequirementCard } from "@plannotator/core/requirement-card";
 import { INBOX_CROSS_SITE_BODY, isCrossSiteRequest } from "./inbox-cross-site";
 import type { ButlerEvent } from "./inbox-butler-events";
@@ -44,7 +44,7 @@ import { RequirementStoreError, type RequirementStore } from "./requirements";
 
 // ─────────────────────────────── protocol ─────────────────────────────────
 
-export type ButlerActionName = "create-requirement" | "launch-session" | "tell-session" | "stop-session" | "remind";
+export type ButlerActionName = "create-requirement" | "launch-session" | "archive-requirement" | "tell-session" | "stop-session" | "remind";
 
 export interface ButlerActionLaunchInput {
   agent: string;
@@ -74,7 +74,7 @@ export interface ButlerActionStopInput {
 
 /** What an action answers. `ok: false` is always safe to repeat to the owner. */
 export type ButlerActionOutcome =
-  | { ok: true; thread_id?: string; message_id?: string; session?: string; launch_id?: string; requirement?: Requirement; requirement_id?: string; warnings?: string[] }
+  | { ok: true; thread_id?: string; message_id?: string; session?: string; launch_id?: string; requirement?: Requirement; requirement_id?: string; warnings?: string[]; archived?: boolean; released?: number; stopped?: number }
   | { ok: false; code: string; error: string; status?: number };
 
 /** The approval tab, as the action channel needs it (Phase 1: create-requirement). */
@@ -86,7 +86,7 @@ export interface ButlerApprovalGate {
     result: { ok: boolean; requirement_id?: string; thread_id?: string; message_id?: string; session?: string; warnings?: string[]; error?: string; code?: string } | null;
   } | null;
   request(input: {
-    action: "create-requirement" | "launch-session" | "stop-session";
+    action: "create-requirement" | "launch-session" | "archive-requirement" | "stop-session";
     title: string;
     summary: string;
     detail: Record<string, unknown>;
@@ -113,6 +113,10 @@ export interface ButlerActionDeps {
   linkThread?: ((requirement: string, thread: string) => void) | null;
   /** Whether a thread id exists in this Inbox (a source thread the butler names). */
   threadExists?: ((thread: string) => boolean) | null;
+  /** An Inbox project by id, for the card's project at creation or by the approval selector. */
+  projectOf?: ((id: string) => RequirementProject | null) | null;
+  /** The project of a requirement's linked thread, for a launch with no explicit project. */
+  projectOfThread?: ((thread: string) => RequirementProject | null) | null;
   now?: () => number;
 }
 
@@ -129,7 +133,7 @@ export interface ButlerActions {
   execute(action: ButlerActionName, payload: Record<string, unknown>, meta: { approved?: boolean; eventId?: string | null; idempotencyKey?: string }): Promise<ButlerActionOutcome>;
 }
 
-const ACTION_NAMES: readonly ButlerActionName[] = ["create-requirement", "launch-session", "tell-session", "stop-session", "remind"];
+const ACTION_NAMES: readonly ButlerActionName[] = ["create-requirement", "launch-session", "archive-requirement", "tell-session", "stop-session", "remind"];
 const ACTION_RESULTS_KEEP = 200;
 
 interface ActionResultsFile {
@@ -262,6 +266,7 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
     title: string;
     notes: string;
     priority?: RequirementPriority;
+    project_id?: string;
     contexts: CardContextInput[];
     thread?: string;
     event_id?: string;
@@ -295,6 +300,13 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
     }
     const thread = text(body.thread, "thread", 100);
     if ("error" in thread) return { error: failure("validation_error", thread.error, 422) };
+    const projectId = text(body.project_id, "project_id", 100);
+    if ("error" in projectId) return { error: failure("validation_error", projectId.error, 422) };
+    let project: RequirementProject | null = null;
+    if (projectId.value) {
+      project = deps.projectOf?.(projectId.value) ?? null;
+      if (!project) return { error: failure("project_not_found", `没有项目 ${projectId.value}。`, 404) };
+    }
     if (thread.value && deps.threadExists && !deps.threadExists(thread.value)) {
       return { error: failure("thread_unknown", `没有线程 ${thread.value}；来源线程不挂到卡上。`, 422) };
     }
@@ -345,6 +357,7 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
       notes: notes.value,
       stage: "design",
       priority: priority ?? "none",
+      project,
       contexts: previewContexts,
     });
     const missing = missingRequirementCardSections(notes.value);
@@ -356,6 +369,7 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
         title: title.value,
         notes: notes.value,
         ...(priority ? { priority } : {}),
+        ...(project ? { project_id: project.id } : {}),
         contexts,
         ...(thread.value ? { thread: thread.value } : {}),
         ...(eventId ? { event_id: eventId } : {}),
@@ -365,6 +379,7 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
       summary,
       detail: {
         ...(thread.value ? { thread: thread.value } : {}),
+        ...(project ? { project_id: project.id, project_name: project.name } : {}),
         ...(eventId ? { event_id: eventId } : {}),
         card,
         contexts: contexts.map((context) => ({ kind: context.kind, name: context.name })),
@@ -377,7 +392,9 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
   /** The one create path, called by the action directly (auto) or by the approval tab (approved). */
   const executeCreate = (payload: CardPayload, meta: { approved?: boolean; eventId?: string | null }): ButlerActionOutcome => {
     try {
-      const requirement = deps.requirements.create({ title: payload.title, notes: payload.notes, ...(payload.priority ? { priority: payload.priority } : {}) });
+      const project = payload.project_id ? deps.projectOf?.(payload.project_id) ?? null : null;
+      if (payload.project_id && !project) return failure("project_not_found", `没有项目 ${payload.project_id}。`, 404);
+      const requirement = deps.requirements.create({ title: payload.title, notes: payload.notes, ...(payload.priority ? { priority: payload.priority } : {}), ...(project ? { project } : {}) });
       const warnings: string[] = [];
       for (const context of payload.contexts) {
         try {
@@ -439,19 +456,26 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
     if ("error" in projectId) return { error: failure("validation_error", projectId.error, 422) };
     const folder = text(body.folder, "folder", 400);
     if ("error" in folder) return { error: failure("validation_error", folder.error, 422) };
-    if (!projectId.value && !folder.value) {
-      return { error: failure("project_required", "请告诉我这是哪个项目（project_id）或文件夹（folder），我才能开工。", 422) };
-    }
     const words = text(body.words, "words", 4_000);
     if ("error" in words) return { error: failure("validation_error", words.error, 422) };
     if (!requirement.value && !words.value) return { error: failure("validation_error", "没有需求卡时，要给出这次执行要做什么（words）。", 422) };
     const threadName = text(body.thread_name, "thread_name", 60);
     if ("error" in threadName) return { error: failure("validation_error", threadName.error, 422) };
     const record = requirement.value ? deps.requirements.get(requirement.value)?.requirement ?? null : null;
+    // The card's project, or the project of its linked session, when no project was named.
+    const derivedProject = !projectId.value && !folder.value
+      ? record?.project ?? (record?.threads[0] ? deps.projectOfThread?.(record.threads[0]) ?? null : null)
+      : null;
+    if (!projectId.value && !folder.value && !derivedProject) {
+      return { error: failure("project_required", "这个需求还没有项目。请在需求卡里选一个项目，或告诉我这个项目/文件夹。", 422) };
+    }
+    const resolvedProject = projectId.value ? deps.projectOf?.(projectId.value) ?? null : derivedProject;
+    if (projectId.value && !resolvedProject) return { error: failure("project_not_found", `没有项目 ${projectId.value}。`, 404) };
     const card = record ? deps.requirements.card?.(record.id) ?? renderRequirementCard(record) : undefined;
     const detail: Record<string, unknown> = {
       ...(requirement.value ? { requirement: requirement.value } : {}),
-      ...(projectId.value ? { project_id: projectId.value } : {}),
+      ...(resolvedProject ? { project_id: resolvedProject.id, project_name: resolvedProject.name } : projectId.value ? { project_id: projectId.value } : {}),
+      ...(folder.value ? { folder: folder.value } : {}),
       agent: agent.value,
       ...(words.value ? { words: words.value } : {}),
       ...(card ? { card } : {}),
@@ -460,7 +484,7 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
     return {
       payload: {
         agent: agent.value,
-        ...(projectId.value ? { project_id: projectId.value } : {}),
+        ...((resolvedProject?.id ?? projectId.value) ? { project_id: resolvedProject?.id ?? projectId.value } : {}),
         ...(folder.value ? { folder: folder.value } : {}),
         ...(requirement.value ? { requirement: requirement.value } : {}),
         ...(words.value ? { words: words.value } : {}),
@@ -500,6 +524,44 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
     }
     const result: ButlerActionOutcome = { ...outcome, ...(payload.requirement ? { requirement_id: payload.requirement } : {}) };
     remember(meta.idempotencyKey ?? payload.idempotency_key, "launch-session", result);
+    return result;
+  };
+
+  interface ArchivePayload {
+    requirement: string;
+    idempotency_key: string;
+  }
+
+  /** 归档：the card document, and how many sessions will be released. */
+  const prepareArchive = (body: Record<string, unknown>, key: string, eventId: string | null): PreparedApproval | { error: Extract<ButlerActionOutcome, { ok: false }> } => {
+    if (!deps.requirementsOn) return { error: failure("requirements_off", "工坊的需求面板关着，这次没有归档。", 409) };
+    const requirement = text(body.requirement, "requirement", 100, true);
+    if ("error" in requirement) return { error: failure("validation_error", requirement.error, 422) };
+    const record = deps.requirements.get(requirement.value)?.requirement ?? null;
+    if (!record) return { error: failure("requirement_not_found", `没有需求 ${requirement.value}。`, 404) };
+    if (record.archived_at) return { error: failure("already_archived", `需求《${record.title}》已经归档了。`, 409) };
+    const card = deps.requirements.card?.(record.id) ?? renderRequirementCard(record);
+    return {
+      payload: { requirement: record.id, idempotency_key: key, ...(eventId ? { event_id: eventId } : {}) },
+      title: `归档需求《${record.title}》`,
+      summary: `退回归档，释放 ${record.threads.length} 个会话；归档后可以恢复`,
+      detail: {
+        requirement: record.id,
+        card,
+        released: record.threads.length,
+        ...(eventId ? { event_id: eventId } : {}),
+      },
+    };
+  };
+
+  const executeArchive = async (payload: ArchivePayload, meta: { approved?: boolean; eventId?: string | null; idempotencyKey?: string }): Promise<ButlerActionOutcome> => {
+    if (!deps.requirements.archive) return failure("archive_unavailable", "这个收件箱不能归档需求。", 500);
+    const record = deps.requirements.get(payload.requirement)?.requirement ?? null;
+    if (!record) return failure("requirement_not_found", `没有需求 ${payload.requirement}。`, 404);
+    const outcome = await deps.requirements.archive(payload.requirement);
+    audit(payload.requirement, `替主人归档了需求${meta.approved ? "（主人批准）" : ""}`, null, meta.eventId ?? null);
+    const result: ButlerActionOutcome = { ok: true, requirement_id: payload.requirement, archived: true, released: outcome.released, stopped: outcome.stopped };
+    remember(meta.idempotencyKey ?? payload.idempotency_key, "archive-requirement", result);
     return result;
   };
 
@@ -636,6 +698,7 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
   const executeAction = async (action: ButlerActionName, payload: Record<string, unknown>, meta: { approved?: boolean; eventId?: string | null; idempotencyKey?: string }): Promise<ButlerActionOutcome> => {
     if (action === "create-requirement") return executeCreate(payload as unknown as CardPayload, meta);
     if (action === "launch-session") return executeLaunch(payload as unknown as LaunchPayload, meta);
+    if (action === "archive-requirement") return executeArchive(payload as unknown as ArchivePayload, meta);
     if (action === "stop-session") return executeStop(payload as unknown as StopPayload, meta);
     return failure("unsupported", `审批执行暂不支持 ${action}。`, 400);
   };
@@ -672,8 +735,8 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
       }
 
       const name = action as ButlerActionName;
-      if (name === "create-requirement" || name === "launch-session" || name === "stop-session") {
-        const prepared = name === "create-requirement" ? prepareCreate(body, key, event) : name === "launch-session" ? prepareLaunch(body, key, event) : prepareStop(body, key, event);
+      if (name === "create-requirement" || name === "launch-session" || name === "archive-requirement" || name === "stop-session") {
+        const prepared = name === "create-requirement" ? prepareCreate(body, key, event) : name === "launch-session" ? prepareLaunch(body, key, event) : name === "archive-requirement" ? prepareArchive(body, key, event) : prepareStop(body, key, event);
         if ("error" in prepared) return answer({ ...prepared.error, action: name, replayed: false }, prepared.error.status ?? 400);
         if (deps.approvals) {
           const existing = deps.approvals.byKey(key);

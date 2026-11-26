@@ -63,6 +63,8 @@ function actions(options: { requirementsOn?: boolean; approvals?: ButlerApproval
       stopCalls.push(input);
       return { ok: true, thread_id: input.thread ?? "msg_thread", session: "ses_1" };
     },
+    projectOf: (id) => (id === "prj_1" ? { id: "prj_1", name: "web", root: "/work/web" } : null),
+    projectOfThread: () => null,
   });
 }
 
@@ -239,6 +241,28 @@ describe("the approval gate", () => {
     fake.approve("k-stop-gate", { ok: true, thread_id: "msg_thread" });
     expect((await act(api, { action: "stop-session", session: "ses_1", idempotency_key: "k-stop-gate" })).status).toBe(200);
     expect(stopCalls).toHaveLength(0);
+  });
+
+  test("archive waits for approval and releases the card's sessions", async () => {
+    const fake = fakeGate();
+    fake.auto["create-requirement"] = true;
+    const api = actions({ approvals: fake.gate });
+    const made = await act(api, { action: "create-requirement", title: "旧需求", idempotency_key: "k-archive-card" });
+    const id = (made.data.requirement as { id: string }).id;
+    routes.store.link(id, "msg_thread");
+    const asked = await act(api, { action: "archive-requirement", requirement: id, idempotency_key: "k-archive" });
+    expect(asked.status).toBe(202);
+    expect(fake.requests.at(-1)).toMatchObject({ action: "archive-requirement", title: "归档需求《旧需求》" });
+    expect(fake.requests.at(-1)!.detail).toMatchObject({ requirement: id, released: 1 });
+
+    const executed = await api.execute("archive-requirement", { requirement: id, idempotency_key: "k-archive-exec" }, { approved: true, eventId: "evt_archive", idempotencyKey: "k-archive-exec" });
+    expect(executed.ok).toBe(true);
+    expect(routes.store.get(id)!.requirement.archived_at).not.toBeNull();
+    expect(routes.store.get(id)!.requirement.threads).toEqual([]);
+    expect(sayNotes(id).some((note) => note.includes("替主人归档了需求") && note.includes("主人批准"))).toBe(true);
+    const again = await act(api, { action: "archive-requirement", requirement: id, idempotency_key: "k-archive-again" });
+    expect(again.status).toBe(409);
+    expect(again.data.code).toBe("already_archived");
   });
 
   test("a denied action says so on retry; the approved executor writes the audit", async () => {

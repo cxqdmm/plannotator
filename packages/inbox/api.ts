@@ -2290,11 +2290,13 @@ export const inboxApi = {
   butlerHistory: () => get<{ history: { at: string; role: 'you' | 'butler'; text: string }[] }>(inboxUrl('/butler/history')),
   /** 管家页的「审批」页签：待批 + 已决定 + 授权开关。 */
   butlerApprovals: () => get<InboxButlerApprovalsModel>(inboxUrl('/butler/approvals')),
+  /** The Inbox's projects (id / name / root), for the requirement card's project picker. */
+  projectsList: () => get<{ projects: { id: string; name: string; root: string }[] }>(inboxUrl('/projects')),
   /** 主人对一条审批做决定；批准后守护进程立刻执行，并把结果送回管家。 */
-  butlerApprovalDecide: (id: string, body: { decision: 'approve' | 'deny'; always?: boolean; note?: string }) =>
+  butlerApprovalDecide: (id: string, body: { decision: 'approve' | 'deny'; always?: boolean; note?: string; project_id?: string | null }) =>
     post<{ approval: InboxButlerApproval }>(inboxUrl(`/butler/approvals/${encodeURIComponent(id)}/decide`), body),
   /** 授权开关：每次审批 / 直接允许。 */
-  butlerApprovalSettings: (action: 'create-requirement' | 'launch-session' | 'stop-session', mode: 'ask' | 'auto') =>
+  butlerApprovalSettings: (action: 'create-requirement' | 'launch-session' | 'archive-requirement' | 'stop-session', mode: 'ask' | 'auto') =>
     post<{ auto: Record<string, boolean> }>(inboxUrl('/butler/approvals/settings'), { action, mode }),
   /** 管家会话的终端入口：会话 id 与可直接粘贴的命令（首次调用会先把会话起好）。 */
   butlerSession: () => get<{ sessionId: string; dir: string; command: string }>(inboxUrl('/butler/session')),
@@ -2315,7 +2317,7 @@ export const inboxApi = {
 export interface InboxButlerApproval {
   id: string;
   kind: 'butler-action';
-  action: 'create-requirement' | 'launch-session' | 'stop-session';
+  action: 'create-requirement' | 'launch-session' | 'archive-requirement' | 'stop-session';
   status: 'pending' | 'approved' | 'denied' | 'failed';
   title: string;
   summary: string;
@@ -2326,15 +2328,19 @@ export interface InboxButlerApproval {
     /** The complete requirement-card document, Markdown. */
     card?: string;
     contexts?: { kind: string; name: string }[];
+    released?: number;
     warnings?: string[];
     project_id?: string;
+    project_name?: string;
+    project_root?: string;
+    folder?: string;
     agent?: string;
     session?: string;
     words?: string;
   };
   requested_at: string;
   decided_at: string | null;
-  result: { ok: boolean; requirement_id?: string; thread_id?: string; message_id?: string; session?: string; warnings?: string[]; error?: string; code?: string } | null;
+  result: { ok: boolean; requirement_id?: string; thread_id?: string; message_id?: string; session?: string; archived?: boolean; released?: number; stopped?: number; warnings?: string[]; error?: string; code?: string } | null;
   note: string | null;
 }
 

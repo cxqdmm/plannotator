@@ -126,6 +126,7 @@ if (hasDom) {
         return Response.json({ approval: { ...approval, status: 'approved' } });
       }
       if (path.includes('/butler/approvals')) return Response.json({ approvals: { pending: [approval], decided: [] }, auto: { 'create-requirement': false } });
+      if (path.includes('/projects')) return Response.json({ projects: [{ id: 'prj_1', name: 'web', root: '/work/web' }] });
       return Response.json({});
     }) as typeof fetch;
     await renderButler({ open: true, onOpenChange: () => {} });
@@ -135,14 +136,22 @@ if (hasDom) {
     await settle();
     await settle();
     expect(host!.querySelector('.ib-butler-ap-card')).not.toBeNull();
-    expect(host!.querySelectorAll('.ib-butler-switch-row')).toHaveLength(3);
+    expect(host!.querySelectorAll('.ib-butler-switch-row')).toHaveLength(4);
     expect(host!.textContent).toContain('建需求卡《登录页改版》');
+    const projectSelect = host!.querySelector<HTMLSelectElement>('.ib-butler-ap-project select');
+    expect(projectSelect).not.toBeNull();
+    expect(projectSelect!.textContent).toContain('web');
+    await act(async () => {
+      projectSelect!.value = 'prj_1';
+      projectSelect!.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await settle();
     expect(host!.textContent).toContain('旧版太慢');
     const approve = host!.querySelector<HTMLButtonElement>('.ib-butler-ap-approve');
     expect(approve).not.toBeNull();
     await act(async () => approve!.click());
     await settle();
-    expect(calls.some((call) => call.url.includes('/decide') && call.body?.includes('"decision":"approve"'))).toBe(true);
+    expect(calls.some((call) => call.url.includes('/decide') && call.body?.includes('"decision":"approve"') && call.body?.includes('"project_id":"prj_1"'))).toBe(true);
   });
 
   test('空场英雄态：问候 + 三条起步建议，点建议填进输入框', async () => {

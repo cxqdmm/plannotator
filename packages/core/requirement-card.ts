@@ -16,6 +16,7 @@ import {
   requirementStageLabel,
   type Requirement,
   type RequirementContext,
+  type RequirementProject,
 } from "./requirements-types";
 
 /** The fixed sections, in order. `hint` is what the skill tells the butler to write there. */
@@ -66,6 +67,7 @@ export interface RequirementCardInput {
   notes: string;
   stage: Requirement["stage"];
   priority: Requirement["priority"];
+  project?: RequirementProject | null;
   contexts: readonly RequirementContext[];
 }
 
@@ -76,6 +78,7 @@ export function renderRequirementCard(input: RequirementCardInput): string {
     `${REQUIREMENT_CARD_TITLE_PREFIX}${input.title}`,
     "",
     `**需求 ID**：\`${input.id}\`　**阶段**：${requirementStageLabel(input.stage)}　**优先级**：${priority}`,
+    ...(input.project ? ["", `**项目**：${input.project.name}（\`${input.project.root}\`）`] : []),
     "",
     requirementCardBody(input.notes),
   ];
@@ -104,6 +107,7 @@ export function requirementCardFromRecord(requirement: Requirement): string {
     notes: requirement.notes,
     stage: requirement.stage,
     priority: requirement.priority,
+    project: requirement.project ?? null,
     contexts: requirement.contexts,
   });
 }

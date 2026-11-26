@@ -107,12 +107,22 @@ export interface RequirementSuggestion {
   at: string;
 }
 
+/** The Inbox project a requirement belongs to, with the name and root as they stood when it was set
+ *  (the card and the Workshop read them without another lookup; the Inbox project is the source). */
+export interface RequirementProject {
+  id: string;
+  name: string;
+  root: string;
+}
+
 /** One requirement. Created by the person by hand; the id is 'req_' + ULID, the msg_/lch_ family. */
 export interface Requirement {
   id: string;
   title: string;
   /** Markdown. */
   notes: string;
+  /** The project this requirement belongs to (set at creation, changeable in the card). Absent/null: not set yet. */
+  project?: RequirementProject | null;
   stage: RequirementStage;
   priority: RequirementPriority;
   deliverables: Deliverable[];

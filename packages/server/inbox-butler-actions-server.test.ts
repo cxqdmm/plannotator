@@ -66,7 +66,7 @@ async function setup() {
   const decide = (id: string, body: Record<string, unknown>) => approvalWrite(`/api/inbox/butler/approvals/${id}/decide`, body);
   const settings = (action: string, mode: string) => approvalWrite("/api/inbox/butler/approvals/settings", { action, mode });
   const requirement = async (id: string) => (await (await fetch(`${base}/api/requirements/${id}`)).json()) as {
-    requirement: { id: string; threads: string[]; title: string };
+    requirement: { id: string; threads: string[]; title: string; archived_at?: string | null };
     events: { kind: string; note?: string }[];
   };
   const message = async (threadId: string) => ((await (await fetch(`${base}/api/inbox/threads/${threadId}`)).json()) as { thread: { messages: InboxMessageWire[] } }).thread.messages[0]!;
@@ -88,6 +88,7 @@ describe("the butler's action channel in a running Inbox", () => {
       action: "create-requirement",
       title: "登录页改版",
       notes: "## 背景 / 为什么\n旧版太慢\n\n## 目标\n- 首屏更快\n\n## 验收\n- [ ] 1 秒内可交互",
+      project_id: project.id,
       contexts: [
         { kind: "link", name: "PRD", ref: "https://example.com/prd" },
         { kind: "file", name: "说明.txt", path: source },
@@ -123,6 +124,7 @@ describe("the butler's action channel in a running Inbox", () => {
     const id = approvedBody.approval.result.requirement_id;
     const detail = await requirement(id);
     expect(detail.requirement.title).toBe("登录页改版");
+    expect((detail.requirement as { project: { id: string; root: string } }).project).toMatchObject({ id: project.id, root: project.root });
     // The contexts came with the card; the file was copied into the requirement's own folder.
     const copied = (await (await fetch(`${base}/api/requirements/${id}`)).json() as { requirement: { contexts: { kind: string; name: string; ref: string }[] } }).requirement.contexts;
     expect(copied).toHaveLength(2);
@@ -133,7 +135,8 @@ describe("the butler's action channel in a running Inbox", () => {
     expect(readFileSync(fileRef, "utf8")).toBe("附件内容");
 
     // Launching is just another approval: the card waits, the owner approves, the agent starts.
-    const launched = await act({ action: "launch-session", agent: FAKE, project_id: project.id, requirement: id, idempotency_key: "live-launch" });
+    // No project in the launch: the card's own project is used.
+    const launched = await act({ action: "launch-session", agent: FAKE, requirement: id, idempotency_key: "live-launch" });
     expect(launched.status).toBe(202);
     const launchPending = (await launched.json()) as { approval_id: string; code: string };
     expect(launchPending.code).toBe("pending_approval");
@@ -163,6 +166,19 @@ describe("the butler's action channel in a running Inbox", () => {
     // The endpoint's hint is where the butler reads it.
     const hint = JSON.parse(await Bun.file(join(process.env.PLANNOTATOR_BUTLER_DIR!, "action.json")).text()) as { url: string };
     expect(hint.url).toEndWith("/api/inbox/butler/act");
+
+    // Archiving is an approval too; approving releases the card's sessions and stops the Inbox-started one.
+    const archiveAsked = await act({ action: "archive-requirement", requirement: id, idempotency_key: "live-archive" });
+    expect(archiveAsked.status).toBe(202);
+    const archiveApprovalId = ((await archiveAsked.json()) as { approval_id: string }).approval_id;
+    const archiveApproval = (await approvals()).approvals.pending.find((approval) => approval.id === archiveApprovalId)!;
+    expect(archiveApproval.action).toBe("archive-requirement");
+    const approvedArchive = await decide(archiveApprovalId, { decision: "approve" });
+    expect(approvedArchive.status).toBe(200);
+    const archived = await requirement(id);
+    expect(archived.requirement.archived_at).toBeTruthy();
+    expect(archived.requirement.threads).toEqual([]);
+    await until(() => fake.calls.some((call) => call.startsWith("stop ")));
   });
 
   test("a repeated key answers the card it made and starts nothing more; a denied card never appears", async () => {

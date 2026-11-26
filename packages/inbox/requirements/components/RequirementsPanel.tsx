@@ -447,15 +447,36 @@ function CardBody({ requirement, onChanged, onError }: {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [projects, setProjects] = useState<{ id: string; name: string; root: string }[]>([]);
+  const [projectId, setProjectId] = useState(requirement?.project?.id ?? '');
   useEffect(() => {
     setNotes(requirement?.notes ?? '');
+    setProjectId(requirement?.project?.id ?? '');
     setDirty(false);
-  }, [requirement?.id, requirement?.notes]);
+  }, [requirement?.id, requirement?.notes, requirement?.project?.id]);
+  useEffect(() => {
+    let alive = true;
+    void inboxApi.projectsList().then((answer) => { if (alive) setProjects(answer.projects ?? []); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
   if (!requirement) {
     return <div className="ib-req-wp-panel-body ib-req-card-panel"><p className="ib-req-card-loading">正在读需求卡…</p></div>;
   }
   const missing = missingRequirementCardSections(notes);
-  const preview = renderRequirementCard({ id: requirement.id, title: requirement.title, notes, stage: requirement.stage, priority: requirement.priority, contexts: requirement.contexts });
+  const selectedProject = projects.find((project) => project.id === projectId)
+    ?? (requirement.project && requirement.project.id === projectId ? requirement.project : null);
+  const projectChoices = projectId && !projects.some((project) => project.id === projectId) && requirement.project
+    ? [...projects, requirement.project]
+    : projects;
+  const preview = renderRequirementCard({
+    id: requirement.id,
+    title: requirement.title,
+    notes,
+    stage: requirement.stage,
+    priority: requirement.priority,
+    project: selectedProject,
+    contexts: requirement.contexts,
+  });
   const copyDocument = async () => {
     const ok = await copyTextToClipboard(preview);
     setCopied(ok);
@@ -463,7 +484,7 @@ function CardBody({ requirement, onChanged, onError }: {
   };
   const save = async () => {
     setSaving(true);
-    const outcome = await patchRequirement(requirement.id, { notes });
+    const outcome = await patchRequirement(requirement.id, { notes, project_id: projectId || null });
     setSaving(false);
     if (!outcome.ok) {
       onError(outcome.error);
@@ -479,10 +500,19 @@ function CardBody({ requirement, onChanged, onError }: {
           <button type="button" className={mode === 'doc' ? 'on' : ''} aria-selected={mode === 'doc'} onClick={() => setMode('doc')}>文档</button>
           <button type="button" className={mode === 'edit' ? 'on' : ''} aria-selected={mode === 'edit'} onClick={() => setMode('edit')}>Markdown</button>
         </div>
+        <label className="ib-req-card-project">
+          <span>项目</span>
+          <select value={projectId} onChange={(event) => { setProjectId(event.target.value); setDirty(true); }}>
+            <option value="">未指定</option>
+            {projectChoices.map((project) => (
+              <option key={project.id} value={project.id}>{project.name} · {project.root}</option>
+            ))}
+          </select>
+        </label>
         <div className="ib-req-card-actions">
           <button type="button" className="ib-req-card-copy" onClick={() => void copyDocument()}>{copied ? '已复制' : '复制 Markdown'}</button>
           {dirty && (
-            <button type="button" className="ib-req-card-revert" onClick={() => { setNotes(requirement.notes); setDirty(false); }}>还原</button>
+            <button type="button" className="ib-req-card-revert" onClick={() => { setNotes(requirement.notes); setProjectId(requirement.project?.id ?? ''); setDirty(false); }}>还原</button>
           )}
           <button type="button" className="ib-req-card-save" disabled={!dirty || saving} onClick={() => void save()}>
             {saving ? '保存中…' : '保存'}

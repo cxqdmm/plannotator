@@ -141,6 +141,8 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
   const [tab, setTab] = useState<'chat' | 'approvals'>('chat');
   const [approvalsModel, setApprovalsModel] = useState<InboxButlerApprovalsModel | null>(null);
   const [approvalsError, setApprovalsError] = useState<string | null>(null);
+  /** The Inbox's projects, for the card's project picker in the approval tab. */
+  const [projects, setProjects] = useState<{ id: string; name: string; root: string }[]>([]);
   const [approvalBusy, setApprovalBusy] = useState<string | null>(null);
   const approvalsPending = approvalsModel?.approvals.pending.length ?? 0;
 
@@ -161,16 +163,17 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
   useEffect(() => {
     if (!open) return;
     loadApprovals();
+    void inboxApi.projectsList().then((answer) => setProjects(answer.projects ?? [])).catch(() => setProjects([]));
     const timer = setInterval(loadApprovals, 5000);
     return () => clearInterval(timer);
   }, [open]);
 
-  const decideApproval = async (id: string, decision: 'approve' | 'deny', always: boolean) => {
+  const decideApproval = async (id: string, decision: 'approve' | 'deny', always: boolean, projectId?: string | null) => {
     if (approvalBusy) return;
     setApprovalBusy(id);
     setApprovalsError(null);
     try {
-      await inboxApi.butlerApprovalDecide(id, { decision, ...(always ? { always: true } : {}) });
+      await inboxApi.butlerApprovalDecide(id, { decision, ...(always ? { always: true } : {}), ...(projectId !== undefined ? { project_id: projectId } : {}) });
       loadApprovals();
     } catch (error) {
       setApprovalsError(error instanceof Error ? error.message : String(error));
@@ -179,7 +182,7 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
     }
   };
 
-  const setApprovalMode = async (action: 'create-requirement' | 'launch-session' | 'stop-session', mode: 'ask' | 'auto') => {
+  const setApprovalMode = async (action: 'create-requirement' | 'launch-session' | 'archive-requirement' | 'stop-session', mode: 'ask' | 'auto') => {
     setApprovalsError(null);
     try {
       await inboxApi.butlerApprovalSettings(action, mode);
@@ -507,9 +510,10 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
           ) : (
             <ButlerApprovals
               model={approvalsModel}
+              projects={projects}
               error={approvalsError}
               busy={approvalBusy}
-              onDecide={(id, decision, always) => void decideApproval(id, decision, always)}
+              onDecide={(id, decision, always, projectId) => void decideApproval(id, decision, always, projectId)}
               onMode={(action, mode) => void setApprovalMode(action, mode)}
               onRefresh={loadApprovals}
             />

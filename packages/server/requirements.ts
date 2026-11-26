@@ -35,6 +35,7 @@ import {
   type Requirement,
   type RequirementEvent,
   type RequirementPriority,
+  type RequirementProject,
   type RequirementStage,
   type RequirementSuggestion,
 } from "@plannotator/core/requirements-types";
@@ -72,14 +73,14 @@ interface RequirementEventsFile {
 }
 
 /** A field write that passed validation, ready to apply. */
-type RequirementPatch = { title?: string; notes?: string; stage?: Requirement["stage"]; priority?: RequirementPriority; archived?: boolean; threads?: string[] };
+type RequirementPatch = { title?: string; notes?: string; stage?: Requirement["stage"]; priority?: RequirementPriority; archived?: boolean; threads?: string[]; project?: RequirementProject | null };
 
 /** Everything a caller can ask the store to do; every failure is a thrown InboxError-shaped {error, code, field}. */
 export interface RequirementStore {
   /** The active board, or the archived page. */
   list(archived: boolean): { requirements: Requirement[]; archived: number };
   get(id: string): { requirement: Requirement; events: RequirementEvent[] } | null;
-  create(input: { title: string; priority?: RequirementPriority; notes?: string }): Requirement;
+  create(input: { title: string; priority?: RequirementPriority; notes?: string; project?: RequirementProject | null }): Requirement;
   patch(id: string, patch: RequirementPatch, opts?: { thread?: string | null }): Requirement;
   remove(id: string): void;
   link(id: string, threadId: string, by?: string | null): Requirement;
@@ -105,6 +106,9 @@ export interface RequirementStore {
    *  create-requirement action uses it for the chat's attachments; the window's upload route does the same
    *  for base64). `~/…` is the person's home. */
   addFileContext?(id: string, input: { name: string; path: string; by?: string | null }): RequirementContext;
+  /** 归档：退场、释放全部会话（Inbox 启动的直接停，外部会话解除挂载并告知停手）。The butler's
+   *  archive-requirement action and the Workshop's archive route share this one implementation. */
+  archive?(id: string): Promise<{ released: number; stopped: number }>;
   /** Every history line recorded after `sinceId` (null: all), oldest first, kept through a deleted requirement
    *  (the record is gone, the history is not). The butler replays from its cursor through this. */
   eventsAfter?(sinceId: string | null): RequirementEvent[];
@@ -159,6 +163,9 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
   return {
     title: typeof record.title === "string" ? record.title : "",
     notes: typeof record.notes === "string" ? record.notes : "",
+    project: record.project && typeof record.project === "object" && typeof (record.project as RequirementProject).id === "string" && typeof (record.project as RequirementProject).name === "string" && typeof (record.project as RequirementProject).root === "string"
+      ? { id: (record.project as RequirementProject).id, name: (record.project as RequirementProject).name, root: (record.project as RequirementProject).root }
+      : null,
     priority: isRequirementPriority(record.priority) ? record.priority : "none",
     // review and code-review are retired as kinds (they are conclusions, not artifacts): whatever an old
     // file holds in those kinds is dropped on read — the history already carries the conclusion.
@@ -176,7 +183,7 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
   } as Requirement;
 }
 
-export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null; /** Whether a thread's row waits on the person (the Board's You-line idea), for the reads' computed flag. */ waitingOf?: (threadId: string) => boolean; /** The stage-change notifier (stage-auto-design §1): a person-voiced reply into the requirement's newest session. */ notifyThread?: (threadId: string, words: string) => void; /** Stop the launched session a thread owns (the workshop's archive releases Inbox-spawned agents). */ stopLaunchOf?: (threadId: string) => Promise<unknown>; /** 手动起一个该项目的代码评审（工坊入口）：返回评审页地址。 */ startCodeReview?: (projectRoot: string) => Promise<{ url: string } | { error: string }>; /** The project root of one thread, for the gated code review a session row starts. */ threadProjectRootOf?: (threadId: string) => string | null; /** 门控代码评审（会话行入口）：起评审子进程（页面自开、带 关闭/通过），结论由实现方落历史并送达会话；不等待，立即返回 already 表示该会话已有评审在跑（幂等）——url 是那个仍在进行的评审页地址（标签被手动关掉时拿它重新打开），子进程刚起可能还没打印出来（null）。 */ startGatedCodeReview?: (projectRoot: string, requirementId: string, threadId: string) => { state: "started" | "already"; url: string | null }; /** 会话归属的换算：agent 上报的 agent_session 是引擎会话 id，事件的 thread 要记收件箱线程 id（工坊卡片按线程挂会话行、历史 chip 按线程解析）——解析不到（会话从未在收件箱露面）返回 null，事件落「无归属」。 */ threadOfSession?: (session: string) => string | null }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
+export function createBunRequirementRoutes(options: { dataDir: string; spawnAnnotate?: (file: string) => Promise<{ stdout: string; code: number }>; /** The project root of a requirement's session, for its agents' relative deliverable paths. */ projectRootOf?: (id: string) => string | null; /** An Inbox project by id, for the card's project field (set at creation or in the Workshop). */ projectOf?: (id: string) => RequirementProject | null; /** Whether a thread's row waits on the person (the Board's You-line idea), for the reads' computed flag. */ waitingOf?: (threadId: string) => boolean; /** The stage-change notifier (stage-auto-design §1): a person-voiced reply into the requirement's newest session. */ notifyThread?: (threadId: string, words: string) => void; /** Stop the launched session a thread owns (the workshop's archive releases Inbox-spawned agents). */ stopLaunchOf?: (threadId: string) => Promise<unknown>; /** 手动起一个该项目的代码评审（工坊入口）：返回评审页地址。 */ startCodeReview?: (projectRoot: string) => Promise<{ url: string } | { error: string }>; /** The project root of one thread, for the gated code review a session row starts. */ threadProjectRootOf?: (threadId: string) => string | null; /** 门控代码评审（会话行入口）：起评审子进程（页面自开、带 关闭/通过），结论由实现方落历史并送达会话；不等待，立即返回 already 表示该会话已有评审在跑（幂等）——url 是那个仍在进行的评审页地址（标签被手动关掉时拿它重新打开），子进程刚起可能还没打印出来（null）。 */ startGatedCodeReview?: (projectRoot: string, requirementId: string, threadId: string) => { state: "started" | "already"; url: string | null }; /** 会话归属的换算：agent 上报的 agent_session 是引擎会话 id，事件的 thread 要记收件箱线程 id（工坊卡片按线程挂会话行、历史 chip 按线程解析）——解析不到（会话从未在收件箱露面）返回 null，事件落「无归属」。 */ threadOfSession?: (session: string) => string | null }): { route: (req: Request, url: URL) => Promise<Response | null>; watch: RequirementStore["watch"]; store: RequirementStore } {
   /** waiting + 审阅裁决, computed on reads (never stored): any linked session's thread waits on the person;
    *  each deliverable carries its LATEST verdict (events are append-ordered — later ones overwrite earlier). */
   const withWaiting = (record: Requirement): Requirement => {
@@ -276,7 +283,36 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
     card(id: string) {
       return requirementCardOf(at(id));
     },
-    create(input: { title: string; priority?: RequirementPriority; notes?: string }) {
+    async archive(id: string) {
+      const record = at(id);
+      const released = [...record.threads];
+      if (record.archived_at == null) store.patch(id, { archived: true });
+      if (released.length > 0) store.patch(id, { threads: [] });
+      let stopped = 0;
+      for (const threadId of released) {
+        if (options.stopLaunchOf) {
+          try {
+            const outcome = await options.stopLaunchOf(threadId);
+            if (outcome != null) {
+              stopped += 1;
+              continue; // 停止本身就是交代；再发回复会把它复活（reply → respawn）
+            }
+          } catch {
+            // best effort
+          }
+        }
+        if (options.notifyThread) {
+          try {
+            options.notifyThread(threadId, `【工坊】需求「${record.title}」已归档：相关工作停止，本会话已与它解除关联。有遗留产物请另行交代。`);
+          } catch {
+            // best effort
+          }
+        }
+      }
+      store.say(id, `需求已归档，${released.length} 个会话已释放${stopped > 0 ? `，其中 ${stopped} 个 Inbox 启动的会话已停止` : ""}`, "归档");
+      return { released: released.length, stopped };
+    },
+    create(input: { title: string; priority?: RequirementPriority; notes?: string; project?: RequirementProject | null }) {
       if ("stage" in (input as Record<string, unknown>)) throw new RequirementStoreError("validation_error", "stage: not at create (a requirement starts in 待跟进; PATCH moves it).", "stage");
       if (typeof input.title !== "string" || !input.title.trim()) throw new RequirementStoreError("validation_error", "title: a non-empty string.", "title");
       if (input.title.length > TITLE_MAX) throw new RequirementStoreError("validation_error", `title: at most ${TITLE_MAX} characters.`, "title");
@@ -288,6 +324,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         id: `req_${ulid()}`,
         title: input.title.trim(),
         notes,
+        project: input.project ?? null,
         stage: "design",
         priority: input.priority ?? "none",
         deliverables: [],
@@ -316,6 +353,13 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       if (patch.threads !== undefined) {
         if (!Array.isArray(patch.threads) || patch.threads.length > THREADS_MAX || !patch.threads.every((id) => typeof id === "string" && id.length > 0)) throw new RequirementStoreError("validation_error", `threads: a list of at most ${THREADS_MAX} thread ids.`, "threads");
       }
+      if (patch.project !== undefined) {
+        const next = patch.project ?? null;
+        if (next && (typeof next.id !== "string" || !next.id || typeof next.name !== "string" || typeof next.root !== "string")) {
+          throw new RequirementStoreError("validation_error", "project: { id, name, root }.", "project");
+        }
+        if ((record.project?.id ?? null) !== (next?.id ?? null)) recordEvent(id, "field", { field: "project", from: record.project?.id ?? "", to: next?.id ?? "" });
+      }
       if (patch.stage !== undefined && patch.stage !== record.stage) {
         // thread：progress（MCP）带来的阶段事件归到调用会话；手动 PATCH 无 thread，无归属。
         recordEvent(id, "stage", { from: record.stage, to: patch.stage, ...(thread ? { thread } : {}) });
@@ -334,6 +378,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         if (JSON.stringify((record as unknown as Record<string, unknown>)[field]) !== JSON.stringify(value)) recordEvent(id, "field", { field });
       }
       Object.assign(record, fields);
+      if (patch.project !== undefined) record.project = patch.project ?? null;
       touch(record);
       save([id]);
       return record;
@@ -713,7 +758,12 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         return json({ ...page, requirements: page.requirements.map(withWaiting) });
       }
       if (path === "/api/requirements" && req.method === "POST") {
-        return json({ requirement: store.create(await body(req) as Parameters<RequirementStore["create"]>[0]) }, 201);
+        const input = await body(req);
+        const projectId = typeof input.project_id === "string" && input.project_id.trim() ? input.project_id.trim() : null;
+        const project = projectId ? (options.projectOf?.(projectId) ?? null) : null;
+        if (projectId && !project) return json({ error: "没有这个项目。", code: "not_found", field: "project_id" }, 404);
+        const { project_id: _projectId, ...rest } = input;
+        return json({ requirement: store.create({ ...rest, ...(project ? { project } : {}) } as Parameters<RequirementStore["create"]>[0]) }, 201);
       }
 
       // /api/requirements/:id[/deliverables[/:did]|/suggestions[/:sid[/adopt]]]
@@ -737,9 +787,16 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
             }
             return json({ requirement: found?.requirement ?? null });
           }
-          const { priority, notes, title, stage, archived, threads } = input;
+          const { priority, notes, title, stage, archived, threads, project_id } = input;
+          let project: RequirementProject | null | undefined;
+          if (project_id !== undefined) {
+            if (project_id !== null && (typeof project_id !== "string" || !project_id.trim())) return json({ error: "project_id: a project id, or null.", code: "validation_error", field: "project_id" }, 400);
+            const found = project_id === null ? null : options.projectOf?.(project_id.trim()) ?? null;
+            if (project_id !== null && !found) return json({ error: "没有这个项目。", code: "not_found", field: "project_id" }, 404);
+            project = found;
+          }
           if (stage !== undefined && stage !== store.get(id)?.requirement.stage) store.say(id, `阶段：${requirementStageLabel(store.get(id)!.requirement.stage)} → ${requirementStageLabel(stage as RequirementStage)}（手动）`, "阶段");
-          return json({ requirement: store.patch(id, { ...(title !== undefined ? { title: title as string } : {}), ...(notes !== undefined ? { notes: notes as string } : {}), ...(stage !== undefined ? { stage: stage as RequirementStage } : {}), ...(priority !== undefined ? { priority: priority as RequirementPriority } : {}), ...(archived !== undefined ? { archived: archived as boolean } : {}), ...(threads !== undefined ? { threads: threads as string[] } : {}) }) });
+          return json({ requirement: store.patch(id, { ...(title !== undefined ? { title: title as string } : {}), ...(notes !== undefined ? { notes: notes as string } : {}), ...(stage !== undefined ? { stage: stage as RequirementStage } : {}), ...(priority !== undefined ? { priority: priority as RequirementPriority } : {}), ...(archived !== undefined ? { archived: archived as boolean } : {}), ...(threads !== undefined ? { threads: threads as string[] } : {}), ...(project !== undefined ? { project } : {}) }) });
         }
         if (req.method === "DELETE") {
           store.remove(id);
@@ -751,35 +808,13 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       // 留在已归档需求下会变成触达不了的终端）。历史留痕，并给每个会话捎一句话让它停手。
       const archiveMatch = deeper === "archive" && req.method === "POST";
       if (archiveMatch) {
-        let record: Requirement;
         try {
-          record = at(id);
-        } catch {
-          return json({ error: "No such requirement.", code: "not_found" }, 404);
+          const outcome = await store.archive!(id);
+          return json({ ok: true, ...outcome });
+        } catch (error) {
+          if (error instanceof RequirementStoreError && error.code === "not_found") return json({ error: "No such requirement.", code: "not_found" }, 404);
+          throw error;
         }
-        const released = record.threads;
-        if (record.archived_at == null) store.patch(id, { archived: true });
-        if (released.length > 0) store.patch(id, { threads: [] });
-        // Inbox 自己拉起的会话直接停掉（like delete）；外部会话只解除挂载并告知停手。
-        let stopped = 0;
-        for (const threadId of released) {
-          if (options.stopLaunchOf) {
-            try {
-              const outcome = await options.stopLaunchOf(threadId);
-              if (outcome != null) {
-                stopped += 1;
-                continue; // 停止本身就是交代；再发回复会把它复活（reply → respawn）
-              }
-            } catch { /* best effort */ }
-          }
-          if (options.notifyThread) {
-            try {
-              options.notifyThread(threadId, `【工坊】需求「${record.title}」已归档：相关工作停止，本会话已与它解除关联。有遗留产物请另行交代。`);
-            } catch { /* best effort */ }
-          }
-        }
-        store.say(id, `需求已归档，${released.length} 个会话已释放${stopped > 0 ? `，其中 ${stopped} 个 Inbox 启动的会话已停止` : ""}`, "归档");
-        return json({ ok: true, released: released.length, stopped });
       }
       // 手动代码评审（工坊入口）。两种形态：
       //  · 无 thread_id：常驻评审页（不下结论，比较对象页面里随时切）；

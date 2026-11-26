@@ -23,7 +23,7 @@ import { checkServerSession, INBOX_SERVER_SESSION_MISMATCH_ERROR, serverSessionM
 import { butlerAuto, setButlerAuto } from "./inbox-butler-preferences";
 import type { ButlerEvent } from "./inbox-butler-events";
 
-export type InboxApprovalAction = "create-requirement" | "launch-session" | "stop-session";
+export type InboxApprovalAction = "create-requirement" | "launch-session" | "archive-requirement" | "stop-session";
 export type InboxApprovalStatus = "pending" | "approved" | "denied" | "failed";
 
 /** What the executor answers; only this reaches the approval record and the window. */
@@ -34,6 +34,9 @@ export interface InboxApprovalResult {
   message_id?: string;
   session?: string;
   warnings?: string[];
+  archived?: boolean;
+  released?: number;
+  stopped?: number;
   error?: string;
   code?: string;
 }
@@ -46,9 +49,14 @@ export interface InboxApprovalDetail {
   /** The complete requirement-card document as Markdown (the same renderer as the session). */
   card?: string;
   contexts?: { kind: string; name: string }[];
+  /** 归档：the sessions that will be released. */
+  released?: number;
   /** Missing card sections, or other advice; never blocks the approval. */
   warnings?: string[];
   project_id?: string;
+  project_name?: string;
+  project_root?: string;
+  folder?: string;
   agent?: string;
   session?: string;
   words?: string;
@@ -90,7 +98,7 @@ export interface InboxApprovals {
   readonly auto: (action: string) => boolean;
   readonly setAuto: (action: string, on: boolean) => void;
   readonly list: () => { pending: InboxApproval[]; decided: InboxApproval[]; auto: Record<string, boolean> };
-  readonly decide: (id: string, decision: "approve" | "deny", options?: { always?: boolean; note?: string | null }) => Promise<{ ok: true; approval: InboxApproval } | { ok: false; code: string; error: string }>;
+  readonly decide: (id: string, decision: "approve" | "deny", options?: { always?: boolean; note?: string | null; project_id?: string | null }) => Promise<{ ok: true; approval: InboxApproval } | { ok: false; code: string; error: string }>;
   /** Retry an approval that was approved but never executed (a daemon crash between the mark and the call). */
   readonly resume: () => Promise<void>;
   /** The routes above. */
@@ -226,6 +234,7 @@ export function createInboxApprovals(options: InboxApprovalOptions): InboxApprov
       auto: {
         "create-requirement": butlerAuto(options.butlerDir, "create-requirement"),
         "launch-session": butlerAuto(options.butlerDir, "launch-session"),
+        "archive-requirement": butlerAuto(options.butlerDir, "archive-requirement"),
         "stop-session": butlerAuto(options.butlerDir, "stop-session"),
       },
     };
@@ -273,13 +282,22 @@ export function createInboxApprovals(options: InboxApprovalOptions): InboxApprov
     }
   };
 
-  const decide = async (id: string, decision: "approve" | "deny", settings: { always?: boolean; note?: string | null } = {}): Promise<{ ok: true; approval: InboxApproval } | { ok: false; code: string; error: string }> => {
+  const decide = async (id: string, decision: "approve" | "deny", settings: { always?: boolean; note?: string | null; project_id?: string | null } = {}): Promise<{ ok: true; approval: InboxApproval } | { ok: false; code: string; error: string }> => {
     const approval = find(id);
     if (!approval) return { ok: false, code: "approval_not_found", error: `没有审批 ${id}。` };
     if (approval.status !== "pending") return { ok: false, code: "already_decided", error: "这件事已经决定过了。" };
     approval.decided_at = iso(now);
     approval.note = typeof settings.note === "string" && settings.note.trim() ? settings.note.trim().slice(0, 500) : null;
     if (settings.always === true) setAuto(approval.action, true);
+    // The owner may choose the card's project at creation time, in the approval card.
+    if (approval.action === "create-requirement" && settings.project_id !== undefined) {
+      const projectId = typeof settings.project_id === "string" && settings.project_id.trim() ? settings.project_id.trim() : null;
+      const payload = { ...approval.payload };
+      if (projectId) payload.project_id = projectId;
+      else delete payload.project_id;
+      approval.payload = payload;
+      approval.detail = { ...approval.detail, ...(projectId ? { project_id: projectId } : {}) };
+    }
     if (decision === "deny") {
       approval.status = "denied";
       approval.result = { ok: false, code: "denied", error: "主人拒绝了。" };
@@ -342,9 +360,13 @@ export function createInboxApprovals(options: InboxApprovalOptions): InboxApprov
         if (!decision) return json({ error: "decision: approve or deny.", code: "validation_error" }, 422);
         if (body.always !== undefined && typeof body.always !== "boolean") return json({ error: "always: a boolean.", code: "validation_error" }, 422);
         if (body.note !== undefined && body.note !== null && typeof body.note !== "string") return json({ error: "note: a string.", code: "validation_error" }, 422);
+        if (body.project_id !== undefined && body.project_id !== null && typeof body.project_id !== "string") {
+          return json({ error: "project_id: a project id, or null.", code: "validation_error" }, 422);
+        }
         const result = await decide(decideMatch[1]!, decision, {
           ...(body.always === true ? { always: true } : {}),
           ...(typeof body.note === "string" ? { note: body.note } : {}),
+          ...(body.project_id !== undefined ? { project_id: body.project_id as string | null } : {}),
         });
         if (!result.ok) {
           const status = result.code === "approval_not_found" ? 404 : 409;
@@ -362,8 +384,8 @@ export function createInboxApprovals(options: InboxApprovalOptions): InboxApprov
         const refused = windowWrite(req, body);
         if (refused) return refused;
         const action = body.action;
-        if (action !== "create-requirement" && action !== "launch-session" && action !== "stop-session") {
-          return json({ error: "action: create-requirement, launch-session or stop-session.", code: "validation_error" }, 422);
+        if (action !== "create-requirement" && action !== "launch-session" && action !== "archive-requirement" && action !== "stop-session") {
+          return json({ error: "action: create-requirement, launch-session, archive-requirement or stop-session.", code: "validation_error" }, 422);
         }
         if (body.mode !== "ask" && body.mode !== "auto") return json({ error: "mode: ask or auto.", code: "validation_error" }, 422);
         setAuto(action, body.mode === "auto");

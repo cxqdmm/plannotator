@@ -319,3 +319,20 @@ describe("the requirements routes", () => {
     expect(made.id).toStartWith("req_");
   });
 });
+
+test("a project is set at create, changed by PATCH, and an unknown one is refused", async () => {
+  const projects = new Map([
+    ["prj_1", { id: "prj_1", name: "web", root: "/work/web" }],
+    ["prj_2", { id: "prj_2", name: "api", root: "/work/api" }],
+  ]);
+  module = createBunRequirementRoutes({ dataDir, projectOf: (id) => projects.get(id) ?? null });
+  const made = await call("POST", "/api/requirements", { title: "登录页改版", project_id: "prj_1" });
+  expect(made.status).toBe(201);
+  const requirement = made.data.requirement as { id: string; project: { id: string; name: string; root: string } };
+  expect(requirement.project).toEqual({ id: "prj_1", name: "web", root: "/work/web" });
+  expect((await call("PATCH", `/api/requirements/${requirement.id}`, { project_id: "prj_2" })).status).toBe(200);
+  expect(((await call("GET", `/api/requirements/${requirement.id}`)).data.requirement as { project: { id: string } }).project.id).toBe("prj_2");
+  expect((await call("PATCH", `/api/requirements/${requirement.id}`, { project_id: null })).status).toBe(200);
+  expect(((await call("GET", `/api/requirements/${requirement.id}`)).data.requirement as { project: unknown }).project).toBeNull();
+  expect((await call("PATCH", `/api/requirements/${requirement.id}`, { project_id: "prj_missing" })).status).toBe(404);
+});

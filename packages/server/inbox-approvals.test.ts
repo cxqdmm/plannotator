@@ -137,6 +137,15 @@ describe("the owner's decision", () => {
     expect(events.some((event) => event.kind === "butler.action.denied")).toBe(true);
   });
 
+  test("the owner can choose the card's project at approval", async () => {
+    const api = make();
+    const approval = requestCard(api, "k-project");
+    const response = await postDecide(api, approval.id, { decision: "approve", project_id: "prj_9" });
+    expect(response!.status).toBe(200);
+    expect(executes).toHaveLength(1);
+    expect(executes[0]!.payload.project_id).toBe("prj_9");
+  });
+
   test("always flips the switch; a second decision is refused", async () => {
     const api = make();
     const approval = requestCard(api);
