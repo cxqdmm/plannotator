@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ButlerEvent } from "./inbox-butler-events";
 import {
+  butlerTellTarget,
   createButlerActions,
   type ButlerActionLaunchInput,
   type ButlerActionStopInput,
@@ -85,6 +86,15 @@ async function act(api: ButlerActions, body: Record<string, unknown>, headers: R
 
 const sayNotes = (id: string) => routes.store.get(id)!.events.filter((event) => event.kind === "say").map((event) => event.note ?? "");
 
+describe("butlerTellTarget (a relay can light a launched session)", () => {
+  test("live is a normal relay; a stopped session this Inbox launched is woken; a hand-started one is refused", () => {
+    expect(butlerTellTarget(true, false)).toEqual({ ok: true, wake: false });
+    expect(butlerTellTarget(true, true)).toEqual({ ok: true, wake: false });
+    expect(butlerTellTarget(false, true)).toEqual({ ok: true, wake: true });
+    expect(butlerTellTarget(false, false)).toMatchObject({ ok: false, code: "session_not_live" });
+  });
+});
+
 describe("create-requirement", () => {
   test("the card lands, the history says the butler made it, and the same key never makes two", async () => {
     const api = actions();
@@ -131,6 +141,31 @@ describe("meetings with a requirement and the audit", () => {
     expect(launchCalls[0]).toMatchObject({ agent: "claude-code", project_id: "prj_1", requirement: id });
     expect(routes.store.get(id)!.requirement.threads).toContain("msg_launch");
     expect(sayNotes(id).some((note) => note.startsWith("管家:") && note.includes("开好了执行会话"))).toBe(true);
+  });
+
+  test("launch: no agent named uses the card's own; neither the action nor the card names one, agent_required", async () => {
+    const api = actions();
+    const made = await act(api, { action: "create-requirement", title: "登录页改版", project_id: "prj_1", agent: "opencode", idempotency_key: "k-card-agent" });
+    expect(made.status).toBe(200);
+    const id = (made.data.requirement as { id: string }).id;
+    expect(routes.store.get(id)!.requirement.agent).toBe("opencode");
+
+    // 管家没点名 agent：卡上的 opencode 就是这一次的 agent。
+    const launched = await act(api, { action: "launch-session", project_id: "prj_1", requirement: id, idempotency_key: "k-launch-agent", authorized: true });
+    expect(launched.status).toBe(200);
+    expect(launchCalls[0]).toMatchObject({ agent: "opencode", requirement: id });
+
+    // 卡上选了 opencode，管家这次点名 claude-code：卡是主人的选择，卡上的 agent 赢。
+    const named = await act(api, { action: "launch-session", agent: "claude-code", project_id: "prj_1", requirement: id, idempotency_key: "k-launch-card-wins", authorized: true });
+    expect(named.status).toBe(200);
+    expect(launchCalls[1]).toMatchObject({ agent: "opencode", requirement: id });
+
+    // 卡上没选、这次也不点名：明确报给管家，而不是悄悄挑一个。
+    const plain = await act(api, { action: "create-requirement", title: "没有 agent 的卡", project_id: "prj_1", idempotency_key: "k-card-noagent" });
+    const plainId = (plain.data.requirement as { id: string }).id;
+    const refused = await act(api, { action: "launch-session", project_id: "prj_1", requirement: plainId, idempotency_key: "k-launch-noagent", authorized: true });
+    expect(refused.status).toBe(422);
+    expect(refused.data.code).toBe("agent_required");
   });
 
   test("tell and stop resolve a requirement's newest thread and write their lines", async () => {

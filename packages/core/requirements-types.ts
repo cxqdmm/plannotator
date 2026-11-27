@@ -123,6 +123,9 @@ export interface Requirement {
   notes: string;
   /** The project this requirement belongs to (set at creation, changeable in the card). Absent/null: not set yet. */
   project?: RequirementProject | null;
+  /** The agent this requirement's sessions start with ('claude-code' / 'opencode' / …, set in the card).
+   *  Absent/null: the launch names one (the butler asks or picks). */
+  agent?: string | null;
   stage: RequirementStage;
   priority: RequirementPriority;
   deliverables: Deliverable[];

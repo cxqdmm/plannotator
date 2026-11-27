@@ -42,9 +42,9 @@
 import { INBOX_LINKED_MARKS, INBOX_PROMPT_HOSTS, inboxMachineTags, inboxRowsBy, inboxTagColoursOf, isInboxCombineRun, type InboxRowsBy } from "@plannotator/core/inbox-types";
 import { inboxDiffOptionsOf, inboxDiffOptionsSaved, parseInboxDiffOptionsChange } from "./inbox-diff-options";
 import { listIntroAtStart, listIntroDue, listIntroLookPicked } from "./inbox-list-intro";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, isAbsolute, join } from "node:path";
 import { timingSafeEqual } from "node:crypto";
 import { inboxSidebarCheck, inboxSidebarRead, type InboxSidebarLayout } from "@plannotator/core/inbox-sidebar";
 import { createMcpHandler } from "@modelcontextprotocol/server";
@@ -265,7 +265,7 @@ import { createInboxSessionTerminalRoute } from "./inbox-session-attach";
 import { createInboxStreamRoute, streamSourceOf } from "./inbox-stream";
 import { Butler, butlerDir } from "./inbox-butler";
 import { createButlerEvents } from "./inbox-butler-events";
-import { createButlerActions, type ButlerActionLaunchInput, type ButlerActionOutcome, type ButlerActionStopInput, type ButlerActionTellInput } from "./inbox-butler-actions";
+import { butlerTellTarget, createButlerActions, type ButlerActionLaunchInput, type ButlerActionOutcome, type ButlerActionStopInput, type ButlerActionTellInput } from "./inbox-butler-actions";
 import { createInboxApprovals, type InboxApprovalRequest } from "./inbox-approvals";
 import type { InboxAskTimes } from "./inbox-ask-live";
 import { createInboxPins } from "./inbox-pins";
@@ -5043,12 +5043,17 @@ data: {}\n\n`)) : () => {};
       const recipient = store.recipientOf(root);
       if (!recipient?.session) return { ok: false, code: "session_unknown", error: "这个线程没有对应的会话，转达不到。", status: 409 };
       if (input.session && recipient.session !== input.session) return { ok: false, code: "not_addressed", error: `线程 ${threadId} 不归会话 ${input.session}。`, status: 409 };
-      if (!live.isSessionLive(recipient.session)) return { ok: false, code: "session_not_live", error: "会话不在线：等它回来或重开会话再转达。", status: 409 };
+      // 管家要能点火，不只送信：本收件箱启动的会话停了，一条转达就是主人的一句话，
+      // launch 的 respawn 会把它重新拉起来（和主人在线程里回一句是同一条路）；
+      // 手动在外面起的会话没有 launch 记录，点不着，仍请主人重开或让管家开新会话。
+      const alive = live.isSessionLive(recipient.session);
+      const target = butlerTellTarget(alive, launch.resumes(threadId, recipient.session));
+      if (!target.ok) return { ok: false, code: target.code, error: target.error, status: 409 };
       const host = recipient.host ?? input.host ?? live.hostOf(recipient.session);
       if (!host) return { ok: false, code: "session_unknown", error: "这个会话没有说自己属于哪个 agent，转达不到。", status: 409 };
       // A person-voiced message (the Inbox has one voice for the owner), marked as the butler's relay.
       const result = store.sendNewMessage(threadId, { body: `【管家转达】${input.words}`, to: { host, session: recipient.session }, idempotency_key: input.idempotency_key });
-      return { ok: true, thread_id: threadId, message_id: result.message.id, session: recipient.session };
+      return { ok: true, thread_id: threadId, message_id: result.message.id, session: recipient.session, ...(target.wake ? { wake: true } : {}) };
     } catch (error) {
       return butlerDepFailure(error, "tell_failed");
     }
@@ -5857,6 +5862,37 @@ data: {}\n\n`)) : () => {};
         return json({ serverSession, cursor: store.cursor(), decisions });
       }
       if (path === "/api/inbox/projects" && req.method === "GET") return json({ serverSession, cursor: store.cursor(), projects: projectFolders() });
+      // 工坊需求卡的项目选择：把一个文件夹变成（或找成）收件箱项目。`create` 时先建这个文件夹
+      // （文件夹浏览器里输入新名字选“新建…”）；已有文件夹直接解析。和窗口的其他写入一样：
+      // 同源 + serverSession，别的页面和旧标签页都改不了。
+      if (path === "/api/inbox/projects" && req.method === "POST") {
+        if (!isSameOriginOrNoOrigin(origin, req.headers.get("host") ?? "", req.headers.get("sec-fetch-site"))) {
+          return json({ error: "Cross-origin requests are not accepted.", code: "cross_origin" }, 403);
+        }
+        const body = await readBody(req);
+        if (checkServerSession(body, serverSession) === "mismatch") return json(serverSessionMismatchBody(INBOX_SERVER_SESSION_MISMATCH_ERROR), 409);
+        const raw = typeof body.path === "string" ? body.path.trim() : "";
+        if (!raw) throw new InboxError("validation_error", "path: a folder.", { field: "path" });
+        const expanded = raw === "~" ? homedir() : raw.startsWith("~/") ? join(homedir(), raw.slice(2)) : raw;
+        if (!isAbsolute(expanded)) throw new InboxError("validation_error", "path: an absolute path or a ~/… path.", { field: "path" });
+        const create = body.create === true;
+        let folder = expanded;
+        if (create) {
+          const parent = dirname(folder);
+          const name = basename(folder);
+          if (!name || name === "." || name === ".." || name.startsWith(".")) throw new InboxError("validation_error", "path: a new folder's name.", { field: "path" });
+          const parentStat = statSync(parent, { throwIfNoEntry: false });
+          if (!parentStat?.isDirectory()) throw new InboxError("folder_not_found", `No folder ${parent}.`, { field: "path" });
+          if (!existsSync(folder)) mkdirSync(folder);
+          else if (!statSync(folder).isDirectory()) throw new InboxError("folder_not_found", `${folder} is not a folder.`, { field: "path" });
+        } else {
+          const folderStat = statSync(folder, { throwIfNoEntry: false });
+          if (!folderStat?.isDirectory()) throw new InboxError("folder_not_found", `No folder ${folder}.`, { field: "path" });
+        }
+        folder = realpathSync(folder);
+        const project = await resolveProject(folder);
+        return json({ project: { id: project.id, name: project.name, root: project.root } });
+      }
       // Settings → Activity: each thread's messages by hour over `from`..`to` (ISO times; the window sends its local
       // midnight so hours line up with its clock), one project (`project=prj_…`, its combined ones too) or all.
       // Thread names go only into this answer: nothing is written or logged.

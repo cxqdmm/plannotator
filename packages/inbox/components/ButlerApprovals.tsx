@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { chatMarkdownHtml } from '@plannotator/ui/components/chat';
 import type { InboxButlerApproval, InboxButlerApprovalsModel } from '../api';
 import { Icon } from '../icons';
+import { RequirementAgentPicker, RequirementProjectPicker, type RequirementAgentChoice, type RequirementProjectChoice } from '../requirements/components/RequirementProjectPicker';
 
 const ACTION_LABEL: Record<InboxButlerApproval['action'], string> = {
   'create-requirement': '建需求卡',
@@ -35,21 +36,27 @@ function ApprovalCard({
   approval,
   busy,
   projects,
+  onProjectsChanged,
+  agents,
   onDecide,
 }: {
   approval: InboxButlerApproval;
   busy: boolean;
-  projects: { id: string; name: string; root: string }[];
-  onDecide: (id: string, decision: 'approve' | 'deny', always: boolean, projectId?: string | null, note?: string) => void;
+  projects: RequirementProjectChoice[];
+  onProjectsChanged: (projects: RequirementProjectChoice[]) => void;
+  /** 这台收件箱能开的 agent，给建卡审批选默认执行 agent。 */
+  agents: RequirementAgentChoice[];
+  onDecide: (id: string, decision: 'approve' | 'deny', always: boolean, projectId?: string | null, agent?: string | null, note?: string) => void;
 }) {
   const [always, setAlways] = useState(false);
   const [note, setNote] = useState('');
   const [projectId, setProjectId] = useState(approval.detail.project_id ?? '');
+  const [agent, setAgent] = useState<string | null>(approval.detail.agent ?? null);
   const card = approval.detail.card ?? '';
-  const knownProject = projects.some((project) => project.id === projectId) || !projectId;
-  const projectChoices = !knownProject && approval.detail.project_id
-    ? [...projects, { id: approval.detail.project_id, name: approval.detail.project_name ?? approval.detail.project_id, root: approval.detail.project_root ?? '' }]
-    : projects;
+  const selectedProject = projects.find((project) => project.id === projectId)
+    ?? (projectId && approval.detail.project_id === projectId
+      ? { id: projectId, name: approval.detail.project_name ?? projectId, root: approval.detail.project_root ?? '' }
+      : null);
   const noteId = `butler-ap-note-${approval.id}`;
   return (
     <article className="ib-butler-ap-card" data-action={approval.action}>
@@ -74,15 +81,15 @@ function ApprovalCard({
       </dl>
 
       {approval.action === 'create-requirement' && (
-        <label className="ib-butler-ap-project">
-          <span>项目</span>
-          <select value={projectId} onChange={(event) => setProjectId(event.target.value)} disabled={busy}>
-            <option value="">未指定（之后在需求卡里选）</option>
-            {projectChoices.map((project) => (
-              <option key={project.id} value={project.id}>{project.name} · {project.root}</option>
-            ))}
-          </select>
-        </label>
+        <div className="ib-butler-ap-pickers">
+          <RequirementProjectPicker
+            projects={projects}
+            selected={selectedProject}
+            onPick={(project) => setProjectId(project?.id ?? '')}
+            onProjectsChanged={onProjectsChanged}
+          />
+          <RequirementAgentPicker agents={agents} selected={agent} onPick={setAgent} />
+        </div>
       )}
       {approval.detail.contexts && approval.detail.contexts.length > 0 && (
         <div className="ib-butler-ap-ctx" aria-label="上下文">
@@ -120,10 +127,10 @@ function ApprovalCard({
           onChange={(event) => setNote(event.target.value)}
         />
         <div className="ib-butler-ap-actions">
-          <button type="button" className="ib-butler-ap-approve" disabled={busy} onClick={() => onDecide(approval.id, 'approve', always, approval.action === 'create-requirement' ? projectId || null : undefined, note)}>
+          <button type="button" className="ib-butler-ap-approve" disabled={busy} onClick={() => onDecide(approval.id, 'approve', always, approval.action === 'create-requirement' ? projectId || null : undefined, approval.action === 'create-requirement' ? agent : undefined, note)}>
             批准
           </button>
-          <button type="button" className="ib-butler-ap-deny" disabled={busy} onClick={() => onDecide(approval.id, 'deny', false, undefined, note)}>
+          <button type="button" className="ib-butler-ap-deny" disabled={busy} onClick={() => onDecide(approval.id, 'deny', false, undefined, undefined, note)}>
             拒绝
           </button>
           <label className="ib-butler-ap-always">
@@ -140,6 +147,8 @@ function ApprovalCard({
 export function ButlerApprovals({
   model,
   projects,
+  onProjectsChanged,
+  agents,
   error,
   busy,
   onDecide,
@@ -148,9 +157,13 @@ export function ButlerApprovals({
   model: InboxButlerApprovalsModel | null;
   error: string | null;
   /** The approval being decided now, or null. */
-  projects: { id: string; name: string; root: string }[];
+  projects: RequirementProjectChoice[];
+  /** A folder became (or was found as) a project in the card's picker: keep it for the other cards. */
+  onProjectsChanged: (projects: RequirementProjectChoice[]) => void;
+  /** 这台收件箱能开的 agent（建卡审批选默认执行 agent 用）。 */
+  agents: RequirementAgentChoice[];
   busy: string | null;
-  onDecide: (id: string, decision: 'approve' | 'deny', always: boolean, projectId?: string | null, note?: string) => void;
+  onDecide: (id: string, decision: 'approve' | 'deny', always: boolean, projectId?: string | null, agent?: string | null, note?: string) => void;
   onRefresh: () => void;
 }) {
   const pending = model?.approvals.pending ?? [];
@@ -175,7 +188,7 @@ export function ButlerApprovals({
       ) : (
         <div className="ib-butler-ap-list">
           {pending.map((approval) => (
-            <ApprovalCard key={approval.id} approval={approval} projects={projects} busy={busy === approval.id} onDecide={onDecide} />
+            <ApprovalCard key={approval.id} approval={approval} projects={projects} onProjectsChanged={onProjectsChanged} agents={agents} busy={busy === approval.id} onDecide={onDecide} />
           ))}
         </div>
       )}

@@ -44,6 +44,7 @@ describe("the requirement-card document", () => {
       stage: "design-review",
       priority: "medium",
       project: { id: "prj_1", name: "web", root: "/work/web" },
+      agent: "opencode",
       contexts,
     });
     expect(card).toStartWith("# 需求卡：登录页改版");
@@ -51,6 +52,7 @@ describe("the requirement-card document", () => {
     expect(card).toContain("**阶段**：设计评审");
     expect(card).toContain("**优先级**：中");
     expect(card).toContain("**项目**：web（`/work/web`）");
+    expect(card).toContain("**执行 agent**：OpenCode");
     expect(card).toContain("## 背景 / 为什么\n旧版太慢");
     expect(card).toContain("## 相关上下文");
     expect(card).toContain("- 链接：https://example.com/prd —— PRD");

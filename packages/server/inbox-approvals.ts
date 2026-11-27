@@ -98,7 +98,7 @@ export interface InboxApprovals {
   readonly auto: (action: string) => boolean;
   readonly setAuto: (action: string, on: boolean) => void;
   readonly list: () => { pending: InboxApproval[]; decided: InboxApproval[]; auto: Record<string, boolean> };
-  readonly decide: (id: string, decision: "approve" | "deny", options?: { always?: boolean; note?: string | null; project_id?: string | null }) => Promise<{ ok: true; approval: InboxApproval } | { ok: false; code: string; error: string }>;
+  readonly decide: (id: string, decision: "approve" | "deny", options?: { always?: boolean; note?: string | null; project_id?: string | null; agent?: string | null }) => Promise<{ ok: true; approval: InboxApproval } | { ok: false; code: string; error: string }>;
   /** Retry an approval that was approved but never executed (a daemon crash between the mark and the call). */
   readonly resume: () => Promise<void>;
   /** The routes above. */
@@ -285,7 +285,7 @@ export function createInboxApprovals(options: InboxApprovalOptions): InboxApprov
     }
   };
 
-  const decide = async (id: string, decision: "approve" | "deny", settings: { always?: boolean; note?: string | null; project_id?: string | null } = {}): Promise<{ ok: true; approval: InboxApproval } | { ok: false; code: string; error: string }> => {
+  const decide = async (id: string, decision: "approve" | "deny", settings: { always?: boolean; note?: string | null; project_id?: string | null; agent?: string | null } = {}): Promise<{ ok: true; approval: InboxApproval } | { ok: false; code: string; error: string }> => {
     const approval = find(id);
     if (!approval) return { ok: false, code: "approval_not_found", error: `没有审批 ${id}。` };
     if (approval.status !== "pending") return { ok: false, code: "already_decided", error: "这件事已经决定过了。" };
@@ -300,6 +300,15 @@ export function createInboxApprovals(options: InboxApprovalOptions): InboxApprov
       else delete payload.project_id;
       approval.payload = payload;
       approval.detail = { ...approval.detail, ...(projectId ? { project_id: projectId } : {}) };
+    }
+    // The card's launch agent, chosen in the approval card the same way (null: the launch names one).
+    if (approval.action === "create-requirement" && settings.agent !== undefined) {
+      const agent = typeof settings.agent === "string" && settings.agent.trim() ? settings.agent.trim().slice(0, 32) : null;
+      const payload = { ...approval.payload };
+      if (agent) payload.agent = agent;
+      else delete payload.agent;
+      approval.payload = payload;
+      approval.detail = { ...approval.detail, ...(agent ? { agent } : {}) };
     }
     if (decision === "deny") {
       approval.status = "denied";
@@ -366,10 +375,14 @@ export function createInboxApprovals(options: InboxApprovalOptions): InboxApprov
         if (body.project_id !== undefined && body.project_id !== null && typeof body.project_id !== "string") {
           return json({ error: "project_id: a project id, or null.", code: "validation_error" }, 422);
         }
+        if (body.agent !== undefined && body.agent !== null && (typeof body.agent !== "string" || body.agent.trim().length === 0 || body.agent.length > 32)) {
+          return json({ error: "agent: a launch agent id (at most 32 characters), or null.", code: "validation_error" }, 422);
+        }
         const result = await decide(decideMatch[1]!, decision, {
           ...(body.always === true ? { always: true } : {}),
           ...(typeof body.note === "string" ? { note: body.note } : {}),
           ...(body.project_id !== undefined ? { project_id: body.project_id as string | null } : {}),
+          ...(body.agent !== undefined ? { agent: body.agent as string | null } : {}),
         });
         if (!result.ok) {
           const status = result.code === "approval_not_found" ? 404 : 409;

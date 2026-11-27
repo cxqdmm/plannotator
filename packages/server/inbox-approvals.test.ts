@@ -159,6 +159,16 @@ describe("the owner's decision", () => {
     expect(executes[0]!.payload.project_id).toBe("prj_9");
   });
 
+  test("the owner can choose the card's launch agent at approval", async () => {
+    const api = make();
+    const approval = requestCard(api, "k-agent");
+    const response = await postDecide(api, approval.id, { decision: "approve", agent: "opencode" });
+    expect(response!.status).toBe(200);
+    expect(executes).toHaveLength(1);
+    expect(executes[0]!.payload.agent).toBe("opencode");
+    expect(api.list().decided[0]?.detail.agent).toBe("opencode");
+  });
+
   test("always flips the switch; a second decision is refused", async () => {
     const api = make();
     const approval = requestCard(api);

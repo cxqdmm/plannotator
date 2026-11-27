@@ -11,7 +11,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { chatMarkdownHtml } from '@plannotator/ui/components/chat';
-import { parseButlerCards, cardProblem, cardWarnings, cardHeightOf, type ButlerCardMeta } from './butler-card-protocol';
+import { cardSendText, parseButlerCards, cardProblem, cardWarnings, cardHeightOf, type ButlerCardMeta } from './butler-card-protocol';
 import { BUTLER_CARD_UTILITIES } from './butler-card-utilities';
 
 /** 一条助手回复：文字段按 markdown 画，卡片段交给 ButlerCard。 */
@@ -100,10 +100,8 @@ function ButlerCard({ html, meta, closed, onMessage }: { html: string; meta: But
         return;
       }
       if (data.type === 'plannotator:send') {
-        const value = data.value;
-        const label = value && typeof value === 'object' && typeof (value as { label?: unknown }).label === 'string' ? (value as { label: string }).label : null;
-        const text = typeof value === 'string' ? value : label ? `${label}` : JSON.stringify(value ?? '');
-        onMessage(`（来自卡片：${text}）`);
+        const text = cardSendText(data.value);
+        if (text) onMessage(`（来自卡片：${text}）`);
       }
     };
     window.addEventListener('message', onFrameMessage);

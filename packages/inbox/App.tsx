@@ -5613,7 +5613,7 @@ function Inbox() {
         on={requirementsOn}
         onToast={(toast, ms) => showToast(toast as Omit<InboxToastModel, 'id'>, ms)}
         openThreadId={route.reqThread ?? null}
-        onCompose={(requirementId, requirementTitle, contexts) => openCompose({ requirement: { id: requirementId, title: requirementTitle, contexts }, launch: { agent: null } })}
+        onCompose={(requirementId, requirementTitle, contexts, agent) => openCompose({ requirement: { id: requirementId, title: requirementTitle, contexts }, launch: { agent: agent ?? null } })}
       />
     );
   } else if (route.page === 'scheduled') {

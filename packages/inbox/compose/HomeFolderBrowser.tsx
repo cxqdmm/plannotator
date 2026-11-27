@@ -189,6 +189,7 @@ export function HomeFolderBrowser({
   onTyped,
   clone = null,
   onGitUrl,
+  purpose = 'start',
 }: {
   machine: HomeFolderMachine;
   /**
@@ -206,6 +207,11 @@ export function HomeFolderBrowser({
   clone?: { url: string; repo: string } | null;
   /** A git URL typed or pasted in the folder field (B5): its host shows that machine's clone row instead. */
   onGitUrl?: (url: string) => void;
+  /**
+   * What picking a folder does: start an agent there (default, the folder menu's words), or use it
+   * as a project (the Workshop requirement card's picker: "选择" / "新建…并选择").
+   */
+  purpose?: 'start' | 'project';
 }) {
   const [typed, setTypedState] = useState(initialPath);
   const setTyped = (next: string) => {
@@ -444,6 +450,14 @@ export function HomeFolderBrowser({
         </>
       )}
     </>
+  ) : purpose === 'project' ? (
+    machine.name ? (
+      <>
+        在 <b dir="auto">{machine.name}</b> 上选择项目文件夹
+      </>
+    ) : (
+      '选择或新建项目文件夹'
+    )
   ) : machine.name ? (
     <>
       在 <b dir="auto">{machine.name}</b> 上的文件夹
@@ -471,13 +485,21 @@ export function HomeFolderBrowser({
   const words = (row: FolderRow) => {
     switch (row.kind) {
       case 'start':
-        return (
+        return purpose === 'project' ? (
+          <>
+            选择 <b>{row.name}</b>
+          </>
+        ) : (
           <>
             在 <b>{row.name}</b> 中启动
           </>
         );
       case 'create':
-        return (
+        return purpose === 'project' ? (
+          <>
+            新建 <b>{row.name}</b> 并选择
+          </>
+        ) : (
           <>
             创建 <b>{row.name}</b> 并启动
           </>
@@ -522,7 +544,7 @@ export function HomeFolderBrowser({
             <Icon name="chevL" size={16} />
             返回
           </button>
-          <span>{clone ? '克隆到' : '其他文件夹'}</span>
+          <span>{clone ? '克隆到' : purpose === 'project' ? '项目文件夹' : '其他文件夹'}</span>
         </div>
       )}
       {phone ? (

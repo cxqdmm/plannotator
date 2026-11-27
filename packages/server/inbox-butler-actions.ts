@@ -74,10 +74,21 @@ export interface ButlerActionStopInput {
 
 /** What an action answers. `ok: false` is always safe to repeat to the owner. */
 export type ButlerActionOutcome =
-  | { ok: true; thread_id?: string; message_id?: string; session?: string; launch_id?: string; requirement?: Requirement; requirement_id?: string; warnings?: string[]; archived?: boolean; released?: number; stopped?: number }
+  | { ok: true; thread_id?: string; message_id?: string; session?: string; launch_id?: string; requirement?: Requirement; requirement_id?: string; warnings?: string[]; archived?: boolean; released?: number; stopped?: number; /** tell-session: the session was not live and the Inbox is resuming it. */ wake?: boolean }
   | { ok: false; code: string; error: string; status?: number };
 
-/** The approval tab, as the action channel needs it (Phase 1: create-requirement). */
+/**
+ * 管家转达的目标：会话在线就正常送；本收件箱启动的会话停了，转达同时是点火
+ * （launch 的 respawn 会把它重新拉起来，和主人在线程里回一句同一条路）；
+ * 手动在外面起的会话没有 launch 记录，点不着，仍明确拒绝。
+ */
+export function butlerTellTarget(alive: boolean, resumable: boolean): { ok: true; wake: boolean } | { ok: false; code: "session_not_live"; error: string } {
+  if (alive) return { ok: true, wake: false };
+  if (resumable) return { ok: true, wake: true };
+  return { ok: false, code: "session_not_live", error: "会话不在线，而且不是本收件箱启动的会话，管家点不着；请主人重开，或让我开一个新会话。" };
+}
+
+/** The approval tab, as the action channel needs it (Phase 1: create-requirement). *//** The approval tab, as the action channel needs it (Phase 1: create-requirement). */
 export interface ButlerApprovalGate {
   auto(action: string): boolean;
   byKey(key: string): {
@@ -269,6 +280,7 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
     notes: string;
     priority?: RequirementPriority;
     project_id?: string;
+    agent?: string;
     contexts: CardContextInput[];
     thread?: string;
     event_id?: string;
@@ -309,6 +321,9 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
       project = deps.projectOf?.(projectId.value) ?? null;
       if (!project) return { error: failure("project_not_found", `没有项目 ${projectId.value}。`, 404) };
     }
+    // 卡上默认的执行 agent（claude-code / opencode / …）：启动时没有点名就用它。
+    const agent = text(body.agent, "agent", 32);
+    if ("error" in agent) return { error: failure("validation_error", agent.error, 422) };
     if (thread.value && deps.threadExists && !deps.threadExists(thread.value)) {
       return { error: failure("thread_unknown", `没有线程 ${thread.value}；来源线程不挂到卡上。`, 422) };
     }
@@ -360,6 +375,7 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
       stage: "design",
       priority: priority ?? "none",
       project,
+      agent: agent.value || null,
       contexts: previewContexts,
     });
     const missing = missingRequirementCardSections(notes.value);
@@ -372,6 +388,7 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
         notes: notes.value,
         ...(priority ? { priority } : {}),
         ...(project ? { project_id: project.id } : {}),
+        ...(agent.value ? { agent: agent.value } : {}),
         contexts,
         ...(thread.value ? { thread: thread.value } : {}),
         ...(eventId ? { event_id: eventId } : {}),
@@ -382,6 +399,7 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
       detail: {
         ...(thread.value ? { thread: thread.value } : {}),
         ...(project ? { project_id: project.id, project_name: project.name } : {}),
+        ...(agent.value ? { agent: agent.value } : {}),
         ...(eventId ? { event_id: eventId } : {}),
         card,
         contexts: contexts.map((context) => ({ kind: context.kind, name: context.name })),
@@ -396,7 +414,7 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
     try {
       const project = payload.project_id ? deps.projectOf?.(payload.project_id) ?? null : null;
       if (payload.project_id && !project) return failure("project_not_found", `没有项目 ${payload.project_id}。`, 404);
-      const requirement = deps.requirements.create({ title: payload.title, notes: payload.notes, ...(payload.priority ? { priority: payload.priority } : {}), ...(project ? { project } : {}) });
+      const requirement = deps.requirements.create({ title: payload.title, notes: payload.notes, ...(payload.priority ? { priority: payload.priority } : {}), ...(project ? { project } : {}), ...(payload.agent ? { agent: payload.agent } : {}) });
       const warnings: string[] = [];
       for (const context of payload.contexts) {
         try {
@@ -452,8 +470,8 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
     if ("error" in requirement) return { error: failure("validation_error", requirement.error, 422) };
     const closed = requirement.value ? cardWritesOpen(requirement.value) : null;
     if (closed) return { error: closed as Extract<ButlerActionOutcome, { ok: false }> };
-    const agent = text(body.agent, "agent", 64, true);
-    if ("error" in agent) return { error: failure("validation_error", agent.error, 422) };
+    const asked = text(body.agent, "agent", 64);
+    if ("error" in asked) return { error: failure("validation_error", asked.error, 422) };
     const projectId = text(body.project_id, "project_id", 100);
     if ("error" in projectId) return { error: failure("validation_error", projectId.error, 422) };
     const folder = text(body.folder, "folder", 400);
@@ -464,6 +482,12 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
     const threadName = text(body.thread_name, "thread_name", 60);
     if ("error" in threadName) return { error: failure("validation_error", threadName.error, 422) };
     const record = requirement.value ? deps.requirements.get(requirement.value)?.requirement ?? null : null;
+    // The agent: the card's own choice wins when it has one (the owner set it in the Workshop / approval);
+    // a named agent is the fallback only for a card without one. The card is the source of truth.
+    const agent = { value: (record?.agent ?? null) || (asked.value.trim() ? asked.value : null) };
+    if (!agent.value) {
+      return { error: failure("agent_required", "没有说用哪个 agent，这张卡上也没有选。告诉主人选一个（claude-code、opencode…），或点名一个。", 422) };
+    }
     // The card's project, or the project of its linked session, when no project was named.
     const derivedProject = !projectId.value && !folder.value
       ? record?.project ?? (record?.threads[0] ? deps.projectOfThread?.(record.threads[0]) ?? null : null)
@@ -596,8 +620,9 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
     });
     if (!outcome.ok) return outcome;
     const where = outcome.thread_id ?? thread.value;
-    if (requirement.value) audit(requirement.value, `转达：${short(words.value, 80)}`, where || null, eventId);
-    else recordAction({ summary: `管家转达：${short(words.value, 80)}`, subject: { ...(where ? { thread: where } : {}), ...(outcome.session ? { session: outcome.session } : {}) }, dedupe: `butler:tell:${key}` });
+    const woke = outcome.wake ? "（会话没在线，已让它重新醒来）" : "";
+    if (requirement.value) audit(requirement.value, `转达${woke}：${short(words.value, 80)}`, where || null, eventId);
+    else recordAction({ summary: `管家转达${woke}：${short(words.value, 80)}`, subject: { ...(where ? { thread: where } : {}), ...(outcome.session ? { session: outcome.session } : {}) }, dedupe: `butler:tell:${key}` });
     return outcome;
   };
 

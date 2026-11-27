@@ -73,14 +73,14 @@ interface RequirementEventsFile {
 }
 
 /** A field write that passed validation, ready to apply. */
-type RequirementPatch = { title?: string; notes?: string; stage?: Requirement["stage"]; priority?: RequirementPriority; archived?: boolean; threads?: string[]; project?: RequirementProject | null };
+type RequirementPatch = { title?: string; notes?: string; stage?: Requirement["stage"]; priority?: RequirementPriority; archived?: boolean; threads?: string[]; project?: RequirementProject | null; agent?: string | null };
 
 /** Everything a caller can ask the store to do; every failure is a thrown InboxError-shaped {error, code, field}. */
 export interface RequirementStore {
   /** The active board, or the archived page. */
   list(archived: boolean): { requirements: Requirement[]; archived: number };
   get(id: string): { requirement: Requirement; events: RequirementEvent[] } | null;
-  create(input: { title: string; priority?: RequirementPriority; notes?: string; project?: RequirementProject | null }): Requirement;
+  create(input: { title: string; priority?: RequirementPriority; notes?: string; project?: RequirementProject | null; agent?: string | null }): Requirement;
   patch(id: string, patch: RequirementPatch, opts?: { thread?: string | null }): Requirement;
   remove(id: string): void;
   link(id: string, threadId: string, by?: string | null): Requirement;
@@ -166,6 +166,7 @@ function normalized(record: Partial<Requirement> & { id: string }): Requirement 
     project: record.project && typeof record.project === "object" && typeof (record.project as RequirementProject).id === "string" && typeof (record.project as RequirementProject).name === "string" && typeof (record.project as RequirementProject).root === "string"
       ? { id: (record.project as RequirementProject).id, name: (record.project as RequirementProject).name, root: (record.project as RequirementProject).root }
       : null,
+    agent: typeof record.agent === "string" && record.agent.trim() ? record.agent : null,
     priority: isRequirementPriority(record.priority) ? record.priority : "none",
     // review and code-review are retired as kinds (they are conclusions, not artifacts): whatever an old
     // file holds in those kinds is dropped on read — the history already carries the conclusion.
@@ -312,11 +313,12 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       store.say(id, `需求已归档，${released.length} 个会话已释放${stopped > 0 ? `，其中 ${stopped} 个 Inbox 启动的会话已停止` : ""}`, "归档");
       return { released: released.length, stopped };
     },
-    create(input: { title: string; priority?: RequirementPriority; notes?: string; project?: RequirementProject | null }) {
+    create(input: { title: string; priority?: RequirementPriority; notes?: string; project?: RequirementProject | null; agent?: string | null }) {
       if ("stage" in (input as Record<string, unknown>)) throw new RequirementStoreError("validation_error", "stage: not at create (a requirement starts in 待跟进; PATCH moves it).", "stage");
       if (typeof input.title !== "string" || !input.title.trim()) throw new RequirementStoreError("validation_error", "title: a non-empty string.", "title");
       if (input.title.length > TITLE_MAX) throw new RequirementStoreError("validation_error", `title: at most ${TITLE_MAX} characters.`, "title");
       if (input.priority !== undefined && !isRequirementPriority(input.priority)) throw new RequirementStoreError("validation_error", "priority: one of urgent, high, medium, low, none.", "priority");
+      if (input.agent !== undefined && input.agent !== null && (typeof input.agent !== "string" || !input.agent.trim() || input.agent.length > 32)) throw new RequirementStoreError("validation_error", "agent: a launch agent id (at most 32 characters), or null.", "agent");
       const notes = input.notes ?? "";
       if (typeof notes !== "string" || notes.length > NOTES_MAX) throw new RequirementStoreError("validation_error", `notes: a string of at most ${NOTES_MAX} characters.`, "notes");
       const now = new Date().toISOString();
@@ -325,6 +327,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         title: input.title.trim(),
         notes,
         project: input.project ?? null,
+        agent: input.agent ?? null,
         stage: "design",
         priority: input.priority ?? "none",
         deliverables: [],
@@ -360,6 +363,12 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         }
         if ((record.project?.id ?? null) !== (next?.id ?? null)) recordEvent(id, "field", { field: "project", from: record.project?.id ?? "", to: next?.id ?? "" });
       }
+      if (patch.agent !== undefined && patch.agent !== null && (typeof patch.agent !== "string" || !patch.agent.trim() || patch.agent.length > 32)) {
+        throw new RequirementStoreError("validation_error", "agent: a launch agent id (at most 32 characters), or null.", "agent");
+      }
+      if (patch.agent !== undefined && (record.agent ?? null) !== (patch.agent ?? null)) {
+        recordEvent(id, "field", { field: "agent", from: record.agent ?? "", to: patch.agent ?? "" });
+      }
       if (patch.stage !== undefined && patch.stage !== record.stage) {
         // thread：progress（MCP）带来的阶段事件归到调用会话；手动 PATCH 无 thread，无归属。
         recordEvent(id, "stage", { from: record.stage, to: patch.stage, ...(thread ? { thread } : {}) });
@@ -379,6 +388,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
       }
       Object.assign(record, fields);
       if (patch.project !== undefined) record.project = patch.project ?? null;
+      if (patch.agent !== undefined) record.agent = patch.agent ?? null;
       touch(record);
       save([id]);
       return record;
@@ -762,8 +772,10 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
         const projectId = typeof input.project_id === "string" && input.project_id.trim() ? input.project_id.trim() : null;
         const project = projectId ? (options.projectOf?.(projectId) ?? null) : null;
         if (projectId && !project) return json({ error: "没有这个项目。", code: "not_found", field: "project_id" }, 404);
-        const { project_id: _projectId, ...rest } = input;
-        return json({ requirement: store.create({ ...rest, ...(project ? { project } : {}) } as Parameters<RequirementStore["create"]>[0]) }, 201);
+        const rawAgent = input.agent;
+        const agent = rawAgent === undefined || rawAgent === null || rawAgent === "" ? null : (typeof rawAgent === "string" ? rawAgent.trim() : (undefined as unknown as string));
+        const { project_id: _projectId, agent: _agent, ...rest } = input;
+        return json({ requirement: store.create({ ...rest, ...(agent !== undefined && agent !== null ? { agent } : {}), ...(project ? { project } : {}) } as Parameters<RequirementStore["create"]>[0]) }, 201);
       }
 
       // /api/requirements/:id[/deliverables[/:did]|/suggestions[/:sid[/adopt]]]
@@ -787,7 +799,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
             }
             return json({ requirement: found?.requirement ?? null });
           }
-          const { priority, notes, title, stage, archived, threads, project_id } = input;
+          const { priority, notes, title, stage, archived, threads, project_id, agent } = input;
           let project: RequirementProject | null | undefined;
           if (project_id !== undefined) {
             if (project_id !== null && (typeof project_id !== "string" || !project_id.trim())) return json({ error: "project_id: a project id, or null.", code: "validation_error", field: "project_id" }, 400);
@@ -796,7 +808,7 @@ export function createBunRequirementRoutes(options: { dataDir: string; spawnAnno
             project = found;
           }
           if (stage !== undefined && stage !== store.get(id)?.requirement.stage) store.say(id, `阶段：${requirementStageLabel(store.get(id)!.requirement.stage)} → ${requirementStageLabel(stage as RequirementStage)}（手动）`, "阶段");
-          return json({ requirement: store.patch(id, { ...(title !== undefined ? { title: title as string } : {}), ...(notes !== undefined ? { notes: notes as string } : {}), ...(stage !== undefined ? { stage: stage as RequirementStage } : {}), ...(priority !== undefined ? { priority: priority as RequirementPriority } : {}), ...(archived !== undefined ? { archived: archived as boolean } : {}), ...(threads !== undefined ? { threads: threads as string[] } : {}), ...(project !== undefined ? { project } : {}) }) });
+          return json({ requirement: store.patch(id, { ...(title !== undefined ? { title: title as string } : {}), ...(notes !== undefined ? { notes: notes as string } : {}), ...(stage !== undefined ? { stage: stage as RequirementStage } : {}), ...(priority !== undefined ? { priority: priority as RequirementPriority } : {}), ...(archived !== undefined ? { archived: archived as boolean } : {}), ...(threads !== undefined ? { threads: threads as string[] } : {}), ...(project !== undefined ? { project } : {}), ...(agent !== undefined ? { agent: (agent === null || agent === "") ? null : (agent as string).trim() } : {}) }) });
         }
         if (req.method === "DELETE") {
           store.remove(id);

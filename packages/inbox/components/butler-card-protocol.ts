@@ -104,6 +104,47 @@ export const BUTLER_CARD_SOFT_BYTES = 8 * 1024;
 export const CARD_REPLY_PREFIX = '（来自卡片：';
 
 /** 一条用户消息是不是卡片回话：是就返回里面的内容，页面用专门的样式画。 */
+/**
+ * 卡片 `plannotator.send(value)` 的取值变成对话里的一行。`label` 是标题/摘要，
+ * `value` 里的每个字段都必须保留——只发 label 会让主人选好的答案整块丢失
+ * （现场 2026-11-27：四选一卡只回「已选定四项」）。
+ *
+ * 约定形状 `{ label, value: { 字段: 值 } }`：label 作前缀，value 的字段平铺成
+ * `key=value；…`；value 是标量时作 `label：value`；没有 label 的对象也照样平铺。
+ * 嵌套对象/数组按 JSON / 顿号保留，宁可难读，也不丢字段。
+ */
+export function cardSendText(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (value === null || value === undefined) return '';
+  if (Array.isArray(value)) return value.map(cardFieldText).filter((part) => part !== '').join('、');
+  if (typeof value !== 'object') return String(value);
+  const record = value as Record<string, unknown>;
+  const label = typeof record.label === 'string' ? record.label.trim() : '';
+  const entries = Object.entries(record).filter(([key]) => key !== 'label');
+  if (entries.length === 0) return label;
+  const fields = (input: Record<string, unknown>) => Object.entries(input).map(([key, item]) => `${key}=${cardFieldText(item)}`).join('；');
+  // The documented shape: { label, value: { … } } — the answers are value's own fields.
+  if (entries.length === 1 && entries[0]![0] === 'value') {
+    const only = entries[0]![1];
+    const body = only && typeof only === 'object' && !Array.isArray(only) ? fields(only as Record<string, unknown>) : cardFieldText(only);
+    return [label, body].filter(Boolean).join(label ? '：' : '');
+  }
+  const body = entries
+    .map(([key, item]) => (key === 'value' && item && typeof item === 'object' && !Array.isArray(item) ? fields(item as Record<string, unknown>) : `${key}=${cardFieldText(item)}`))
+    .join('；');
+  return [label, body].filter(Boolean).join(label ? '：' : '');
+}
+
+/** 一个字段的值：字符串原样，数组用顿号，其余对象用 JSON（字段一个不丢）。 */
+function cardFieldText(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return value.map(cardFieldText).filter((part) => part !== '').join('、');
+  if (value === null || value === undefined) return '';
+  return JSON.stringify(value);
+}
+
 export function cardReplyOf(text: string): string | null {
   const trimmed = text.trim();
   if (!trimmed.startsWith(CARD_REPLY_PREFIX) || !trimmed.endsWith('）')) return null;

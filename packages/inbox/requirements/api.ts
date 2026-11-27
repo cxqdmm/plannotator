@@ -51,7 +51,7 @@ export function createRequirement(input: { title: string; priority?: Requirement
   return write('POST', '/api/requirements', input);
 }
 
-export function patchRequirement(id: string, patch: { title?: string; notes?: string; stage?: RequirementStage; priority?: RequirementPriority; archived?: boolean; threads?: string[]; project_id?: string | null }): Promise<WriteOutcome<{ requirement: Requirement }>> {
+export function patchRequirement(id: string, patch: { title?: string; notes?: string; stage?: RequirementStage; priority?: RequirementPriority; archived?: boolean; threads?: string[]; project_id?: string | null; agent?: string | null }): Promise<WriteOutcome<{ requirement: Requirement }>> {
   return write('PATCH', `/api/requirements/${encodeURIComponent(id)}`, patch);
 }
 

@@ -336,3 +336,21 @@ test("a project is set at create, changed by PATCH, and an unknown one is refuse
   expect(((await call("GET", `/api/requirements/${requirement.id}`)).data.requirement as { project: unknown }).project).toBeNull();
   expect((await call("PATCH", `/api/requirements/${requirement.id}`, { project_id: "prj_missing" })).status).toBe(404);
 });
+
+test("the card's agent is set at create or PATCH, cleared with null, and a bad one is refused", async () => {
+  const made = await call("POST", "/api/requirements", { title: "登录页改版", agent: "claude-code" });
+  expect(made.status).toBe(201);
+  const requirement = made.data.requirement as { id: string; agent: string | null };
+  expect(requirement.agent).toBe("claude-code");
+  const id = requirement.id;
+  expect((await call("PATCH", `/api/requirements/${id}`, { agent: "opencode" })).status).toBe(200);
+  expect(((await call("GET", `/api/requirements/${id}`)).data.requirement as { agent: string }).agent).toBe("opencode");
+  // 历史：agent 的改动记为 field 事件。
+  const detail = (await call("GET", `/api/requirements/${id}`)).data as { events: { kind: string; field?: string; to?: string }[] };
+  expect(detail.events.some((event) => event.kind === "field" && event.field === "agent" && event.to === "opencode")).toBe(true);
+  expect((await call("PATCH", `/api/requirements/${id}`, { agent: null })).status).toBe(200);
+  expect(((await call("GET", `/api/requirements/${id}`)).data.requirement as { agent: unknown }).agent).toBeNull();
+  expect((await call("PATCH", `/api/requirements/${id}`, { agent: "" })).status).toBe(200);
+  expect(((await call("GET", `/api/requirements/${id}`)).data.requirement as { agent: unknown }).agent).toBeNull();
+  expect((await call("PATCH", `/api/requirements/${id}`, { agent: "x".repeat(33) })).status).toBe(400);
+});

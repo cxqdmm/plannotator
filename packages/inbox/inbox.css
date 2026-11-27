@@ -12660,25 +12660,21 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
 /* ─────────────── 管家 (approval "butler" 一期)：the Inbox's digital butler ───────────────
    右下角常驻悬浮球（呼吸光晕），点击动效展开全屏管家界面（顶部形象、中部对话流、底部输入）。 */
 .ib-butler-orb { position: fixed; right: 26px; bottom: 26px; z-index: 70; width: 84px; height: 84px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--foreground); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18); animation: ib-butler-breath 3.2s ease-in-out infinite; transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1); }
-/* 管家的活形象：立在枝头、歪头招手的卡通猫头鹰（owner 2026-11-26「不够生动可爱，就像
-   傻子站在那」）——姿态优先：头轻轻歪着晃、一只翅膀招手、眉羽会挑、眼睛会眨（偶尔连眨
-   两下）。配色一套变量，深浅色一致；working 张望 + 星光，happy 弯眼笑 + 大挥翅膀。
-   reduced-motion 一律静止。 */
-.ib-bc { --bc-fur: #e3c79f; --bc-fur-shade: #c9a877; --bc-belly: #f8ecd9; --bc-eye-white: #fffdf7; --bc-iris: #e8a33d; --bc-ink: #2b2320; --bc-beak: #eda53a; --bc-beak-shade: #c9862a; --bc-blush: #ef8f7d; --bc-branch: #b08f63; --bc-leaf: #9fbf8a; }
+/* 管家的活形象：立在枝头、歪头晃的卡通角鸮（owner 2026-11-27「不要睫毛似的小毛；是
+   “倒八字”长眉，长出面部的那截就是耳朵」）——眉毛是一对倒八字长眉，外端向上长出面部形成
+   耳簇；眉身只有几根长毛丝；双翼贴着身体折起、成对扑腾；眼睛会眨（偶尔连眨两下）。配色
+   一套变量，深浅色一致；working 张望 + 星光，happy 弯眼笑 + 连续扑翅。reduced-motion 一律静止。 */
+.ib-bc { --bc-fur: #b5824f; --bc-fur-shade: #8c5d36; --bc-belly: #e6cfae; --bc-eye-white: #fff8e8; --bc-iris: #cf7f24; --bc-ink: #24150f; --bc-beak: #d98a2b; --bc-beak-shade: #96591b; --bc-blush: #cc6f60; --bc-branch: #7b5837; --bc-leaf: #6f905c; --bc-bow: #7b2d32; --bc-bow-shade: #571b20; --bc-bow-light: #a44a4a; --bc-spark: #e8b34b; }
 .ib-bc-head { transform-box: fill-box; transform-origin: 50% 100%; animation: ib-bc-tilt 7.6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
 @keyframes ib-bc-tilt { 0%, 100% { transform: rotate(-2.6deg); } 50% { transform: rotate(2.6deg); } }
 .ib-bc-wing-l { transform-box: fill-box; transform-origin: 80% 10%; animation: ib-bc-flap-l 6.4s ease-in-out infinite; }
 @keyframes ib-bc-flap-l { 0%, 58%, 74%, 100% { transform: rotate(0deg); } 63%, 68% { transform: rotate(22deg); } 65.5% { transform: rotate(3deg); } }
 .ib-bc-wing-r { transform-box: fill-box; transform-origin: 20% 10%; animation: ib-bc-flap-r 6.4s ease-in-out infinite; }
 @keyframes ib-bc-flap-r { 0%, 58%, 74%, 100% { transform: rotate(0deg); } 63%, 68% { transform: rotate(-22deg); } 65.5% { transform: rotate(-3deg); } }
-.ib-bc-tuft-l { transform-box: fill-box; transform-origin: 82% 92%; animation: ib-bc-tuft-l 7.6s ease-in-out infinite; }
-@keyframes ib-bc-tuft-l { 0%, 86%, 100% { transform: rotate(0deg); } 90% { transform: rotate(-7deg); } 94% { transform: rotate(2deg); } }
-.ib-bc-tuft-r { transform-box: fill-box; transform-origin: 18% 92%; animation: ib-bc-tuft-r 7.6s ease-in-out infinite; animation-delay: 420ms; }
-@keyframes ib-bc-tuft-r { 0%, 86%, 100% { transform: rotate(0deg); } 90% { transform: rotate(7deg); } 94% { transform: rotate(-2deg); } }
 .ib-bc-brow-l { transform-box: fill-box; transform-origin: center; animation: ib-bc-brow-l 5.8s ease-in-out infinite; }
-@keyframes ib-bc-brow-l { 0%, 88%, 100% { transform: translateY(0); } 92% { transform: translateY(-1.1px); } }
+@keyframes ib-bc-brow-l { 0%, 88%, 100% { transform: translateY(0); } 92% { transform: translateY(-0.8px); } }
 .ib-bc-brow-r { transform-box: fill-box; transform-origin: center; animation: ib-bc-brow-r 5.8s ease-in-out infinite; animation-delay: 60ms; }
-@keyframes ib-bc-brow-r { 0%, 88%, 100% { transform: translateY(0); } 92% { transform: translateY(-1.1px); } }
+@keyframes ib-bc-brow-r { 0%, 88%, 100% { transform: translateY(0); } 92% { transform: translateY(-0.8px); } }
 .ib-bc-eyes { transform-box: fill-box; transform-origin: center; animation: ib-bc-blink 4.4s ease-in-out infinite; }
 /* 偶尔连眨两下：比单眨更有活气。 */
 @keyframes ib-bc-blink { 0%, 84%, 90%, 96%, 100% { transform: scaleY(1); } 87%, 93% { transform: scaleY(0.1); } }
@@ -12764,6 +12760,9 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
 .ib-butler-ap-project { display: flex; flex-direction: column; gap: 5px; margin: 0 0 10px; }
 .ib-butler-ap-project > span { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-foreground); }
 .ib-butler-ap-project select { height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--background); color: var(--foreground); font: inherit; font-size: 12px; padding: 0 8px; }
+/* 审批卡里的项目/agent 选择用和工坊需求卡同一个选择器；这里只调它在卡片里的占位。 */
+.ib-butler-ap-card .ib-req-project-btn { max-width: 100%; height: 32px; border-radius: 8px; font-size: 12px; }
+.ib-butler-ap-pickers { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
 .ib-butler-ap-ctx { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
 .ib-butler-ap-chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); border-radius: 6px; padding: 3px 7px; color: var(--muted-foreground); font-family: var(--font-mono); font-size: 9.5px; }
 .ib-butler-ap-warn { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; background: color-mix(in oklch, oklch(0.75 0.15 85) 14%, transparent); color: #8a5310; font-size: 11.5px; line-height: 1.55; }
@@ -12894,8 +12893,8 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
 .ib-butler-tool[data-done="true"] .ib-butler-tool-state { color: oklch(0.62 0.13 150); }
 .ib-butler-tool-out { margin: 0 0 8px; max-height: 220px; overflow: auto; padding: 8px 10px; border-radius: 6px; background: var(--ib-hover); color: var(--muted-foreground); font-family: var(--font-mono); font-size: 10.5px; line-height: 1.5; white-space: pre-wrap; }
 /* 交互卡片（owner 2026-11-27）：流式时骨架屏，收尾后是沙箱 iframe；坏卡降级成代码块。 */
-.ib-butler-cardreply { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; }
-.ib-butler-cardreply > svg { flex: none; color: var(--primary); opacity: 0.9; }
+.ib-butler-cardreply { display: inline-flex; align-items: flex-start; flex-wrap: wrap; gap: 5px; max-width: 100%; font-size: 12.5px; overflow-wrap: anywhere; }
+.ib-butler-cardreply > svg { flex: none; margin-top: 2px; color: var(--primary); opacity: 0.9; }
 .ib-butler-card { display: block; width: 100%; margin: 4px 0 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); overflow: hidden; }
 .ib-butler-card-frame { border: 0; padding: 0; background: transparent; }
 .ib-butler-card-skel { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
@@ -12946,7 +12945,7 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
   .ib-butler-hero-badge { animation: none; }
   .ib-butler-dots i { animation-duration: 0.01ms; animation-iteration-count: 1; }
   .ib-butler-idea:hover, .ib-butler-send:hover:not(:disabled) { transform: none; }
-  .ib-bc-eyes, .ib-bc-head, .ib-bc-wing-l, .ib-bc-wing-r, .ib-bc-tuft-l, .ib-bc-tuft-r, .ib-bc-brow-l, .ib-bc-brow-r, .ib-bc-spark { animation: none; }
+  .ib-bc-eyes, .ib-bc-head, .ib-bc-wing-l, .ib-bc-wing-r, .ib-bc-brow-l, .ib-bc-brow-r, .ib-bc-spark { animation: none; }
   .ib-bc-spark { opacity: 0.9; }
   .ib-butler-avatar, .ib-butler-avatar::after { animation: none; }
   .ib-butler-side { transition: none; }

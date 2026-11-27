@@ -22,6 +22,7 @@ import { useRequirements } from '../useRequirements';
 import { DELIVERABLE_KIND_LABELS, requirementStageLabel, type Requirement, type RequirementEvent, type RequirementStage } from '@plannotator/core/requirements-types';
 import { missingRequirementCardSections, renderRequirementCard, requirementCardTemplate } from '@plannotator/core/requirement-card';
 import { chatMarkdownHtml } from '@plannotator/ui/components/chat';
+import { RequirementAgentPicker, RequirementProjectPicker, type RequirementAgentChoice } from './RequirementProjectPicker';
 import { copyTextToClipboard } from '@plannotator/ui/utils/clipboard';
 import { inboxRowArchived } from '@plannotator/core/inbox-types';
 
@@ -66,7 +67,7 @@ export function RequirementsPanel({
 }: {
   on: boolean;
   openThreadId?: string | null;
-  onCompose: (requirementId: string, requirementTitle: string, contexts: { id: string; kind: string; name: string; image?: boolean }[]) => void;
+  onCompose: (requirementId: string, requirementTitle: string, contexts: { id: string; kind: string; name: string; image?: boolean }[], agent: string | null) => void;
   onToast: (toast: unknown, ms?: number) => void;
 }) {
   const { requirements, archived, create, patch, refresh } = useRequirements(on, subscribeRequirementFrames);
@@ -162,7 +163,7 @@ export function RequirementsPanel({
         </div>
         <div className="ib-req-wp-cards">
           {shown.map((r) => (
-            <ReqCard key={r.id} requirement={r} rowsByThread={rowsForCards} patch={patch} hideArchivedSessions={hideArchivedSessions} selectedThreadId={panel !== null && panel.k === 'session' ? panel.threadId : null} onSession={(tid) => setPanel((current) => (current !== null && current.k === 'session' && current.threadId === tid ? null : { k: 'session', threadId: tid }))} onCard={() => setPanel({ k: 'card', requirementId: r.id })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts)} onToast={onToast} onReview={(reqId, dlvId) => {
+            <ReqCard key={r.id} requirement={r} rowsByThread={rowsForCards} patch={patch} hideArchivedSessions={hideArchivedSessions} selectedThreadId={panel !== null && panel.k === 'session' ? panel.threadId : null} onSession={(tid) => setPanel((current) => (current !== null && current.k === 'session' && current.threadId === tid ? null : { k: 'session', threadId: tid }))} onCard={() => setPanel({ k: 'card', requirementId: r.id })} onContexts={() => setPanel({ k: 'contexts', requirementId: r.id })} onHistory={() => setPanel({ k: 'history', requirementId: r.id })} onNewSession={() => onCompose(r.id, r.title, r.contexts, r.agent ?? null)} onToast={onToast} onReview={(reqId, dlvId) => {
                   // 评审由守护进程自起门控会话；路由等会话起好从登记簿拿地址返回，窗口统一打开（首击即达）。
                   onToast({ icon: 'clock', lead: '正在打开评审页…' });
                   void reviewDeliverable(reqId, dlvId).then((o) => {
@@ -449,14 +450,19 @@ function CardBody({ requirement, onChanged, onError }: {
   const [copied, setCopied] = useState(false);
   const [projects, setProjects] = useState<{ id: string; name: string; root: string }[]>([]);
   const [projectId, setProjectId] = useState(requirement?.project?.id ?? '');
+  const [agent, setAgent] = useState<string | null>(requirement?.agent ?? null);
+  /** 这台收件箱能开的 agent（新建会话用的同一份列表），读一次。 */
+  const [agents, setAgents] = useState<RequirementAgentChoice[]>([]);
   useEffect(() => {
     setNotes(requirement?.notes ?? '');
     setProjectId(requirement?.project?.id ?? '');
+    setAgent(requirement?.agent ?? null);
     setDirty(false);
-  }, [requirement?.id, requirement?.notes, requirement?.project?.id]);
+  }, [requirement?.id, requirement?.notes, requirement?.project?.id, requirement?.agent]);
   useEffect(() => {
     let alive = true;
     void inboxApi.projectsList().then((answer) => { if (alive) setProjects(answer.projects ?? []); }).catch(() => {});
+    void inboxApi.composeSessions().then((model) => { if (alive) setAgents((model.launch?.agents ?? []).map((entry) => ({ agent: entry.agent, name: entry.name }))); }).catch(() => {});
     return () => { alive = false; };
   }, []);
   if (!requirement) {
@@ -465,9 +471,6 @@ function CardBody({ requirement, onChanged, onError }: {
   const missing = missingRequirementCardSections(notes);
   const selectedProject = projects.find((project) => project.id === projectId)
     ?? (requirement.project && requirement.project.id === projectId ? requirement.project : null);
-  const projectChoices = projectId && !projects.some((project) => project.id === projectId) && requirement.project
-    ? [...projects, requirement.project]
-    : projects;
   const preview = renderRequirementCard({
     id: requirement.id,
     title: requirement.title,
@@ -475,6 +478,7 @@ function CardBody({ requirement, onChanged, onError }: {
     stage: requirement.stage,
     priority: requirement.priority,
     project: selectedProject,
+    agent,
     contexts: requirement.contexts,
   });
   const copyDocument = async () => {
@@ -484,7 +488,7 @@ function CardBody({ requirement, onChanged, onError }: {
   };
   const save = async () => {
     setSaving(true);
-    const outcome = await patchRequirement(requirement.id, { notes, project_id: projectId || null });
+    const outcome = await patchRequirement(requirement.id, { notes, project_id: projectId || null, agent });
     setSaving(false);
     if (!outcome.ok) {
       onError(outcome.error);
@@ -500,19 +504,19 @@ function CardBody({ requirement, onChanged, onError }: {
           <button type="button" className={mode === 'doc' ? 'on' : ''} aria-selected={mode === 'doc'} onClick={() => setMode('doc')}>文档</button>
           <button type="button" className={mode === 'edit' ? 'on' : ''} aria-selected={mode === 'edit'} onClick={() => setMode('edit')}>Markdown</button>
         </div>
-        <label className="ib-req-card-project">
-          <span>项目</span>
-          <select value={projectId} onChange={(event) => { setProjectId(event.target.value); setDirty(true); }}>
-            <option value="">未指定</option>
-            {projectChoices.map((project) => (
-              <option key={project.id} value={project.id}>{project.name} · {project.root}</option>
-            ))}
-          </select>
-        </label>
+        <div className="ib-req-card-pickers">
+          <RequirementProjectPicker
+            projects={projects}
+            selected={selectedProject}
+            onPick={(project) => { setProjectId(project?.id ?? ''); setDirty(true); }}
+            onProjectsChanged={setProjects}
+          />
+          <RequirementAgentPicker agents={agents} selected={agent} onPick={(next) => { setAgent(next); setDirty(true); }} />
+        </div>
         <div className="ib-req-card-actions">
           <button type="button" className="ib-req-card-copy" onClick={() => void copyDocument()}>{copied ? '已复制' : '复制 Markdown'}</button>
           {dirty && (
-            <button type="button" className="ib-req-card-revert" onClick={() => { setNotes(requirement.notes); setProjectId(requirement.project?.id ?? ''); setDirty(false); }}>还原</button>
+            <button type="button" className="ib-req-card-revert" onClick={() => { setNotes(requirement.notes); setProjectId(requirement.project?.id ?? ''); setAgent(requirement.agent ?? null); setDirty(false); }}>还原</button>
           )}
           <button type="button" className="ib-req-card-save" disabled={!dirty || saving} onClick={() => void save()}>
             {saving ? '保存中…' : '保存'}

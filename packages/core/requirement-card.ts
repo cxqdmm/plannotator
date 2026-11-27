@@ -18,6 +18,7 @@ import {
   type RequirementContext,
   type RequirementProject,
 } from "./requirements-types";
+import { INBOX_HOST_NAMES } from "./inbox-types";
 
 /** The fixed sections, in order. `hint` is what the skill tells the butler to write there. */
 export const REQUIREMENT_CARD_SECTIONS: readonly { id: string; heading: string; hint: string }[] = [
@@ -68,6 +69,8 @@ export interface RequirementCardInput {
   stage: Requirement["stage"];
   priority: Requirement["priority"];
   project?: RequirementProject | null;
+  /** The card's default launch agent (`claude-code`, `opencode`, …); shown on the card when set. */
+  agent?: string | null;
   contexts: readonly RequirementContext[];
 }
 
@@ -79,6 +82,7 @@ export function renderRequirementCard(input: RequirementCardInput): string {
     "",
     `**需求 ID**：\`${input.id}\`　**阶段**：${requirementStageLabel(input.stage)}　**优先级**：${priority}`,
     ...(input.project ? ["", `**项目**：${input.project.name}（\`${input.project.root}\`）`] : []),
+    ...(input.agent ? [`**执行 agent**：${INBOX_HOST_NAMES[input.agent] ?? input.agent}`] : []),
     "",
     requirementCardBody(input.notes),
   ];
@@ -108,6 +112,7 @@ export function requirementCardFromRecord(requirement: Requirement): string {
     stage: requirement.stage,
     priority: requirement.priority,
     project: requirement.project ?? null,
+    agent: requirement.agent ?? null,
     contexts: requirement.contexts,
   });
 }

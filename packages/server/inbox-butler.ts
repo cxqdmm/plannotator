@@ -79,6 +79,8 @@ const BUTLER_CARD_SKILL_BODY = [
   '',
   '2. 多选/多输入：必须「先选后确认」——所有选项只改本地选中状态，最后由一个带 data-card-confirm 的',
   '   按钮统一 plannotator.send(...)。禁止每个选项一点就发（主人就没法再选别的）。单选卡可以直接点选即发。',
+  '   发送时把主人选的每一项都放进 value（如 {label:"已选好",value:{cases:...,frets:...}}）；label 只是摘要，',
+  '   只发 label 会把答案丢掉。',
   '',
   '3. 风格对标阿里 C 端卡片：容器 p-4 bg-card border rounded-2xl shadow-sm，内部用 gap-3 排开；',
   '   标题 text-lg font-semibold，次要信息 text-sm text-muted；主操作 btn btn-primary，次操作 btn；',
@@ -466,6 +468,8 @@ export class Butler {
    *  份对话；cwd = 总管文件夹）。跨守护进程重启：state.json 存着会话 id，优先续接；
    *  会话不存在（首次/被清理）时用 CLI bootstrap 一次（CLI 能建会话，serve 不能）。 */
   private async brain(): Promise<import("@plannotator/ai").AISession> {
+    // 唤醒可能先于主人打开管家页（审批结果直接叫醒）：文件夹和人设先就绪，spawn 的 cwd 才在。
+    ensureButlerDir();
     if (this.brainSession) return this.brainSession;
     // A test's provider stands in for the real one; otherwise the provider factory is registered
     // by the module import's side effect (ai-runtime 同款): import first, then create.

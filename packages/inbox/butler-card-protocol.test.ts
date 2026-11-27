@@ -4,7 +4,7 @@
  * 超限与外链。
  */
 import { describe, expect, test } from 'bun:test';
-import { BUTLER_CARD_MAX_BYTES, BUTLER_CARD_SOFT_BYTES, cardHeightOf, cardMetaOf, cardProblem, cardReplyOf, cardWarnings, parseButlerCards } from './components/butler-card-protocol';
+import { BUTLER_CARD_MAX_BYTES, BUTLER_CARD_SOFT_BYTES, cardHeightOf, cardMetaOf, cardProblem, cardReplyOf, cardSendText, cardWarnings, parseButlerCards } from './components/butler-card-protocol';
 
 const CARD = '```html card\n<!-- card: {"title":"进展","height":260} -->\n<div data-card>hi</div>\n```';
 
@@ -117,6 +117,24 @@ describe('cardReplyOf', () => {
     expect(cardReplyOf('（来自卡片：选好了 B）')).toBe('选好了 B');
     expect(cardReplyOf('  你好  ')).toBeNull();
     expect(cardReplyOf('（来自卡片：）')).toBeNull();
+  });
+});
+
+describe('cardSendText (a card answer never collapses to its label)', () => {
+  test('the documented {label, value} keeps every answer field', () => {
+    // 现场 2026-11-27：四选一卡只回「已选定四项」，value 里的选择整块丢了。
+    const answers = cardSendText({ label: '已选定四项', value: { cases: '少量代表曲目', frets: '要', rock: '约三成', repo: 'plannotator 本仓库' } });
+    expect(answers).toBe('已选定四项：cases=少量代表曲目；frets=要；rock=约三成；repo=plannotator 本仓库');
+    // 对话里带前缀的那一条，解析回来仍是完整答案，不是只剩 label。
+    expect(cardReplyOf(`（来自卡片：${answers}）`)).toBe(answers);
+  });
+
+  test('scalars, arrays and label-less objects keep their data', () => {
+    expect(cardSendText({ label: '选好了', value: 'B' })).toBe('选好了：B');
+    expect(cardSendText({ label: '多选', value: ['A', 'B'] })).toBe('多选：A、B');
+    expect(cardSendText({ cases: 'x', frets: 'y' })).toBe('cases=x；frets=y');
+    expect(cardSendText('一句话')).toBe('一句话');
+    expect(cardSendText({ label: '确认', value: {} })).toBe('确认');
   });
 });
 

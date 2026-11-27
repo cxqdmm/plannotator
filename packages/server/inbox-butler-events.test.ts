@@ -94,6 +94,12 @@ describe("the semantic projector", () => {
     expect(failed[0]).toMatchObject({ kind: "session.failed", level: "notify", subject: { session: "ses_1", thread: "msg_1" } });
     expect(failed[0]!.summary).toContain("额度用完了");
 
+    // 一次正常的执行会话回复：要叫醒管家，不是只落账（现场 2026-11-27 的 08:02）。
+    const report = { ...agent, id: "msg_report", turn_error: undefined, body: "方案已经出好了" } as unknown as InboxMessage;
+    const reported = projectInboxLine({ ...base, seq: 5, kind: "message", id: report.id, record: report }, () => report);
+    expect(reported[0]).toMatchObject({ kind: "thread.agent_message", level: "notify" });
+    expect(reported[0]!.summary).toContain("方案已经出好了");
+
     const question: InboxQuestionRecord = {
       id: "msg_2/q1",
       project_id: "p",
@@ -308,9 +314,18 @@ describe("the Inbox journal and the digest", () => {
     expect(events.recent().map((event) => event.kind).filter((kind) => kind !== "system.first_attach")).toEqual(["thread.person_message", "thread.agent_message", "thread.agent_question"]);
     const digest = events.takeDigest();
     expect(digest).toContain("【动态】");
+    // The execution session's reply is in the wake, not only its question.
+    expect(digest).toContain("遇到一个问题");
     expect(digest).toContain("用哪个配色？");
     // Said once: the next look has nothing new.
     expect(events.takeDigest()).toBe("");
+
+    // 同一线程不到 30 分钟又来一条真回复：内容类事件不被静默吞掉。
+    const later = { ...agent, id: "msg_3", body: "新的方案也出好了" } as unknown as InboxMessage;
+    messages.set(later.id, later);
+    push({ v: 1, seq: 4, at: at(11_000), kind: "message", id: later.id, record: later });
+    const next = events.takeDigest();
+    expect(next).toContain("新的方案也出好了");
     events.stop();
   });
 

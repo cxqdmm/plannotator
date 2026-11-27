@@ -2327,8 +2327,15 @@ export const inboxApi = {
     get<{ ledger: InboxButlerLedgerRow; markdown: string }>(inboxUrl(`/butler/ledger/${encodeURIComponent(req)}`)),
   /** The Inbox's projects (id / name / root), for the requirement card's project picker. */
   projectsList: () => get<{ projects: { id: string; name: string; root: string }[] }>(inboxUrl('/projects')),
+  /**
+   * The Inbox project a folder belongs to (the Workshop card's project picker): resolves the folder's
+   * repository, making the project when it is new. `create`: make this new folder first (the folder
+   * browser's "新建…").
+   */
+  ensureProject: (path: string, options: { create?: boolean } = {}) =>
+    post<{ project: { id: string; name: string; root: string } }>(inboxUrl('/projects'), { path, ...options }),
   /** 主人对一条审批做决定；批准后守护进程立刻执行，并把结果送回管家。 */
-  butlerApprovalDecide: (id: string, body: { decision: 'approve' | 'deny'; always?: boolean; note?: string; project_id?: string | null }) =>
+  butlerApprovalDecide: (id: string, body: { decision: 'approve' | 'deny'; always?: boolean; note?: string; project_id?: string | null; agent?: string | null }) =>
     post<{ approval: InboxButlerApproval }>(inboxUrl(`/butler/approvals/${encodeURIComponent(id)}/decide`), body),
   /** 授权开关：每次审批 / 直接允许。 */
   butlerApprovalSettings: (action: 'create-requirement' | 'launch-session' | 'archive-requirement' | 'stop-session', mode: 'ask' | 'auto') =>

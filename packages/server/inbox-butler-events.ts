@@ -347,7 +347,9 @@ export function projectInboxLine(line: InboxLine, messageOf: (id: string) => Inb
         ref,
         source: message.id,
         dedupe: `msg:${message.id}:agent`,
-        level: "record",
+        // 执行会话的回复是要人看的事情，不能只进账本不叫醒管家（现场 2026-11-27：
+        // 08:02 的回复落了账，唤醒摘要却只有「现在等你 1 件」，正文没人捎）。
+        level: "notify",
       });
     }
     return events;
@@ -872,7 +874,10 @@ export function createButlerEvents(options: ButlerEventsOptions): ButlerEvents {
       const silenceKey = `${event.subject.requirement ?? event.subject.session ?? event.domain}|${event.kind}`;
       const last = lastNotified.get(silenceKey);
       const at = Date.parse(event.at) || now();
-      if (last !== undefined && at - last < BUTLER_NOTIFY_SILENCE_MS) continue;
+      // 内容类事件（执行会话的回复、提问、失败、交付、管家动作结果）每次都算数：
+      // 同一需求两次真实回复相隔不到 30 分钟，不能把后一次当重复吞掉。
+      const alwaysSay = event.kind === "thread.agent_message" || event.kind === "thread.agent_question" || event.kind === "session.failed" || event.kind === "requirement.delivered" || event.kind === "requirement.verdict" || event.kind.startsWith("butler.action.");
+      if (!alwaysSay && last !== undefined && at - last < BUTLER_NOTIFY_SILENCE_MS) continue;
       lastNotified.set(silenceKey, at);
       // One line is the header and one may be "more": the rest are facts. A requirement line
       // names the ledger to read for the detail (§8.2: the id, never the whole ledger).
