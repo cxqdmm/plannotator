@@ -1,8 +1,8 @@
 /**
  * 管家是一页（owner 2026-11-25「管家是一个单独的页面，不是弹框，现在一刷新就不见了」）：
  * `#butler` 可寻址——解析回 page 'butler'、写回还是 #butler，别的地址不受牵连；
- * Butler 组件受控开（App 传 open/onOpenChange）：球点开、× 与 ESC 关都回报路由，
- * 不传 props 时维持本地内存的旧行为。
+ * 入口是侧栏品牌里的猫头鹰（无外圈），Butler 组件受控开（App 传 open/onOpenChange），
+ * × 与 ESC 关都回报路由。
  *
  * DOM-gated: runs under DOM_TESTS=1 (happy-dom), from tests/dom-test-list.txt.
  */
@@ -55,7 +55,6 @@ async function renderButler(props: { open?: boolean; onOpenChange?: (open: boole
   await settle();
 }
 
-const orb = () => host!.querySelector<HTMLButtonElement>('.ib-butler-orb');
 const pane = () => host!.querySelector('.ib-butler-pane');
 const closeBtn = () => host!.querySelector<HTMLButtonElement>('[aria-label="关闭管家"]');
 
@@ -86,23 +85,6 @@ if (hasDom) {
     expect(turns).toEqual([false, false]);
   });
 
-  test('受控关：点球回报 onOpenChange(true)，面板不自己出现', async () => {
-    const turns: boolean[] = [];
-    await renderButler({ open: false, onOpenChange: (open) => turns.push(open) });
-    expect(pane()).toBeNull();
-    await act(async () => orb()!.click());
-    expect(turns).toEqual([true]);
-    expect(pane()).toBeNull(); // 开不开由路由定，组件不自己抢
-  });
-
-  test('不传 props：旧行为，点球自己开（内存态）', async () => {
-    await renderButler();
-    expect(pane()).toBeNull();
-    await act(async () => orb()!.click());
-    await settle();
-    expect(pane()).not.toBeNull();
-  });
-
   test('审批页签：待批的需求卡带完整文档，点批准发到审批路由', async () => {
     const approval = {
       id: 'apr_1',
@@ -130,21 +112,21 @@ if (hasDom) {
       return Response.json({});
     }) as typeof fetch;
     await renderButler({ open: true, onOpenChange: () => {} });
-    const tabs = host!.querySelectorAll<HTMLButtonElement>('.ib-butler-tab');
-    expect(tabs.length).toBe(2);
-    await act(async () => tabs[1]!.click());
+    const approvals = host!.querySelector<HTMLButtonElement>('button[aria-label^="审批"]');
+    expect(approvals).not.toBeNull();
+    await act(async () => approvals!.click());
     await settle();
     await settle();
     expect(host!.querySelector('.ib-butler-ap-card')).not.toBeNull();
-    expect(host!.querySelectorAll('.ib-butler-switch-row')).toHaveLength(4);
     expect(host!.textContent).toContain('建需求卡《登录页改版》');
-    const projectSelect = host!.querySelector<HTMLSelectElement>('.ib-butler-ap-project select');
-    expect(projectSelect).not.toBeNull();
-    expect(projectSelect!.textContent).toContain('web');
-    await act(async () => {
-      projectSelect!.value = 'prj_1';
-      projectSelect!.dispatchEvent(new Event('change', { bubbles: true }));
-    });
+    // 审批卡的项目选择是需求卡同一个选择器（不是旧的原生 select）。
+    const picker = host!.querySelector<HTMLButtonElement>('.ib-butler-ap-card .ib-req-project-btn');
+    expect(picker).not.toBeNull();
+    await act(async () => picker!.click());
+    await settle();
+    const webRow = [...document.querySelectorAll<HTMLButtonElement>('.ib-req-project-row')].find((row) => row.textContent?.includes('web'));
+    expect(webRow).toBeTruthy();
+    await act(async () => webRow!.click());
     await settle();
     expect(host!.textContent).toContain('旧版太慢');
     const approve = host!.querySelector<HTMLButtonElement>('.ib-butler-ap-approve');
@@ -152,11 +134,16 @@ if (hasDom) {
     await act(async () => approve!.click());
     await settle();
     expect(calls.some((call) => call.url.includes('/decide') && call.body?.includes('"decision":"approve"') && call.body?.includes('"project_id":"prj_1"'))).toBe(true);
+    // 授权开关在左侧菜单的「配置」一栏（内容区整体切换，不再有抽屉）。
+    const config = [...host!.querySelectorAll<HTMLButtonElement>('.ib-butler-navbtn')].find((btn) => btn.textContent?.includes('配置'));
+    expect(config).toBeTruthy();
+    await act(async () => config!.click());
+    await settle();
+    expect(host!.querySelectorAll('.ib-butler-switch-row')).toHaveLength(4);
   });
 
   test('空场英雄态：问候 + 三条起步建议，点建议填进输入框', async () => {
-    await renderButler();
-    await act(async () => orb()!.click());
+    await renderButler({ open: true, onOpenChange: () => {} });
     await settle();
     expect(host!.querySelector('.ib-butler-hero')).not.toBeNull();
     expect(host!.querySelector('.ib-butler-hero-word')!.textContent).not.toBe('');

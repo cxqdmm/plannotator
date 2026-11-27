@@ -31,7 +31,7 @@ import { newSessionTip } from '../compose/model';
 import { PinnedRow, type PinnedAction } from './PinnedRow';
 import { useStarredAbove } from '../starredPills';
 import { useInboxTheme } from '../theme';
-import { TaterMark } from './TaterMark';
+import { ButlerCharacter } from './ButlerCharacter';
 import { ProjectTip } from './ProjectRow';
 import { Tip } from './Tip';
 import { CheckFailingRow, UpdateButton } from './Updates';
@@ -58,6 +58,8 @@ export interface SidebarProps {
   onBoard?: () => void;
   /** The Requirements panel (「需求」): the row above Inbox, shown only while the module is on. */
   onRequirements?: () => void;
+  /** 管家：the owl in the brand opens the full-screen butler page (and the footer row when the logo is hidden). */
+  onButler?: () => void;
   /** 工坊通知 (waiting sessions): the count on the row's bell; opening its panel. */
   workshopWaiting?: number;
   onWorkshopBell?: () => void;
@@ -699,7 +701,9 @@ export function Sidebar(props: SidebarProps) {
   const bottom = layout.bottom.filter(shows);
   const brand = shows('logo') && (
     <div className="ib-brand" data-sidebar-item="logo">
-      <TaterMark />
+      <button type="button" className="ib-brand-owl" aria-label="管家" title="管家" onClick={pick(() => props.onButler?.())}>
+        <ButlerCharacter size={68} />
+      </button>
       <b>Plannotator</b>
       <span>Inbox</span>
     </div>
@@ -969,6 +973,13 @@ export function Sidebar(props: SidebarProps) {
         )}
       </div>
       <div className="ib-side-foot" data-held={props.footHeld ? '' : undefined}>
+        {/* 侧栏把 logo 藏起来时，猫头鹰仍留在页脚：管家不能因此没有入口。 */}
+        {!shows('logo') && props.onButler && (
+          <button type="button" className="ib-side-butler" aria-label="管家" title="管家" onClick={pick(() => props.onButler?.())}>
+            <ButlerCharacter size={26} />
+            <span>管家</span>
+          </button>
+        )}
         {stack(bottom.slice(0, noticesAfter))}
         <UpdateButton
           update={props.update}

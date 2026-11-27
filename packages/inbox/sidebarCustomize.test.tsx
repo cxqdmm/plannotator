@@ -458,3 +458,19 @@ test.skipIf(!hasDom)('on a phone: hidden Starred and Projects are gone from the 
   expect(projectsHeading()).toBeNull();
   expect(projectsBody()).toBeNull();
 });
+
+test.skipIf(!hasDom)('the brand owl opens the butler; hiding the logo keeps it in the footer', async () => {
+  let opened = 0;
+  draw({ onButler: () => { opened += 1; } });
+  const brandOwl = host!.querySelector<HTMLButtonElement>('.ib-brand-owl');
+  expect(brandOwl).not.toBeNull();
+  act(() => brandOwl!.click());
+  expect(opened).toBe(1);
+
+  await act(async () => hearSidebarEvent({ ...INBOX_SIDEBAR_DEFAULT, hidden: ['logo'] }, 1));
+  await flush();
+  const footOwl = host!.querySelector<HTMLButtonElement>('.ib-side-butler');
+  expect(footOwl).not.toBeNull();
+  act(() => footOwl!.click());
+  expect(opened).toBe(2);
+});

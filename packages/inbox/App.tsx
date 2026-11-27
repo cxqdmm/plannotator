@@ -5967,6 +5967,7 @@ function Inbox() {
           ) : (
           <Sidebar
             page={route.page === 'tour' || route.page === 'butler' ? 'inbox' : fromCard ? 'board' : route.reviews ? 'reviews' : route.page}
+            onButler={() => go({ page: 'butler', project: null, thread: null })}
             projectId={route.project}
             machineId={route.page === 'inbox' ? (filterMachine?.id ?? null) : null}
             agentFilter={filterAgent ? { id: filterAgent.id, name: filterAgent.name } : null}
