@@ -183,6 +183,8 @@ interface OpenCodePart {
 interface OpenCodeMessage {
   type?: string;
   content?: OpenCodePart[];
+  /** v2 紧凑形 user 行：文本直接在顶层 text 字段，没有 content 数组。 */
+  text?: string;
   time?: { created?: number };
 }
 
@@ -247,6 +249,9 @@ export function openCodeStreamEntries(dbPath: string, session: string): StreamEn
       const at = data.time?.created;
       const when = typeof at === "number" && Number.isFinite(at) ? { t: at } : {};
       if (row.type === "user") {
+        // opencode 2.x 把 user 行存成紧凑形 { metadata, time, text }——文本在
+        // 顶层 text 字段，没有 content 数组；旧形才走下面的 content 分支。
+        if (typeof data.text === "string" && data.text.trim()) entries.push({ i: entries.length, kind: "you", ...when, text: clip(data.text, CLAUDE_STREAM_TEXT_MAX) });
         for (const part of data.content ?? []) {
           if (part.type === "text" && part.text?.trim()) entries.push({ i: entries.length, kind: "you", ...when, text: clip(part.text, CLAUDE_STREAM_TEXT_MAX) });
         }
