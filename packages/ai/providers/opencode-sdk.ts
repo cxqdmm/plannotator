@@ -1,10 +1,11 @@
 /**
  * OpenCode provider — bridges Plannotator's AI layer with OpenCode's agent server.
  *
- * Uses @opencode-ai/sdk to spawn a dedicated `opencode serve` on an
- * OS-assigned port. One server is shared across all sessions of this process,
- * closed on dispose and on process exit. This provider deliberately never
- * attaches to a server it did not spawn: an attached server cannot be cleaned
+ * Spawns a dedicated `opencode serve` on an OS-assigned port (our own
+ * hidden-window spawn, opencode-server-spawn.ts) and talks to it through the
+ * @opencode-ai/sdk client. One server is shared across all sessions of this
+ * process, closed on dispose and on process exit. This provider deliberately
+ * never attaches to a server it did not spawn: an attached server cannot be cleaned
  * up by us, and opencode's per-directory instances accumulate in it without
  * eviction, so a shared long-lived server grows without bound. The user must
  * have the `opencode` CLI installed and authenticated.
@@ -15,6 +16,7 @@ import type { OpencodeClient } from "@opencode-ai/sdk";
 import { BaseSession } from "../base-session.ts";
 import { buildSystemPrompt } from "../context.ts";
 import { withAskAiChildEnv } from "./ask-ai-env.ts";
+import { spawnOpencodeServer } from "./opencode-server-spawn.ts";
 import type {
 	AIMessage,
 	AIProvider,
@@ -104,7 +106,7 @@ export class OpenCodeProvider implements AIProvider {
 
 	private async doStart(): Promise<void> {
 		const epoch = this.startEpoch;
-		const { createOpencodeServer, createOpencodeClient } = await getSDK();
+		const { createOpencodeClient } = await getSDK();
 		// port 0 asks opencode for an OS-assigned free port (the SDK reads the
 		// real URL back from the child's "listening" line), so every Plannotator
 		// process gets its own server instead of piling onto a shared default
@@ -114,9 +116,13 @@ export class OpenCodeProvider implements AIProvider {
 		try {
 			// Plannotator's integration off in this `opencode serve`
 			// (ask-ai-env.ts): the Plannotator OpenCode plugin it loads reads
-			// process.env and stands down. The SDK takes no env, so the switches
-			// are set on process.env only for the synchronous part of the call,
-			// where the SDK copies it into the spawn.
+			// process.env and stands down. The spawn copies process.env
+			// synchronously inside the call, so the switches are set on
+			// process.env only for the synchronous part of the call.
+			// The server is our own spawn (opencode-server-spawn.ts), not the
+			// SDK's createOpencodeServer: the SDK factory omits `windowsHide`,
+			// so on Windows every server start flashed a console window over
+			// the person's desktop (the daemon runs without a console).
 			// OpenCode 2.3 serves its real API under `/api` behind HTTP Basic auth
 			// (`opencode:<server password>`). The password is generated per
 			// `opencode serve`; pinning it through OPENCODE_SERVER_PASSWORD (copied
@@ -128,7 +134,7 @@ export class OpenCodeProvider implements AIProvider {
 			process.env.OPENCODE_SERVER_PASSWORD = serverPassword;
 			try {
 				server = await withAskAiChildEnv(() =>
-					createOpencodeServer({
+					spawnOpencodeServer({
 						hostname: this.config.hostname ?? "127.0.0.1",
 						port: this.config.port ?? 0,
 						timeout: 15_000,

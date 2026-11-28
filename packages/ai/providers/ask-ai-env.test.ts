@@ -9,7 +9,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
-import { createOpencodeServer } from "@opencode-ai/sdk/server";
+import { spawnOpencodeServer } from "./opencode-server-spawn.ts";
 import { isAskAiChild } from "../../shared/child-env.ts";
 import { askAiChildEnv, withAskAiChildEnv } from "./ask-ai-env.ts";
 import { ClaudeAgentSDKProvider } from "./claude-agent-sdk.ts";
@@ -241,9 +241,9 @@ describe("Claude: the Agent SDK's `claude`", () => {
 	}, 15_000);
 });
 
-describe("OpenCode: the installed SDK's createOpencodeServer", () => {
-	// The SDK takes no env; withAskAiChildEnv relies on it copying process.env
-	// synchronously inside the call. This runs the real SDK, not a mock.
+describe("OpenCode: spawnOpencodeServer (the provider's own `opencode serve` spawn)", () => {
+	// The spawn takes no env; withAskAiChildEnv relies on it copying process.env
+	// synchronously inside the call. This runs the real spawn, not a mock.
 	test.if(posix)("copies the switches into `opencode serve`, and process.env is back as it was when the call returns", async () => {
 		const binDir = mkdtempSync(join(dir, "bin-"));
 		const envFile = join(dir, "opencode-env.txt");
@@ -257,7 +257,7 @@ describe("OpenCode: the installed SDK's createOpencodeServer", () => {
 		delete process.env.PLANNOTATOR_ASK_AI_CHILD;
 		let server: { url: string; close(): void } | undefined;
 		try {
-			const starting = withAskAiChildEnv(() => createOpencodeServer({ hostname: "127.0.0.1", port: 0, timeout: 10_000 }));
+			const starting = withAskAiChildEnv(() => spawnOpencodeServer({ hostname: "127.0.0.1", port: 0, timeout: 10_000 }));
 			// Restored before the server is even up: no other code sees the switches.
 			expect(process.env.PLANNOTATOR_ASK_AI_CHILD).toBeUndefined();
 			server = await starting;
@@ -280,7 +280,7 @@ describe("OpenCode: the installed SDK's createOpencodeServer", () => {
 		process.env.PATH = `${binDir}${delimiter}${savedPath ?? ""}`;
 		let server: { url: string; close(): void } | undefined;
 		try {
-			server = await createOpencodeServer({ hostname: "127.0.0.1", port: 0, timeout: 3_000 });
+			server = await spawnOpencodeServer({ hostname: "127.0.0.1", port: 0, timeout: 3_000 });
 			expect(server.url).toBe("http://127.0.0.1:4999");
 		} finally {
 			server?.close();

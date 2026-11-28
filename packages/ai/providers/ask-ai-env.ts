@@ -55,12 +55,11 @@ export function askAiChildEnv(
 /**
  * Run `start` with `ASK_AI_CHILD_SWITCHES` set on process.env, and put
  * process.env back before returning. Only for a spawn API that takes no env
- * and copies process.env synchronously inside the call: the OpenCode SDK's
- * `createOpencodeServer` (its `cross-spawn` call with `{ ...process.env }`
- * comes before its first await). JavaScript runs one call at a time, so no
- * other code, a concurrent Ask AI start included, sees the change.
- * `ask-ai-env.test.ts` runs the installed SDK against a fake `opencode` to
- * keep that true.
+ * and copies process.env synchronously inside the call: OpenCode's
+ * `spawnOpencodeServer` (its `{ ...process.env }` copy comes before its first
+ * await). JavaScript runs one call at a time, so no other code, a concurrent
+ * Ask AI start included, sees the change. `ask-ai-env.test.ts` runs the real
+ * spawn against a fake `opencode` to keep that true.
  */
 export function withAskAiChildEnv<T>(start: () => T): T {
 	const saved = Object.keys(ASK_AI_CHILD_SWITCHES).map((key) => [key, process.env[key]] as const);

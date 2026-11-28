@@ -16,11 +16,11 @@
  *    startup — it spawns `opencode serve`, so it must stay behind the deferred
  *    provider initializer (?activate= / first session), like Codex.
  *
- * The SDK is mocked before the provider import so no real `opencode serve` is
- * ever spawned. bun runs all test files in one process, so the module mock
- * leaks process-wide; that is safe (and desirable) here because this provider
- * is the only consumer of @opencode-ai/sdk and no test may spawn a real
- * server.
+ * The server spawn and the SDK client are mocked before the provider import
+ * so no real `opencode serve` is ever spawned. bun runs all test files in one
+ * process, so the module mocks leak process-wide; that is safe (and desirable)
+ * here because this provider is the only consumer of @opencode-ai/sdk and no
+ * test may spawn a real server.
  */
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -31,7 +31,7 @@ interface FakeSpawn {
 	port?: number;
 	timeout?: number;
 	closed: boolean;
-	/** The switches process.env held when the SDK was called (it copies process.env into the spawn there). */
+	/** The switches process.env held when the spawn was made (it copies process.env inside the call). */
 	env: Record<string, string | undefined>;
 }
 
@@ -40,8 +40,12 @@ let clientFactory: () => unknown = () => ({});
 let spawnGate: Promise<void> | null = null;
 let serverError: Error | null = null;
 
-mock.module("@opencode-ai/sdk", () => ({
-	createOpencodeServer: async (opts: {
+// The server spawn is our own module (opencode-server-spawn.ts — the SDK
+// factory it replaced flashed a console window on Windows); mock it here so
+// no real `opencode serve` is ever started. The SDK mock keeps only the
+// client factory the provider still uses.
+mock.module("./opencode-server-spawn.ts", () => ({
+	spawnOpencodeServer: async (opts: {
 		hostname?: string;
 		port?: number;
 		timeout?: number;
@@ -65,6 +69,9 @@ mock.module("@opencode-ai/sdk", () => ({
 			},
 		};
 	},
+}));
+
+mock.module("@opencode-ai/sdk", () => ({
 	createOpencodeClient: () => clientFactory(),
 }));
 
@@ -182,7 +189,7 @@ describe("OpenCodeProvider server lifecycle", () => {
 		});
 
 		const inFlight = provider.ensureServer();
-		// Let doStart enter createOpencodeServer before disposing.
+		// Let doStart enter spawnOpencodeServer before disposing.
 		await Bun.sleep(0);
 		expect(spawned.length).toBe(1);
 
