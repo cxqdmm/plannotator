@@ -12697,6 +12697,20 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
 
 .ib-bc-happy .ib-bc-head { animation-duration: 4.6s; }
 
+/* 形态即状态（owner 2026-11-28「用猫头鹰的形态来描述，别用绿点」）：sleep 趴着睡
+   ——头不再歪晃、胸口缓慢起伏、Zzz 轮番上飘；gone 只剩枝头叶影（会话不可用）；
+   两端叶影随微风轻颤。 */
+svg.ib-bc.ib-bc-sleep .ib-bc-head,
+svg.ib-bc.ib-bc-sleep .ib-bc-brow-l,
+svg.ib-bc.ib-bc-sleep .ib-bc-brow-r { animation: none; }
+.ib-bc-sleepbody { transform-box: fill-box; transform-origin: 50% 100%; animation: ib-bc-breathe 4.4s ease-in-out infinite; }
+@keyframes ib-bc-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.05); } }
+.ib-bc-zzz { transform-box: fill-box; animation: ib-bc-zzz 3.6s ease-out infinite; }
+.ib-bc-zzz2 { animation-delay: 1.8s; }
+@keyframes ib-bc-zzz { 0% { opacity: 0; transform: translate(0, 0); } 30% { opacity: 0.55; } 100% { opacity: 0; transform: translate(2px, -4.5px); } }
+.ib-bc-leaves { transform-box: fill-box; transform-origin: 50% 92%; animation: ib-bc-sway 6.8s ease-in-out infinite; }
+@keyframes ib-bc-sway { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(1.4deg); } }
+
 /* 管家整页（owner 2026-11-27「改成 inbox 主页的风格，分成菜单和右侧内容区域」）：
    左侧菜单（顶部猫头鹰、中部对话/审批/台账、底部配置 + 终端图标），右侧是选中一栏的
    内容。没有侧栏抽屉：点菜单，右边整体换内容。 */
@@ -12873,7 +12887,6 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
 .ib-butler-top-buttons [data-butler-session-copy="failed"] { color: var(--destructive, var(--foreground)); }
 .ib-butler-avatar { position: relative; width: 144px; height: 144px; display: grid; place-items: center; color: var(--foreground); animation: ib-butler-float 5s ease-in-out infinite; }
 .ib-butler-avatar::after { content: ""; position: absolute; left: 50%; bottom: -20px; width: 92px; height: 16px; border-radius: 999px; transform: translateX(-50%); background: radial-gradient(closest-side, color-mix(in oklch, var(--foreground) 24%, transparent), transparent); animation: ib-butler-float-shadow 5s ease-in-out infinite; }
-.ib-butler-presence { position: absolute; right: 14px; bottom: 18px; width: 16px; height: 16px; border-radius: 999px; background: oklch(0.72 0.17 148); box-shadow: 0 0 0 2.5px color-mix(in oklch, var(--background) 85%, transparent); }
 @keyframes ib-butler-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 @keyframes ib-butler-float-shadow { 0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.75; } 50% { transform: translateX(-50%) scale(0.78); opacity: 0.4; } }
 @keyframes ib-butler-idle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
@@ -13007,6 +13020,8 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
   .ib-butler-idea:hover, .ib-butler-send:hover:not(:disabled) { transform: none; }
   .ib-bc-eyes, .ib-bc-head, .ib-bc-wing-l, .ib-bc-wing-r, .ib-bc-brow-l, .ib-bc-brow-r, .ib-bc-spark { animation: none; }
   .ib-bc-spark { opacity: 0.9; }
+  .ib-bc-sleepbody, .ib-bc-zzz, .ib-bc-leaves { animation: none; }
+  .ib-bc-zzz { opacity: 0.4; }
   .ib-butler-avatar, .ib-butler-avatar::after { animation: none; }
   .ib-butler-side { transition: none; }
   .ib-butler-card-skel-body span { animation: none; }

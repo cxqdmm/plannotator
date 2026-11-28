@@ -13,7 +13,7 @@ import { Icon } from '../icons';
 import { inboxApi, type InboxButlerApprovalsModel } from '../api';
 import { ButlerApprovals, ButlerAuthSettings } from './ButlerApprovals';
 import { ButlerLedger } from './ButlerLedger';
-import { ButlerCharacter } from './ButlerCharacter';
+import { ButlerCharacter, type ButlerMood } from './ButlerCharacter';
 import { ButlerRichText } from './ButlerCards';
 import { cardReplyOf } from './butler-card-protocol';
 import { BUTLER_FILE_MAX_BYTES, BUTLER_FILE_MAX_COUNT } from '@plannotator/core/inbox-types';
@@ -55,6 +55,11 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
   const compoRef = useRef<HTMLTextAreaElement>(null);
   const [pending, setPending] = useState(false);
   const [sessionCopy, setSessionCopy] = useState<'idle' | 'busy' | 'copied' | 'failed'>('idle');
+  // 形态即状态（owner 2026-11-28「用猫头鹰的形态来描述，别用绿点」）：会话探活
+  // （null=还没探到；探活的 GET /butler/session 在服务端只是读缓存/续接，失败即不可用）
+  // 与空闲计时的滴答。空闲阈值：最后一轮对话 10 分钟前。
+  const [sessionLive, setSessionLive] = useState<boolean | null>(null);
+  const [, setPresenceTick] = useState(0);
   /**
    * 这一轮的「过程」（owner 2026-11-26「看不到管家的思考过程和工具调用」）：模型的思考增量
    * 与工具调用，只属于正在进行的这一轮；历史里只存正文，所以下一轮开始时清空。
@@ -142,11 +147,18 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
-  // 打开时读历史（一次；此后本地追加）。
+  // 打开时读历史（一次；此后本地追加），并探一次会话是否可用（猫头鹰在不在枝头）。
   useEffect(() => {
     if (!open || loadedRef.current) return;
     loadedRef.current = true;
     void inboxApi.butlerHistory().then((answer) => setTurns(answer.history ?? [])).catch(() => setTurns([]));
+    void inboxApi.butlerSession().then(() => setSessionLive(true)).catch(() => setSessionLive(false));
+  }, [open]);
+  // 空闲滴答：页面开着时每 30 秒重估一次形态（闲满 10 分钟，猫头鹰趴下打盹）。
+  useEffect(() => {
+    if (!open) return;
+    const timer = setInterval(() => setPresenceTick((v) => v + 1), 30_000);
+    return () => clearInterval(timer);
   }, [open]);
 
   // 事件唤醒（doc/管家-事件机制设计 §8.1）：管家自己开口说的话由服务端写进历史，
@@ -348,6 +360,21 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
     void inboxApi.butlerStop().catch(() => {});
   };
 
+  // 猫头鹰的形态（owner 2026-11-28）：睁眼立在枝头=在线；闲满 10 分钟趴下打盹=空闲；
+  // 会话探活失败=不在枝头（不可用）。说话时扑翅（working），复制命令的欢呼（happy）
+  // 只盖过站姿，不盖过忙碌与不可用。
+  const lastTurnAt = turns.length ? turns[turns.length - 1]!.at : null;
+  const idleForMs = lastTurnAt ? Date.now() - Date.parse(lastTurnAt) : 0;
+  const presence: ButlerMood = sessionLive === false ? 'gone' : lastTurnAt && idleForMs > 10 * 60_000 ? 'sleep' : 'idle';
+  const owlMood: ButlerMood = pending ? 'working' : presence === 'gone' ? 'gone' : sessionCopy === 'copied' ? 'happy' : presence;
+  const owlTitle = pending
+    ? '管家在线 · 正在说话'
+    : presence === 'gone'
+      ? '管家会话不可用'
+      : presence === 'sleep'
+        ? '管家打盹中 · 有一阵子没说话了'
+        : '管家在线';
+
   return (
     <>
       {open && (
@@ -417,9 +444,8 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                     </button>
                   </Tip>
                 </div>
-                <span className="ib-butler-avatar" title="管家">
-                  <ButlerCharacter size={144} mood={pending ? 'working' : sessionCopy === 'copied' ? 'happy' : 'idle'} />
-                  <span className="ib-butler-presence" aria-hidden="true" />
+                <span className="ib-butler-avatar" title={owlTitle}>
+                  <ButlerCharacter size={144} mood={owlMood} />
                 </span>
               </div>
                 <div className="ib-butler-list" ref={listRef}>
