@@ -2323,10 +2323,12 @@ export const inboxApi = {
   butlerHistory: () => get<{ history: { at: string; role: 'you' | 'butler'; text: string }[] }>(inboxUrl('/butler/history')),
   /** 管家页的「审批」页签：待批 + 已决定 + 授权开关。 */
   butlerApprovals: () => get<InboxButlerApprovalsModel>(inboxUrl('/butler/approvals')),
-  /** 管家台账（只读）：每个需求一行摘要；点开再看一份的完整台账（服务端渲染的 Markdown）。 */
+  /** 管家台账（只读）：每个需求一行摘要；点开再看一份的完整台账（服务端渲染的 Markdown）+ 交付物。 */
   butlerLedger: () => get<{ ledgers: InboxButlerLedgerRow[] }>(inboxUrl('/butler/ledger')),
   butlerLedgerOf: (req: string) =>
-    get<{ ledger: InboxButlerLedgerRow; markdown: string }>(inboxUrl(`/butler/ledger/${encodeURIComponent(req)}`)),
+    get<{ ledger: InboxButlerLedgerRow; markdown: string; deliverables: InboxDeliverableRef[] }>(inboxUrl(`/butler/ledger/${encodeURIComponent(req)}`)),
+  /** 产物直达：系统默认程序打开一个交付物（reveal: 回资源管理器定位）。 */
+  butlerOpen: (ref: string, reveal?: boolean) => post<{ ok: boolean; error?: string }>(inboxUrl('/butler/open'), { ref, ...(reveal ? { reveal: true } : {}) }),
   /** The Inbox's projects (id / name / root), for the requirement card's project picker. */
   projectsList: () => get<{ projects: { id: string; name: string; root: string }[] }>(inboxUrl('/projects')),
   /**
@@ -2397,7 +2399,23 @@ export interface InboxButlerLedgerRow {
   archived: boolean;
   next_action: { text: string; why: string; level: 'record' | 'notify' | 'act'; at: string } | null;
   waiting: number;
+  /** 等你清单（owner 2026-11-28）：要主人做的事，原文。 */
+  waiting_items?: string[];
   running: number;
+  /** 产物（工坊交付物同源）：计数 + 最新一笔时间（「新」标记与台账按钮徽标用）。 */
+  deliverables?: number;
+  deliverable_at?: string | null;
+}
+
+/** 一条交付物的窗口视图（台账详情的产物区块用）。 */
+export interface InboxDeliverableRef {
+  id: string;
+  kind: 'design-doc' | 'test-report' | 'link' | 'file';
+  ref: string;
+  title?: string;
+  by?: string | null;
+  created_at: string;
+  verdict?: 'approved' | 'annotated';
 }
 
 export interface InboxButlerApprovalsModel {

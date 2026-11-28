@@ -22,6 +22,7 @@
  *   ledger/<req>.md         the butler's reading view
  * Tests sandbox with PLANNOTATOR_BUTLER_DIR (inbox-butler.ts).
  */
+import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -1094,6 +1095,8 @@ export function createButlerEvents(options: ButlerEventsOptions): ButlerEvents {
         return Response.json({
           ledgers: [...ledgers.values()].map((ledger) => {
             syncLedger(ledger);
+            const record = options.requirements?.store.get(ledger.req)?.requirement ?? null;
+            const delivered = record?.deliverables.map((entry) => entry.created_at).sort() ?? [];
             return {
               req: ledger.req,
               title: ledger.title,
@@ -1101,7 +1104,13 @@ export function createButlerEvents(options: ButlerEventsOptions): ButlerEvents {
               archived: ledger.archived,
               next_action: ledger.next_action,
               waiting: ledger.todos.on_person.length,
+              // 等你清单（owner 2026-11-28「都不知道什么含义」）：要主人做的事，原文列出。
+              waiting_items: ledger.todos.on_person,
               running: ledger.todos.on_session.length,
+              // 产物同源（owner 2026-11-28「台账加产物模块」）：工坊需求记录的交付物，
+              // 行上带计数与最新一笔时间（前端「新」标记与台账按钮徽标用）。
+              deliverables: record?.deliverables.length ?? 0,
+              deliverable_at: delivered.length ? delivered[delivered.length - 1]! : null,
             };
           }),
         });
@@ -1111,7 +1120,40 @@ export function createButlerEvents(options: ButlerEventsOptions): ButlerEvents {
         const ledger = ledgers.get(match[1]!);
         if (!ledger) return Response.json({ error: "没有这个需求的台账。" }, { status: 404 });
         syncLedger(ledger);
-        return Response.json({ ledger, markdown: renderLedger(ledger) });
+        const record = options.requirements?.store.get(ledger.req)?.requirement ?? null;
+        return Response.json({
+          ledger,
+          markdown: renderLedger(ledger),
+          // 产物区块（时间倒序）：agent 经 MCP deliver 上报的交付物，主人从台账直达。
+          deliverables: (record?.deliverables ?? []).slice().sort((a, b) => (a.created_at < b.created_at ? 1 : -1)),
+        });
+      }
+      // 产物直达（owner 2026-11-28「点一个产物：系统默认程序直接打开」）：文件/文件夹
+      // 用系统默认方式打开，「显示」则回资源管理器定位；http(s) 交给系统浏览器。窗口
+      // 自己的点击（same-origin），路径只拿来打开，不做别的。
+      if (url.pathname === "/api/inbox/butler/open" && req.method === "POST") {
+        const body = await req.json().catch(() => ({})) as { ref?: unknown; reveal?: unknown };
+        const ref = typeof body.ref === "string" ? body.ref.trim() : "";
+        const reveal = body.reveal === true;
+        if (!ref || ref.length > 500) return Response.json({ error: "没有要打开的产物地址。" }, { status: 422 });
+        const isUrl = /^https?:\/\//i.test(ref);
+        const isWin = process.platform === "win32";
+        try {
+          if (isUrl) {
+            spawn(isWin ? "cmd.exe" : process.platform === "darwin" ? "open" : "xdg-open", isWin ? ["/c", "start", "", ref] : [ref], { stdio: "ignore", windowsHide: true, detached: true }).unref();
+          } else if (isWin) {
+            const backslash = ref.replaceAll("/", "\\");
+            if (reveal) spawn("explorer.exe", ["/select,", backslash], { stdio: "ignore", windowsHide: true, detached: true }).unref();
+            else spawn("cmd.exe", ["/c", "start", "", backslash], { stdio: "ignore", windowsHide: true, detached: true }).unref();
+          } else if (process.platform === "darwin") {
+            spawn("open", reveal ? ["-R", ref] : [ref], { stdio: "ignore", detached: true }).unref();
+          } else {
+            spawn("xdg-open", [ref], { stdio: "ignore", detached: true }).unref();
+          }
+          return Response.json({ ok: true });
+        } catch (error) {
+          return Response.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+        }
       }
       return null;
     },
