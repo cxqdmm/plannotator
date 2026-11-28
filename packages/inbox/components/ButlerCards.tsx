@@ -37,7 +37,9 @@ export function ButlerRichText({ text, streaming, onCardMessage }: { text: strin
 /** 页面主题 → 卡片能用的 CSS 变量（深浅色都跟随）。 */
 function themeVars(): string {
   const names = ['--foreground', '--background', '--card', '--border', '--primary', '--primary-foreground', '--muted', '--muted-foreground', '--destructive', '--font-mono', '--font-sans'];
-  const style = typeof window === 'undefined' ? null : getComputedStyle(document.documentElement);
+  // 优先读管家面板：Raycast 炭黑身份在面板上重定义了这些变量，卡片要跟它一个气质。
+  const scope = document.querySelector('.ib-butler-pane');
+  const style = getComputedStyle(scope ?? document.documentElement);
   return names
     .map((name) => {
       const value = style?.getPropertyValue(name).trim();
@@ -58,24 +60,71 @@ function frameDoc(html: string, meta: ButlerCardMeta): string {
 <title>${title.replace(/[<>&]/g, '')}</title>
 <style>
   :root { ${themeVars()} }
+  /* dt 设计系统（owner 2026-11-27 提供的 config）：卡片按这套 token 出样式 */
+  :root {
+    --dt-color-bg-page: #FAFBFC;
+    --dt-color-bg-card: #FFFFFF;
+    --dt-color-bg-elevated: #F7F8FA;
+    --dt-color-bg-subtle: #F1F2F5;
+    --dt-color-text-primary: #1D2129;
+    --dt-color-text-secondary: #4E5969;
+    --dt-color-text-tertiary: #86909C;
+    --dt-color-text-placeholder: #C9CDD4;
+    --dt-color-text-on-primary: #FFFFFF;
+    --dt-color-brand-primary: #3B82F6;
+    --dt-color-brand-primary-hover: #2563EB;
+    --dt-color-brand-primary-subtle: #EFF6FF;
+    --dt-color-success-base: #10B981;
+    --dt-color-success-subtle: #ECFDF5;
+    --dt-color-warning-base: #F59E0B;
+    --dt-color-warning-subtle: #FFFBEB;
+    --dt-color-danger-base: #EF4444;
+    --dt-color-danger-subtle: #FEF2F2;
+    --dt-color-info-base: #06B6D4;
+    --dt-color-info-subtle: #ECFEFF;
+    --dt-color-border-default: #E5E6EB;
+    --dt-color-border-subtle: #F2F3F5;
+    --dt-color-border-focus: #3B82F6;
+    --dt-color-icon-primary: #4E5969;
+    --dt-color-icon-secondary: #86909C;
+  }
   ${BUTLER_CARD_UTILITIES}
-  html, body { margin: 0; padding: 0; background: transparent; color: var(--foreground); font-family: var(--font-sans, system-ui, sans-serif); font-size: 14px; line-height: 1.6; }
+  /* 卡片的外框（边框/圆角/阴影）由页面统一提供，卡内不再自画 */
+  body { margin: 0; display: flow-root; overflow-x: hidden; font-family: "Inter", system-ui, -apple-system, "BlinkMacSystemFont", sans-serif; color: var(--dt-color-text-primary); }
+  /* box-sizing：padding 计入宽度——750 的硬上限连内边距一起算（owner 2026-11-27） */
   *, *::before, *::after { box-sizing: border-box; }
-  ::selection { background: color-mix(in oklch, var(--primary) 30%, transparent); }
+  /* 高度由页面同步，滚动条从不该出现——隐藏它，避免它挤压内容宽度造成横向滚动 */
+  html { overflow-y: auto; scrollbar-width: none; }
+  html::-webkit-scrollbar { width: 0; height: 0; display: none; }
+  [data-card] { width: 100%; max-width: 750px; margin: 0 auto !important; background: transparent !important; border: none !important; box-shadow: none !important; border-radius: 0 !important; }
+  /* 呼吸感兜底：根元素没写 gap 时，直接子元素之间也有 14px 的最低间隔 */
+  [data-card]:not([class*="gap"]) > * + * { margin-top: 14px; }
+  [data-card] > p + p { margin-top: 8px; }
+  /* 呼吸感兜底：模型没写 gap 时，直接子元素之间也有最低 12px 的间隔（写了 gap 则交给 gap） */
+  [data-card]:not([class*="gap-"]) > * + * { margin-top: 12px; }
+  [data-card] > p + p { margin-top: 8px; }
 </style>
 <script>
   (function () {
     var post = function (payload) { try { parent.postMessage(payload, '*'); } catch (e) {} };
     window.plannotator = {
       resize: function (height) { if (typeof height === 'number' && isFinite(height)) post({ type: 'plannotator:resize', height: height }); },
-      // 卡片把点击结果交回对话：字符串就是一句话，对象带 label 更清楚。
       send: function (value) { post({ type: 'plannotator:send', value: value }); }
     };
-    // 收尾后按内容报一次高度（卡片自己调 resize 可覆盖）。
-    window.addEventListener('load', function () {
-      var h = Math.ceil(document.documentElement.scrollHeight);
-      if (h > 0) post({ type: 'plannotator:resize', height: h });
-    });
+    // 高度不再靠估：ResizeObserver 持续量 body 实际高度（含晚到内容与动态变化），变了就报。
+    var start = function () {
+      if (!document.body) return;
+      var last = -1;
+      var report = function () {
+        var h = Math.ceil(document.body.getBoundingClientRect().height);
+        if (h > 0 && h !== last) { last = h; post({ type: 'plannotator:resize', height: h }); }
+      };
+      if (typeof ResizeObserver !== 'undefined') new ResizeObserver(report).observe(document.body);
+      report();
+      window.addEventListener('load', report);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
   })();
 </script>
 </head><body>${html}</body></html>`;

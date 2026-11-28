@@ -61,6 +61,8 @@ const UTILITIES = [
   '.text-lg{font-size:16px}',
   '.text-xl{font-size:18px}',
   '.text-2xl{font-size:20px}',
+  '.text-3xl{font-size:24px}',
+  '.text-4xl{font-size:28px}',
   '.font-medium{font-weight:500}',
   '.font-semibold{font-weight:600}',
   '.font-bold{font-weight:700}',
@@ -84,7 +86,8 @@ const UTILITIES = [
   '.border-dashed{border-style:dashed}',
   '.rounded-lg{border-radius:10px}',
   '.rounded-xl{border-radius:14px}',
-  '.rounded-2xl{border-radius:18px}',
+  '.rounded-2xl{border-radius:16px}',
+  '.rounded-3xl{border-radius:20px}',
   '.rounded-full{border-radius:999px}',
   '.shadow-sm{box-shadow:0 1px 2px rgba(0,0,0,0.05),0 12px 28px -24px rgba(0,0,0,0.35)}',
   // 交互
@@ -100,11 +103,95 @@ const UTILITIES = [
   '.btn-primary{border-color:var(--primary);background:var(--primary);color:var(--primary-foreground)}',
   '.btn-disabled{opacity:0.45;cursor:not-allowed}',
   '.chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 9px;font-size:12px;background:var(--muted);color:var(--muted-foreground)}',
+  '.h-11{height:44px}',
+  '.gradient-primary{background:linear-gradient(135deg, var(--primary), color-mix(in oklch, var(--primary) 68%, white));color:var(--primary-foreground)}',
+  '.gradient-text{background:linear-gradient(135deg, var(--primary), color-mix(in oklch, var(--primary) 55%, #ff8a65));-webkit-background-clip:text;background-clip:text;color:transparent}',
 ].join('');
 
 /** 沙箱内联的整套工具类（一次性；模型看不到它，也不为它付 token）。 */
+
+/* ── dt 设计系统（owner 2026-11-27 提供）：颜色/字号/间距/圆角/阴影 的工具类 ── */
+const DT_SPACE: readonly [string, number][] = [
+  ['1', 4], ['2', 8], ['3', 12], ['4', 16], ['5', 20], ['6', 24],
+  ['7', 28], ['8', 32], ['10', 40], ['12', 48],
+];
+
+function dtSpacing(name: string, props: readonly string[]): string {
+  return DT_SPACE.map(([key, px]) => `.${name}${key}{${props.map((prop) => `${prop}:${px}px`).join(';')}}`).join('');
+}
+
+const DT_UTILITIES = [
+  // 背景
+  '.bg-dt-bg-page{background:var(--dt-color-bg-page)}',
+  '.bg-dt-bg-card{background:var(--dt-color-bg-card)}',
+  '.bg-dt-bg-elevated{background:var(--dt-color-bg-elevated)}',
+  '.bg-dt-bg-subtle{background:var(--dt-color-bg-subtle)}',
+  // 文字
+  '.text-dt-text-primary{color:var(--dt-color-text-primary)}',
+  '.text-dt-text-secondary{color:var(--dt-color-text-secondary)}',
+  '.text-dt-text-tertiary{color:var(--dt-color-text-tertiary)}',
+  '.text-dt-text-placeholder{color:var(--dt-color-text-placeholder)}',
+  '.text-dt-text-onPrimary{color:var(--dt-color-text-on-primary)}',
+  '.text-dt-brand-primary{color:var(--dt-color-brand-primary)}',
+  '.text-dt-success-base{color:var(--dt-color-success-base)}',
+  '.text-dt-warning-base{color:var(--dt-color-warning-base)}',
+  '.text-dt-danger-base{color:var(--dt-color-danger-base)}',
+  '.text-dt-info-base{color:var(--dt-color-info-base)}',
+  '.text-dt-icon-primary{color:var(--dt-color-icon-primary)}',
+  '.text-dt-icon-secondary{color:var(--dt-color-icon-secondary)}',
+  // 品牌底
+  '.bg-dt-brand-primary{background:var(--dt-color-brand-primary)}',
+  '.hover\\:bg-dt-brand-primaryHover:hover{background:var(--dt-color-brand-primary-hover)}',
+  '.bg-dt-brand-primarySubtle{background:var(--dt-color-brand-primary-subtle)}',
+  '.bg-dt-success-subtle{background:var(--dt-color-success-subtle)}',
+  '.bg-dt-warning-subtle{background:var(--dt-color-warning-subtle)}',
+  '.bg-dt-danger-subtle{background:var(--dt-color-danger-subtle)}',
+  '.bg-dt-info-subtle{background:var(--dt-color-info-subtle)}',
+  // 边框
+  '.border-dt-border-default{border-color:var(--dt-color-border-default)}',
+  '.border-dt-border-subtle{border-color:var(--dt-color-border-subtle)}',
+  // 字号（dt 阶梯）
+  '.text-dt-h1{font-size:var(--dt-font-h1);line-height:var(--dt-line-h-h1)}',
+  '.text-dt-h2{font-size:var(--dt-font-h2);line-height:var(--dt-line-h-h2)}',
+  '.text-dt-h3{font-size:var(--dt-font-h3);line-height:var(--dt-line-h-h3)}',
+  '.text-dt-body-lg{font-size:var(--dt-font-body-lg);line-height:var(--dt-line-h-body-lg)}',
+  '.text-dt-body{font-size:var(--dt-font-body);line-height:var(--dt-line-h-body)}',
+  '.text-dt-body-sm{font-size:var(--dt-font-body-sm);line-height:var(--dt-line-h-body-sm)}',
+  '.text-dt-caption{font-size:var(--dt-font-caption);line-height:var(--dt-line-h-caption);letter-spacing:0.01em}',
+  // 间距（4..48，与通用 1..6 对齐之外多出的档位）
+  dtSpacing('p-dt-', ['padding']),
+  dtSpacing('px-dt-', ['padding-left', 'padding-right']),
+  dtSpacing('py-dt-', ['padding-top', 'padding-bottom']),
+  dtSpacing('pt-dt-', ['padding-top']),
+  dtSpacing('pb-dt-', ['padding-bottom']),
+  dtSpacing('m-dt-', ['margin']),
+  dtSpacing('mt-dt-', ['margin-top']),
+  dtSpacing('mb-dt-', ['margin-bottom']),
+  dtSpacing('gap-dt-', ['gap']),
+  // 圆角
+  '.rounded-dt-xs{border-radius:4px}',
+  '.rounded-dt-sm{border-radius:8px}',
+  '.rounded-dt-md{border-radius:12px}',
+  '.rounded-dt-lg{border-radius:16px}',
+  '.rounded-dt-xl{border-radius:24px}',
+  // 阴影
+  '.shadow-dt-subtle{box-shadow:var(--dt-shadow-subtle)}',
+  '.shadow-dt-raised{box-shadow:var(--dt-shadow-raised)}',
+  '.shadow-dt-floating{box-shadow:var(--dt-shadow-floating)}',
+  // 字族
+  '.font-inter{font-family:"Inter",system-ui,-apple-system,"BlinkMacSystemFont",sans-serif}',
+  /* 呼吸感覆盖（在基础词表之后，覆盖同名的紧档位）：区块间 16-20px，微间隙下限 6px */
+  '.gap-1{gap:6px}',
+  '.gap-3{gap:16px}',
+  '.gap-4{gap:20px}',
+  '.gap-dt-3{gap:16px}',
+  '.gap-dt-4{gap:20px}',
+  '.gap-dt-5{gap:24px}',
+].join('');
+
 export const BUTLER_CARD_UTILITIES = `${UTILITIES}
-[data-card]{display:block;color:var(--foreground)}
+${DT_UTILITIES}
+[data-card]{display:block;width:100%;max-width:750px;margin:0 auto;background:transparent;color:var(--dt-color-text-primary);font-family:"Inter",system-ui,-apple-system,"BlinkMacSystemFont",sans-serif}
 button{font-family:inherit}
-a{color:var(--primary)}
+a{color:var(--dt-color-brand-primary)}
 `;
