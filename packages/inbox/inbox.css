@@ -13005,13 +13005,8 @@ svg.ib-bc.ib-bc-sleep .ib-bc-brow-r { animation: none; }
 .ib-butler-bstats { flex: none; width: 240px; border-right: 1px solid var(--border); padding: 14px; display: flex; flex-direction: column; gap: 12px; background: color-mix(in oklch, var(--card) 55%, transparent); }
 .ib-butler-bstats-k { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; color: var(--muted-foreground); }
 .ib-butler-bstats-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.ib-butler-bstat { display: flex; flex-direction: column; align-items: center; gap: 2px; border: 1px solid var(--border); border-radius: 12px; padding: 10px 6px; background: var(--card); }
-.ib-butler-bstat b { font-size: 20px; font-weight: 700; }
-.ib-butler-bstat span { font-size: 10.5px; color: var(--muted-foreground); }
-.ib-butler-bstats-list { display: flex; flex-direction: column; gap: 6px; }
-.ib-butler-bstat-row { display: flex; flex-direction: column; gap: 1px; border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; background: var(--card); min-width: 0; }
-.ib-butler-bstat-title { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ib-butler-bstat-stage { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.1em; color: var(--muted-foreground); text-transform: uppercase; }
+/* 概览三块与需求行、阶段 chip、新产物点、等你清单、产物区块：owner 2026-11-28 起
+   管家页新增样式一律住在 components/butler.css（inbox.css 太大，不再长个）。 */
 
 @media (prefers-reduced-motion: reduce) {
   .ib-butler-msg { animation: none; }

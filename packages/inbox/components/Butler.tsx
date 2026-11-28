@@ -10,9 +10,11 @@ import { copyTextToClipboard } from '@plannotator/ui/utils/clipboard';
 import { isImeCompositionKey } from '@plannotator/ui/utils/commentSubmitKey';
 import { Tip } from '@plannotator/ui/components/inbox-thread/Tip';
 import { Icon } from '../icons';
-import { inboxApi, type InboxButlerApprovalsModel } from '../api';
+import { inboxApi, type InboxButlerApprovalsModel, type InboxButlerLedgerRow } from '../api';
+import { requirementStageLabel, type RequirementStage } from '@plannotator/core/requirements-types';
 import { ButlerApprovals, ButlerAuthSettings } from './ButlerApprovals';
 import { ButlerLedger } from './ButlerLedger';
+import { ButlerWaiting } from './ButlerWaiting';
 import { ButlerCharacter, type ButlerMood } from './ButlerCharacter';
 import { ButlerRichText } from './ButlerCards';
 import { cardReplyOf } from './butler-card-protocol';
@@ -66,15 +68,36 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
    */
   const [live, setLive] = useState<{ reasoning: string; tools: ButlerToolCall[] }>({ reasoning: '', tools: [] });
   const listRef = useRef<HTMLDivElement>(null);
-  /** 概览列的计数（owner 2026-11-27 选定 B 布局：等你/在跑/待批 三块 + 前三件需求）。 */
-  const [bstats, setBstats] = useState<{ waiting: number; running: number; rows: { req: string; title: string; stage: string }[] } | null>(null);
+  /** 概览列的计数（owner 2026-11-27 选定 B 布局：三块 + 前三件需求；行带完整台账行）。 */
+  const [bstats, setBstats] = useState<{ waiting: number; running: number; rows: InboxButlerLedgerRow[] } | null>(null);
+  /** 全量活跃台账行（等你清单与新产物徽标的数据源；概览行点击定位台账用）。 */
+  const [ledgerRows, setLedgerRows] = useState<InboxButlerLedgerRow[]>([]);
+  // 台账抽屉的定位与过滤（owner 2026-11-28 联动）：点概览行直达详情；「在跑」块过滤进。
+  const [ledgerPick, setLedgerPick] = useState<string | null>(null);
+  const [ledgerFocus, setLedgerFocus] = useState<'running' | null>(null);
+  // 新产物（owner 2026-11-28「有新的产物也有提示」）：看过台账详情即记下时点，
+  // 之后最新一笔晚于它的就是「新」——需求行小点 + 台账按钮徽标。存 localStorage 跨会话。
+  const [delivSeen, setDelivSeen] = useState<string | null>(() => {
+    try { return localStorage.getItem('ib-butler-deliv-seen'); } catch { return null; }
+  });
+  const markDelivSeen = () => {
+    const nowIso = new Date().toISOString();
+    try { localStorage.setItem('ib-butler-deliv-seen', nowIso); } catch { /* 隐私模式等写不进就算了 */ }
+    setDelivSeen(nowIso);
+  };
+  const openLedgerOf = (req: string | null) => {
+    setLedgerFocus(null);
+    setLedgerPick(req);
+    setSection('ledger');
+  };
+  const delivUnseen = ledgerRows.some((row) => (row.deliverables ?? 0) > 0 && row.deliverable_at && (!delivSeen || row.deliverable_at > delivSeen));
   const loadedRef = useRef(false);
   /**
    * 左侧菜单 + 右侧内容（owner 2026-11-27「改成 inbox 主页的风格，分成菜单和右侧内容
    * 区域」）：`section` 是菜单选中的一栏——对话、审批、台账；配置是菜单底部的一个入口，
    * 点开内容区整体换成配置。对话常驻为默认一栏。
    */
-  const [section, setSection] = useState<'chat' | 'approvals' | 'ledger' | 'config'>('chat');
+  const [section, setSection] = useState<'chat' | 'approvals' | 'ledger' | 'waiting' | 'config'>('chat');
   const [approvalsModel, setApprovalsModel] = useState<InboxButlerApprovalsModel | null>(null);
   const [approvalsError, setApprovalsError] = useState<string | null>(null);
   /** The Inbox's projects, for the card's project picker in the approval tab. */
@@ -180,18 +203,19 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
   }, [open, pending]);
 
   // 概览列（B 布局）的台账计数：打开时与每 5 秒对一次，和对话历史同一节奏。
+  // 全量活跃行另存（等你清单、新产物徽标都从这里读），概览只摆前 3 条。
   useEffect(() => {
     if (!open) return;
     const load = () => {
       void inboxApi
         .butlerLedger()
         .then((answer) => {
-          const rows = answer?.ledgers ?? [];
-          const active = rows.filter((row) => !row.archived);
+          const active = (answer?.ledgers ?? []).filter((row) => !row.archived);
+          setLedgerRows(active);
           setBstats({
             waiting: active.reduce((sum, row) => sum + row.waiting, 0),
             running: active.reduce((sum, row) => sum + row.running, 0),
-            rows: active.slice(0, 3).map((row) => ({ req: row.req, title: row.title, stage: row.stage })),
+            rows: active.slice(0, 3),
           });
         })
         .catch(() => setBstats(null));
@@ -199,21 +223,6 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
     load();
     const timer = setInterval(load, 5000);
     return () => clearInterval(timer);
-  }, [open]);
-
-  useEffect(() => {
-    void inboxApi
-      .butlerLedger()
-      .then((answer) => {
-        const rows = answer?.ledgers ?? [];
-        const active = rows.filter((row) => !row.archived);
-        setBstats({
-          waiting: active.reduce((sum, row) => sum + row.waiting, 0),
-          running: active.reduce((sum, row) => sum + row.running, 0),
-          rows: active.slice(0, 3).map((row) => ({ req: row.req, title: row.title, stage: row.stage })),
-        });
-      })
-      .catch(() => setBstats(null));
   }, [open]);
 
   // 新消息/流式追加时滚到底。
@@ -391,21 +400,39 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
               <button type="button" className="ib-butler-navbtn" role="tab" aria-selected={section === 'ledger'} data-on={section === 'ledger'} onClick={() => setSection(section === 'ledger' ? 'chat' : 'ledger')}>
                 <Icon name="book" size={15} />
                 台账
+                {delivUnseen && <span className="ib-butler-raildot" title="有新产物" />}
               </button>
             </div>
             <div className="ib-butler-nav-stats" aria-label="概览">
               <div className="ib-butler-bstats-tiles">
-                <div className="ib-butler-bstat"><b>{bstats?.waiting ?? '—'}</b><span>等你</span></div>
-                <div className="ib-butler-bstat"><b>{bstats?.running ?? '—'}</b><span>在跑</span></div>
-                <div className="ib-butler-bstat"><b>{approvalsPending}</b><span>待批</span></div>
+                <button type="button" className="ib-butler-bstat" title="所有需求里等您做的事（含待批的审批）" onClick={() => setSection('waiting')}>
+                  <b>{bstats?.waiting ?? '—'}</b><span>需要你</span>
+                </button>
+                <button type="button" className="ib-butler-bstat" title="Agent 会话正在做的事" onClick={() => { setLedgerFocus('running'); setLedgerPick(null); setSection('ledger'); }}>
+                  <b>{bstats?.running ?? '—'}</b><span>在跑</span>
+                </button>
+                <button type="button" className="ib-butler-bstat" title="管家的动作等您批准" onClick={() => setSection('approvals')}>
+                  <b>{approvalsPending}</b><span>待批</span>
+                </button>
               </div>
               <div className="ib-butler-bstats-list">
                 {(bstats?.rows ?? []).map((row) => (
-                  <div key={row.req} className="ib-butler-bstat-row">
-                    <span className="ib-butler-bstat-title">{row.title}</span>
-                    <span className="ib-butler-bstat-stage">{row.stage}</span>
-                  </div>
+                  <button key={row.req} type="button" className="ib-butler-bstat-row" title="打开这份需求的台账" onClick={() => openLedgerOf(row.req)}>
+                    <span className="ib-butler-bstat-top">
+                      <span className="ib-butler-bstat-title">{row.title}</span>
+                      <span className="ib-butler-stagetext">{stageWord(row.stage)}</span>
+                    </span>
+                    <span className="ib-butler-bstat-side">
+                      {(row.deliverables ?? 0) > 0 && row.deliverable_at && (!delivSeen || row.deliverable_at > delivSeen) && <span className="ib-butler-freshdot" title="有新产物" />}
+                      {row.waiting > 0 && <span className="ib-butler-holdchip">需要你 {row.waiting}</span>}
+                      {row.running > 0 && <span className="ib-butler-runchip">在跑 {row.running}</span>}
+                    </span>
+                    {row.next_action?.text && <span className="ib-butler-bstat-next">{row.next_action.text}</span>}
+                  </button>
                 ))}
+                <button type="button" className="ib-butler-bstat-more" onClick={() => openLedgerOf(null)}>
+                  查看全部 · 台账
+                </button>
               </div>
             </div>
             <div className="ib-butler-nav-foot">
@@ -587,12 +614,12 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                   />
                 </div>
               </div>
-              <aside className="ib-butler-side" data-open={section !== 'chat'} aria-hidden={section === 'chat'} aria-label={section === 'config' ? '配置' : section === 'ledger' ? '台账' : '审批'}>
+              <aside className="ib-butler-side" data-open={section !== 'chat'} aria-hidden={section === 'chat'} aria-label={section === 'config' ? '配置' : section === 'waiting' ? '等你的事' : section === 'ledger' ? '台账' : '审批'}>
                 <div className="ib-butler-side-inner">
                   <header className="ib-butler-side-head">
                     <div>
-                      <span className="ib-butler-side-kicker">{section === 'config' ? 'SETTINGS' : section === 'ledger' ? 'LEDGER' : 'APPROVALS'}</span>
-                      <h2>{section === 'config' ? '配置' : section === 'ledger' ? '台账' : '待批事项'}</h2>
+                      <span className="ib-butler-side-kicker">{section === 'config' ? 'SETTINGS' : section === 'waiting' ? 'WAITING' : section === 'ledger' ? 'LEDGER' : 'APPROVALS'}</span>
+                      <h2>{section === 'config' ? '配置' : section === 'waiting' ? '等你的事' : section === 'ledger' ? '台账' : '待批事项'}</h2>
                     </div>
                     <Tip content="收起">
                       <button type="button" className="ib-iconbtn" onClick={() => setSection('chat')} aria-label="收起侧栏">
@@ -613,7 +640,23 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                         onRefresh={loadApprovals}
                       />
                     )}
-                    {section === 'ledger' && <ButlerLedger open={section === 'ledger'} />}
+                    {section === 'waiting' && (
+                      <ButlerWaiting
+                        rows={ledgerRows}
+                        approvalsPending={approvalsPending}
+                        onApprovals={() => setSection('approvals')}
+                        onOpenReq={openLedgerOf}
+                      />
+                    )}
+                    {section === 'ledger' && (
+                      <ButlerLedger
+                        open={section === 'ledger'}
+                        pick={ledgerPick}
+                        onPick={setLedgerPick}
+                        focus={ledgerFocus}
+                        onOpenDetail={markDelivSeen}
+                      />
+                    )}
                     {section === 'config' && (
                       <ButlerAuthSettings
                         model={approvalsModel}
@@ -684,6 +727,15 @@ function butlerToolArg(input: Record<string, unknown>): string {
 }
 
 /** 时辰问候：管家开口的第一句。 */
+/** 需求阶段的中文标签（概览行、台账都用；认不出的串原样回退）。 */
+function stageWord(stage: string): string {
+  try {
+    return requirementStageLabel(stage as RequirementStage);
+  } catch {
+    return stage;
+  }
+}
+
 function butlerGreeting(): string {
   const hour = new Date().getHours();
   if (hour < 5) return '夜深了，管家在。';

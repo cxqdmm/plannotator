@@ -44,6 +44,8 @@
 
 /* 工坊 (requirements module): its styles live apart, for easier changes. */
 @import "../../packages/inbox/requirements/workshop.css";
+/* 管家页 2026-11-28 起的新样式（inbox.css 不再长个，见 components/butler.css 头注）。 */
+@import "../../packages/inbox/components/butler.css";
 /* A question's prototypes: the options' tray, its Try prototype tab, and the full window (components/PrototypeWindow.tsx). */
 @import "../../packages/inbox/prototype-window.css";
 /* System: the drawing's own sheet (sys- classes, packages/system), drawn in Reviews' System pane. */

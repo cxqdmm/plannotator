@@ -1,0 +1,74 @@
+/* 管家页新增样式的家（owner 2026-11-28「不要在 inbox.css 里加样式了，那个文件太大」：
+   这天起管家页的新样式一律住这里；inbox.css 里的旧管家块保持原样不再长个。
+   风格定案（原型 #butler-proto-a「工坊卡同款」）：无边框软卡（前景 3.5% 淡底、hover
+   muted 45%）、阶段=纯灰粗字无色点、需要你=hold 徽章胶囊、在跑=中性前景 6% 胶囊、
+   裁决=success/warning 淡底胶囊、产物动作=22px 无边框图标钮 hover 才显——全套工坊
+   需求卡的真实词汇，不自创。 */
+
+/* ── 概览（owner 2026-11-28「都不知道什么含义，也没有视觉联动」）──
+   三块与需求行是可点的联动入口：改名（需要你/在跑/待批）+ hover 有说明。
+   布局基线（瓷砖的 flex 纵排与字阶）曾随搬家从 inbox.css 丢失，这里补齐：
+   数字上、标签下，居中；列表内部自己滚（flex:1 + min-height:0），菜单整体
+   永不出滚动条——瓷砖与「查看全部」固定可见。 */
+.ib-butler-bstat { display: flex; flex-direction: column; align-items: center; gap: 2px; border: 0; border-radius: 12px; padding: 9px 6px; background: color-mix(in oklch, var(--foreground) 3.5%, transparent); transition: background-color 120ms ease-out; }
+.ib-butler-bstat:hover { background: color-mix(in oklch, var(--muted) 45%, transparent); }
+.ib-butler-bstat b { font-size: 18px; font-weight: 700; }
+.ib-butler-bstat > span { font-size: 10px; color: var(--muted-foreground); }
+.ib-butler-bstats-list { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.ib-butler-bstat-row { display: flex; flex-direction: column; gap: 4px; border: 0; border-radius: 12px; padding: 8px 10px; background: color-mix(in oklch, var(--foreground) 3.5%, transparent); transition: background-color 120ms ease-out; }
+button.ib-butler-bstat { cursor: pointer; font: inherit; color: inherit; text-align: center; }
+button.ib-butler-bstat-row { cursor: pointer; font: inherit; color: inherit; text-align: left; flex: none; }
+button.ib-butler-bstat-row:hover { background: color-mix(in oklch, var(--muted) 45%, transparent); }
+.ib-butler-bstat-top { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.ib-butler-bstat-title { flex: 1; min-width: 0; font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ib-butler-bstat-side { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; min-width: 0; }
+.ib-butler-bstat-next { font-size: 10.5px; line-height: 1.5; color: var(--muted-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ib-butler-bstat-more { flex: none; border: 0; border-radius: 10px; background: none; padding: 7px; font-size: 11px; color: var(--muted-foreground); cursor: pointer; transition: color 120ms ease-out; }
+.ib-butler-bstat-more:hover { color: var(--primary); }
+
+/* 需求阶段：纯灰粗字（工坊 ib-req-wcard-stage 同款，无色点不描边）。 */
+.ib-butler-stagetext { flex: none; font-size: 10.5px; font-weight: 650; color: var(--muted-foreground); padding-top: 1px; white-space: nowrap; }
+/* 计数胶囊：需要你=hold 徽章（与收件箱同一套变量），在跑=中性前景 6%。 */
+.ib-butler-holdchip { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; background: var(--ib-badge-hold-bg, color-mix(in oklch, oklch(0.75 0.15 85) 16%, transparent)); color: var(--ib-badge-hold-fg, #8a5310); font-size: 10.5px; font-weight: 550; }
+.ib-butler-runchip { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; background: color-mix(in oklch, var(--foreground) 6%, transparent); color: var(--muted-foreground); font-size: 10.5px; font-weight: 550; }
+/* 新产物：安静的常青点（success 变量，无光晕）。 */
+.ib-butler-freshdot { flex: none; width: 6px; height: 6px; border-radius: 999px; background: var(--success, oklch(0.72 0.17 150)); }
+.ib-butler-raildot { min-width: 6px; height: 6px; margin-left: auto; border-radius: 999px; background: var(--success, oklch(0.72 0.17 150)); }
+@media (max-width: 760px) { .ib-butler-raildot { position: absolute; top: 2px; right: 2px; margin: 0; } }
+
+/* ── 台账抽屉：过滤页签（工坊历史过滤 chip 同款发丝线胶囊）与产物区块。 */
+.ib-butler-led-filter { display: flex; gap: 6px; margin: 0 0 8px; }
+.ib-butler-led-filter button { display: inline-flex; align-items: center; padding: 3px 10px; border: 1px solid var(--ib-hair, var(--border)); border-radius: 999px; background: none; font: inherit; font-size: 11px; font-weight: 550; color: var(--muted-foreground); cursor: pointer; transition: background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out; }
+.ib-butler-led-filter button:hover { color: var(--foreground); border-color: var(--muted-foreground); }
+.ib-butler-led-filter button[data-on] { background: color-mix(in oklab, var(--primary) 13%, transparent); border-color: color-mix(in oklab, var(--primary) 45%, transparent); color: var(--primary); font-weight: 650; }
+
+/* 产物区块：无外框，行 hover 淡底；打开/显示是 22px 无边框图标钮，hover 才显。 */
+.ib-butler-dlv { margin: 0 0 10px; }
+.ib-butler-dlv.is-empty { font-size: 11.5px; color: var(--muted-foreground); padding: 2px 2px 6px; }
+.ib-butler-dlv-hh { font-size: 11px; font-weight: 650; letter-spacing: 0.05em; color: var(--muted-foreground); margin: 0 0 6px; }
+.ib-butler-dlv-list { display: flex; flex-direction: column; gap: 2px; }
+.ib-butler-dlv-row { display: flex; align-items: center; gap: 8px; border-radius: 9px; padding: 6px 8px; min-width: 0; color: var(--muted-foreground); transition: background-color 120ms ease-out; }
+.ib-butler-dlv-row:hover { background: color-mix(in oklch, var(--foreground) 3.5%, transparent); }
+.ib-butler-dlv-title { flex: 1; min-width: 0; font-size: 12px; font-weight: 550; color: var(--foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ib-butler-dlv-verdict { flex: none; display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 550; }
+.ib-butler-dlv-verdict.ok { background: color-mix(in oklab, var(--success, oklch(0.72 0.17 150)) 14%, transparent); color: color-mix(in oklab, var(--success, oklch(0.72 0.17 150)) 80%, var(--foreground)); }
+.ib-butler-dlv-verdict.back { background: color-mix(in oklab, var(--warning, oklch(0.75 0.15 85)) 16%, transparent); color: color-mix(in oklab, var(--warning, oklch(0.75 0.15 85)) 78%, var(--foreground)); }
+.ib-butler-dlv-when { flex: none; font-size: 10.5px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.ib-butler-dlv-acts { flex: none; display: inline-flex; gap: 2px; opacity: 0; transition: opacity 120ms ease-out; }
+.ib-butler-dlv-row:hover .ib-butler-dlv-acts, .ib-butler-dlv-row:focus-within .ib-butler-dlv-acts { opacity: 1; }
+@media (hover: none) { .ib-butler-dlv-acts { opacity: 1; } }
+.ib-butler-dlv-act { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: 0; border-radius: 7px; background: none; color: var(--muted-foreground); cursor: pointer; transition: background-color 120ms ease-out, color 120ms ease-out; }
+.ib-butler-dlv-act:hover { background: color-mix(in oklch, var(--muted) 55%, transparent); color: var(--primary); }
+.ib-butler-dlv-act:active { transform: scale(0.94); }
+
+/* ── 等你清单：待批=hold 胶囊行（与「需要你」同一词汇），需求组=无边框软卡。 */
+.ib-butler-wait { display: flex; flex-direction: column; gap: 8px; }
+.ib-butler-wait-sub { color: var(--muted-foreground); font-size: 11px; }
+.ib-butler-wait-approvals { display: flex; align-items: center; gap: 7px; width: 100%; border: 0; border-radius: 999px; padding: 8px 13px; background: var(--ib-badge-hold-bg, color-mix(in oklch, oklch(0.75 0.15 85) 16%, transparent)); color: var(--ib-badge-hold-fg, #8a5310); font: inherit; font-size: 12px; font-weight: 550; cursor: pointer; text-align: left; }
+.ib-butler-wait-approvals > span { flex: 1; min-width: 0; }
+.ib-butler-wait-approvals svg:last-child { opacity: 0.7; }
+.ib-butler-wait-req { border: 0; border-radius: 12px; background: color-mix(in oklch, var(--foreground) 3.5%, transparent); padding: 9px 11px; }
+.ib-butler-wait-reqname { display: flex; align-items: center; gap: 5px; width: 100%; border: none; background: none; padding: 0; font: inherit; font-size: 12px; font-weight: 600; color: var(--foreground); cursor: pointer; text-align: left; }
+.ib-butler-wait-reqname svg { color: var(--muted-foreground); }
+.ib-butler-wait-reqname:hover { color: var(--primary); }
+.ib-butler-wait-items { margin: 5px 0 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; line-height: 1.55; color: var(--muted-foreground); }
