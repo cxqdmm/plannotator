@@ -189,8 +189,55 @@ const DT_UTILITIES = [
   '.gap-dt-5{gap:24px}',
 ].join('');
 
+/* ── 卡片部件（owner 2026-11-28 定案「B 柔」）──
+   模型不再自己拼间距/字阶/颜色：只从这组部件里选，拼成一张卡。
+   层次靠"极淡底块 + 排版"，不靠边框、阴影、彩色胶囊。
+   颜色全部落到 --c-*（由 frameDoc 定义，跟随 dt 主题）。 */
+const CARD_PARTS = [
+  // 卡头：kicker → title → lede（整体一个单位，内部 9px）
+  '.card-head{display:flex;flex-direction:column;gap:9px;margin:0}',
+  '.kicker{margin:0;font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--c-faint)}',
+  '.title{margin:0;font-size:21px;font-weight:600;line-height:1.45;letter-spacing:-.012em;color:var(--c-ink);text-wrap:balance}',
+  '.lede{margin:0;font-size:13.5px;line-height:1.85;color:var(--c-sub)}',
+  // 极淡底块：装一条材料 / 一个条目的细节
+  '.well{margin:0;padding:15px 17px;border-radius:14px;background:var(--c-wash)}',
+  '.well-head{display:flex;align-items:baseline;gap:10px}',
+  '.well-title{font-size:13.5px;font-weight:550;color:var(--c-ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+  '.well-sub{margin:4px 0 0;font-size:12px;line-height:1.7;color:var(--c-faint)}',
+  '.well-act{margin-left:auto;flex:none;border:0;background:none;padding:0;font:inherit;font-size:12px;color:var(--c-faint);cursor:pointer;transition:color 140ms ease}',
+  '.well-act:hover{color:var(--c-ink)}',
+  // 进度：4px 细轨 + 主色填充（宽度用 style="width:62%"）
+  '.track{height:4px;border-radius:999px;background:#EFF0F2;overflow:hidden}',
+  '.track>i{display:block;height:100%;border-radius:999px;background:var(--c-accent)}',
+  // 细行：左右两端（左说明、右数值/时间）
+  '.meta{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--c-faint);font-variant-numeric:tabular-nums}',
+  '.tl{display:flex;align-items:baseline;gap:12px;font-size:13px;color:var(--c-sub)}',
+  '.tl time{margin-left:auto;flex:none;font-size:11.5px;color:var(--c-faint);font-variant-numeric:tabular-nums}',
+  // 单项状态（琥珀点 + 文字；全卡最多一处）
+  '.status{display:inline-flex;align-items:center;font-size:12.5px;color:var(--c-sub)}',
+  '.status .dot{flex:none;display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--c-wait);margin-right:7px}',
+  // 可选项（单选一行；选中态由 aria-checked 驱动）
+  '.opt{display:flex;align-items:flex-start;gap:12px;width:100%;padding:15px 17px;border:0;border-radius:14px;background:var(--c-wash);font:inherit;text-align:left;cursor:pointer;transition:background 140ms ease}',
+  '.opt:hover{background:#F1F2F4}',
+  '.opt[aria-checked="true"]{background:color-mix(in oklab,var(--c-accent) 6%,var(--c-wash))}',
+  '.opt-radio{flex:none;width:15px;height:15px;margin-top:2px;border-radius:50%;border:1.5px solid #D5D8DC;display:grid;place-items:center;transition:border-color 140ms ease}',
+  '.opt[aria-checked="true"] .opt-radio{border-color:var(--c-accent)}',
+  '.opt[aria-checked="true"] .opt-radio::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--c-accent)}',
+  '.opt-text{min-width:0;flex:1}',
+  '.opt-text b{display:block;font-size:14px;font-weight:500;color:var(--c-ink)}',
+  '.opt-text span{display:block;margin-top:3px;font-size:12.5px;line-height:1.7;color:var(--c-faint)}',
+  // 按钮：一个主按钮（实心）+ 可选一个次要（纯文字）
+  '.card-actions{display:flex;flex-direction:column;gap:2px;margin:0}',
+  '.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;height:44px;padding:0 16px;border:0;border-radius:12px;background:none;color:var(--c-sub);font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;transition:color 140ms ease,background 140ms ease,filter 140ms ease}',
+  '.btn:hover{color:var(--c-ink);background:color-mix(in oklab,var(--c-ink) 4%,transparent)}',
+  '.btn-primary{background:var(--c-accent);color:#fff;font-weight:600}',
+  '.btn-primary:hover{filter:brightness(1.06);background:var(--c-accent)}',
+  '.btn:disabled,.btn-disabled{opacity:.45;cursor:not-allowed}',
+].join('');
+
 export const BUTLER_CARD_UTILITIES = `${UTILITIES}
 ${DT_UTILITIES}
+${CARD_PARTS}
 [data-card]{display:block;width:100%;max-width:750px;margin:0 auto;background:transparent;color:var(--dt-color-text-primary);font-family:"Inter",system-ui,-apple-system,"BlinkMacSystemFont",sans-serif}
 button{font-family:inherit}
 a{color:var(--dt-color-brand-primary)}

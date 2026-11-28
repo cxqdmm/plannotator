@@ -1,276 +1,231 @@
 ---
 name: butler-card-design
 description: >
-  生成品牌一致的交互卡片。适用于所有需要
-  以卡片形式向主人呈现信息、选项、状态、审阅流程的场景。调用本技能
-  产出的卡片，其气质（冷静·克制·秩序）、配色（封闭色板）、字阶
-  （5 档）、间距（4px 阶梯）、骨架（5 层）、状态语义（绿=完成/
-  琥珀=等待）全平台一致，并严格遵循管家交互协议（沙箱 iframe、
-  无外链资源、750px 设计宽、先选后确认、动作回传管家审批）。
+  管家卡片的唯一写法。用 8 个固定部件拼一张卡：卡头（kicker/title/lede）、
+  极淡底块（well）、进度（track）、细行（meta/tl）、选项（opt）、按钮（btn）。
+  渲染器已提供全部样式（颜色、字阶、间距、圆角），你只写结构，不写样式。
+  当你要向主人呈现交付结果、进展、选项、待办清单时使用。
 ---
 
-# SKILL: 管家交互卡片 · 品牌一致性系统
+# 管家卡片
 
-## 本环境适配（管家交互卡片，先读这一节）
+**一句话：卡片不是网页，是拼图。你只从本页的部件里挑，拼成一张卡；样式渲染器全给了。**
 
-在这里，你产出的不是网页，而是**管家的交互卡片**。协议（硬性）：
-
-1. 输出用 ` ```html card ` 围栏包裹（独占一行），卡片本体是**一个**带 `data-card` 属性的自包含元素；一条回复最多一张卡。
-2. 页面统一提供：外框边框、圆角、阴影、**750px 设计宽（含内边距，自动居中）**、`box-sizing: border-box`——根元素不要再写 `width`/边框/圆角/阴影/背景。`padding` 计入 750。
-3. 渲染在沙箱 iframe 里：**禁止外部资源**（无外链脚本/样式/字体/图片；图片只用 `data:` 或内联 SVG）；样式用内联 `style` 或本技能推荐的 palette 直接写 hex。
-4. 交互：卡内脚本可自由编写；与主人的对话回传用 `plannotator.send({ label, value })`。多选/多输入必须「先选后确认」——一个带 `data-card-confirm` 的按钮统一发送，禁止每个选项一点就发。
-5. 触达主人的动作（建卡/派活/归档/停止）卡片不做，回话后由管家走审批。
-6. 字体：只能用系统字体栈（Inter/system-ui/Segoe UI），不引 Google Fonts——`font-family` 照抄 `Inter, system-ui, -apple-system, "Segoe UI", sans-serif`。
+不要在卡里写 `<style>`、不要写 `style="..."` 调颜色字号、不要发明 class 名。写了就是错。
 
 ---
 
-## 0. 协议铁律（硬性，优先级最高）
+## 1. 骨架（固定，照抄）
 
-本技能产出的**不是网页，是管家交互卡片**。以下协议违反即判错，优先于一切设计原则：
+```html card
+<div data-card class="flex flex-col gap-3">
+  <div class="card-head">
+    <p class="kicker">交付</p>
+    <h2 class="title">一句话把结论说完</h2>
+    <p class="lede">一到两句补充：细节、数字、下一步。</p>
+  </div>
 
-1. **围栏**：输出用 ` ```html card ` 围栏包裹，围栏标记独占一行；一条回复最多一张卡。
-2. **根元素**：卡片本体是**一个**带 `data-card` 属性的自包含元素。
-3. **环境已提供**：外框边框、圆角、阴影、**750px 设计宽（含内边距，自动居中）**、`box-sizing: border-box`。根元素**禁止**再写 `width / 边框 / 圆角 / 阴影 / 背景`；`padding` 计入 750。
-4. **无外部资源**：禁止外链脚本/样式/字体/图片；图片只用 `data:` 或内联 SVG；样式用内联 `style` 或色板直接写 hex。
-5. **交互回传**：卡内脚本可自由编写；与主人对话回传只用 `plannotator.send({ label, value })`。
-6. **先选后确认**：多选/多输入必须由一个带 `data-card-confirm` 的按钮统一发送，**禁止每个选项一点就发**。
-7. **动作走审批**：建卡/派活/归档/停止等触达主人的动作，卡片不做，回话后由管家走审批。
-8. **字体**：只用系统字体栈 `Inter, system-ui, -apple-system, "Segoe UI", sans-serif`，不引 Google Fonts。
+  <!-- 内容块：well / track / meta / tl / opt，任选，1~6 个 -->
 
----
-
-## 1. 品牌气质锚点（不可协商）
-
-- 气质词（固定 3 个）：**冷静 · 克制 · 秩序**
-- 视觉隐喻：纸质台账、执事文书、审批流
-- 情绪目标：让主人感到「可控、可查、可托付」
-- 反气质（出现即错误）：活泼、甜腻、霓虹、弹跳动画、彩虹渐变
-- 自检句：**它像一份被认真归档的文书吗？** 不像就回炉。
-
----
-
-## 2. 封闭色板（唯一颜色来源）
-
-### 2.1 基础色
-| Token | 值 | 用途 |
-|---|---|---|
-| `--ink-900` | `#0f1a2c` | 主标题 / 最高对比文字 |
-| `--ink-700` | `#162b41` | 次级标题 |
-| `--ink-500` | `#42607a` | 正文 |
-| `--ink-300` | `#6d86a0` | 辅助说明 / 大写小标签 |
-| `--bg-soft` | `#f8fbfe` | 卡内浅底分区 |
-| `--bg-soft-2` | `#f9fcff` | 次级浅底分区 |
-| `--line` | `#e2ebf3` | 分割线 / 细边框 |
-| `--line-strong` | `#cdddec` | 强调边框 |
-
-> 注意：`--bg-page`（页面底）与 `--bg-card`（卡片底）由环境提供，卡内**不要**再写。
-
-### 2.2 品牌主色（唯一强调色来源）
-| Token | 值 | 用途 |
-|---|---|---|
-| `--brand` | `#3467a5` | 主强调 / 徽章 / 链接 |
-| `--brand-soft` | `#e9f0fc` | 主色浅底 |
-| `--brand-deep` | `#183f65` | 深色徽章底 |
-
-### 2.3 语义色（只两种，语义永久锁定）
-| Token | 值 | 语义（不得挪用） |
-|---|---|---|
-| `--ok` | `#1e8e5c` | **完成 / 就绪 / 已通过** |
-| `--ok-soft` | `#d6f0e3` | 完成态浅底 |
-| `--wait` | `#e88b2c` | **等待 / 待审 / 进行中** |
-| `--wait-soft` | `#f9efe4` | 等待态浅底 |
-
-> 铁律：语义色不用于装饰。绿出现 = 必有"完成"含义；琥珀出现 = 必有"等待"含义。想加第三个状态色，先证明前两个不够用。
-
-### 2.4 用色规则
-- 单卡强调色总数 ≤ 3（brand + ok + wait，通常只用 1~2 个）。
-- 文字色只取 ink 系列；背景只取 soft 系列；线只取 line 系列。
-- 禁止自创色、彩虹渐变、多色标渐变、高饱和自选色。
-
----
-
-## 3. 字体 Token（单字族 + 3 字重 + 5 字阶）
-
-- 字族（照抄）：`Inter, system-ui, -apple-system, "Segoe UI", sans-serif`
-- 字重仅 3 档：**400 正文 / 500 辅助 / 700 标题**
-- 字号仅 5 档：
-
-| Token | 值 | 用途 |
-|---|---|---|
-| `--fs-display` | `1.9rem / 700` | 品牌名 / 大标题 |
-| `--fs-title` | `1rem / 700` | 模块标题 |
-| `--fs-body` | `0.9rem / 400~500` | 正文 |
-| `--fs-caption` | `0.78rem / 500` | 说明文字 |
-| `--fs-micro` | `0.68rem / 600` | 大写小标签 |
-
-- 字距：标题 `-0.01~-0.02em`；大写小标签 `+0.05em` 且 `text-transform: uppercase`。
-- 行高：标题 `1.2~1.3`，正文 `1.45~1.5`。
-
----
-
-## 4. 间距与圆角 Token（4px 基数）
-
-- 间距阶梯仅用：`4 / 8 / 12 / 16 / 20 / 24 / 32 px`
-- 圆角：外卡由环境提供；内块 `1~1.2rem`；胶囊 `100px`（外大内小，形成层级）
-- 阴影：卡内**禁止**再加外卡阴影；内块如需浮起只允许 1 层浅影，如 `0 2px 6px rgba(0,20,40,.04)`
-
----
-
-## 5. 状态表达规范（色盲友好，双通道）
-
-任何状态必须同时具备 **颜色 + 文字**：
-
-- 完成：`--ok` 色 + 文案「就绪 / 已通过 / 完成」
-- 等待：`--wait` 色 + 文案「候审 / 待处理 / X 天」
-- 中性：`--ink-300` + 灰底
-
-禁止只靠颜色传递状态；禁止用图标单独表意（**无图标原则**，见第 7 节）。
-
----
-
-## 6. 卡片骨架（所有卡片共用 5 层，层序不变）
-
-模块可增删，但层序固定：
-
-1. `card-header`：品牌块（左）+ 身份/标签（右）
-2. `card-subhead`：一句话说明（左）+ 版本/徽章（右）
-3. **内容区**：网格 / 双栏 / 单栏，三选一
-4. `action-footer`：主操作（左）+ 状态（右）
-5. `attribution`：极小字来源注脚
-
-分区策略优先级：**浅底分区 > 细线分区 > 粗边框**（能不加边框就不加）。
-
----
-
-## 7. 无图标原则与替代手法
-
-禁止 emoji、禁止装饰性图标（唯一例外：`✓` 作为语义符号可用，但需色块圆底包裹，且可被文字替换）。用以下手法替代图标传递信息：
-
-- **序号徽章**：`01 / 02 / 03 / 04` 作功能格子标识
-- **大写小标签**：`text-transform: uppercase` + `--fs-micro` 标记元信息
-- **色点**：8px 圆点 + 语义色，表示"就绪 / 等待"
-- **语义色块**：状态字段用 `--ok-soft` / `--wait-soft` 浅底承载
-
----
-
-## 8. 交互协议（卡片内脚本规范）
-
-### 8.1 回传
-
-```js
-plannotator.send({ label: "用户可见的选项名", value: "机器可读的值" });
+  <div class="card-actions">
+    <button class="btn btn-primary" data-card-confirm>主操作</button>
+    <button class="btn">次要操作</button>
+  </div>
+</div>
 ```
 
-### 8.2 先选后确认（多选/多输入强制）
+根元素**必须**是 `data-card class="flex flex-col gap-3"`——`gap-3` 是卡片里所有块之间的呼吸。
 
-- 选项点击只做**本地选中态切换**（改 class / 改内联样式），**不发消息**。
-- 由**一个**带 `data-card-confirm` 的按钮统一收集并发送：
+外层边框、圆角、阴影、750 宽、**20px 内边距**都由渲染器给：**不要**在根元素上写 `p-4` / `p-5` / `px-*`——写了会变成双层内边距，内容反而窄。
+
+---
+
+## 2. 八个部件
+
+### 卡头（每张卡必有）
+
+| 部件 | 写什么 |
+|---|---|
+| `<p class="kicker">交付</p>` | 一个词说卡的类目：交付 / 进展 / 选择 / 提醒 / 待办。全卡只此一处。 |
+| `<h2 class="title">…</h2>` | **一句结论**，不是标题名。✅「指弹版做好了」，❌「关于指弹版交付的通知」。 |
+| `<p class="lede">…</p>` | 一到两句补充。可有可无；没有就删。 |
+
+三者一起放进 `<div class="card-head">`，内部间距由它负责。
+
+### 内容块（按内容挑，不要全用上）
+
+**① 底块 `well`——装一条材料、一个条目**
+```html
+<div class="well">
+  <div class="well-head">
+    <span class="well-title">fingerstyle.html</span>
+    <button class="well-act">打开</button>
+  </div>
+  <p class="well-sub">六线谱 · 点开即看即听</p>
+</div>
+```
+
+**② 进度 `track`——有明确完成度时才用**
+```html
+<div class="track"><i style="width:62%"></i></div>
+<div class="meta"><span>5 / 8 项完成</span><span class="status"><i class="dot"></i>卡在：等您裁决</span></div>
+```
+`track` 和 `meta` 是**一对**，紧挨着写（一个跟踪、一个说明）。
+
+**③ 细行 `tl`——时间线中的一条**
+```html
+<div class="tl"><span>音色排查完毕，四件套更新</span><time>16:57</time></div>
+```
+多条时直接并排写，不要包容器。
+
+**④ 选项 `opt`——单选一行**（见第 3 节交互）
+```html
+<button class="opt" aria-checked="true" data-value="民谣扫弦">
+  <span class="opt-radio"></span>
+  <span class="opt-text"><b>民谣扫弦</b><span>轻快明亮，副歌有记忆点</span></span>
+</button>
+```
+
+**⑤ 按钮**
+- `<button class="btn btn-primary">` 主操作，**一张卡最多一个**，通常放最后。
+- `<button class="btn">` 次要操作（纯文字），可省。
+- 两个一起放进 `<div class="card-actions">`。
+
+---
+
+## 3. 交互（先选后确认，硬性）
+
+- 选项点击**只改本地选中态**：`aria-checked="true"`，不发消息。
+- 卡片底部**一个**主按钮统一发送，带 `data-card-confirm`：
 
 ```html
-<button data-card-confirm onclick="
-  const picked = [...document.querySelectorAll('[data-selected=true]')]
-    .map(el => el.dataset.value);
-  plannotator.send({ label: '确认选择', value: picked.join(',') });
-">确认</button>
+<script>
+  const opts = document.querySelectorAll('.opt');
+  opts.forEach((o) => o.addEventListener('click', () => {
+    opts.forEach((x) => x.setAttribute('aria-checked', 'false'));
+    o.setAttribute('aria-checked', 'true');
+  }));
+  document.querySelector('[data-card-confirm]').addEventListener('click', () => {
+    const picked = document.querySelector('.opt[aria-checked="true"]');
+    if (!picked) return;
+    plannotator.send({
+      label: '选择方向',
+      value: { direction: picked.dataset.value },
+    });
+  });
+</script>
+```
+- 脚本写在 `data-card` 内的最后（**不要**写在根元素之外）。
+- 单选一项、没有其它输入时，也可以点选项直接 `send`；**只要有多项或输入，就必须有确认按钮**。
+- 建卡 / 派活 / 归档 / 停止**不在卡里做**——卡只收集意图，回话后由你走审批。
+
+---
+
+## 4. 文案（决定好看与否的一半）
+
+- **标题是一句话结论**，带信息量：「功能测试，过半」「指弹版做好了」「往哪个方向收？」
+- **lede 只写补充**，不要重复标题；有数字就写数字。
+- 底块的 `well-sub` 写**为什么/怎么用**，不是重复文件名。
+- 中文少用全角括号和顿号堆砌；一句一个意思。
+- 不要 emoji、不要感叹号连发、不要「亲」「哦~」这类语气。
+
+---
+
+## 5. 三条硬规矩
+
+1. **一张卡只讲一件事。** 要讲两件事就分两次回复。
+2. **主按钮最多一个**，其余都退成纯文字按钮。
+3. **琥珀点（`.status .dot`）全卡最多一处**，只用来标「卡在等您」。
+
+---
+
+## 6. 三个可以照抄的范例
+
+### 交付结果
+
+```html card
+<div data-card class="flex flex-col gap-3">
+  <div class="card-head">
+    <p class="kicker">交付</p>
+    <h2 class="title">《那年蝉声》指弹版</h2>
+    <p class="lede">旋律与和弦写进同一份六线谱，一把吉他独奏整曲。163 个音自检无丢失，全长 2 分 06 秒。</p>
+  </div>
+  <div class="well">
+    <div class="well-head"><span class="well-title">fingerstyle.html</span><button class="well-act">打开</button></div>
+    <p class="well-sub">六线谱 · 点开即看即听</p>
+  </div>
+  <div class="well">
+    <div class="well-head"><span class="well-title">song.tab</span><button class="well-act">打开</button></div>
+    <p class="well-sub">纯文本谱 · 方便打印带去琴边</p>
+  </div>
+  <div class="card-actions">
+    <button class="btn btn-primary">在线试听</button>
+    <button class="btn">在文件夹中显示</button>
+  </div>
+</div>
 ```
 
-- 单选同理：选中态本地切换，确认按钮统一发。
+### 进展
 
-### 8.3 动作边界
-
-建卡 / 派活 / 归档 / 停止 **不在卡片内执行**，卡片只负责收集意图并 `send`，由管家走审批。禁止在卡片内写"已归档""已派活"等伪完成态。
-
----
-
-## 9. 动效规范（克制）
-
-- 只允许：`transform: translateY(-1px)` + 内块浅影加深，时长 `≤ 200ms`，缓动 `ease`。
-- 禁止：弹跳、旋转、变色、渐变位移、位移超过 2px。
-
----
-
-## 10. 生成流程（每张卡必走）
-
-1. 读文案 → 确认属于"文书气质"，不适合则换场景。
-2. 选内容区布局：网格 / 双栏 / 单栏（按模块数定）。
-3. 取色：只从第 2 节色板取；先定 1 个 brand，按需加 1 个语义色。
-4. 取字：只从第 3 节 5 档字号 + 3 字重取。
-5. 排版：先浅底分区，再决定要不要线；能不加边框就不加。
-6. 状态字段：颜色 + 文字双通道。
-7. 交互字段：先选后确认，确认按钮带 `data-card-confirm`。
-8. 过自检清单（第 12 节）。
-
----
-
-## 11. 交付物模板（每次生成必附）
-
-生成卡片时，根元素内先声明一次 Token（可写在根元素的 `style` 属性或首个 `<style>` 块），供卡内复用，避免硬编码散落：
-
-```css
-:root {
-  --ink-900: #0f1a2c; --ink-700: #162b41; --ink-500: #42607a; --ink-300: #6d86a0;
-  --bg-soft: #f8fbfe; --bg-soft-2: #f9fcff;
-  --line: #e2ebf3; --line-strong: #cdddec;
-  --brand: #3467a5; --brand-soft: #e9f0fc; --brand-deep: #183f65;
-  --ok: #1e8e5c; --ok-soft: #d6f0e3;
-  --wait: #e88b2c; --wait-soft: #f9efe4;
-  --fs-display: 1.9rem; --fs-title: 1rem; --fs-body: 0.9rem;
-  --fs-caption: 0.78rem; --fs-micro: 0.68rem;
-}
+```html card
+<div data-card class="flex flex-col gap-3">
+  <div class="card-head">
+    <p class="kicker">进展</p>
+    <h2 class="title">功能测试，过半</h2>
+    <p class="lede">音色排查收尾，就差您最后一道裁决。</p>
+  </div>
+  <div class="track"><i style="width:62%"></i></div>
+  <div class="meta"><span>5 / 8 项完成</span><span class="status"><i class="dot"></i>卡在：等您裁决</span></div>
+  <div class="tl"><span>音色排查完毕，四件套更新</span><time>16:57</time></div>
+  <div class="tl"><span>交付 folk-melody skill</span><time>14:12</time></div>
+  <div class="tl"><span>试听页上线</span><time>13:05</time></div>
+  <div class="card-actions"><button class="btn">打开台账</button></div>
+</div>
 ```
 
-> 若沙箱限制 `:root`，把变量写到根 `data-card` 元素上，值不变。
+### 选择
+
+```html card
+<div data-card class="flex flex-col gap-3">
+  <div class="card-head">
+    <p class="kicker">选择</p>
+    <h2 class="title">《那年蝉声》往哪个方向收？</h2>
+    <p class="lede">三个方向我都能编，选好点一次确认即可。</p>
+  </div>
+  <button class="opt" aria-checked="true" data-value="民谣扫弦">
+    <span class="opt-radio"></span>
+    <span class="opt-text"><b>民谣扫弦</b><span>轻快明亮，副歌有记忆点</span></span>
+  </button>
+  <button class="opt" aria-checked="false" data-value="指弹独奏">
+    <span class="opt-radio"></span>
+    <span class="opt-text"><b>指弹独奏</b><span>一把吉他讲完整故事，耐听</span></span>
+  </button>
+  <button class="opt" aria-checked="false" data-value="双吉他">
+    <span class="opt-radio"></span>
+    <span class="opt-text"><b>双吉他对话</b><span>一问一答，适合现场两人</span></span>
+  </button>
+  <div class="card-actions"><button class="btn btn-primary" data-card-confirm>按这个方向编</button></div>
+  <script>
+    const opts = document.querySelectorAll('.opt');
+    opts.forEach((o) => o.addEventListener('click', () => {
+      opts.forEach((x) => x.setAttribute('aria-checked', 'false'));
+      o.setAttribute('aria-checked', 'true');
+    }));
+    document.querySelector('[data-card-confirm]').addEventListener('click', () => {
+      const picked = document.querySelector('.opt[aria-checked="true"]');
+      if (picked) plannotator.send({ label: '确认选择', value: { direction: picked.dataset.value } });
+    });
+  </script>
+</div>
+```
 
 ---
 
-## 12. 自检清单（发布前逐条过，任一失败即回炉）
+## 7. 发布前自检
 
-**协议层**
-
-- [ ] 是否用 ` ```html card ` 围栏？一条回复是否只有一张卡？
-- [ ] 根元素是否带 `data-card`？是否**没有**再写 width/边框/圆角/阴影/背景？
-- [ ] padding 是否计入 750 设计宽内？
-- [ ] 是否零外链资源？图片是否 data:/内联 SVG？
-- [ ] 字体栈是否照抄，未引 Google Fonts？
-
-**设计层**
-
-- [ ] 颜色是否 100% 来自第 2 节色板？
-- [ ] 单卡强调色是否 ≤ 3？语义色是否只表语义？
-- [ ] 字号是否 ≤ 5 档？字重是否 ≤ 3 种？
-- [ ] 间距是否都在 4/8/12/16/20/24/32 阶梯上？
-- [ ] 内块圆角是否"外大内小"？卡内是否未加外卡阴影？
-- [ ] 每个状态是否「颜色 + 文字」双通道？
-- [ ] 是否有纯装饰元素或 emoji？有则删。
-
-**交互层**
-
-- [ ] 多选/多输入是否「先选后确认」？确认按钮是否带 `data-card-confirm`？
-- [ ] 是否存在"一点就发"的选项？有则改。
-- [ ] 卡片是否**没有**执行建卡/派活/归档/停止？是否只 `send` 意图？
-- [ ] hover/focus 位移是否 ≤2px 且时长 ≤200ms？
-
-**气质层**
-
-- [ ] 整体是否像"一份被认真归档的文书"？
-
----
-
-## 13. 反模式（出现即判错）
-
-- 自创色 / 彩虹渐变 / 多色标渐变 / 高饱和自选色
-- 多字族 / 字号超过 5 档 / 字重超过 3 种
-- emoji 当功能图标 / 装饰性图标
-- 卡内再叠外卡阴影 / 阴影 3 层以上
-- 状态只靠颜色不配文字
-- 弹跳 / 旋转 / 变色动效 / 位移 >2px
-- 每个选项一点就发 / 无 `data-card-confirm` 的批量选择
-- 卡片内执行"已归档""已派活"等动作并伪装完成态
-- 根元素写 width/边框/圆角/阴影/背景
-- 外链字体/图片/脚本
-
----
-
-## 14. 一句话总结
-
-> **一致性不是"每次记得用同样的颜色"，而是"系统里根本没有别的颜色可选"；合规不是"小心别写外链"，而是"环境已提供一切，卡内只填内容与意图"。**
+- [ ] 根元素是 `data-card class="flex flex-col gap-3"`，没有宽/边框/圆角/阴影/背景/内边距。
+- [ ] 卡里没有 `<style>`、没有 `style="color:…"` 这类调色（进度条的 `width:%` 除外）。
+- [ ] 没有自创 class；用到的每个 class 都在上面部件表里。
+- [ ] 标题是一句结论，不是「关于…」。
+- [ ] 主按钮最多一个；琥珀点最多一处。
+- [ ] 多选/输入有 `data-card-confirm` 统一发送。

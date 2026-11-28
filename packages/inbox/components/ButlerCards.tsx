@@ -87,10 +87,21 @@ function frameDoc(html: string, meta: ButlerCardMeta): string {
     --dt-color-border-focus: #3B82F6;
     --dt-color-icon-primary: #4E5969;
     --dt-color-icon-secondary: #86909C;
+    /* 卡片部件色（owner 2026-11-28 定案「B 柔」）：三档墨色 + 一根发丝线 + 极淡底块 +
+       一个主色 + 一处琥珀等待点。部件只引用这些，不直接写 hex。 */
+    --c-ink: var(--dt-color-text-primary);
+    --c-sub: var(--dt-color-text-secondary);
+    --c-faint: var(--dt-color-text-tertiary);
+    --c-hair: #ECEDEF;
+    --c-wash: #F7F8F9;
+    --c-accent: var(--dt-color-brand-primary);
+    --c-wait: #C98A26;
   }
   ${BUTLER_CARD_UTILITIES}
   /* 卡片的外框（边框/圆角/阴影）由页面统一提供，卡内不再自画 */
-  body { margin: 0; display: flow-root; overflow-x: hidden; font-family: "Inter", system-ui, -apple-system, "BlinkMacSystemFont", sans-serif; color: var(--dt-color-text-primary); }
+  /* 卡片内边距由渲染器统一给（owner 2026-11-28「card 没有 padding，内容贴着边很难看」）：
+     模型改走部件之后根元素不再写 p-*，漏写就贴边——结构性的内边距放在这里，谁也忘不掉。 */
+  body { margin: 0; padding: 20px; display: flow-root; overflow-x: hidden; font-family: "Inter", system-ui, -apple-system, "BlinkMacSystemFont", sans-serif; color: var(--dt-color-text-primary); }
   /* box-sizing：padding 计入宽度——750 的硬上限连内边距一起算（owner 2026-11-27） */
   *, *::before, *::after { box-sizing: border-box; }
   /* 高度由页面同步，滚动条从不该出现——隐藏它，避免它挤压内容宽度造成横向滚动 */
