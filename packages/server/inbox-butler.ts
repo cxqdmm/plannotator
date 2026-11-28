@@ -267,6 +267,18 @@ export class Butler {
     }
   }
 
+  /**
+   * 主人打断（owner 2026-11-27「没法打断管家的说话」）：中止当前正在流式的回合。
+   * session.abort() 打到 opencode 服务端，正在生成的回复立刻停下；已流出的部分
+   * 由 chatRoute 的 catch 保留进历史。没有在说话时调用是安全的空操作。
+   */
+  stopStreaming(): { ok: boolean; error?: string } {
+    const session = this.brainSession;
+    if (!session || !session.isActive) return { ok: false, error: "管家没有正在进行的回复。" };
+    session.abort();
+    return { ok: true };
+  }
+
   /** 一条对话：先落 you 侧历史，opencode 回复后落 butler 侧并返回全文。 */
   async chat(message: string, files: ButlerStoredFile[] = []): Promise<string> {
     this.wakeStreak = 0;
@@ -401,10 +413,13 @@ export class Butler {
       this.deferred.push(text);
       return;
     }
+    // 压队里的旧动态（主人已批但管家忙没说出的）随这次唤醒一并补上——不再等主人开口。
+    const pendingText = this.deferred.splice(0).join('\n');
+    const full = [pendingText, text].filter(Boolean).join('\n');
     this.running += 1;
     this.wakeStreak += 1;
     try {
-      const reply = await this.askButlerStream(text, () => {}, [], false);
+      const reply = await this.askButlerStream(full, () => {}, [], false);
       this.appendHistory({ at: new Date().toISOString(), role: "butler", text: reply });
     } catch {
       // Could not speak now (the session went away, the model refused): say it with the next chat.
@@ -495,6 +510,10 @@ export class Butler {
     if (url.pathname === "/api/inbox/butler/history" && req.method === "GET") {
       return Response.json({ history: this.history() });
     }
+    // 打断（owner 2026-11-27「类似 interrupt 功能」）：中止正在流式的回复。
+    if (url.pathname === "/api/inbox/butler/stop" && req.method === "POST") {
+      return Response.json(this.stopStreaming());
+    }
     // 管家会话的终端入口（窗口右上角按钮）：会话 id + 可直接粘贴的命令。
     if (url.pathname === "/api/inbox/butler/session" && req.method === "GET") {
       try {
@@ -526,6 +545,7 @@ export class Butler {
     if (!message && files.length === 0) return Response.json({ error: "message: 要对管家说的话（或附件）不能为空。" }, { status: 422 });
     // 流式（v3，owner 2026-11-25「像 web 版一样」）：SSE 增量 + 终帧；流中断历史照记。
     let reply = "";
+    let received = "";
     const stream = new ReadableStream<Uint8Array>({
       start: async (controller) => {
         const send = (payload: Record<string, unknown>) =>
@@ -535,7 +555,10 @@ export class Butler {
           this.appendHistory({ at: new Date().toISOString(), role: "you", text: message, ...(files.length ? { files: files.map((file) => file.name) } : {}) });
           reply = await this.askButlerStream(
             message || `（主人发来了 ${files.length} 个附件）`,
-            (delta) => send({ delta }),
+            (delta) => {
+              received += delta;
+              send({ delta });
+            },
             files,
             true,
             (event) => {
@@ -547,7 +570,18 @@ export class Butler {
           this.appendHistory({ at: new Date().toISOString(), role: "butler", text: reply });
           send({ done: true, reply });
         } catch (error) {
-          send({ error: error instanceof Error ? error.message : String(error) });
+          const why = error instanceof Error ? error.message : String(error);
+          // 主人主动打断（abort/interrupted）：已流出的部分算数——落历史、发 done 帧。
+          if (/abort|interrupt/i.test(why)) {
+            if (received.trim()) {
+              this.appendHistory({ at: new Date().toISOString(), role: "butler", text: received.trim() });
+              send({ done: true, reply: received.trim(), stopped: true });
+            } else {
+              send({ done: true, reply: "", stopped: true });
+            }
+          } else {
+            send({ error: why });
+          }
         }
         controller.close();
       },
@@ -557,3 +591,4 @@ export class Butler {
     });
   }
 }
+

@@ -2317,6 +2317,8 @@ export const inboxApi = {
     if (failure) throw new Error(failure);
     return reply;
   },
+  /** 打断管家正在流式的回复（owner 2026-11-27「类似 interrupt 功能」）。 */
+  butlerStop: () => post<{ ok: boolean; error?: string }>(inboxUrl('/butler/stop'), {}),
   /** 管家：对话历史（最旧在前），用于管家界面的初始渲染。 */
   butlerHistory: () => get<{ history: { at: string; role: 'you' | 'butler'; text: string }[] }>(inboxUrl('/butler/history')),
   /** 管家页的「审批」页签：待批 + 已决定 + 授权开关。 */

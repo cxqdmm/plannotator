@@ -61,6 +61,8 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
    */
   const [live, setLive] = useState<{ reasoning: string; tools: ButlerToolCall[] }>({ reasoning: '', tools: [] });
   const listRef = useRef<HTMLDivElement>(null);
+  /** 概览列的计数（owner 2026-11-27 选定 B 布局：等你/在跑/待批 三块 + 前三件需求）。 */
+  const [bstats, setBstats] = useState<{ waiting: number; running: number; rows: { req: string; title: string; stage: string }[] } | null>(null);
   const loadedRef = useRef(false);
   /**
    * 左侧菜单 + 右侧内容（owner 2026-11-27「改成 inbox 主页的风格，分成菜单和右侧内容
@@ -164,6 +166,43 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
     }, 5000);
     return () => clearInterval(timer);
   }, [open, pending]);
+
+  // 概览列（B 布局）的台账计数：打开时与每 5 秒对一次，和对话历史同一节奏。
+  useEffect(() => {
+    if (!open) return;
+    const load = () => {
+      void inboxApi
+        .butlerLedger()
+        .then((answer) => {
+          const rows = answer?.ledgers ?? [];
+          const active = rows.filter((row) => !row.archived);
+          setBstats({
+            waiting: active.reduce((sum, row) => sum + row.waiting, 0),
+            running: active.reduce((sum, row) => sum + row.running, 0),
+            rows: active.slice(0, 3).map((row) => ({ req: row.req, title: row.title, stage: row.stage })),
+          });
+        })
+        .catch(() => setBstats(null));
+    };
+    load();
+    const timer = setInterval(load, 5000);
+    return () => clearInterval(timer);
+  }, [open]);
+
+  useEffect(() => {
+    void inboxApi
+      .butlerLedger()
+      .then((answer) => {
+        const rows = answer?.ledgers ?? [];
+        const active = rows.filter((row) => !row.archived);
+        setBstats({
+          waiting: active.reduce((sum, row) => sum + row.waiting, 0),
+          running: active.reduce((sum, row) => sum + row.running, 0),
+          rows: active.slice(0, 3).map((row) => ({ req: row.req, title: row.title, stage: row.stage })),
+        });
+      })
+      .catch(() => setBstats(null));
+  }, [open]);
 
   // 新消息/流式追加时滚到底。
   useEffect(() => {
@@ -303,51 +342,44 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
 
   const dropFile = (id: string) => setPendingFiles((current) => current.filter((file) => file.id !== id));
 
+  /** 打断管家正在流式的回复（owner 2026-11-27「类似 interrupt 功能」）：服务端 abort，
+   *  SSE 会以 done+stopped 帧收尾，已生成的部分保留在对话里。 */
+  const stopStream = () => {
+    void inboxApi.butlerStop().catch(() => {});
+  };
+
   return (
     <>
       {open && (
         <div className="ib-butler-pane" role="dialog" aria-label="管家">
-          {/* 左侧菜单（inbox 主页风格）：顶部猫头鹰，中部对话/审批/台账，底部配置 + 终端。 */}
+          {/* 第一列菜单（owner 2026-11-27「猫头鹰图标和对话按钮去掉；概览内容放菜单下方」）：
+              审批/台账 + 概览统计 + 底部 配置/终端。对话是常驻页，不设按钮。 */}
           <nav className="ib-butler-nav" aria-label="管家面板">
-            <span className="ib-butler-nav-owl" title="管家">
-              <ButlerCharacter size={56} mood={pending ? 'working' : sessionCopy === 'copied' ? 'happy' : 'idle'} />
-            </span>
-            <div className="ib-butler-nav-group" role="tablist" aria-label="管家面板">
-              <button
-                type="button"
-                className="ib-butler-navbtn"
-                role="tab"
-                aria-selected={section === 'chat'}
-                data-on={section === 'chat'}
-                onClick={() => setSection('chat')}
-              >
-                <Icon name="comment" size={15} />
-                对话
-              </button>
-              <button
-                type="button"
-                className="ib-butler-navbtn"
-                role="tab"
-                aria-selected={section === 'approvals'}
-                data-on={section === 'approvals'}
-                aria-label={approvalsPending > 0 ? `审批（${approvalsPending} 件待批）` : '审批'}
-                onClick={() => setSection('approvals')}
-              >
+            <div className="ib-butler-nav-group" role="tablist" aria-label="管家视图">
+              <button type="button" className="ib-butler-navbtn" role="tab" aria-selected={section === 'approvals'} data-on={section === 'approvals'} onClick={() => setSection(section === 'approvals' ? 'chat' : 'approvals')}>
                 <Icon name="checkCircle" size={15} />
                 审批
                 {approvalsPending > 0 && <span className="ib-butler-railbadge">{approvalsPending}</span>}
               </button>
-              <button
-                type="button"
-                className="ib-butler-navbtn"
-                role="tab"
-                aria-selected={section === 'ledger'}
-                data-on={section === 'ledger'}
-                onClick={() => setSection('ledger')}
-              >
+              <button type="button" className="ib-butler-navbtn" role="tab" aria-selected={section === 'ledger'} data-on={section === 'ledger'} onClick={() => setSection(section === 'ledger' ? 'chat' : 'ledger')}>
                 <Icon name="book" size={15} />
                 台账
               </button>
+            </div>
+            <div className="ib-butler-nav-stats" aria-label="概览">
+              <div className="ib-butler-bstats-tiles">
+                <div className="ib-butler-bstat"><b>{bstats?.waiting ?? '—'}</b><span>等你</span></div>
+                <div className="ib-butler-bstat"><b>{bstats?.running ?? '—'}</b><span>在跑</span></div>
+                <div className="ib-butler-bstat"><b>{approvalsPending}</b><span>待批</span></div>
+              </div>
+              <div className="ib-butler-bstats-list">
+                {(bstats?.rows ?? []).map((row) => (
+                  <div key={row.req} className="ib-butler-bstat-row">
+                    <span className="ib-butler-bstat-title">{row.title}</span>
+                    <span className="ib-butler-bstat-stage">{row.stage}</span>
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="ib-butler-nav-foot">
               <button
@@ -356,7 +388,7 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                 role="tab"
                 aria-selected={section === 'config'}
                 data-on={section === 'config'}
-                onClick={() => setSection('config')}
+                onClick={() => setSection(section === 'config' ? 'chat' : 'config')}
               >
                 <Icon name="settings" size={15} />
                 配置
@@ -374,23 +406,22 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
               </Tip>
             </div>
           </nav>
-          {/* 右侧内容区：菜单选中哪栏，这里就是哪栏。 */}
+          {/* 对话常驻；审批/台账/配置从右侧抽屉盖上来。 */}
           <div className="ib-butler-content">
-            {section === 'chat' && (
-              <div className="ib-butler-chat">
-                <div className="ib-butler-top">
-                  <div className="ib-butler-top-buttons">
-                    <Tip content="关闭管家">
-                      <button type="button" className="ib-iconbtn" onClick={() => setOpen(false)} aria-label="关闭管家">
-                        <Icon name="x" />
-                      </button>
-                    </Tip>
-                  </div>
-                  <span className="ib-butler-avatar" title="管家">
-                    <ButlerCharacter size={144} mood={pending ? 'working' : sessionCopy === 'copied' ? 'happy' : 'idle'} />
-                    <span className="ib-butler-presence" aria-hidden="true" />
-                  </span>
+            <div className="ib-butler-chat">
+              <div className="ib-butler-top">
+                <div className="ib-butler-top-buttons">
+                  <Tip content="关闭管家">
+                    <button type="button" className="ib-iconbtn" onClick={() => setOpen(false)} aria-label="关闭管家">
+                      <Icon name="x" />
+                    </button>
+                  </Tip>
                 </div>
+                <span className="ib-butler-avatar" title="管家">
+                  <ButlerCharacter size={144} mood={pending ? 'working' : sessionCopy === 'copied' ? 'happy' : 'idle'} />
+                  <span className="ib-butler-presence" aria-hidden="true" />
+                </span>
+              </div>
                 <div className="ib-butler-list" ref={listRef}>
                   {turns.length === 0 && !pending ? (
                     <div className="ib-butler-hero">
@@ -505,8 +536,14 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                           if (!pending) void send();
                         }}
                       />
-                      <button type="button" className="ib-butler-send" aria-label="发送" onClick={() => void send()} disabled={pending || (!draft.trim() && pendingFiles.length === 0)}>
-                        {pending ? <span className="ib-spin" aria-hidden="true" /> : <ButlerSendGlyph />}
+                      <button
+                        type="button"
+                        className="ib-butler-send"
+                        aria-label={pending ? '停止' : '发送'}
+                        onClick={() => (pending ? stopStream() : void send())}
+                        disabled={!pending && !draft.trim() && pendingFiles.length === 0}
+                      >
+                        {pending ? <ButlerStopGlyph /> : <ButlerSendGlyph />}
                       </button>
                     </div>
                   </div>
@@ -524,74 +561,43 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                   />
                 </div>
               </div>
-            )}
-            {section === 'approvals' && (
-              <section className="ib-butler-view" aria-label="待批事项">
-                <header className="ib-butler-view-head">
-                  <div>
-                    <span className="ib-butler-side-kicker">APPROVALS</span>
-                    <h2>待批事项</h2>
+              <aside className="ib-butler-side" data-open={section !== 'chat'} aria-hidden={section === 'chat'} aria-label={section === 'config' ? '配置' : section === 'ledger' ? '台账' : '审批'}>
+                <div className="ib-butler-side-inner">
+                  <header className="ib-butler-side-head">
+                    <div>
+                      <span className="ib-butler-side-kicker">{section === 'config' ? 'SETTINGS' : section === 'ledger' ? 'LEDGER' : 'APPROVALS'}</span>
+                      <h2>{section === 'config' ? '配置' : section === 'ledger' ? '台账' : '待批事项'}</h2>
+                    </div>
+                    <Tip content="收起">
+                      <button type="button" className="ib-iconbtn" onClick={() => setSection('chat')} aria-label="收起侧栏">
+                        <Icon name="x" />
+                      </button>
+                    </Tip>
+                  </header>
+                  <div className="ib-butler-side-body">
+                    {section === 'approvals' && (
+                      <ButlerApprovals
+                        model={approvalsModel}
+                        projects={projects}
+                        onProjectsChanged={setProjects}
+                        agents={agents}
+                        error={approvalsError}
+                        busy={approvalBusy}
+                        onDecide={(id, decision, always, projectId, agent, note) => void decideApproval(id, decision, always, projectId, agent, note)}
+                        onRefresh={loadApprovals}
+                      />
+                    )}
+                    {section === 'ledger' && <ButlerLedger open={section === 'ledger'} />}
+                    {section === 'config' && (
+                      <ButlerAuthSettings
+                        model={approvalsModel}
+                        error={approvalsError}
+                        onMode={(action, mode) => void setApprovalMode(action, mode)}
+                      />
+                    )}
                   </div>
-                  <Tip content="关闭管家">
-                    <button type="button" className="ib-iconbtn" onClick={() => setOpen(false)} aria-label="关闭管家">
-                      <Icon name="x" />
-                    </button>
-                  </Tip>
-                </header>
-                <div className="ib-butler-view-body">
-                  <ButlerApprovals
-                    model={approvalsModel}
-                    projects={projects}
-                    onProjectsChanged={setProjects}
-                    agents={agents}
-                    error={approvalsError}
-                    busy={approvalBusy}
-                    onDecide={(id, decision, always, projectId, agent, note) => void decideApproval(id, decision, always, projectId, agent, note)}
-                    onRefresh={loadApprovals}
-                  />
                 </div>
-              </section>
-            )}
-            {section === 'ledger' && (
-              <section className="ib-butler-view" aria-label="台账">
-                <header className="ib-butler-view-head">
-                  <div>
-                    <span className="ib-butler-side-kicker">LEDGER</span>
-                    <h2>台账</h2>
-                  </div>
-                  <Tip content="关闭管家">
-                    <button type="button" className="ib-iconbtn" onClick={() => setOpen(false)} aria-label="关闭管家">
-                      <Icon name="x" />
-                    </button>
-                  </Tip>
-                </header>
-                <div className="ib-butler-view-body">
-                  <ButlerLedger open />
-                </div>
-              </section>
-            )}
-            {section === 'config' && (
-              <section className="ib-butler-view" aria-label="配置">
-                <header className="ib-butler-view-head">
-                  <div>
-                    <span className="ib-butler-side-kicker">SETTINGS</span>
-                    <h2>配置</h2>
-                  </div>
-                  <Tip content="关闭管家">
-                    <button type="button" className="ib-iconbtn" onClick={() => setOpen(false)} aria-label="关闭管家">
-                      <Icon name="x" />
-                    </button>
-                  </Tip>
-                </header>
-                <div className="ib-butler-view-body">
-                  <ButlerAuthSettings
-                    model={approvalsModel}
-                    error={approvalsError}
-                    onMode={(action, mode) => void setApprovalMode(action, mode)}
-                  />
-                </div>
-              </section>
-            )}
+              </aside>
           </div>
         </div>
       )}
@@ -663,6 +669,15 @@ function butlerGreeting(): string {
 
 /** 起步的建议（点一下填进输入框）：都是管家真的做得到的事。 */
 const BUTLER_IDEAS: readonly string[] = ['现在什么情况？', '帮我把一个想法整理成需求', '计划评审是怎么用的？', '代码评审的结论会去哪里？'];
+
+/** 停止键的方块（打断正在流式的回复）。 */
+function ButlerStopGlyph() {
+  return (
+    <svg className="ib-ic" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor" />
+    </svg>
+  );
+}
 
 /** 发送键的回车箭头（会话流同款）。 */
 function ButlerSendGlyph() {

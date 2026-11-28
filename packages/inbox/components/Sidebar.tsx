@@ -702,10 +702,9 @@ export function Sidebar(props: SidebarProps) {
   const brand = shows('logo') && (
     <div className="ib-brand" data-sidebar-item="logo">
       <button type="button" className="ib-brand-owl" aria-label="管家" title="管家" onClick={pick(() => props.onButler?.())}>
-        <ButlerCharacter size={68} />
+        <ButlerCharacter size={60} />
       </button>
-      <b>Plannotator</b>
-      <span>Inbox</span>
+      <b>鹰管家</b>
     </div>
   );
   /** A phone's sheet: Starred's heading in a row of its own, as Agents' and Projects' are, so all three stick alike. */
