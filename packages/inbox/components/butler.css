@@ -109,3 +109,50 @@ button.ib-butler-bstat-row:hover { background: color-mix(in oklch, var(--muted) 
 .ib-butler-trc-count { font-size: 12.5px; font-weight: 650; color: var(--foreground); margin: 0 0 8px; }
 /* 展开后的全文：行内省略号只是单行索引，展开一字不裁。 */
 .ib-butler-trc-full { font-size: 12px; line-height: 1.6; color: var(--foreground); overflow-wrap: anywhere; margin: 0 0 4px; }
+
+/* ════════════════════════════════════════════════════════════════════
+   台账详情定案（原型 c「分节详情」折入，owner 2026-11-28「我还是喜欢 C」）：
+   markdown 按 ## 拆节成页签；交付物常驻顶部；进展节渲染成轨道时间线
+   （工坊历史 DNA：点 + 右对齐时间），清单节干净条目，文字节段落；
+   标题/阶段/更新时间由头部承担，markdown 的 H1 与引用行剥掉不重说。
+
+   二轮打磨（owner 2026-11-28）：返回箭头进大标题；去掉 LEDGER kicker、
+   「x 件在做」计数行，刷新挪进 header；页签从紫胶囊改成安静的文字页签
+   （主色下划线）；「已归档」小节标题加大、去掉下面的横线。
+   ════════════════════════════════════════════════════════════════════ */
+/* 详情态的大标题：返回箭头 + 需求名（点击箭头回全部台账）。 */
+.ib-butler-side-head h2.is-back { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.ib-butler-side-head h2.is-back > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ib-butler-led-backbtn { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin-left: -6px; border: 0; border-radius: 7px; background: none; color: var(--muted-foreground); cursor: pointer; }
+.ib-butler-led-backbtn:hover { background: color-mix(in oklch, var(--muted) 55%, transparent); color: var(--foreground); }
+.ib-butler-side-acts { display: inline-flex; align-items: center; gap: 2px; }
+.ib-butler-led-headfull { display: flex; align-items: center; gap: 8px; min-width: 0; margin: 0 0 10px; }
+.ib-butler-led-spacer { flex: 1; }
+.ib-butler-led-updated { flex: none; font-size: 10px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+/* 页签（列表过滤与详情分节同一套）：中性小胶囊——与需要你/在跑 chip 同族，
+   未选中发丝线描边灰字，选中淡底深字；主色不出现（owner 2026-11-28「还是不好看」）。 */
+.ib-butler-led-filter, .ib-butler-led-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 10px; }
+.ib-butler-led-filter button, .ib-butler-led-tabs button { display: inline-flex; align-items: center; padding: 2.5px 10px; border: 1px solid var(--ib-hair, var(--border)); border-radius: 999px; background: none; font: inherit; font-size: 10.5px; font-weight: 550; color: var(--muted-foreground); cursor: pointer; transition: background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out; }
+.ib-butler-led-filter button:hover, .ib-butler-led-tabs button:hover { color: var(--foreground); border-color: var(--muted-foreground); }
+.ib-butler-led-filter button[data-on], .ib-butler-led-tabs button[data-on] { background: color-mix(in oklch, var(--foreground) 6%, transparent); border-color: color-mix(in oklch, var(--foreground) 16%, transparent); color: var(--foreground); font-weight: 650; }
+.ib-butler-led-sections { display: flex; flex-direction: column; gap: 10px; }
+.ib-butler-led-secwrap { min-width: 0; }
+.ib-butler-led-sec { min-width: 0; }
+/* 「已归档」小节标题（owner 2026-11-28「太小了，下面还有一根横线」）：加大加色，无横线。 */
+.ib-butler-led-hh { margin: 12px 0 6px; font-family: inherit; font-size: 11.5px; font-weight: 650; letter-spacing: 0.02em; color: var(--foreground); text-transform: none; padding: 0; border: none; }
+/* 清单节：干净的条目（细小圆点，不用 markdown 默认 disc）。 */
+.ib-butler-led-items { margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; list-style: none; font-size: 12px; line-height: 1.55; color: var(--foreground); }
+.ib-butler-led-items li { position: relative; padding-left: 14px; overflow-wrap: anywhere; }
+.ib-butler-led-items li::before { content: ""; position: absolute; left: 2px; top: 0.62em; width: 4px; height: 4px; border-radius: 999px; background: color-mix(in oklch, var(--muted-foreground) 55%, transparent); }
+/* 进展节：轨道时间线（工坊历史 DNA）——点在轨道上，时间右对齐 tabular。 */
+.ib-butler-led-sec-list.is-timeline { display: flex; flex-direction: column; gap: 0; }
+.ib-butler-led-tl { position: relative; display: flex; align-items: baseline; gap: 7px; padding: 3px 0 3px 16px; font-size: 11.5px; line-height: 1.5; min-width: 0; }
+.ib-butler-led-tl::before { content: ""; position: absolute; left: 3px; top: 0; bottom: 0; width: 1px; background: var(--ib-hair, var(--border)); }
+.ib-butler-led-tl-dot { position: absolute; left: 0.5px; top: 0.72em; width: 6px; height: 6px; border-radius: 999px; background: color-mix(in oklch, var(--muted-foreground) 55%, transparent); }
+.ib-butler-led-tl:first-child::before { top: 0.9em; }
+.ib-butler-led-tl:last-child::before { bottom: auto; height: 0.9em; }
+.ib-butler-led-tl-at { flex: none; font-size: 10px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; padding-top: 1px; }
+.ib-butler-led-tl-text { min-width: 0; color: var(--foreground); overflow-wrap: anywhere; }
+.ib-butler-led-sec p { margin: 0 0 6px; font-size: 12px; line-height: 1.6; color: var(--foreground); overflow-wrap: anywhere; }
+.ib-butler-led-sec p:last-child { margin: 0; }
+.ib-butler-led-note { color: var(--muted-foreground); font-size: 11px; }

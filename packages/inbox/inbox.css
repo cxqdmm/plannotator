@@ -12729,7 +12729,7 @@ svg.ib-bc.ib-bc-sleep .ib-bc-brow-r { animation: none; }
 /* 左侧菜单：直接用收件箱侧栏的地板与行的语言（--ib-ground 地板、--ib-nav 行、
    --ib-cur-* 选中卡），一个变量都不另起，主题与软面板模式都跟着主页走。 */
 /* 与收件箱侧栏同宽（shell/sidebar.tsx 的 232px）：同一份视觉，宽度也对齐。 */
-.ib-butler-nav { --muted-foreground: var(--ib-side-mfg); --foreground: var(--ib-side-fg); color: var(--foreground); background: var(--ib-ground); border-right: 1px solid var(--ib-pane-line); flex: none; width: 232px; display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 14px 10px 12px; }
+.ib-butler-nav { --muted-foreground: var(--ib-side-mfg); --foreground: var(--ib-side-fg); color: var(--foreground); background: var(--ib-ground); border-right: 1px solid var(--ib-pane-line); flex: none; width: 348px; display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 14px 12px 12px; }
 .ib-butler-nav-owl { display: flex; align-items: center; gap: 9px; padding: 0 6px 10px; }
 .ib-butler-nav-group { display: flex; flex-direction: column; gap: 1px; }
 /* 行：即 .ib-nav（32px 高、7px 圆角、9px 内距）；选中即 .ib-nav.ib-on 的浮起卡。 */

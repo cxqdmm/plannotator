@@ -73,9 +73,10 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
   const [bstats, setBstats] = useState<{ waiting: number; running: number; rows: InboxButlerLedgerRow[] } | null>(null);
   /** 全量活跃台账行（等你清单与新交付物徽标的数据源；概览行点击定位台账用）。 */
   const [ledgerRows, setLedgerRows] = useState<InboxButlerLedgerRow[]>([]);
-  // 台账抽屉的定位与过滤（owner 2026-11-28 联动）：点概览行直达详情；「在跑」块过滤进。
+  // 台账抽屉的定位（owner 2026-11-28 联动）：点概览行直达详情。
   const [ledgerPick, setLedgerPick] = useState<string | null>(null);
-  const [ledgerFocus, setLedgerFocus] = useState<'running' | null>(null);
+  /** header 上的刷新（owner 2026-11-28「刷新也放在 header 上」）：计数变化即触发台账重读。 */
+  const [ledgerReload, setLedgerReload] = useState(0);
   // 新产物（owner 2026-11-28「有新的产物也有提示」）：看过台账详情即记下时点，
   // 之后最新一笔晚于它的就是「新」——需求行小点 + 台账按钮徽标。存 localStorage 跨会话。
   const [delivSeen, setDelivSeen] = useState<string | null>(() => {
@@ -87,7 +88,6 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
     setDelivSeen(nowIso);
   };
   const openLedgerOf = (req: string | null) => {
-    setLedgerFocus(null);
     setLedgerPick(req);
     setSection('ledger');
   };
@@ -384,6 +384,12 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
       : presence === 'sleep'
         ? '管家打盹中 · 有一阵子没说话了'
         : '管家在线';
+  // 待批按需求归属（owner 2026-11-28「状态也要体现到需求卡上」）：审批单自带目标需求。
+  const pendingByReq = new Map<string, number>();
+  for (const approval of approvalsModel?.approvals.pending ?? []) {
+    const req = approval.detail.requirement;
+    if (req) pendingByReq.set(req, (pendingByReq.get(req) ?? 0) + 1);
+  }
 
   return (
     <>
@@ -413,7 +419,7 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                 <button type="button" className="ib-butler-bstat" title="所有需求里等您做的事（含待批的审批）" onClick={() => setSection('waiting')}>
                   <b>{bstats?.waiting ?? '—'}</b><span>需要你</span>
                 </button>
-                <button type="button" className="ib-butler-bstat" title="Agent 会话正在做的事" onClick={() => { setLedgerFocus('running'); setLedgerPick(null); setSection('ledger'); }}>
+                <button type="button" className="ib-butler-bstat" title="Agent 会话正在做的事" onClick={() => openLedgerOf(null)}>
                   <b>{bstats?.running ?? '—'}</b><span>在跑</span>
                 </button>
                 <button type="button" className="ib-butler-bstat" title="管家的动作等您批准" onClick={() => setSection('approvals')}>
@@ -430,6 +436,7 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                     <span className="ib-butler-bstat-side">
                       {(row.deliverables ?? 0) > 0 && row.deliverable_at && (!delivSeen || row.deliverable_at > delivSeen) && <span className="ib-butler-freshdot" title="有新交付物" />}
                       {row.waiting > 0 && <span className="ib-butler-holdchip">需要你 {row.waiting}</span>}
+                      {(pendingByReq.get(row.req) ?? 0) > 0 && <span className="ib-butler-holdchip">待批 {pendingByReq.get(row.req)}</span>}
                       {row.running > 0 && <span className="ib-butler-runchip">在跑 {row.running}</span>}
                     </span>
                     {row.next_action?.text && <span className="ib-butler-bstat-next">{row.next_action.text}</span>}
@@ -623,14 +630,33 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                 <div className="ib-butler-side-inner">
                   <header className="ib-butler-side-head">
                     <div>
-                      {section !== 'trace' && <span className="ib-butler-side-kicker">{section === 'config' ? 'SETTINGS' : section === 'waiting' ? 'WAITING' : section === 'ledger' ? 'LEDGER' : 'APPROVALS'}</span>}
-                      <h2>{section === 'config' ? '配置' : section === 'waiting' ? '等你的事' : section === 'trace' ? '行为' : section === 'ledger' ? '台账' : '待批事项'}</h2>
+                      {section !== 'trace' && section !== 'ledger' && <span className="ib-butler-side-kicker">{section === 'config' ? 'SETTINGS' : section === 'waiting' ? 'WAITING' : 'APPROVALS'}</span>}
+                      {/* 台账详情：返回箭头进大标题（owner 2026-11-28「放 header 大标题前面加个返回箭头」）。 */}
+                      {section === 'ledger' && ledgerPick ? (
+                        <h2 className="is-back">
+                          <button type="button" className="ib-butler-led-backbtn" onClick={() => setLedgerPick(null)} aria-label="返回全部台账">
+                            <Icon name="chevL" size={15} />
+                          </button>
+                          <span>{ledgerRows.find((row) => row.req === ledgerPick)?.title ?? '台账'}</span>
+                        </h2>
+                      ) : (
+                        <h2>{section === 'config' ? '配置' : section === 'waiting' ? '等你的事' : section === 'trace' ? '行为' : section === 'ledger' ? '台账' : '待批事项'}</h2>
+                      )}
                     </div>
-                    <Tip content="收起">
-                      <button type="button" className="ib-iconbtn" onClick={() => setSection('chat')} aria-label="收起侧栏">
-                        <Icon name="x" />
-                      </button>
-                    </Tip>
+                    <div className="ib-butler-side-acts">
+                      {section === 'ledger' && (
+                        <Tip content="刷新">
+                          <button type="button" className="ib-iconbtn" onClick={() => setLedgerReload((v) => v + 1)} aria-label="刷新台账">
+                            <Icon name="restart" size={14} />
+                          </button>
+                        </Tip>
+                      )}
+                      <Tip content="收起">
+                        <button type="button" className="ib-iconbtn" onClick={() => setSection('chat')} aria-label="收起侧栏">
+                          <Icon name="x" />
+                        </button>
+                      </Tip>
+                    </div>
                   </header>
                   <div className="ib-butler-side-body">
                     {section === 'approvals' && (
@@ -659,7 +685,7 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                         open={section === 'ledger'}
                         pick={ledgerPick}
                         onPick={setLedgerPick}
-                        focus={ledgerFocus}
+                        reload={ledgerReload}
                         onOpenDetail={markDelivSeen}
                       />
                     )}
