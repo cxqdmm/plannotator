@@ -1,11 +1,11 @@
 /**
  * 抽屉「台账」（owner 2026-11-27「配置图标右侧加一个台账，点击也是侧边栏查看」）：管家对每个
  * 需求的记录——阶段、谁在等谁、下一步，点开一份看完整台账（服务端渲染的 Markdown：背景、
- * 时间线、待办三栏、下一步）+ 产物区块（owner 2026-11-28「台账加产物模块」：工坊交付物
+ * 时间线、待办三栏、下一步）+ 交付物区块（owner 2026-11-28「台账加产物模块」：工坊交付物
  * 同源，直达打开）。只读：事实源是收件箱，台账是它的投影。
  *
  * 联动（owner 2026-11-28）：概览行点击直达一份详情（pick 受控）；「在跑」块进来先过滤
- * （focus）；打开详情时回报 onOpenDetail——「新产物」点与台账按钮徽标就地消除。
+ * （focus）；打开详情时回报 onOpenDetail——「新交付物」点与台账按钮徽标就地消除。
  */
 import { useEffect, useState } from 'react';
 import { chatMarkdownHtml } from '@plannotator/ui/components/chat';
@@ -61,7 +61,7 @@ export function ButlerLedger({
   onPick: (req: string | null) => void;
   /** 「在跑」块进来时的初始过滤。 */
   focus: 'running' | null;
-  /** 打开一份详情时回报（新产物标记就地消除）。 */
+  /** 打开一份详情时回报（新交付物标记就地消除）。 */
   onOpenDetail: () => void;
 }) {
   const [rows, setRows] = useState<InboxButlerLedgerRow[] | null>(null);
@@ -105,7 +105,7 @@ export function ButlerLedger({
       .then((answer) => {
         if (alive && answer) {
           setDetail({ row: answer.ledger, markdown: answer.markdown, deliverables: answer.deliverables ?? [] });
-          // 看过即「新」消除（新产物点、台账按钮徽标）。
+          // 看过即「新」消除（新交付物点、台账按钮徽标）。
           onOpenDetail();
         }
       })
@@ -187,11 +187,11 @@ export function ButlerLedger({
   );
 }
 
-/** 产物区块（owner 2026-11-28）：工坊交付物同源直达。点条目系统默认程序打开，「显示」回资源管理器定位。 */
+/** 交付物区块（owner 2026-11-28）：工坊交付物同源直达。点条目系统默认程序打开，「显示」回资源管理器定位。 */
 function DeliverablesBlock({ deliverables }: { deliverables: InboxDeliverableRef[] }) {
   if (deliverables.length === 0) {
     return (
-      <div className="ib-butler-dlv is-empty">还没有产物——执行会话交付后会出现在这里。</div>
+      <div className="ib-butler-dlv is-empty">还没有交付物——执行会话交付后会出现在这里。</div>
     );
   }
   const open = (entry: InboxDeliverableRef, reveal: boolean) => {
@@ -199,7 +199,7 @@ function DeliverablesBlock({ deliverables }: { deliverables: InboxDeliverableRef
   };
   return (
     <div className="ib-butler-dlv">
-      <div className="ib-butler-dlv-hh">产物 · {deliverables.length} 件</div>
+      <div className="ib-butler-dlv-hh">交付物 · {deliverables.length} 件</div>
       <div className="ib-butler-dlv-list">
         {deliverables.map((entry) => (
           <div key={entry.id} className="ib-butler-dlv-row">

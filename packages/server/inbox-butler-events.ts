@@ -43,6 +43,7 @@ import {
   type RequirementStage,
 } from "@plannotator/core/requirements-types";
 import type { RequirementStore } from "./requirements";
+import { butlerTraceOf } from "./inbox-butler-trace";
 
 // ─────────────────────────────── vocabulary ───────────────────────────────
 
@@ -846,6 +847,15 @@ export function createButlerEvents(options: ButlerEventsOptions): ButlerEvents {
     recent.push(event);
     if (recent.length > 500) recent.splice(0, recent.length - 500);
     persistCursor();
+    // 行为 trace（owner 2026-11-28「管家接收到哪些事件」）：每一笔都记，因果链的起点。
+    butlerTraceOf(dir).append({
+      id: event.id,
+      at: event.at,
+      type: "event",
+      summary: event.summary,
+      detail: event.kind,
+      ...(event.subject.requirement || event.subject.thread ? { refs: { ...(event.subject.requirement ? { requirement: event.subject.requirement } : {}), ...(event.subject.thread ? { thread: event.subject.thread } : {}) } } : {}),
+    });
     if (event.level !== "record") scheduleWake(event);
   };
 
@@ -1107,7 +1117,7 @@ export function createButlerEvents(options: ButlerEventsOptions): ButlerEvents {
               // 等你清单（owner 2026-11-28「都不知道什么含义」）：要主人做的事，原文列出。
               waiting_items: ledger.todos.on_person,
               running: ledger.todos.on_session.length,
-              // 产物同源（owner 2026-11-28「台账加产物模块」）：工坊需求记录的交付物，
+              // 交付物同源（owner 2026-11-28「台账加产物模块」）：工坊需求记录的交付物，
               // 行上带计数与最新一笔时间（前端「新」标记与台账按钮徽标用）。
               deliverables: record?.deliverables.length ?? 0,
               deliverable_at: delivered.length ? delivered[delivered.length - 1]! : null,
@@ -1124,18 +1134,18 @@ export function createButlerEvents(options: ButlerEventsOptions): ButlerEvents {
         return Response.json({
           ledger,
           markdown: renderLedger(ledger),
-          // 产物区块（时间倒序）：agent 经 MCP deliver 上报的交付物，主人从台账直达。
+          // 交付物区块（时间倒序）：agent 经 MCP deliver 上报的交付物，主人从台账直达。
           deliverables: (record?.deliverables ?? []).slice().sort((a, b) => (a.created_at < b.created_at ? 1 : -1)),
         });
       }
-      // 产物直达（owner 2026-11-28「点一个产物：系统默认程序直接打开」）：文件/文件夹
+      // 交付物直达（owner 2026-11-28「点一个交付物：系统默认程序直接打开」）：文件/文件夹
       // 用系统默认方式打开，「显示」则回资源管理器定位；http(s) 交给系统浏览器。窗口
       // 自己的点击（same-origin），路径只拿来打开，不做别的。
       if (url.pathname === "/api/inbox/butler/open" && req.method === "POST") {
         const body = await req.json().catch(() => ({})) as { ref?: unknown; reveal?: unknown };
         const ref = typeof body.ref === "string" ? body.ref.trim() : "";
         const reveal = body.reveal === true;
-        if (!ref || ref.length > 500) return Response.json({ error: "没有要打开的产物地址。" }, { status: 422 });
+        if (!ref || ref.length > 500) return Response.json({ error: "没有要打开的交付物地址。" }, { status: 422 });
         const isUrl = /^https?:\/\//i.test(ref);
         const isWin = process.platform === "win32";
         try {

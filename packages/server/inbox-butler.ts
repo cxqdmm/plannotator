@@ -23,6 +23,7 @@ import { requirementCardGuide, requirementCardTemplate } from "@plannotator/core
 import { createProvider, buildButlerPrompt } from "@plannotator/ai";
 import type { AIQueryOptions } from "@plannotator/ai";
 import { BUTLER_FILE_INLINE_BYTES, BUTLER_FILE_MAX_BYTES, BUTLER_FILE_MAX_COUNT } from "@plannotator/core/inbox-types";
+import { butlerTraceOf, traceBrief } from "./inbox-butler-trace";
 
 /** 主人 opencode.json 里的默认模型（`glm/glm-5.3-flash` 之类），读不到给 null。 */
 function readOpencodeDefaultModel(): string | null {
@@ -274,8 +275,12 @@ export class Butler {
    */
   stopStreaming(): { ok: boolean; error?: string } {
     const session = this.brainSession;
-    if (!session || !session.isActive) return { ok: false, error: "管家没有正在进行的回复。" };
+    if (!session || !session.isActive) {
+      butlerTraceOf(this.dir).append({ at: new Date().toISOString(), type: "action", summary: "主人打断：没有正在进行的回复", outcome: "no-op" });
+      return { ok: false, error: "管家没有正在进行的回复。" };
+    }
     session.abort();
+    butlerTraceOf(this.dir).append({ at: new Date().toISOString(), type: "action", summary: "主人打断：中止当前回合", outcome: "ok" });
     return { ok: true };
   }
 
@@ -402,14 +407,24 @@ export class Butler {
    * （比如提议开执行会话）就该由管家接着做。现场 2026-11-27：批准建卡后没有任何后续，
    * 因为重启后 brainSession 为空，唤醒被静静压后了。
    */
-  async wake(digest: string, events: readonly { kind: string }[] = []): Promise<void> {
+  async wake(digest: string, events: readonly { kind: string; id?: string }[] = []): Promise<void> {
     const text = digest.trim();
     if (!text) return;
+    const trace = butlerTraceOf(this.dir);
+    const cause = events.find((event) => typeof event.id === "string" && event.id)?.id;
     const ownerJustActed = events.some((event) => typeof event.kind === "string" && event.kind.startsWith("butler.action."));
     // 连续第三次由事件唤起（中间没人说话）就停下来：否则管家自己的动作产生事件、事件又唤醒它，
     // 能自己转一晚上（现场 2026-11-27 的 127 次工具调用就是这么起来的）。留到下一句对话。
     const runLooping = this.wakeStreak >= 3;
     if ((!this.brainSession && !ownerJustActed) || this.running > 0 || this.brainSession?.isActive || runLooping) {
+      // 行为 trace（owner 2026-11-28「接收了某个事件后，后面触发了什么」）：延迟与静默
+      // 正是要监控的决策瞬间——不说也得有据可查。
+      const deferredBy = runLooping
+        ? "连醒熔断：连续第三次由事件唤起，静默留到下一句对话"
+        : this.running > 0 || this.brainSession?.isActive
+          ? "上一轮还在说话，延迟到它说完"
+          : "还没有会话，留到下一句对话";
+      trace.append({ at: new Date().toISOString(), type: "wake", summary: traceBrief(text), cause, outcome: runLooping ? "suppressed" : "deferred", detail: deferredBy });
       this.deferred.push(text);
       return;
     }
@@ -419,24 +434,29 @@ export class Butler {
     this.running += 1;
     this.wakeStreak += 1;
     try {
-      const reply = await this.askButlerStream(full, () => {}, [], false);
+      const reply = await this.askButlerStream(full, () => {}, [], false, cause);
       this.appendHistory({ at: new Date().toISOString(), role: "butler", text: reply });
-    } catch {
+      trace.append({ at: new Date().toISOString(), type: "wake", summary: traceBrief(text), cause, outcome: "spoken", ...(pendingText ? { detail: "随本次唤醒补上了此前延迟的动态" } : {}) });
+    } catch (error) {
       // Could not speak now (the session went away, the model refused): say it with the next chat.
       this.deferred.push(text);
+      trace.append({ at: new Date().toISOString(), type: "wake", summary: traceBrief(text), cause, outcome: "error", detail: error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200) });
     } finally {
       this.running -= 1;
     }
   }
 
-  /** 流式一问：增量经 onDelta 出去，返回全文（历史照记）。 */
-  private async askButlerStream(message: string, onDelta: (delta: string) => void, files: ButlerStoredFile[] = [], withDigest = true, onEvent?: (event: ButlerStreamEvent) => void): Promise<string> {
+  /** 流式一问：增量经 onDelta 出去，返回全文（历史照记）。`cause`：由哪笔事件引发（行为 trace 用）。 */
+  private async askButlerStream(message: string, onDelta: (delta: string) => void, files: ButlerStoredFile[] = [], withDigest = true, cause?: string, onEvent?: (event: ButlerStreamEvent) => void): Promise<string> {
     // The digest is the event plane's "since you last looked", never the owner's own words.
     const digest = withDigest ? this.takeDigest() : "";
     const prompt = `${digest ? `${digest}\n\n` : ""}${message}${filesNoteOf(files)}`;
     this.running += 1;
     try {
-      return await this.askButlerRun(prompt, onDelta, files, onEvent);
+      const reply = await this.askButlerRun(prompt, onDelta, files, onEvent);
+      // 行为 trace：开口只记一句摘要（正文在 history.jsonl，这里是索引，不存两份）。
+      butlerTraceOf(this.dir).append({ at: new Date().toISOString(), type: "turn", summary: traceBrief(reply || message), cause, outcome: "spoken" });
+      return reply;
     } catch (error) {
       // The turn never happened: the digest goes back to the queue, so the next one still sees it
       // (a failed turn must not quietly eat a delivery the owner was waiting to hear about).
@@ -477,6 +497,7 @@ export class Butler {
             } catch {
               // 中止失败也要抛出：这一轮不能再跑下去。
             }
+            butlerTraceOf(this.dir).append({ at: new Date().toISOString(), type: "fuse", summary: "工具循环熔断，本轮中止", detail: `同一工具连发 ${sameCount} 次 / 本轮共 ${calls} 次调用`, outcome: "error" });
             throw new Error("管家连续重复调用同一个工具，已中止这一轮。可以换个说法再试。");
           }
           onEvent?.({ type: "tool", id: msg.toolUseId, name: msg.toolName, input: msg.toolInput ?? {} });
@@ -495,6 +516,7 @@ export class Butler {
     } catch (error) {
       // 续接通过了、prompt 才被拒（会话在 resumed 之后被删）：自愈一次，不把错误抛给主人。
       if (!Butler.staleSession(error)) throw error;
+      butlerTraceOf(this.dir).append({ at: new Date().toISOString(), type: "fuse", summary: "会话 id 失效，自愈重建", outcome: "ok" });
       this.forgetSession();
       return await run();
     }
@@ -506,6 +528,11 @@ export class Butler {
     if (!sameOrigin) return null;
     if (url.pathname === "/api/inbox/butler/chat" && req.method === "POST") {
       return await this.chatRoute(req);
+    }
+    // 行为 trace（owner 2026-11-28「对管家本身的监控」）：事件入账、唤醒处置、开口、
+    // 动作与结果、熔断自愈——一条因果可查的时间线。读时裁剪（14 天 / 2000 条）。
+    if (url.pathname === "/api/inbox/butler/trace" && req.method === "GET") {
+      return Response.json({ entries: butlerTraceOf(this.dir).read() });
     }
     if (url.pathname === "/api/inbox/butler/history" && req.method === "GET") {
       return Response.json({ history: this.history() });
@@ -561,6 +588,7 @@ export class Butler {
             },
             files,
             true,
+            undefined,
             (event) => {
               if (event.type === "reasoning") send({ reasoning: event.delta });
               else if (event.type === "tool") send({ tool: { id: event.id, name: event.name, input: event.input } });

@@ -32,6 +32,7 @@
  * owns only the protocol, the authorization and the audit.
  */
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { butlerTraceOf } from "./inbox-butler-trace";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { ulid } from "@plannotator/core/inbox-types";
@@ -265,6 +266,29 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
   };
 
   const failure = (code: string, error: string, status: number): Extract<ButlerActionOutcome, { ok: false }> => ({ ok: false, code, error, status });
+
+  /**
+   * 行为 trace 的动作页（owner 2026-11-28「监控管家本身」）：需求时间线里的 audit 短句
+   * 是给主人看的叙事；这里记排障要的——动作类型、参数摘要、结果与错误码、由哪笔事件
+   * 引发（cause）。失败也算数：launch 的 422 和 tell 的 session_not_live 都该可查。
+   */
+  const traceAction = async (action: string, body: Record<string, unknown>, eventId: string | null, runIt: () => ButlerActionOutcome | Promise<ButlerActionOutcome>): Promise<ButlerActionOutcome> => {
+    const outcome = await runIt();
+    try {
+      butlerTraceOf(deps.dir).append({
+        at: iso(),
+        type: "action",
+        summary: `${action}${outcome.ok ? "" : "（没成）"}`,
+        detail: `${short(JSON.stringify(body), 260)}${outcome.ok ? "" : ` → ${outcome.code ?? "error"}: ${outcome.error ?? ""}`}`,
+        outcome: outcome.ok ? "ok" : `error:${outcome.code ?? "error"}`,
+        ...(eventId ? { cause: eventId } : {}),
+        ...(outcome.ok && "thread_id" in outcome && outcome.thread_id ? { refs: { thread: outcome.thread_id } } : {}),
+      });
+    } catch {
+      // The trace never fails the action.
+    }
+    return outcome;
+  };
 
   /** The Workshop's switch, for the actions that write a requirement. */
   const cardWritesOpen = (requirement: string | undefined): ButlerActionOutcome | null => {
@@ -717,19 +741,19 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
   const run = async (action: ButlerActionName, body: Record<string, unknown>, key: string, eventId: string | null): Promise<ButlerActionOutcome> => {
     switch (action) {
       case "tell-session":
-        return await tellSession(body, key, eventId);
+        return await traceAction(action, body, eventId, () => tellSession(body, key, eventId));
       case "remind":
-        return remind(body, eventId);
+        return await traceAction(action, body, eventId, () => remind(body, eventId));
       default:
         return failure("unsupported", `${action} 走审批通道，不在这里直接执行。`, 400);
     }
   };
 
   const executeAction = async (action: ButlerActionName, payload: Record<string, unknown>, meta: { approved?: boolean; eventId?: string | null; idempotencyKey?: string }): Promise<ButlerActionOutcome> => {
-    if (action === "create-requirement") return executeCreate(payload as unknown as CardPayload, meta);
-    if (action === "launch-session") return executeLaunch(payload as unknown as LaunchPayload, meta);
-    if (action === "archive-requirement") return executeArchive(payload as unknown as ArchivePayload, meta);
-    if (action === "stop-session") return executeStop(payload as unknown as StopPayload, meta);
+    if (action === "create-requirement") return await traceAction(action, payload, meta.eventId ?? null, () => executeCreate(payload as unknown as CardPayload, meta));
+    if (action === "launch-session") return await traceAction(action, payload, meta.eventId ?? null, () => executeLaunch(payload as unknown as LaunchPayload, meta));
+    if (action === "archive-requirement") return await traceAction(action, payload, meta.eventId ?? null, () => executeArchive(payload as unknown as ArchivePayload, meta));
+    if (action === "stop-session") return await traceAction(action, payload, meta.eventId ?? null, () => executeStop(payload as unknown as StopPayload, meta));
     return failure("unsupported", `审批执行暂不支持 ${action}。`, 400);
   };
 

@@ -2327,8 +2327,10 @@ export const inboxApi = {
   butlerLedger: () => get<{ ledgers: InboxButlerLedgerRow[] }>(inboxUrl('/butler/ledger')),
   butlerLedgerOf: (req: string) =>
     get<{ ledger: InboxButlerLedgerRow; markdown: string; deliverables: InboxDeliverableRef[] }>(inboxUrl(`/butler/ledger/${encodeURIComponent(req)}`)),
-  /** 产物直达：系统默认程序打开一个交付物（reveal: 回资源管理器定位）。 */
+  /** 交付物直达：系统默认程序打开一个交付物（reveal: 回资源管理器定位）。 */
   butlerOpen: (ref: string, reveal?: boolean) => post<{ ok: boolean; error?: string }>(inboxUrl('/butler/open'), { ref, ...(reveal ? { reveal: true } : {}) }),
+  /** 管家行为 trace：事件入账、唤醒处置、开口、动作与结果、熔断自愈（14 天/2000 条）。 */
+  butlerTrace: () => get<{ entries: InboxButlerTraceEntry[] }>(inboxUrl('/butler/trace')),
   /** The Inbox's projects (id / name / root), for the requirement card's project picker. */
   projectsList: () => get<{ projects: { id: string; name: string; root: string }[] }>(inboxUrl('/projects')),
   /**
@@ -2402,12 +2404,24 @@ export interface InboxButlerLedgerRow {
   /** 等你清单（owner 2026-11-28）：要主人做的事，原文。 */
   waiting_items?: string[];
   running: number;
-  /** 产物（工坊交付物同源）：计数 + 最新一笔时间（「新」标记与台账按钮徽标用）。 */
+  /** 交付物（工坊同源）：计数 + 最新一笔时间（「新」标记与台账按钮徽标用）。 */
   deliverables?: number;
   deliverable_at?: string | null;
 }
 
-/** 一条交付物的窗口视图（台账详情的产物区块用）。 */
+/** 一条交付物的窗口视图（台账详情的交付物区块用）。 */
+/** 管家行为 trace 的一条（owner 2026-11-28「对管家本身的监控」）：事件/唤醒/开口/动作/熔断，cause 指向引发它的事件。 */
+export interface InboxButlerTraceEntry {
+  id: string;
+  at: string;
+  type: 'event' | 'wake' | 'turn' | 'action' | 'fuse';
+  summary: string;
+  detail?: string;
+  cause?: string;
+  outcome?: string;
+  refs?: { requirement?: string; thread?: string };
+}
+
 export interface InboxDeliverableRef {
   id: string;
   kind: 'design-doc' | 'test-report' | 'link' | 'file';
