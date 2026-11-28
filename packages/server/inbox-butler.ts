@@ -424,7 +424,7 @@ export class Butler {
         : this.running > 0 || this.brainSession?.isActive
           ? "上一轮还在说话，延迟到它说完"
           : "还没有会话，留到下一句对话";
-      trace.append({ at: new Date().toISOString(), type: "wake", summary: traceBrief(text), cause, outcome: runLooping ? "suppressed" : "deferred", detail: deferredBy });
+      trace.append({ at: new Date().toISOString(), type: "wake", summary: traceBrief(text, 160), cause, outcome: runLooping ? "suppressed" : "deferred", detail: deferredBy });
       this.deferred.push(text);
       return;
     }
@@ -436,11 +436,11 @@ export class Butler {
     try {
       const reply = await this.askButlerStream(full, () => {}, [], false, cause);
       this.appendHistory({ at: new Date().toISOString(), role: "butler", text: reply });
-      trace.append({ at: new Date().toISOString(), type: "wake", summary: traceBrief(text), cause, outcome: "spoken", ...(pendingText ? { detail: "随本次唤醒补上了此前延迟的动态" } : {}) });
+      trace.append({ at: new Date().toISOString(), type: "wake", summary: traceBrief(text, 160), cause, outcome: "spoken", ...(pendingText ? { detail: "随本次唤醒补上了此前延迟的动态" } : {}) });
     } catch (error) {
       // Could not speak now (the session went away, the model refused): say it with the next chat.
       this.deferred.push(text);
-      trace.append({ at: new Date().toISOString(), type: "wake", summary: traceBrief(text), cause, outcome: "error", detail: error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200) });
+      trace.append({ at: new Date().toISOString(), type: "wake", summary: traceBrief(text, 160), cause, outcome: "error", detail: error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200) });
     } finally {
       this.running -= 1;
     }
@@ -455,7 +455,7 @@ export class Butler {
     try {
       const reply = await this.askButlerRun(prompt, onDelta, files, onEvent);
       // 行为 trace：开口只记一句摘要（正文在 history.jsonl，这里是索引，不存两份）。
-      butlerTraceOf(this.dir).append({ at: new Date().toISOString(), type: "turn", summary: traceBrief(reply || message), cause, outcome: "spoken" });
+      butlerTraceOf(this.dir).append({ at: new Date().toISOString(), type: "turn", summary: traceBrief(reply || message, 400), cause, outcome: "spoken" });
       return reply;
     } catch (error) {
       // The turn never happened: the digest goes back to the queue, so the next one still sees it

@@ -623,7 +623,7 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                 <div className="ib-butler-side-inner">
                   <header className="ib-butler-side-head">
                     <div>
-                      <span className="ib-butler-side-kicker">{section === 'config' ? 'SETTINGS' : section === 'waiting' ? 'WAITING' : section === 'trace' ? 'TRACE' : section === 'ledger' ? 'LEDGER' : 'APPROVALS'}</span>
+                      {section !== 'trace' && <span className="ib-butler-side-kicker">{section === 'config' ? 'SETTINGS' : section === 'waiting' ? 'WAITING' : section === 'ledger' ? 'LEDGER' : 'APPROVALS'}</span>}
                       <h2>{section === 'config' ? '配置' : section === 'waiting' ? '等你的事' : section === 'trace' ? '行为' : section === 'ledger' ? '台账' : '待批事项'}</h2>
                     </div>
                     <Tip content="收起">
@@ -653,7 +653,7 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
                         onOpenReq={openLedgerOf}
                       />
                     )}
-                    {section === 'trace' && <ButlerTrace open={section === 'trace'} />}
+                    {section === 'trace' && <ButlerTrace open={section === 'trace'} rows={ledgerRows} />}
                     {section === 'ledger' && (
                       <ButlerLedger
                         open={section === 'ledger'}

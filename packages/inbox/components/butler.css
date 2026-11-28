@@ -73,20 +73,24 @@ button.ib-butler-bstat-row:hover { background: color-mix(in oklch, var(--muted) 
 .ib-butler-wait-reqname:hover { color: var(--primary); }
 .ib-butler-wait-items { margin: 5px 0 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; line-height: 1.55; color: var(--muted-foreground); }
 
-/* ── 行为 trace（owner 2026-11-28「对管家本身的监控」）：工坊历史时间线同款 DNA——
-   左轨点、类型词灰胶囊，近单色；只有失败/熔断行有警示色。点行展开因果。 */
+/* ── 行为 trace——仓库提交图（owner 2026-11-28「像 github 的 commit graph」）：
+   main 泳道最左，每个活跃需求一条泳道（最近活跃靠左，至多三条），其余折叠进
+   「已归档」虚线泳道；节点即 trace 条目，泳道线延伸到顶（活着的分支一直开着），
+   cause 因果 = 跨泳道的弯线（交付事件弯回 main 的开口，git 里 PR 合并的画法）。
+   泳道色是近单色纪律的唯一例外：低饱和同明度、可区分；其余维持灰阶。 */
 .ib-butler-trc { display: flex; flex-direction: column; min-height: 0; }
+.ib-butler-trc-lanes { display: flex; flex-wrap: wrap; gap: 3px 12px; margin: 0 0 6px; min-width: 0; }
+.ib-butler-trc-lane-key { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted-foreground); max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ib-butler-trc-lane-key i { flex: none; width: 7px; height: 7px; border-radius: 999px; }
+.ib-butler-trc-body { position: relative; min-height: 0; }
+.ib-butler-trc-svg { position: absolute; top: 0; left: 0; pointer-events: none; }
 .ib-butler-trc-day { margin: 0 0 4px; }
-.ib-butler-trc-day-hh { font-size: 11px; font-weight: 650; letter-spacing: 0.05em; color: var(--muted-foreground); margin: 8px 0 4px; }
+.ib-butler-trc-day-hh { font-size: 11px; font-weight: 650; letter-spacing: 0.05em; color: var(--muted-foreground); margin: 8px 0 4px; padding-left: var(--trc-rail, 58px); }
 .ib-butler-trc-list { display: flex; flex-direction: column; }
 .ib-butler-trc-row { border-radius: 8px; min-width: 0; }
 .ib-butler-trc-row:hover { background: color-mix(in oklch, var(--foreground) 3%, transparent); }
-.ib-butler-trc-line { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; padding: 5px 6px; font: inherit; text-align: left; cursor: pointer; min-width: 0; }
-.ib-butler-trc-row:not([data-open]) .ib-butler-trc-line { cursor: default; }
-.ib-butler-trc-rail { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 14px; }
-.ib-butler-trc-rail i { width: 7px; height: 7px; border-radius: 999px; background: color-mix(in oklch, var(--muted-foreground) 55%, transparent); }
-.ib-butler-trc-row[data-mood="warn"] .ib-butler-trc-rail i { background: var(--warning, oklch(0.75 0.15 85)); }
-.ib-butler-trc-row[data-mood="ok"] .ib-butler-trc-rail i { background: color-mix(in oklch, var(--success, oklch(0.72 0.17 150)) 70%, transparent); }
+.ib-butler-trc-line { display: flex; align-items: center; gap: 7px; width: 100%; border: 0; background: none; padding: 5px 4px 5px var(--trc-rail, 58px); font: inherit; text-align: left; cursor: pointer; min-width: 0; box-sizing: border-box; }
+.ib-butler-trc-row[data-open] .ib-butler-trc-line { border-radius: 8px 8px 0 0; }
 .ib-butler-trc-type { flex: none; padding: 1px 7px; border-radius: 999px; background: color-mix(in oklch, var(--foreground) 6%, transparent); color: var(--muted-foreground); font-size: 9.5px; font-weight: 550; }
 .ib-butler-trc-main { flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: 6px; }
 .ib-butler-trc-sum { min-width: 0; font-size: 12px; color: var(--foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -96,10 +100,12 @@ button.ib-butler-bstat-row:hover { background: color-mix(in oklch, var(--muted) 
 .ib-butler-trc-out.is-warn { background: color-mix(in oklab, var(--warning, oklch(0.75 0.15 85)) 16%, transparent); color: color-mix(in oklab, var(--warning, oklch(0.75 0.15 85)) 78%, var(--foreground)); }
 .ib-butler-trc-out.is-mute { background: color-mix(in oklch, var(--foreground) 6%, transparent); color: var(--muted-foreground); }
 .ib-butler-trc-when { flex: none; font-size: 10.5px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
-.ib-butler-trc-detail { margin: 2px 0 6px 22px; padding: 6px 10px; border-left: 2px solid var(--ib-hair, var(--border)); font-size: 11px; line-height: 1.55; color: var(--muted-foreground); }
+.ib-butler-trc-detail { margin: 0 0 6px; padding: 4px 10px 6px calc(var(--trc-rail, 58px) + 10px); border-left: 2px solid var(--ib-hair, var(--border)); margin-left: 6px; font-size: 11px; line-height: 1.55; color: var(--muted-foreground); }
 .ib-butler-trc-detail p { margin: 0 0 3px; overflow-wrap: anywhere; }
 .ib-butler-trc-detail p:last-child { margin: 0; }
 .ib-butler-trc-cause { color: var(--foreground); }
 .ib-butler-trc-ref { font-family: var(--font-mono); font-size: 10px; opacity: 0.8; }
-.ib-butler-trc-foot { display: flex; align-items: center; gap: 5px; margin: 10px 0 0; font-size: 10.5px; color: var(--muted-foreground); }
-.ib-butler-trc-foot svg { flex: none; opacity: 0.7; }
+/* 计数行（owner 2026-11-28「字体太小了，非常不显眼」）：提到标题级。 */
+.ib-butler-trc-count { font-size: 12.5px; font-weight: 650; color: var(--foreground); margin: 0 0 8px; }
+/* 展开后的全文：行内省略号只是单行索引，展开一字不裁。 */
+.ib-butler-trc-full { font-size: 12px; line-height: 1.6; color: var(--foreground); overflow-wrap: anywhere; margin: 0 0 4px; }

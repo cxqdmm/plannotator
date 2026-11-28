@@ -279,7 +279,7 @@ export function createButlerActions(deps: ButlerActionDeps): ButlerActions {
         at: iso(),
         type: "action",
         summary: `${action}${outcome.ok ? "" : "（没成）"}`,
-        detail: `${short(JSON.stringify(body), 260)}${outcome.ok ? "" : ` → ${outcome.code ?? "error"}: ${outcome.error ?? ""}`}`,
+        detail: `${short(JSON.stringify(body), 500)}${outcome.ok ? "" : ` → ${outcome.code ?? "error"}: ${outcome.error ?? ""}`}`,
         outcome: outcome.ok ? "ok" : `error:${outcome.code ?? "error"}`,
         ...(eventId ? { cause: eventId } : {}),
         ...(outcome.ok && "thread_id" in outcome && outcome.thread_id ? { refs: { thread: outcome.thread_id } } : {}),
