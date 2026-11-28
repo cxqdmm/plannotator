@@ -253,15 +253,17 @@ describe("the butler's skill whitelist (owner 2026-11-25「管家要有技能白
       { action: "skill", resource: "*", effect: "deny" },
       { action: "skill", resource: "butler-*", effect: "allow" },
     ]);
-    // 独有技能落盘：ID 一律 butler-*，带 name/description（有 description 才会被发现）。
+    // 独有技能落盘：仓库 butler-skills/<id>/SKILL.md 原样部署，frontmatter name
+    // 必须等于文件夹 id（英文）——中文 name 匹配不上 butler-* 白名单（现场事故
+    // 2026-11-27「挂载失败」）。
     const skills = dir.split("/").pop();
     expect(skills).not.toBe("");
     const listing = readFileSync(join(dir, ".opencode", "skills", "butler-intake", "SKILL.md"), "utf8");
-    expect(listing).toContain("name: 需求受理");
+    expect(listing).toContain("name: butler-intake");
     expect(listing).toContain("description: ");
-    expect(readFileSync(join(dir, ".opencode", "skills", "butler-inbox-guide", "SKILL.md"), "utf8")).toContain("name: 收件箱向导");
+    expect(readFileSync(join(dir, ".opencode", "skills", "butler-inbox-guide", "SKILL.md"), "utf8")).toContain("name: butler-inbox-guide");
     const cardSkill = readFileSync(join(dir, ".opencode", "skills", "butler-requirement-card", "SKILL.md"), "utf8");
-    expect(cardSkill).toContain("name: 需求卡");
+    expect(cardSkill).toContain("name: butler-requirement-card");
     expect(cardSkill).toContain("## 背景 / 为什么");
     expect(cardSkill).toContain("pending_approval");
   });

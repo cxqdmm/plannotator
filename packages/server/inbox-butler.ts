@@ -15,7 +15,7 @@
  * (主人发来的附件按字节落盘，会话用工具可再读)。Nothing here writes anywhere
  * else; the folder is the butler's own.
  */
-import { mkdirSync, existsSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
+import { mkdirSync, existsSync, readdirSync, readFileSync, writeFileSync, appendFileSync, cpSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
@@ -55,189 +55,7 @@ export function butlerDir(): string {
 const CARD_FENCE = "```html card";
 
 /** `butler-card` 技能正文：协议、工具类词表、铁律（多选必须先选后确认）、阿里 C 端卡片风格与模板。 */
-const BUTLER_CARD_SKILL_BODY = [
-  '## 协议',
-  '',
-  `${CARD_FENCE} 开头的围栏就是卡片；首行可给元信息：`,
-  '',
-  '<!-- card: {"title":"标题","height":320} -->',
-  '',
-  '正文必须是一个带 data-card 的自包含元素；一条回复最多一张卡；纯叙述不用卡。',
-  '开标记与结束标记各自独占一行（挤在句子中间虽然也能被识别，但容易看错）。',
-  '',
-  '## 铁律',
-  '',
-  '1. 只用内置工具类，不写 <style>，不写自定义 class。词表：',
-  '   flex / flex-col / flex-wrap / flex-1 / items-center / items-start / justify-between / justify-center / justify-end',
-  '   grid / grid-cols-2 / grid-cols-3 / w-full / w-1/2 / w-2/3 / w-3/4 / h-1..6 / h-full / min-w-0 / overflow-hidden / relative / absolute',
-  '   p-1..6 / px-* / py-* / pt-* / pb-* / m-* / mt-* / mb-* / ml-* / mr-* / gap-1..6 / ml-auto / mx-auto',
-  '   text-xs..2xl / font-medium / font-semibold / font-bold / leading-relaxed / text-center / truncate',
-  '   text-foreground / text-muted / text-primary / text-primary-fg / bg-card / bg-muted / bg-background / bg-primary / border-border',
-  '   border / border-t / border-0 / border-dashed / rounded-lg / rounded-xl / rounded-2xl / rounded-full / shadow-sm',
-  '   cursor-pointer / transition / hover:bg-muted / hover:opacity-90 / hover:underline / opacity-70',
-  '   btn / btn-primary / btn-disabled / chip',
-  '',
-  '2. 多选/多输入：必须「先选后确认」——所有选项只改本地选中状态，最后由一个带 data-card-confirm 的',
-  '   按钮统一 plannotator.send(...)。禁止每个选项一点就发（主人就没法再选别的）。单选卡可以直接点选即发。',
-  '   发送时把主人选的每一项都放进 value（如 {label:"已选好",value:{cases:...,frets:...}}）；label 只是摘要，',
-  '   只发 label 会把答案丢掉。',
-  '',
-  '3. 风格对标阿里 C 端卡片：容器 p-4 bg-card border rounded-2xl shadow-sm，内部用 gap-3 排开；',
-  '   标题 text-lg font-semibold，次要信息 text-sm text-muted；主操作 btn btn-primary，次操作 btn；',
-  '   留白充足、层级清楚，不堆密表格。',
-  '',
-  '## 模板：单选（点一个即发）',
-  '',
-  '```html card',
-  '<!-- card: {"title":"选一个方向","height":240} -->',
-  '<div data-card class="p-4 bg-card border rounded-2xl shadow-sm flex flex-col gap-3">',
-  '  <div class="flex items-center justify-between">',
-  '    <span class="text-lg font-semibold">选一个方向</span>',
-  '    <span class="chip bg-muted text-muted">单选</span>',
-  '  </div>',
-  '  <button type="button" class="btn w-full" onclick="plannotator.send({label:\'方向 A\',value:\'A · 民谣单旋律\'})">A · 民谣单旋律</button>',
-  '  <button type="button" class="btn w-full" onclick="plannotator.send({label:\'方向 B\',value:\'B · 钢琴织体\'})">B · 钢琴织体</button>',
-  '</div>',
-  '```',
-  '',
-  '## 模板：多选（先选后确认）',
-  '',
-  '```html card',
-  '<!-- card: {"title":"可以多选","height":300} -->',
-  '<div data-card class="p-4 bg-card border rounded-2xl shadow-sm flex flex-col gap-3">',
-  '  <span class="text-lg font-semibold">可以多选</span>',
-  '  <div class="flex flex-col gap-2">',
-  '    <button type="button" class="btn w-full" onclick="toggle(this, \'A · 民谣单旋律\')">A · 民谣单旋律</button>',
-  '    <button type="button" class="btn w-full" onclick="toggle(this, \'B · 钢琴织体\')">B · 钢琴织体</button>',
-  '  </div>',
-  '  <button type="button" data-card-confirm class="btn btn-primary w-full" onclick="confirmPick()">确认（已选 0 项）</button>',
-  '  <script>',
-  "    var picked = [];",
-  "    function toggle(button, value) {",
-  "      var at = picked.indexOf(value);",
-  "      if (at >= 0) picked.splice(at, 1); else picked.push(value);",
-  "      button.classList.toggle('btn-primary', picked.indexOf(value) >= 0);",
-  "      document.querySelector('[data-card-confirm]').textContent = '确认（已选 ' + picked.length + ' 项）';",
-  '    }',
-  "    function confirmPick() {",
-  "      if (picked.length === 0) return;",
-  "      plannotator.send({ label: '选好了', value: picked.join('、') });",
-  '    }',
-  '  </script>',
-  '</div>',
-  '```',
-  '',
-  '## 模板：进展时间线',
-  '',
-  '```html card',
-  '<!-- card: {"title":"需求进展","height":260} -->',
-  '<div data-card class="p-4 bg-card border rounded-2xl shadow-sm flex flex-col gap-3">',
-  '  <span class="text-lg font-semibold">需求进展</span>',
-  '  <ol class="flex flex-col gap-2 text-sm text-muted">',
-  '    <li class="text-foreground">设计稿已交付 · 等你审阅</li>',
-  '    <li>开工（待审批）</li>',
-  '    <li>交付验收</li>',
-  '  </ol>',
-  '</div>',
-  '```',
-  '',
-  '## 模板：方案对比',
-  '',
-  '```html card',
-  '<!-- card: {"title":"两个方案","height":260} -->',
-  '<div data-card class="p-4 bg-card border rounded-2xl shadow-sm flex flex-col gap-3">',
-  '  <span class="text-lg font-semibold">两个方案</span>',
-  '  <div class="grid grid-cols-2 gap-3">',
-  '    <div class="border rounded-xl p-3 flex flex-col gap-1"><span class="text-sm font-semibold">A · 单旋律</span><span class="text-sm text-muted">上手快，变化少</span></div>',
-  '    <div class="border rounded-xl p-3 flex flex-col gap-1"><span class="text-sm font-semibold">B · 旋律+和弦</span><span class="text-sm text-muted">更完整，需要更多输入</span></div>',
-  '  </div>',
-  '  <button type="button" class="btn btn-primary w-full" onclick="plannotator.send({label:\'选方案\',value:\'B\'})">用 B 开工</button>',
-  '</div>',
-  '```',
-  '',
-  '## 要点',
-  '',
-  '- 卡片是表达层：需要动作时让它回一句话，再由你走审批；卡片不直接执行。',
-  '- 文字解释留在卡外；卡片只承载需要看/点的部分。',
-  '- 保持精简（token 是主人的钱）：不写注释、不写 id、能用工具类就不写行内样式、去掉空包裹；一张卡几 KB 就够。',
-  '- 高度按内容估计（卡片也可调 plannotator.resize(h)）。',
-].join('\n');
 
-const BUTLER_SKILLS: ReadonlyMap<string, { name: string; description: string; body: string }> = new Map([
-  [
-    "butler-intake",
-    {
-      name: "需求受理",
-      description: "把主人说想做的事整理成一句话需求（工坊需求卡片），并说明从卡片启动执行会话",
-      body: [
-        "## 工作流",
-        "",
-        "1. 听主人讲想做什么，缺要点就追问一句补齐。",
-        "2. 整理成一句话标题（说清要做什么），列出补充要点。",
-        "3. 需要建卡时，用 butler-requirement-card 技能整理成六段正文和上下文，再调用 create-requirement；建卡可能回 pending_approval，告诉主人已送到管家页的「审批」，等结果事件。",
-        "4. 需要派活/停下/归档时走动作通道：launch-session / stop-session / archive-requirement；派活用卡上的项目，卡上没有项目才问主人选项目/文件夹；归档会释放并停掉会话。它们和建卡一样可能回 pending_approval——告诉主人已送到管家页的「审批」，等结果事件，不要说已经做了。",
-        "5. 真正的执行在会话线程里，管家自己不动手；派活之后从需求台账跟进展。",
-      ].join("\n"),
-    },
-  ],
-  [
-    "butler-requirement-card",
-    {
-      name: "需求卡",
-      description: "把主人说的一件事整理成一份 Markdown 需求卡（六段正文 + 上下文引用），并调用管家动作通道建卡",
-      body: [
-        "## 何时用",
-        "主人要新建需求，或让你把一段对话整理成需求卡时。",
-        "",
-        "## 工作流",
-        "1. 先抓标题：一句话，动词开头，可验证。",
-        "2. 按六段写正文；不知道的写「待补充」，不要编。",
-        "3. 收集上下文：链接给 { kind: link, name, ref }；聊天附件在 files/ 下，给 { kind: file, name, path }。",
-        "4. 把来源线程 thread 和触发事件 event_id 带上。",
-        "5. 用 create-requirement 调用动作通道（地址见 action.json）；主人说清了项目就带 project_id，否则批准时主人在审批卡里选。每次新生成 idempotency_key，重试复用同一个。",
-        "6. 返回 pending_approval 时，告诉主人「已送到管家页的审批」，等结果事件；不要称建好了。",
-        "",
-        "## 六段模板",
-        "",
-        requirementCardTemplate(),
-        "",
-        "## 每段写什么",
-        "",
-        requirementCardGuide(),
-        "",
-        "## 注意",
-        "- 需求卡是一份 Markdown 文档，不要把内容拆成问答。",
-        "- 文件只给路径；批准后会复制进需求自己的文件夹。",
-        "- 正文最多 20000 字；一个需求一张卡。",
-      ].join("\n"),
-    },
-  ],
-  [
-    "butler-inbox-guide",
-    {
-      name: "收件箱向导",
-      description: "介绍 Plannotator 收件箱的用法：工坊、计划评审、代码评审、文件标注、会话与回复规则",
-      body: [
-        "## 要点",
-        "",
-        "- 工坊：需求卡片挂会话与产物；卡片上「开启新会话」派活，「历史」看事件流。",
-        "- 计划评审：执行会话交出设计文档后，卡片或历史页「去审阅」，批注意见回给会话。",
-        "- 代码评审：会话行 ⋯ 菜单发起，结论送达本会话并记入需求历史。",
-        "- 会话在等你回复时会停下（「等你回复」）；打断在会话行的 ⋯ 菜单里。",
-        "- 管家动作通道：建卡、派活、归档、转达、停止；建卡/派活/归档/停止在管家页「审批」页签由主人批准，或打开开关直接允许。",
-        "- 管家只统筹不执行；管家会话的终端命令在管家面板右上角复制。",
-      ].join("\n"),
-    },
-  ],
-  [
-    "butler-card",
-    {
-      name: "交互卡片",
-      description: "用一张 HTML 卡片代替纯文字（选择、参数、进展、对比）；只用内置工具类，多选必须先选后确认",
-      body: BUTLER_CARD_SKILL_BODY,
-    },
-  ],
-]);
 
 /** 管家项目的 opencode 配置（技能白名单）：环境里的技能（主人自己的 `~/.claude/skills`、
  *  全局目录等）一概 deny，只放行 `butler-*`——被拒的技能连模型的可见清单都不进
@@ -266,11 +84,14 @@ export function ensureButlerDir(): string {
   }
   try {
     writeFileSync(join(dir, "opencode.json"), butlerProjectConfig(), { mode: 0o600 });
-    for (const [id, skill] of BUTLER_SKILLS) {
-      const folder = join(dir, ".opencode", "skills", id);
-      if (!existsSync(folder)) mkdirSync(folder, { recursive: true, mode: 0o755 });
-      const frontmatter = `---\nname: ${skill.name}\ndescription: ${skill.description}\n---\n\n${skill.body}\n`;
-      writeFileSync(join(folder, "SKILL.md"), frontmatter, { mode: 0o600 });
+    // 技能部署（owner 2026-11-27「skill 就该写一个真正的 skill」）：仓库里的
+    // butler-skills/<id>/SKILL.md 原样拷贝到管家文件夹——技能是可独立编辑的
+    // markdown 文件，不是代码拼装（此前正文硬编码在 TS 数组里，改一次踩一次转义坑）。
+    const skillsSrc = join(import.meta.dir, "butler-skills");
+    for (const id of readdirSync(skillsSrc)) {
+      const skillDir = join(skillsSrc, id);
+      if (!existsSync(join(skillDir, "SKILL.md"))) continue;
+      cpSync(skillDir, join(dir, ".opencode", "skills", id), { recursive: true, force: true });
     }
   } catch {
     // 白名单写失败不阻断：会话照常能开，只是技能面退回环境默认（下轮启动再试）。
