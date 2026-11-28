@@ -12672,7 +12672,7 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
    “倒八字”长眉，长出面部的那截就是耳朵」）——眉毛是一对倒八字长眉，外端向上长出面部形成
    耳簇；眉身只有几根长毛丝；双翼贴着身体折起、成对扑腾；眼睛会眨（偶尔连眨两下）。配色
    一套变量，深浅色一致；working 张望 + 星光，happy 弯眼笑 + 连续扑翅。reduced-motion 一律静止。 */
-.ib-bc { --bc-fur: #b5824f; --bc-fur-shade: #8c5d36; --bc-belly: #e6cfae; --bc-eye-white: #fff8e8; --bc-iris: #cf7f24; --bc-ink: #24150f; --bc-beak: #d98a2b; --bc-beak-shade: #96591b; --bc-blush: #cc6f60; --bc-branch: #7b5837; --bc-leaf: #6f905c; --bc-bow: #7b2d32; --bc-bow-shade: #571b20; --bc-bow-light: #a44a4a; --bc-spark: #e8b34b; }
+.ib-bc { --bc-fur: #b5824f; --bc-fur-shade: #8c5d36; --bc-belly: #e6cfae; --bc-eye-white: #fff8e8; --bc-iris: #cf7f24; --bc-ink: #24150f; --bc-beak: #d98a2b; --bc-beak-shade: #96591b; --bc-branch: #7b5837; --bc-branch-shade: #5b3f24; --bc-leaf: #6f905c; --bc-leaf-vein: #4b6740; --bc-bow: #7b2d32; --bc-bow-shade: #571b20; --bc-bow-light: #a44a4a; --bc-spark: #e8b34b; display: block; overflow: visible; }
 .ib-bc-head { transform-box: fill-box; transform-origin: 50% 100%; animation: ib-bc-tilt 7.6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
 @keyframes ib-bc-tilt { 0%, 100% { transform: rotate(-2.6deg); } 50% { transform: rotate(2.6deg); } }
 .ib-bc-wing-l { transform-box: fill-box; transform-origin: 80% 10%; animation: ib-bc-flap-l 6.4s ease-in-out infinite; }
@@ -12691,7 +12691,21 @@ button.ib-ctxn-chip:focus-visible { outline: 2px solid color-mix(in oklch, var(-
 @keyframes ib-bc-look { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(-0.7px); } 65% { transform: translateX(0.7px); } }
 .ib-bc-working .ib-bc-spark { animation: ib-bc-spark 1.7s ease-in-out infinite; }
 @keyframes ib-bc-spark { 0%, 100% { opacity: 0; transform: scale(0.6) rotate(0deg); } 50% { opacity: 0.95; transform: scale(1.05) rotate(22deg); } }
-.ib-bc-working .ib-bc-wing-l, .ib-bc-working .ib-bc-wing-r { animation-duration: 3.6s; }
+.ib-bc-working .ib-bc-wing-l, .ib-bc-working .ib-bc-wing-r { animation: none; }
+/* 走枝（owner 2026-11-28「思考时在树干上走来走去，电子宠物」）：4s 一个来回，
+   身体每步颠 0.7，两只爪子交替抬脚；小尺寸（ib-bc-simple）不走。 */
+.ib-bc-owl, .ib-bc-bob, .ib-bc-claw-l, .ib-bc-claw-r { transform-box: view-box; transform-origin: 0 0; }
+.ib-bc-working .ib-bc-owl { animation: ib-bc-walk 4s ease-in-out infinite alternate; }
+@keyframes ib-bc-walk { from { transform: translateX(-5.2px); } to { transform: translateX(5.2px); } }
+.ib-bc-working .ib-bc-bob { animation: ib-bc-bob .46s ease-in-out infinite; }
+@keyframes ib-bc-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-.7px); } }
+.ib-bc-working .ib-bc-claw-l { animation: ib-bc-step-l .46s ease-in-out infinite; }
+.ib-bc-working .ib-bc-claw-r { animation: ib-bc-step-r .46s ease-in-out infinite; }
+@keyframes ib-bc-step-l { 0%,50%,100% { transform: translateY(0); } 25% { transform: translateY(-1px); } }
+@keyframes ib-bc-step-r { 0%,25%,50%,100% { transform: translateY(0); } 75% { transform: translateY(-1px); } }
+/* 小尺寸简化（26/60）：无树皮纹与结疤、每侧一片叶、不走路。 */
+.ib-bc-simple .ib-bc-bark, .ib-bc-simple .ib-bc-leaf-extra { display: none; }
+.ib-bc-simple.ib-bc-working .ib-bc-owl { animation: none; }
 .ib-bc-happy .ib-bc-wing-l { animation: ib-bc-flap-l 1.1s ease-in-out infinite; }
 .ib-bc-happy .ib-bc-wing-r { animation: ib-bc-flap-r 1.1s ease-in-out infinite; }
 
@@ -12881,14 +12895,11 @@ svg.ib-bc.ib-bc-sleep .ib-bc-brow-r { animation: none; }
 @media (max-width: 560px) {
   .ib-butler-nav { display: none; }
 }
-.ib-butler-top { position: relative; display: flex; justify-content: center; padding: 26px 0 6px; }
-.ib-butler-top-buttons { position: absolute; top: 12px; right: 14px; display: inline-flex; align-items: center; gap: 4px; }
-.ib-butler-top-buttons [data-butler-session-copy="copied"] { color: var(--primary); }
-.ib-butler-top-buttons [data-butler-session-copy="failed"] { color: var(--destructive, var(--foreground)); }
-.ib-butler-avatar { position: relative; width: 144px; height: 144px; display: grid; place-items: center; color: var(--foreground); animation: ib-butler-float 5s ease-in-out infinite; }
-.ib-butler-avatar::after { content: ""; position: absolute; left: 50%; bottom: -20px; width: 92px; height: 16px; border-radius: 999px; transform: translateX(-50%); background: radial-gradient(closest-side, color-mix(in oklch, var(--foreground) 24%, transparent), transparent); animation: ib-butler-float-shadow 5s ease-in-out infinite; }
+/* 顶部 bar 已去掉：猫头鹰悬浮在对话区顶部中间（owner 2026-11-28）。 */
+/* 猫头鹰：悬浮在对话区顶部中间（owner 2026-11-28）——不占布局高度，不拦点击、不画任何衬底/投影。 */
+.ib-butler-chat { position: relative; }
+.ib-butler-avatar { position: absolute; top: 2px; left: 0; right: 0; margin: 0 auto; width: 112px; height: 112px; display: grid; place-items: center; color: var(--foreground); animation: ib-butler-float 5s ease-in-out infinite; pointer-events: none; z-index: 1; }
 @keyframes ib-butler-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-@keyframes ib-butler-float-shadow { 0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.75; } 50% { transform: translateX(-50%) scale(0.78); opacity: 0.4; } }
 @keyframes ib-butler-idle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 
 /* 空场英雄态：徽标砖、时辰问候、一句定位、起步建议。 */
@@ -13000,7 +13011,9 @@ svg.ib-bc.ib-bc-sleep .ib-bc-brow-r { animation: none; }
 /* 管家页 B 布局（owner 2026-11-27 从三个原型变体里选定）：概览列（等你/在跑/待批 + 前三件）
    + 右侧对话。选择条与 A/C 变体已删（原型记录在 butler-prototype 分支）。 */
 .ib-butler-bwrap { display: flex; flex: 1; min-height: 0; }
-.ib-butler-chat .ib-butler-list { padding: 16px 26px; }
+/* 有消息时顶部留出猫头鹰的位置（它悬浮在上方）；空场时那只 192 的大猫头鹰由首屏自己给。 */
+.ib-butler-chat .ib-butler-list { padding: 120px 26px 16px; }
+.ib-butler-chat[data-empty] .ib-butler-list { padding-top: 16px; }
 .ib-butler-chat .ib-butler-inputrow { padding: 8px 26px 20px; }
 .ib-butler-bstats { flex: none; width: 240px; border-right: 1px solid var(--border); padding: 14px; display: flex; flex-direction: column; gap: 12px; background: color-mix(in oklch, var(--card) 55%, transparent); }
 .ib-butler-bstats-k { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; color: var(--muted-foreground); }
@@ -13013,11 +13026,11 @@ svg.ib-bc.ib-bc-sleep .ib-bc-brow-r { animation: none; }
   .ib-butler-hero-badge { animation: none; }
   .ib-butler-dots i { animation-duration: 0.01ms; animation-iteration-count: 1; }
   .ib-butler-idea:hover, .ib-butler-send:hover:not(:disabled) { transform: none; }
-  .ib-bc-eyes, .ib-bc-head, .ib-bc-wing-l, .ib-bc-wing-r, .ib-bc-brow-l, .ib-bc-brow-r, .ib-bc-spark { animation: none; }
+  .ib-bc-eyes, .ib-bc-head, .ib-bc-wing-l, .ib-bc-wing-r, .ib-bc-brow-l, .ib-bc-brow-r, .ib-bc-spark, .ib-bc-owl, .ib-bc-bob, .ib-bc-claw-l, .ib-bc-claw-r { animation: none; }
   .ib-bc-spark { opacity: 0.9; }
   .ib-bc-sleepbody, .ib-bc-zzz, .ib-bc-leaves { animation: none; }
   .ib-bc-zzz { opacity: 0.4; }
-  .ib-butler-avatar, .ib-butler-avatar::after { animation: none; }
+  .ib-butler-avatar { animation: none; }
   .ib-butler-side { transition: none; }
   .ib-butler-card-skel-body span { animation: none; }
 }

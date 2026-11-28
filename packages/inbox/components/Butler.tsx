@@ -474,19 +474,15 @@ export function Butler({ open: openProp, onOpenChange }: { open?: boolean; onOpe
           </nav>
           {/* 对话常驻；审批/台账/配置从右侧抽屉盖上来。 */}
           <div className="ib-butler-content">
-            <div className="ib-butler-chat">
-              <div className="ib-butler-top">
-                <div className="ib-butler-top-buttons">
-                  <Tip content="关闭管家">
-                    <button type="button" className="ib-iconbtn" onClick={() => setOpen(false)} aria-label="关闭管家">
-                      <Icon name="x" />
-                    </button>
-                  </Tip>
-                </div>
-                <span className="ib-butler-avatar" title={owlTitle}>
-                  <ButlerCharacter size={144} mood={owlMood} />
+            <div className="ib-butler-chat" data-empty={turns.length === 0 && !pending ? '' : undefined}>
+              {/* 猫头鹰悬浮在对话区顶部中间（owner 2026-11-28「ib-butler-top 太占地方，去掉，
+                  avatar 悬浮在顶部中间就够了，关闭按钮也去掉」）：不占布局高度，内容从它身下
+                  滚过；空场时隐藏——首屏那只 192 的大猫头鹰才是主角。 */}
+              {!(turns.length === 0 && !pending) && (
+                <span className="ib-butler-avatar" title={owlTitle} aria-hidden="true">
+                  <ButlerCharacter size={112} mood={owlMood} />
                 </span>
-              </div>
+              )}
                 <div className="ib-butler-list" ref={listRef}>
                   {turns.length === 0 && !pending ? (
                     <div className="ib-butler-hero">

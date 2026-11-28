@@ -5,6 +5,10 @@
    裁决=success/warning 淡底胶囊、产物动作=22px 无边框图标钮 hover 才显——全套工坊
    需求卡的真实词汇，不自创。 */
 
+/* 终端命令复制按钮的状态反馈（原先挂在已删除的 .ib-butler-top-buttons 下，移到按钮自己身上）。 */
+.ib-butler-navbtn[data-butler-session-copy="copied"] { color: var(--primary); }
+.ib-butler-navbtn[data-butler-session-copy="failed"] { color: var(--destructive, var(--foreground)); }
+
 /* ── 概览（owner 2026-11-28「都不知道什么含义，也没有视觉联动」）──
    三块与需求行是可点的联动入口：改名（需要你/在跑/待批）+ hover 有说明。
    布局基线（瓷砖的 flex 纵排与字阶）曾随搬家从 inbox.css 丢失，这里补齐：
